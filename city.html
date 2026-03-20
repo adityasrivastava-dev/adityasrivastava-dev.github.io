@@ -11,6 +11,12 @@
       rel="stylesheet"
     />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
     <style>
       *,
       *::before,
@@ -1468,10 +1474,15 @@
         <div class="c-links">
           <a
             class="c-link"
-            href="mailto:asaditya1826@gmail.com"
+            href="/cdn-cgi/l/email-protection#8eeffdefeae7faf7efbfb6bcb8cee9e3efe7e2a0ede1e3"
             onclick="logEvt('contact_clicked', 'email')"
           >
-            <span class="c-ll">EMAIL</span>asaditya1826@gmail.com
+            <span class="c-ll">EMAIL</span
+            ><span
+              class="__cf_email__"
+              data-cfemail="cfaebcaeaba6bbb6aefef7fdf98fa8a2aea6a3e1aca0a2"
+              >[email&#160;protected]</span
+            >
           </a>
           <a
             class="c-link"
@@ -1491,6 +1502,10 @@
       </div>
     </div>
 
+    <script
+      data-cfasync="false"
+      src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"
+    ></script>
     <script>
       // ═══════════════════════════════════════════════════════════════
       //  DISTRICT DATA
@@ -1692,71 +1707,161 @@
 
       const BCONFIG = [
         {
+          // auth-tower — always on, gold, steady like a server room
           type: "tower",
-          floors: 8,
-          color: 0xc8a84b,
+          floors: 9,
+          color: 0x8a6e28,
           trim: 0xffe080,
           accent: 0xff9900,
           roofType: "pyramid",
+          roughness: 0.78,
+          metalness: 0.08,
+          windowTint: 0xffd560,
+          winOnProb: 0.92,
+          winChangeRate: 0.4,
+          winMood: "warm",
         },
         {
+          // cloud-district — fast-changing, cool blue-white, independent
           type: "block",
           floors: 5,
-          color: 0x9a8acc,
+          color: 0x2d2540,
           trim: 0xc0b0ff,
           accent: 0x7060aa,
           roofType: "flat",
+          roughness: 0.92,
+          metalness: 0.04,
+          windowTint: 0xb8a8ff,
+          winOnProb: 0.65,
+          winChangeRate: 2.2,
+          winMood: "cool",
         },
         {
+          // integration-mesh — busy, mixed, constantly moving
           type: "slim",
-          floors: 6,
-          color: 0x60c0e0,
+          floors: 7,
+          color: 0x183040,
           trim: 0xa0e8ff,
           accent: 0x2080a0,
           roofType: "antenna",
+          roughness: 0.22,
+          metalness: 0.55,
+          windowTint: 0x80d8ff,
+          winOnProb: 0.75,
+          winChangeRate: 1.8,
+          winMood: "cool",
         },
         {
+          // data-vaults — mostly dark, few lit, stable, secure
           type: "wide",
-          floors: 3,
-          color: 0xe0a840,
+          floors: 4,
+          color: 0x3a2c14,
           trim: 0xffd080,
           accent: 0xa07020,
           roofType: "stepped",
+          roughness: 0.88,
+          metalness: 0.06,
+          windowTint: 0xffc040,
+          winOnProb: 0.22,
+          winChangeRate: 0.15,
+          winMood: "warm",
         },
         {
+          // finance-ledger — reliable, steady green glow, mostly on
           type: "tower",
-          floors: 7,
-          color: 0x50d090,
+          floors: 8,
+          color: 0x14302a,
           trim: 0x90ffcc,
           accent: 0x208050,
           roofType: "flat",
+          roughness: 0.3,
+          metalness: 0.45,
+          windowTint: 0x60ffaa,
+          winOnProb: 0.8,
+          winChangeRate: 0.6,
+          winMood: "cool",
         },
         {
+          // observability — complex, mixed, diagnostic
           type: "complex",
-          floors: 5,
-          color: 0x80a0cc,
+          floors: 6,
+          color: 0x1c2840,
           trim: 0xb0d0ff,
           accent: 0x3060a0,
           roofType: "pyramid",
+          roughness: 0.5,
+          metalness: 0.3,
+          windowTint: 0x90c4ff,
+          winOnProb: 0.6,
+          winChangeRate: 1.4,
+          winMood: "mixed",
         },
         {
+          // architecture-quarter — creative, varied
           type: "block",
           floors: 4,
-          color: 0xd080c0,
+          color: 0x3a1a30,
           trim: 0xff90e0,
           accent: 0x904080,
           roofType: "flat",
+          roughness: 0.82,
+          metalness: 0.1,
+          windowTint: 0xff70cc,
+          winOnProb: 0.55,
+          winChangeRate: 1.0,
+          winMood: "warm",
         },
         {
+          // monolith-quarter — old, warm, heavy, always running
           type: "monolith",
-          floors: 2,
-          color: 0x909090,
-          trim: 0xb0b0b0,
-          accent: 0x505050,
+          floors: 3,
+          color: 0x1c1c22,
+          trim: 0xd0d0e0,
+          accent: 0x505060,
           roofType: "flat",
+          roughness: 0.95,
+          metalness: 0.02,
+          windowTint: 0xc0c8e0,
+          winOnProb: 0.88,
+          winChangeRate: 0.25,
+          winMood: "warm",
         },
       ];
+      const MAT = {
+        building(color) {
+          return new THREE.MeshStandardMaterial({
+            color,
+            roughness: 0.85,
+            metalness: 0.15,
+          });
+        },
 
+        window() {
+          return new THREE.MeshStandardMaterial({
+            color: "#111111",
+            emissive: "#ffd27a",
+            emissiveIntensity: Math.random() * 0.8,
+          });
+        },
+
+        road() {
+          return new THREE.MeshStandardMaterial({
+            color: "#1f1f1f",
+            roughness: 0.95,
+            metalness: 0.05,
+          });
+        },
+
+        glass(color = 0x88ccff) {
+          return new THREE.MeshStandardMaterial({
+            color,
+            roughness: 0.2,
+            metalness: 0.3,
+            transparent: true,
+            opacity: 0.8,
+          });
+        },
+      };
       // ═══════════════════════════════════════════════════════════════
       //  STATE
       // ═══════════════════════════════════════════════════════════════
@@ -1805,8 +1910,9 @@
         },
         getSkyColor() {
           const n = this.nightFactor();
-          const day = new THREE.Color(0x3a6696);
-          const night = new THREE.Color(0x060411);
+          // Night: deep indigo-violet (not black). Day: rich azure.
+          const day = new THREE.Color(0x4a7ab8);
+          const night = new THREE.Color(0x0d0a1e);
           return day.clone().lerp(night, n);
         },
       };
@@ -1846,9 +1952,9 @@
             if (this.blend >= 1) this.current = this.target;
           }
           // Fog target
-          const fBase = 0.014;
-          if (this.target === "fog") this.fogTarget = fBase * 4.5;
-          else if (this.target === "rain") this.fogTarget = fBase * 2.2;
+          const fBase = 0.007; // was 0.014 — sparser fog, buildings stay readable
+          if (this.target === "fog") this.fogTarget = fBase * 5.0;
+          else if (this.target === "rain") this.fogTarget = fBase * 2.8;
           else this.fogTarget = fBase;
           this.fogCurrent += (this.fogTarget - this.fogCurrent) * dt * 1.2;
           // Wind
@@ -1869,6 +1975,13 @@
             "active",
             this.target !== "clear" || nFactor > 0.3,
           );
+          if (wxSys.current === "rain") {
+            roadMat.roughness = 0.3;
+            roadMat.metalness = 0.55; // very reflective when wet
+          } else {
+            roadMat.roughness = 0.88; // match new roadMat default
+            roadMat.metalness = 0.08;
+          }
         },
       };
 
@@ -1877,49 +1990,72 @@
       }
 
       // ═══════════════════════════════════════════════════════════════
-      //  WINDOW STATE MACHINE
+      //  WINDOW STATE MACHINE — floor-level grouping with personality
       // ═══════════════════════════════════════════════════════════════
       const WIN = { OFF: 0, DIM: 1, ON: 2, FLICKER: 3, TV: 4 };
-      const windowMeshes = []; // {mesh, state, timer, baseColor}
+      const windowMeshes = []; // {mesh, state, baseColor, floorKey, districtIdx}
+      const floorGroups = {}; // floorKey -> {meshes[], state, timer, districtIdx}
 
-      function registerWindow(mesh, baseColorHex) {
-        const r = Math.random();
-        let state;
-        if (r < 0.15) state = WIN.OFF;
-        else if (r < 0.25) state = WIN.DIM;
-        else if (r < 0.96) state = WIN.ON;
-        else if (r < 0.99) state = WIN.FLICKER;
-        else state = WIN.TV;
-        const timer = Math.random() * 10;
+      function registerWindow(mesh, baseColorHex, floorKey, districtIdx) {
         const baseColor = new THREE.Color(baseColorHex);
-        windowMeshes.push({ mesh, state, timer, baseColor });
-        applyWinState(mesh, state, 0, baseColor);
+        const bc = districtIdx !== undefined ? BCONFIG[districtIdx] : null;
+        const onProb = bc ? bc.winOnProb : 0.65;
+
+        // Inherit floor group's state if group already exists, else init
+        if (!floorGroups[floorKey]) {
+          const r = Math.random();
+          let state;
+          if (r < (1 - onProb) * 0.55) state = WIN.OFF;
+          else if (r < 1 - onProb) state = WIN.DIM;
+          else if (r < onProb * 0.94) state = WIN.ON;
+          else if (r < onProb * 0.98) state = WIN.FLICKER;
+          else state = WIN.TV;
+          const changeRate = bc ? bc.winChangeRate : 1.0;
+          floorGroups[floorKey] = {
+            meshes: [],
+            state,
+            timer: (6 + Math.random() * 12) / changeRate,
+            districtIdx,
+            onProb,
+            changeRate,
+          };
+        }
+        floorGroups[floorKey].meshes.push({ mesh, baseColor });
+        windowMeshes.push({
+          mesh,
+          state: floorGroups[floorKey].state,
+          baseColor,
+          floorKey,
+        });
+        applyWinState(mesh, floorGroups[floorKey].state, 0, baseColor);
       }
 
       function applyWinState(mesh, state, t, baseColor) {
         const m = mesh.material;
+        if (!m) return;
         switch (state) {
           case WIN.OFF:
             m.emissiveIntensity = 0;
+            m.emissive.set(0x000000);
             break;
           case WIN.DIM:
             m.emissive.set(0x1a1a2a);
-            m.emissiveIntensity = 0.25;
+            m.emissiveIntensity = 0.18;
             break;
           case WIN.ON:
             m.emissive.copy(baseColor);
             m.emissiveIntensity =
-              1.3 + Math.sin(t * 0.15 + mesh.uuid.charCodeAt(0)) * 0.08;
+              1.2 + Math.sin(t * 0.12 + mesh.uuid.charCodeAt(0) * 0.01) * 0.06;
             break;
           case WIN.FLICKER:
             m.emissive.copy(baseColor);
-            m.emissiveIntensity = Math.random() > 0.94 ? 0 : 1.2;
+            m.emissiveIntensity = Math.random() > 0.93 ? 0 : 1.15;
             break;
           case WIN.TV: {
-            const phase = t * 2.8;
-            const bright = Math.sin(phase) > 0.2;
-            m.emissive.setHex(bright ? 0x3058cc : 0x0a1840);
-            m.emissiveIntensity = bright ? 0.9 : 0.15;
+            const phase = t * 2.6;
+            const bright = Math.sin(phase) > 0.15;
+            m.emissive.setHex(bright ? 0x2848c8 : 0x08102e);
+            m.emissiveIntensity = bright ? 0.85 : 0.12;
             break;
           }
         }
@@ -1927,20 +2063,34 @@
 
       function updateWindows(dt, t) {
         const nf = timeSys.nightFactor();
-        windowMeshes.forEach((w) => {
-          w.timer -= dt;
-          if (w.timer <= 0) {
-            // More lights ON at night
-            const onProb = 0.55 + nf * 0.35;
+        // Update per floor group — the key change: whole floors transition together
+        Object.values(floorGroups).forEach((grp) => {
+          grp.timer -= dt;
+          if (grp.timer <= 0) {
+            const onP = Math.min(0.98, grp.onProb + nf * 0.25);
             const r = Math.random();
-            if (r < (1 - onProb) * 0.6) w.state = WIN.OFF;
-            else if (r < 1 - onProb) w.state = WIN.DIM;
-            else if (r < onProb + (1 - onProb) * 0.9) w.state = WIN.ON;
-            else if (r < onProb + (1 - onProb) * 0.96) w.state = WIN.FLICKER;
-            else w.state = WIN.TV;
-            w.timer = 4 + Math.random() * 14;
+            if (r < (1 - onP) * 0.55) grp.state = WIN.OFF;
+            else if (r < 1 - onP) grp.state = WIN.DIM;
+            else if (r < onP * 0.93) grp.state = WIN.ON;
+            else if (r < onP * 0.97) grp.state = WIN.FLICKER;
+            else grp.state = WIN.TV;
+            grp.timer = (5 + Math.random() * 14) / grp.changeRate;
+            // Apply the new state to every window in this floor
+            grp.meshes.forEach(({ mesh, baseColor }) =>
+              applyWinState(mesh, grp.state, t, baseColor),
+            );
+          } else {
+            // Ongoing per-frame updates for animated states
+            if (
+              grp.state === WIN.FLICKER ||
+              grp.state === WIN.ON ||
+              grp.state === WIN.TV
+            ) {
+              grp.meshes.forEach(({ mesh, baseColor }) =>
+                applyWinState(mesh, grp.state, t, baseColor),
+              );
+            }
           }
-          applyWinState(w.mesh, w.state, t, w.baseColor);
         });
       }
 
@@ -1948,18 +2098,28 @@
       //  THREE.JS SETUP
       // ═══════════════════════════════════════════════════════════════
       const canvas = document.getElementById("c");
-      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+      const renderer = new THREE.WebGLRenderer({
+        canvas: document.getElementById("c"),
+        antialias: true,
+      });
+      // 🔥 REALISM BOOST
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.physicallyCorrectLights = true;
+      renderer.outputEncoding = THREE.sRGBEncoding;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.65; // was 1.3 — lifts the whole scene
+
+      // 🔥 SHADOWS (huge difference)
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.25;
-      renderer.setClearColor(0x060411);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+      // (renderer already fully configured above)
 
       const scene = new THREE.Scene();
-      scene.fog = new THREE.FogExp2(0x060411, 0.014);
-      scene.background = new THREE.Color(0x060411);
+      scene.fog = new THREE.FogExp2(0x0d0820, 0.007); // was 0x0a0a1a/0.025 — lighter, sparser
+      scene.background = new THREE.Color(0x0d0a1e); // was 0x060411 — deep violet not black
 
       const camera = new THREE.PerspectiveCamera(
         50,
@@ -1987,38 +2147,81 @@
       updateCam();
 
       // ═══════════════════════════════════════════════════════════════
-      //  LIGHTS (dynamic refs for day/night)
+      //  BLOOM — after scene + camera, before anything else
       // ═══════════════════════════════════════════════════════════════
-      const ambientLight = new THREE.AmbientLight(0x1a1030, 1.6);
-      scene.add(ambientLight);
+      const composer = new THREE.EffectComposer(renderer);
+      composer.addPass(new THREE.RenderPass(scene, camera));
+      const bloomPass = new THREE.UnrealBloomPass(
+        new THREE.Vector2(window.innerWidth, window.innerHeight),
+        0.85, // strength — was 0.55, needs to be stronger for cinematic glow
+        0.55, // radius — wider spread
+        0.6, // threshold — was 0.78, lower = more surfaces bloom
+      );
+      composer.addPass(bloomPass);
 
-      const sun = new THREE.DirectionalLight(0xfff0cc, 1.1);
-      sun.position.set(15, 25, 10);
+      // ═══════════════════════════════════════════════════════════════
+      //  LIGHTS — three-point cinematic rig + auth tower hero
+      // ═══════════════════════════════════════════════════════════════
+
+      // Hemisphere — NEVER drops below 0.18 so buildings always read
+      const hemi = new THREE.HemisphereLight(0x334488, 0x0a0818, 0.45);
+      scene.add(hemi);
+
+      // Key light (moon/sun) — angled from upper-right-front
+      const sun = new THREE.DirectionalLight(0xfff0cc, 2.2);
+      sun.position.set(25, 45, 15);
       sun.castShadow = true;
-      sun.shadow.mapSize.width = 2048;
-      sun.shadow.mapSize.height = 2048;
+      sun.shadow.mapSize.set(2048, 2048);
       sun.shadow.camera.near = 0.5;
-      sun.shadow.camera.far = 100;
-      sun.shadow.camera.left = -30;
-      sun.shadow.camera.right = 30;
-      sun.shadow.camera.top = 30;
-      sun.shadow.camera.bottom = -30;
-      sun.shadow.bias = -0.001;
+      sun.shadow.camera.far = 120;
+      sun.shadow.camera.left = -32;
+      sun.shadow.camera.right = 32;
+      sun.shadow.camera.top = 32;
+      sun.shadow.camera.bottom = -32;
+      sun.shadow.bias = -0.0003;
       scene.add(sun);
 
-      const fill = new THREE.DirectionalLight(0x304060, 0.4);
-      fill.position.set(-10, 10, -10);
+      // Rim light — cold blue from upper-left-back, defines building silhouettes
+      const rim = new THREE.DirectionalLight(0x2244aa, 0.65);
+      rim.position.set(-20, 30, -20);
+      scene.add(rim);
+
+      // Cold fill from street level — bounced sky light
+      const fill = new THREE.DirectionalLight(0x1a2d5a, 0.22);
+      fill.position.set(-8, 2, 8);
       scene.add(fill);
 
-      const authGlow = new THREE.PointLight(0xc8a84b, 3, 18);
-      authGlow.position.set(0, 10, 0);
+      // ── AUTH TOWER HERO LIGHTING — three dedicated sources ──
+      // 1. Ground uplight — warm gold cone from street level pointing up
+      const authGlow = new THREE.PointLight(0xffc050, 4.5, 22);
+      authGlow.position.set(0, 0.8, 0); // street level, at base of tower
       scene.add(authGlow);
 
+      // 2. High halo — illuminates spire and orb from above
+      const authHalo = new THREE.PointLight(0xffe090, 3.0, 14);
+      authHalo.position.set(0, 14, 0);
+      scene.add(authHalo);
+
+      // 3. Warm volumetric cone effect — SpotLight from front-low
+      const authSpot = new THREE.SpotLight(
+        0xffa030,
+        3.5,
+        30,
+        Math.PI * 0.18,
+        0.4,
+        1.5,
+      );
+      authSpot.position.set(3, 1.5, 5);
+      authSpot.target.position.set(0, 6, 0);
+      scene.add(authSpot);
+      scene.add(authSpot.target);
+
+      // Per-district accent lights — colour identity, not fill
       const districtLights = [
-        { pos: [-7, 3, -6], color: 0xaa90ff, intensity: 3.5, dist: 14 },
-        { pos: [7, 3, -6], color: 0x60d8ff, intensity: 3.5, dist: 14 },
-        { pos: [-7, 3, 4], color: 0xffcc50, intensity: 3.5, dist: 14 },
-        { pos: [7, 3, 4], color: 0x50ffaa, intensity: 3.5, dist: 14 },
+        { pos: [-7, 1.5, -6], color: 0x5030bb, intensity: 2.5, dist: 14 }, // bridge — violet
+        { pos: [7, 1.5, -6], color: 0x1870c0, intensity: 2.5, dist: 14 }, // cloud — blue
+        { pos: [-7, 1.5, 4], color: 0xb06010, intensity: 2.5, dist: 14 }, // vaults — amber
+        { pos: [7, 1.5, 4], color: 0x108848, intensity: 2.5, dist: 14 }, // finance — green
       ];
       districtLights.forEach((dl) => {
         const pl = new THREE.PointLight(dl.color, dl.intensity, dl.dist);
@@ -2026,58 +2229,123 @@
         scene.add(pl);
       });
 
+      // Kept for animation loop alias
+      const ambientLight = hemi;
+
       // ═══════════════════════════════════════════════════════════════
-      //  GROUND + HEX GRID
+      //  GROUND — layered variation, no more hex grid
       // ═══════════════════════════════════════════════════════════════
       const ground = new THREE.Mesh(
-        new THREE.CircleGeometry(55, 64),
-        new THREE.MeshStandardMaterial({ color: 0x0d0820, roughness: 0.95 }),
+        new THREE.CircleGeometry(60, 80),
+        new THREE.MeshStandardMaterial({
+          color: 0x100c20, // was 0x0a0618 — visible dark violet
+          roughness: 0.97,
+          emissive: 0x060412,
+          emissiveIntensity: 0.3,
+        }),
       );
       ground.rotation.x = -Math.PI / 2;
       ground.receiveShadow = true;
       scene.add(ground);
 
-      function makeHexGrid(radius, count, color) {
-        const mat = new THREE.LineBasicMaterial({
-          color,
-          transparent: true,
-          opacity: 0.12,
-        });
-        const size = radius / count;
-        for (let i = -count; i <= count; i++) {
-          for (let j = -count; j <= count; j++) {
-            const x = i * size * 1.732;
-            const z = j * size * 2 + (i % 2) * size;
-            if (x * x + z * z < radius * radius) {
-              const pts = [];
-              for (let k = 0; k <= 6; k++) {
-                const a = (k * Math.PI) / 3;
-                pts.push(
-                  new THREE.Vector3(
-                    x + Math.cos(a) * size * 0.9,
-                    0.02,
-                    z + Math.sin(a) * size * 0.9,
-                  ),
-                );
-              }
-              scene.add(
-                new THREE.Line(
-                  new THREE.BufferGeometry().setFromPoints(pts),
-                  mat,
-                ),
-              );
-            }
-          }
-        }
+      // Auth tower hero ground circle — gold halo on floor around base
+      const authGroundHalo = new THREE.Mesh(
+        new THREE.CircleGeometry(5.5, 48),
+        new THREE.MeshStandardMaterial({
+          color: 0x2a1a04,
+          emissive: 0xc87020,
+          emissiveIntensity: 0.55,
+          roughness: 0.9,
+        }),
+      );
+      authGroundHalo.rotation.x = -Math.PI / 2;
+      authGroundHalo.position.set(0, 0.006, 0);
+      scene.add(authGroundHalo);
+
+      // Mid-zone slightly lighter
+      const midZone = new THREE.Mesh(
+        new THREE.CircleGeometry(28, 64),
+        new THREE.MeshStandardMaterial({ color: 0x0d0820, roughness: 0.96 }),
+      );
+      midZone.rotation.x = -Math.PI / 2;
+      midZone.position.y = 0.002;
+      midZone.receiveShadow = true;
+      scene.add(midZone);
+
+      // Ground variation patches — subtle colour breaks
+      [
+        { r: 18, c: 0x0e0a1e, y: 0.003 },
+        { r: 9, c: 0x0c0a1a, y: 0.004 },
+        { r: 38, c: 0x080614, y: 0.001 },
+      ].forEach(({ r, c, y }) => {
+        const m = new THREE.Mesh(
+          new THREE.CircleGeometry(r, 48),
+          new THREE.MeshStandardMaterial({ color: c, roughness: 1 }),
+        );
+        m.rotation.x = -Math.PI / 2;
+        m.position.y = y;
+        m.receiveShadow = true;
+        scene.add(m);
+      });
+
+      // Subtle puddle / oil-slick spots (wet-ground feel)
+      for (let p = 0; p < 18; p++) {
+        const ang = Math.random() * Math.PI * 2;
+        const rad = 4 + Math.random() * 20;
+        const pw = 0.8 + Math.random() * 2.2;
+        const puddle = new THREE.Mesh(
+          new THREE.CircleGeometry(pw, 8),
+          new THREE.MeshStandardMaterial({
+            color: 0x121020,
+            roughness: 0.05,
+            metalness: 0.55,
+          }),
+        );
+        puddle.rotation.x = -Math.PI / 2;
+        puddle.position.set(Math.cos(ang) * rad, 0.005, Math.sin(ang) * rad);
+        scene.add(puddle);
       }
-      makeHexGrid(30, 8, 0xc8a84b);
+
+      // ═══════════════════════════════════════════════════════════════
+      //  HORIZON GLOW — warm amber city light pollution at base of sky
+      // ═══════════════════════════════════════════════════════════════
+      (function makeHorizonGlow() {
+        const cvs = document.createElement("canvas");
+        cvs.width = 4;
+        cvs.height = 256;
+        const ctx = cvs.getContext("2d");
+        const grad = ctx.createLinearGradient(0, 256, 0, 0);
+        grad.addColorStop(0.0, "rgba(140, 60, 200, 0.45)"); // deep violet base
+        grad.addColorStop(0.08, "rgba(200, 90, 30, 0.35)"); // warm amber band
+        grad.addColorStop(0.22, "rgba(80, 30, 120, 0.18)"); // purple mid
+        grad.addColorStop(0.55, "rgba(20, 10, 40,  0.06)"); // near transparent
+        grad.addColorStop(1.0, "rgba(0,  0,  0,   0.0)");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 4, 256);
+        const tex = new THREE.CanvasTexture(cvs);
+
+        const mat = new THREE.MeshBasicMaterial({
+          map: tex,
+          side: THREE.BackSide,
+          transparent: true,
+          depthWrite: false,
+          fog: false,
+        });
+        const geo = new THREE.CylinderGeometry(92, 92, 28, 48, 1, true);
+        const glow = new THREE.Mesh(geo, mat);
+        glow.position.y = -2;
+        scene.add(glow);
+      })();
 
       // ═══════════════════════════════════════════════════════════════
       //  ROAD NETWORK
       // ═══════════════════════════════════════════════════════════════
       const roadMat = new THREE.MeshStandardMaterial({
-        color: 0x0e1020,
-        roughness: 0.93,
+        color: 0x282830, // was 0x1f1f1f — slightly lighter, reads at night
+        roughness: 0.88,
+        metalness: 0.08,
+        emissive: 0x080810,
+        emissiveIntensity: 0.4,
       });
       const swMat = new THREE.MeshStandardMaterial({
         color: 0x181a2c,
@@ -2218,37 +2486,62 @@
       //  DISTANT SKYLINE
       // ═══════════════════════════════════════════════════════════════
       function makeDistantSkyline() {
-        for (let i = 0; i < 28; i++) {
-          const ang = (i / 28) * Math.PI * 2;
-          const r = 36 + Math.random() * 12;
-          const h = 2.5 + Math.random() * 8;
-          const w = 1.4 + Math.random() * 2.8;
-          const geo = new THREE.BoxGeometry(w, h, w * 0.7);
+        const skylineColors = [
+          0x070510, 0x060812, 0x080610, 0x050814, 0x0a0608,
+        ];
+        for (let i = 0; i < 42; i++) {
+          const ang = (i / 42) * Math.PI * 2 + (Math.random() - 0.5) * 0.12;
+          const r = 33 + Math.random() * 16;
+          const h = 1.8 + Math.random() * 11;
+          const w = 1.0 + Math.random() * 3.2;
+          const ci = Math.floor(Math.random() * skylineColors.length);
+          const geo = new THREE.BoxGeometry(w, h, w * 0.65);
           const mat = new THREE.MeshStandardMaterial({
-            color: 0x0a0818,
+            color: skylineColors[ci],
             roughness: 1,
             metalness: 0,
           });
           const m = new THREE.Mesh(geo, mat);
           m.position.set(Math.cos(ang) * r, h / 2 - 0.5, Math.sin(ang) * r);
-          m.rotation.y = ang;
+          m.rotation.y = ang + (Math.random() - 0.5) * 0.3;
           scene.add(m);
-          // Sparse lit windows
-          const wc = Math.floor(Math.random() * 5);
-          const wG = new THREE.BoxGeometry(0.09, 0.13, 0.02);
-          for (let j = 0; j < wc; j++) {
+
+          // Lit windows (denser on taller buildings)
+          const wCount = Math.floor((h / 2) * (0.5 + Math.random()));
+          const wG = new THREE.BoxGeometry(0.09, 0.14, 0.02);
+          const winColors = [0xffcc44, 0xaadcff, 0xffeeb8, 0x88aaff];
+          for (let j = 0; j < wCount; j++) {
+            const wc = new THREE.Color(
+              winColors[Math.floor(Math.random() * winColors.length)],
+            );
             const wm = new THREE.MeshStandardMaterial({
-              color: 0xffcc66,
-              emissive: 0xffcc44,
-              emissiveIntensity: 2.2,
+              color: wc,
+              emissive: wc,
+              emissiveIntensity: 2.0 + Math.random(),
             });
             const ww = new THREE.Mesh(wG, wm);
             ww.position.set(
-              (Math.random() - 0.5) * w * 0.7,
-              (Math.random() - 0.5) * h * 0.75,
-              w * 0.36,
+              (Math.random() - 0.5) * w * 0.72,
+              (Math.random() - 0.5) * h * 0.78,
+              w * 0.34,
             );
             m.add(ww);
+            registerWindow(ww, winColors[0], `sky_${i}_${j}`, undefined);
+          }
+
+          // Occasional antenna on tall distant buildings
+          if (h > 7 && Math.random() > 0.55) {
+            const antH = 0.5 + Math.random() * 1.2;
+            const ant = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.04, 0.06, antH, 5),
+              new THREE.MeshStandardMaterial({
+                color: 0xb0b8c0,
+                roughness: 0.5,
+                metalness: 0.5,
+              }),
+            );
+            ant.position.set(0, h / 2 + antH / 2, 0);
+            m.add(ant);
           }
         }
       }
@@ -2257,13 +2550,19 @@
       // ═══════════════════════════════════════════════════════════════
       //  HELPER: MATERIALS + LAMP
       // ═══════════════════════════════════════════════════════════════
-      function makeMat(color, emissive, intensity = 0.2, roughness = 0.62) {
+      function makeMat(
+        color,
+        emissive,
+        intensity = 0.18,
+        roughness = 0.72,
+        metalness = 0.14,
+      ) {
         return new THREE.MeshStandardMaterial({
           color,
           emissive,
           emissiveIntensity: intensity,
-          roughness,
-          metalness: 0.18,
+          roughness: roughness + (Math.random() - 0.5) * 0.08,
+          metalness: metalness,
         });
       }
 
@@ -2293,81 +2592,406 @@
       }
 
       // ═══════════════════════════════════════════════════════════════
-      //  WINDOW GRID
+      //  WINDOW GRID — AAA version with frames, depth, floor grouping
       // ═══════════════════════════════════════════════════════════════
-      function addWindowGrid(group, bw, bh, bd, colorHex, floors) {
-        const baseC = new THREE.Color(colorHex);
+      function addWindowGrid(
+        group,
+        bw,
+        bh,
+        bd,
+        colorHex,
+        floors,
+        windowTintHex,
+        districtIdx,
+      ) {
+        const baseC = new THREE.Color(windowTintHex || colorHex);
         const floorH = bh / floors;
-        const wH = floorH * 0.5;
+        const wH = floorH * 0.48;
+        const inset = 0.055;
+
         const faces = [
           { axis: "z", dir: 1, span: bw, depth: bd },
           { axis: "z", dir: -1, span: bw, depth: bd },
           { axis: "x", dir: 1, span: bd, depth: bw },
           { axis: "x", dir: -1, span: bd, depth: bw },
         ];
-        faces.forEach((face) => {
-          const cols = Math.max(2, Math.floor(face.span / 0.44));
+
+        faces.forEach((face, faceIdx) => {
+          const cols = Math.max(2, Math.floor(face.span / 0.42));
           const colStep = face.span / (cols + 1);
-          const wW = Math.min(0.22, colStep * 0.72);
-          const halfDepth = (face.axis === "z" ? bd : bw) / 2 + 0.042;
+          const wW = Math.min(0.2, colStep * 0.68);
+          const halfDepth = (face.axis === "z" ? bd : bw) / 2;
+          const wallFace = halfDepth + 0.005;
+          const glassZ = halfDepth - inset + 0.005;
+
           for (let fl = 0; fl < floors; fl++) {
+            if (fl === 0 && Math.random() > 0.3) continue;
+
+            // Unique key per district + floor (face ignored — whole floor moves together)
+            const floorKey = `d${districtIdx}_f${fl}`;
+
             for (let col = 0; col < cols; col++) {
+              const offset = -face.span / 2 + colStep * (col + 1);
+              const y = fl * floorH + floorH * 0.25 + wH / 2;
+
+              // Window frame
+              const fW = wW + 0.045,
+                fH = wH + 0.045;
+              const frameMat = new THREE.MeshStandardMaterial({
+                color: 0x0a0c14,
+                roughness: 0.95,
+                metalness: 0.05,
+              });
+              const fGeo =
+                face.axis === "z"
+                  ? new THREE.BoxGeometry(fW, fH, 0.025)
+                  : new THREE.BoxGeometry(0.025, fH, fW);
+              const frame = new THREE.Mesh(fGeo, frameMat);
+              if (face.axis === "z")
+                frame.position.set(offset, y, face.dir * wallFace);
+              else frame.position.set(face.dir * wallFace, y, offset);
+              group.add(frame);
+
+              // Window glass
               const r2 = Math.random();
               let wC;
-              if (r2 > 0.75)
-                wC = baseC.clone().lerp(new THREE.Color(0xfff0cc), 0.45);
-              else if (r2 > 0.55)
-                wC = baseC.clone().lerp(new THREE.Color(0xaad4ff), 0.35);
-              else wC = baseC.clone().lerp(new THREE.Color(0xffffff), 0.25);
-              const wg =
+              if (r2 > 0.72)
+                wC = baseC.clone().lerp(new THREE.Color(0xfff2cc), 0.6);
+              else if (r2 > 0.52)
+                wC = baseC.clone().lerp(new THREE.Color(0xaad8ff), 0.5);
+              else if (r2 > 0.3)
+                wC = baseC.clone().lerp(new THREE.Color(0xffffff), 0.3);
+              else if (r2 > 0.2) wC = new THREE.Color(0x1530a0);
+              else wC = new THREE.Color(0x060810);
+
+              const wGeo =
                 face.axis === "z"
-                  ? new THREE.BoxGeometry(wW, wH, 0.048)
-                  : new THREE.BoxGeometry(0.048, wH, wW);
-              const wm = new THREE.MeshStandardMaterial({
+                  ? new THREE.BoxGeometry(wW, wH, 0.012)
+                  : new THREE.BoxGeometry(0.012, wH, wW);
+              const wMat = new THREE.MeshStandardMaterial({
                 color: wC,
                 emissive: wC,
-                emissiveIntensity: 1.2,
-                roughness: 0.08,
-                metalness: 0.35,
+                emissiveIntensity: r2 > 0.2 ? 1.4 + Math.random() * 0.4 : 0,
+                roughness: 0.04,
+                metalness: 0.2,
               });
-              wm.emissive = wC.clone();
-              const w = new THREE.Mesh(wg, wm);
-              const offset = -face.span / 2 + colStep * (col + 1);
-              const y = fl * floorH + floorH * 0.28 + wH / 2;
+              wMat.emissive = wC.clone();
+              const w = new THREE.Mesh(wGeo, wMat);
               if (face.axis === "z")
-                w.position.set(offset, y, face.dir * halfDepth);
-              else w.position.set(face.dir * halfDepth, y, offset);
+                w.position.set(offset, y, face.dir * glassZ);
+              else w.position.set(face.dir * glassZ, y, offset);
               group.add(w);
-              registerWindow(w, colorHex);
+              registerWindow(
+                w,
+                windowTintHex || colorHex,
+                floorKey,
+                districtIdx,
+              );
+
+              // Windowsill
+              if (fl > 0) {
+                const sillW = wW + 0.06;
+                const sillMat = new THREE.MeshStandardMaterial({
+                  color: 0x1a1c28,
+                  roughness: 0.9,
+                });
+                const sillGeo =
+                  face.axis === "z"
+                    ? new THREE.BoxGeometry(sillW, 0.025, 0.06)
+                    : new THREE.BoxGeometry(0.06, 0.025, sillW);
+                const sill = new THREE.Mesh(sillGeo, sillMat);
+                if (face.axis === "z")
+                  sill.position.set(
+                    offset,
+                    y - wH / 2 - 0.012,
+                    face.dir * (wallFace + 0.02),
+                  );
+                else
+                  sill.position.set(
+                    face.dir * (wallFace + 0.02),
+                    y - wH / 2 - 0.012,
+                    offset,
+                  );
+                group.add(sill);
+              }
             }
-          }
-          // floor reveals
-          for (let fl2 = 1; fl2 < floors; fl2++) {
-            const fc = baseC.clone().multiplyScalar(0.18);
-            const fg =
-              face.axis === "z"
-                ? new THREE.BoxGeometry(face.span, 0.035, 0.018)
-                : new THREE.BoxGeometry(0.018, 0.035, face.span);
-            const fmesh = new THREE.Mesh(
-              fg,
-              new THREE.MeshStandardMaterial({ color: fc, roughness: 0.95 }),
-            );
-            const hd = (face.axis === "z" ? bd : bw) / 2 + 0.008;
-            if (face.axis === "z")
-              fmesh.position.set(0, fl2 * floorH, face.dir * hd);
-            else fmesh.position.set(face.dir * hd, fl2 * floorH, 0);
-            group.add(fmesh);
+
+            // Floor separation band
+            if (fl > 0) {
+              const bandC = new THREE.Color(colorHex).multiplyScalar(0.22);
+              const bGeo =
+                face.axis === "z"
+                  ? new THREE.BoxGeometry(face.span, 0.032, 0.018)
+                  : new THREE.BoxGeometry(0.018, 0.032, face.span);
+              const bMesh = new THREE.Mesh(
+                bGeo,
+                new THREE.MeshStandardMaterial({
+                  color: bandC,
+                  roughness: 0.96,
+                }),
+              );
+              const hd = (face.axis === "z" ? bd : bw) / 2 + 0.01;
+              if (face.axis === "z")
+                bMesh.position.set(0, fl * floorH, face.dir * hd);
+              else bMesh.position.set(face.dir * hd, fl * floorH, 0);
+              group.add(bMesh);
+            }
           }
         });
       }
 
       // ═══════════════════════════════════════════════════════════════
-      //  BUILDINGS
+      //  ROOFTOP PROPS — universal system for all buildings
+      // ═══════════════════════════════════════════════════════════════
+      function addRoofProps(group, bw, bd, bh, bc) {
+        const metalMat = new THREE.MeshStandardMaterial({
+          color: 0x6a7880,
+          roughness: 0.65,
+          metalness: 0.4,
+        });
+        const pipeMat = new THREE.MeshStandardMaterial({
+          color: 0x484858,
+          roughness: 0.8,
+        });
+        const boxMat = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(bc.color).multiplyScalar(0.7),
+          roughness: 0.88,
+        });
+
+        // AC units (every building gets some)
+        const acCount = 1 + Math.floor(Math.random() * 4);
+        for (let i = 0; i < acCount; i++) {
+          const px = (Math.random() - 0.5) * bw * 0.75;
+          const pz = (Math.random() - 0.5) * bd * 0.75;
+          const acGrp = new THREE.Group();
+          // AC box
+          const acBox = new THREE.Mesh(
+            new THREE.BoxGeometry(
+              0.32 + Math.random() * 0.12,
+              0.16,
+              0.24 + Math.random() * 0.08,
+            ),
+            new THREE.MeshStandardMaterial({
+              color: 0x8898a8,
+              roughness: 0.6,
+              metalness: 0.3,
+            }),
+          );
+          acBox.position.set(0, 0.08, 0);
+          acGrp.add(acBox);
+          // Fan grill
+          const fanMesh = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.09, 0.09, 0.022, 8),
+            new THREE.MeshStandardMaterial({
+              color: 0x9ab8cc,
+              emissive: 0x304060,
+              emissiveIntensity: 0.25,
+              roughness: 0.3,
+            }),
+          );
+          fanMesh.position.set(0, 0.18, 0);
+          acGrp.add(fanMesh);
+          acGrp.position.set(px, bh + 0.01, pz);
+          group.add(acGrp);
+        }
+
+        // Utility boxes / electrical panels
+        if (Math.random() > 0.4) {
+          const bxW = 0.22 + Math.random() * 0.18;
+          const bxH = 0.18 + Math.random() * 0.14;
+          const box = new THREE.Mesh(
+            new THREE.BoxGeometry(bxW, bxH, 0.14),
+            boxMat,
+          );
+          box.position.set(
+            (Math.random() - 0.5) * bw * 0.6,
+            bh + bxH / 2,
+            (Math.random() - 0.5) * bd * 0.6,
+          );
+          box.rotation.y = (Math.random() - 0.5) * 0.4;
+          group.add(box);
+        }
+
+        // Pipes (vertical)
+        const pipeCount = 1 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < pipeCount; i++) {
+          const ph = 0.2 + Math.random() * 0.5;
+          const pipe = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.028, 0.028, ph, 6),
+            pipeMat,
+          );
+          pipe.position.set(
+            (Math.random() - 0.5) * bw * 0.8,
+            bh + ph / 2,
+            (Math.random() - 0.5) * bd * 0.8,
+          );
+          group.add(pipe);
+          // Pipe cap
+          const cap = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.045, 0.045, 0.03, 6),
+            pipeMat,
+          );
+          cap.position.set(pipe.position.x, bh + ph + 0.015, pipe.position.z);
+          group.add(cap);
+        }
+
+        // Roof edge parapet / coping
+        const parapetMat = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(bc.color).multiplyScalar(0.55),
+          roughness: 0.9,
+        });
+        const pH = 0.12,
+          pT = 0.08;
+        [
+          // N, S, E, W strips
+          { w: bw + pT * 2, d: pT, x: 0, z: bd / 2 + pT / 2 },
+          { w: bw + pT * 2, d: pT, x: 0, z: -bd / 2 - pT / 2 },
+          { w: pT, d: bd, x: bw / 2 + pT / 2, z: 0 },
+          { w: pT, d: bd, x: -bw / 2 - pT / 2, z: 0 },
+        ].forEach((s) => {
+          const pm = new THREE.Mesh(
+            new THREE.BoxGeometry(s.w, pH, s.d),
+            parapetMat,
+          );
+          pm.position.set(s.x, bh + pH / 2, s.z);
+          group.add(pm);
+        });
+
+        // Water tank (50% chance on wider buildings)
+        if (
+          (bc.type === "wide" ||
+            bc.type === "block" ||
+            bc.type === "monolith") &&
+          Math.random() > 0.45
+        ) {
+          const wtm = new THREE.MeshStandardMaterial({
+            color: 0x5a4a30,
+            roughness: 0.82,
+          });
+          const tank = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.26, 0.3, 0.55, 8),
+            wtm,
+          );
+          tank.position.set(bw * 0.22, bh + 0.36, bd * 0.1);
+          group.add(tank);
+          const cap2 = new THREE.Mesh(
+            new THREE.ConeGeometry(0.3, 0.22, 8),
+            wtm,
+          );
+          cap2.position.set(bw * 0.22, bh + 0.72, bd * 0.1);
+          group.add(cap2);
+          // Tank legs
+          for (let leg = 0; leg < 4; leg++) {
+            const a2 = (leg / 4) * Math.PI * 2;
+            const lg = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.022, 0.022, 0.36, 5),
+              new THREE.MeshStandardMaterial({
+                color: 0x303030,
+                roughness: 0.9,
+              }),
+            );
+            lg.position.set(
+              bw * 0.22 + Math.cos(a2) * 0.22,
+              bh + 0.2,
+              bd * 0.1 + Math.sin(a2) * 0.22,
+            );
+            group.add(lg);
+          }
+        }
+
+        // Antenna / telecom mast (tall buildings)
+        if (
+          (bc.type === "tower" || bc.type === "slim") &&
+          Math.random() > 0.35
+        ) {
+          const antH = 0.4 + Math.random() * 0.5;
+          const antMat = new THREE.MeshStandardMaterial({
+            color: 0xb0b8c0,
+            roughness: 0.4,
+            metalness: 0.6,
+          });
+          const ant = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.018, 0.025, antH, 6),
+            antMat,
+          );
+          ant.position.set(
+            (Math.random() - 0.5) * bw * 0.3,
+            bh + antH / 2,
+            (Math.random() - 0.5) * bd * 0.3,
+          );
+          group.add(ant);
+          // Blink light
+          const blinkC = new THREE.Color(bc.trim);
+          const blink = new THREE.Mesh(
+            new THREE.SphereGeometry(0.06, 6, 4),
+            new THREE.MeshStandardMaterial({
+              color: blinkC,
+              emissive: blinkC,
+              emissiveIntensity: 2.5,
+            }),
+          );
+          blink.position.set(ant.position.x, bh + antH + 0.06, ant.position.z);
+          blink.userData = { blink: true, phase: Math.random() * Math.PI * 2 };
+          group.add(blink);
+        }
+
+        // Satellite dish (block buildings)
+        if (bc.type === "block" && Math.random() > 0.3) {
+          const dishMat = new THREE.MeshStandardMaterial({
+            color: 0xd0d8e0,
+            roughness: 0.5,
+            side: THREE.DoubleSide,
+          });
+          const dish = new THREE.Mesh(
+            new THREE.SphereGeometry(0.2, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2),
+            dishMat,
+          );
+          dish.rotation.x = Math.PI * 0.28 + (Math.random() - 0.5) * 0.4;
+          dish.rotation.y = Math.random() * Math.PI * 2;
+          dish.position.set(bw * 0.22, bh + 0.04, bd * 0.1);
+          group.add(dish);
+          const stem = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.025, 0.025, 0.3, 5),
+            new THREE.MeshStandardMaterial({ color: 0x888898, roughness: 0.7 }),
+          );
+          stem.position.set(bw * 0.22, bh - 0.1, bd * 0.1);
+          group.add(stem);
+        }
+
+        // Rooftop greenery (complex type)
+        if (bc.type === "complex" && Math.random() > 0.25) {
+          for (let gp = 0; gp < 3 + Math.floor(Math.random() * 3); gp++) {
+            const gpM = new THREE.Mesh(
+              new THREE.BoxGeometry(
+                0.35 + Math.random() * 0.25,
+                0.07,
+                0.35 + Math.random() * 0.25,
+              ),
+              new THREE.MeshStandardMaterial({
+                color: 0x2a7a3a,
+                emissive: 0x0a3010,
+                emissiveIntensity: 0.15,
+                roughness: 0.92,
+              }),
+            );
+            gpM.position.set(
+              (Math.random() - 0.5) * bw * 0.65,
+              bh + 0.05,
+              (Math.random() - 0.5) * bd * 0.65,
+            );
+            group.add(gpM);
+          }
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      //  BUILDINGS — AAA quality
       // ═══════════════════════════════════════════════════════════════
       const clickables = [];
       const buildingBodies = {};
-      const elevatorMeshes = []; // {mesh, min, max, speed, dir}
-      const allWireMeshes = []; // for wire sway
+      const elevatorMeshes = [];
+      const allWireMeshes = [];
+      const ringMeshes = []; // stored for O(1) animation — no scene.traverse
 
       DISTRICTS.forEach((d, idx) => {
         const bc = BCONFIG[idx];
@@ -2375,29 +2999,61 @@
         const [px, , pz] = d.pos;
         const mainColor = new THREE.Color(bc.color);
         const trimColor = new THREE.Color(bc.trim);
-        const darkColor = mainColor.clone().multiplyScalar(0.4);
         const floorH = 0.9;
+
+        // Slight imperfection: micro-rotation on some buildings
+        if (Math.random() > 0.5)
+          group.rotation.y = (Math.random() - 0.5) * 0.06;
+
         const bw =
           bc.type === "wide" || bc.type === "monolith"
-            ? 3.5
+            ? 3.6
             : bc.type === "complex"
               ? 3.0
               : bc.type === "slim"
-                ? 1.4
-                : 2.0;
+                ? 1.35
+                : 2.1;
         const bd =
           bc.type === "wide" || bc.type === "monolith"
-            ? 3.0
+            ? 3.1
             : bc.type === "complex"
-              ? 3.0
-              : 1.8;
+              ? 2.9
+              : 1.9;
         const bh = bc.floors * floorH;
 
-        // Body — slight random offset for realism
-        const offsetX = (Math.random() - 0.5) * 0.06;
-        const offsetZ = (Math.random() - 0.5) * 0.06;
+        // — BASE PLATFORM (stepped, 2 layers for depth) —
+        const base2 = new THREE.Mesh(
+          new THREE.BoxGeometry(bw + 1.0, 0.12, bd + 1.0),
+          new THREE.MeshStandardMaterial({
+            color: mainColor.clone().multiplyScalar(0.32),
+            roughness: 0.96,
+          }),
+        );
+        base2.position.y = 0.06;
+        base2.receiveShadow = true;
+        group.add(base2);
+        const base1 = new THREE.Mesh(
+          new THREE.BoxGeometry(bw + 0.55, 0.18, bd + 0.55),
+          new THREE.MeshStandardMaterial({
+            color: mainColor.clone().multiplyScalar(0.44),
+            roughness: 0.88,
+          }),
+        );
+        base1.position.y = 0.14;
+        base1.receiveShadow = true;
+        group.add(base1);
+
+        // — BODY — slight position offset for imperfection
+        const offsetX = (Math.random() - 0.5) * 0.07;
+        const offsetZ = (Math.random() - 0.5) * 0.07;
+        const bodyMat = new THREE.MeshStandardMaterial({
+          color: mainColor,
+          roughness: bc.roughness,
+          metalness: bc.metalness,
+          emissive: mainColor.clone().multiplyScalar(0.15),
+          emissiveIntensity: 0.18,
+        });
         const bodyGeo = new THREE.BoxGeometry(bw, bh, bd);
-        const bodyMat = makeMat(mainColor, darkColor, 0.18, 0.62);
         const body = new THREE.Mesh(bodyGeo, bodyMat);
         body.position.set(offsetX, bh / 2, offsetZ);
         body.castShadow = true;
@@ -2406,37 +3062,95 @@
         group.add(body);
         clickables.push(body);
 
-        // Floor lines
-        for (let f = 1; f < bc.floors; f++) {
-          const lm = new THREE.Mesh(
-            new THREE.BoxGeometry(bw + 0.02, 0.05, bd + 0.02),
+        // — CORNICE / TOP LEDGE —
+        const corniceH = 0.1;
+        const cornice = new THREE.Mesh(
+          new THREE.BoxGeometry(bw + 0.18, corniceH, bd + 0.18),
+          new THREE.MeshStandardMaterial({
+            color: trimColor.clone().multiplyScalar(0.4),
+            roughness: 0.75,
+          }),
+        );
+        cornice.position.set(offsetX, bh - corniceH / 2, offsetZ);
+        group.add(cornice);
+
+        // — SETBACK UPPER SECTION (tower types get a skinnier top section) —
+        if ((bc.type === "tower" || bc.type === "slim") && bc.floors >= 6) {
+          const topFloors = Math.floor(bc.floors * 0.3);
+          const topH = topFloors * floorH;
+          const sBw = bw * 0.72,
+            sBd = bd * 0.72;
+          const setbackMat = new THREE.MeshStandardMaterial({
+            color: mainColor.clone().lerp(new THREE.Color(0x000000), 0.15),
+            roughness: bc.roughness * 0.85,
+            metalness: bc.metalness * 1.2,
+          });
+          const setback = new THREE.Mesh(
+            new THREE.BoxGeometry(sBw, topH, sBd),
+            setbackMat,
+          );
+          setback.position.set(offsetX, bh + topH / 2, offsetZ);
+          setback.castShadow = true;
+          setback.userData = { districtIdx: idx };
+          group.add(setback);
+          clickables.push(setback);
+          // Setback ledge
+          const sLedge = new THREE.Mesh(
+            new THREE.BoxGeometry(sBw + 0.22, 0.09, sBd + 0.22),
             new THREE.MeshStandardMaterial({
-              color: trimColor.clone().multiplyScalar(0.28),
+              color: trimColor.clone().multiplyScalar(0.35),
+              roughness: 0.8,
             }),
           );
-          lm.position.set(offsetX, f * floorH, offsetZ);
-          group.add(lm);
+          sLedge.position.set(offsetX, bh - 0.045, offsetZ);
+          group.add(sLedge);
+          // Add windows to the setback too (using a sub-group)
+          const sbGrp = new THREE.Group();
+          sbGrp.position.set(offsetX, bh, offsetZ);
+          group.add(sbGrp);
+          addWindowGrid(
+            sbGrp,
+            sBw,
+            topH,
+            sBd,
+            bc.trim,
+            topFloors,
+            bc.windowTint,
+            idx,
+          );
         }
 
-        // Wings
+        // — WINGS (complex type) —
         if (bc.type === "complex") {
           const wing = new THREE.Mesh(
-            new THREE.BoxGeometry(1.2, bh * 0.6, bd),
+            new THREE.BoxGeometry(1.1, bh * 0.62, bd),
             bodyMat.clone(),
           );
-          wing.position.set(bw / 2 + 0.6, bh * 0.3, 0);
+          wing.position.set(bw / 2 + 0.55, bh * 0.31, 0);
           wing.castShadow = true;
           wing.userData = { districtIdx: idx };
           group.add(wing);
           clickables.push(wing);
+          // Wing cornice
+          const wc = new THREE.Mesh(
+            new THREE.BoxGeometry(1.1 + 0.12, 0.08, bd + 0.12),
+            new THREE.MeshStandardMaterial({
+              color: trimColor.clone().multiplyScalar(0.38),
+              roughness: 0.78,
+            }),
+          );
+          wc.position.set(bw / 2 + 0.55, bh * 0.62 - 0.04, 0);
+          group.add(wc);
         }
+
+        // — MONOLITH WINGS —
         if (bc.type === "monolith") {
           [-1, 1].forEach((side) => {
             const w = new THREE.Mesh(
-              new THREE.BoxGeometry(1.2, bh * 0.8, bd * 0.8),
+              new THREE.BoxGeometry(1.1, bh * 0.85, bd * 0.82),
               bodyMat.clone(),
             );
-            w.position.set(side * (bw / 2 + 0.6), bh * 0.4, 0);
+            w.position.set(side * (bw / 2 + 0.55), bh * 0.425, 0);
             w.castShadow = true;
             w.userData = { districtIdx: idx };
             group.add(w);
@@ -2444,266 +3158,186 @@
           });
         }
 
-        // Roof
-        const roofMat = makeMat(
-          trimColor.clone().multiplyScalar(0.55),
-          darkColor,
-          0.28,
-        );
+        // — LOBBY BASE (ground floor glazing on tall buildings) —
+        if (bc.floors >= 5) {
+          const lobbyMat = new THREE.MeshStandardMaterial({
+            color: new THREE.Color(bc.trim).multiplyScalar(0.12),
+            roughness: 0.15,
+            metalness: 0.45,
+            transparent: true,
+            opacity: 0.85,
+          });
+          const lobby = new THREE.Mesh(
+            new THREE.BoxGeometry(bw + 0.01, floorH * 0.85, bd + 0.01),
+            lobbyMat,
+          );
+          lobby.position.set(offsetX, floorH * 0.425, offsetZ);
+          group.add(lobby);
+          // Lobby entrance strip light
+          const stripMat = new THREE.MeshStandardMaterial({
+            color: bc.trim,
+            emissive: new THREE.Color(bc.trim),
+            emissiveIntensity: 1.8,
+          });
+          const strip = new THREE.Mesh(
+            new THREE.BoxGeometry(bw * 0.55, 0.055, 0.025),
+            stripMat,
+          );
+          strip.position.set(
+            offsetX,
+            0.08,
+            pz < 0 ? bd / 2 + 0.038 : -(bd / 2 + 0.038),
+          );
+          group.add(strip);
+        }
+
+        // — ROOF —
+        const roofMat = new THREE.MeshStandardMaterial({
+          color: trimColor.clone().multiplyScalar(0.48),
+          roughness: bc.roughness * 1.05,
+          metalness: bc.metalness * 0.7,
+        });
+        const roofTopY =
+          (bc.type === "tower" || bc.type === "slim") && bc.floors >= 6
+            ? bh + Math.floor(bc.floors * 0.3) * floorH
+            : bh;
+
         if (bc.roofType === "pyramid") {
           const roof = new THREE.Mesh(
-            new THREE.ConeGeometry(Math.max(bw, bd) * 0.7, bh * 0.2, 4),
+            new THREE.ConeGeometry(Math.max(bw, bd) * 0.65, bh * 0.18, 4),
             roofMat,
           );
-          roof.position.y = bh + bh * 0.1;
+          roof.position.y = roofTopY + bh * 0.09;
           roof.rotation.y = Math.PI / 4;
           group.add(roof);
         } else if (bc.roofType === "stepped") {
-          [0.8, 0.6].forEach((scale, i) => {
+          [0.82, 0.62, 0.44].forEach((scale, i) => {
             const s = new THREE.Mesh(
-              new THREE.BoxGeometry(bw * scale, floorH * 0.4, bd * scale),
+              new THREE.BoxGeometry(bw * scale, floorH * 0.38, bd * scale),
               roofMat,
             );
-            s.position.y = bh + i * floorH * 0.4 + floorH * 0.2;
+            s.position.y = bh + i * floorH * 0.38 + floorH * 0.19;
             group.add(s);
           });
         } else if (bc.roofType === "antenna") {
           const am = new THREE.MeshStandardMaterial({
             color: trimColor,
             emissive: trimColor,
-            emissiveIntensity: 1,
+            emissiveIntensity: 1.2,
           });
           const ant = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.04, 0.04, bh * 0.25, 8),
+            new THREE.CylinderGeometry(0.03, 0.04, bh * 0.28, 8),
             am,
           );
-          ant.position.y = bh + bh * 0.12;
+          ant.position.y = roofTopY + bh * 0.14;
           group.add(ant);
           const blink = new THREE.Mesh(
-            new THREE.SphereGeometry(0.08, 8, 6),
+            new THREE.SphereGeometry(0.07, 8, 6),
             am.clone(),
           );
-          blink.position.y = bh + bh * 0.25;
+          blink.position.y = roofTopY + bh * 0.28 + 0.07;
           blink.userData = { blink: true, phase: Math.random() * Math.PI * 2 };
           group.add(blink);
         }
 
-        // Auth Tower special
+        // — AUTH TOWER SPECIAL —
         if (d.id === "auth-tower") {
           const spireMat = new THREE.MeshStandardMaterial({
             color: 0xffe080,
             emissive: 0xc8a84b,
-            emissiveIntensity: 1.5,
+            emissiveIntensity: 1.8,
           });
           const spire = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.05, 0.2, bh * 0.4, 8),
+            new THREE.CylinderGeometry(0.04, 0.18, bh * 0.42, 8),
             spireMat,
           );
-          spire.position.y = bh + bh * 0.2;
+          spire.position.y = bh + bh * 0.21;
           group.add(spire);
           const orb = new THREE.Mesh(
-            new THREE.SphereGeometry(0.25, 16, 12),
+            new THREE.SphereGeometry(0.22, 16, 12),
             new THREE.MeshStandardMaterial({
               color: 0xffe080,
               emissive: 0xc8a84b,
-              emissiveIntensity: 3,
-              roughness: 0.1,
+              emissiveIntensity: 3.5,
+              roughness: 0.06,
             }),
           );
-          orb.position.y = bh + bh * 0.4 + 0.25;
+          orb.position.y = bh + bh * 0.42 + 0.22;
           group.add(orb);
           for (let r = 0; r < 3; r++) {
             const ring = new THREE.Mesh(
-              new THREE.TorusGeometry(0.5 + r * 0.3, 0.02, 8, 32),
+              new THREE.TorusGeometry(0.48 + r * 0.28, 0.018, 8, 32),
               new THREE.MeshStandardMaterial({
                 color: 0xc8a84b,
                 emissive: 0xc8a84b,
-                emissiveIntensity: 0.5,
+                emissiveIntensity: 0.6,
                 transparent: true,
-                opacity: 0.4 - r * 0.1,
+                opacity: 0.38 - r * 0.08,
               }),
             );
-            ring.position.y = bh + bh * 0.25;
+            ring.position.y = bh + bh * 0.26;
             ring.rotation.x = Math.PI / 2;
             ring.userData = {
               ring: true,
-              speed: 0.3 + r * 0.2,
+              speed: 0.28 + r * 0.18,
               phase: (r * Math.PI) / 3,
             };
             group.add(ring);
+            ringMeshes.push(ring);
           }
         }
-
-        // Rooftop props
-        if (bc.type === "wide" || bc.type === "monolith") {
-          const wtm = new THREE.MeshStandardMaterial({
-            color: 0x5a4a30,
-            roughness: 0.8,
-          });
-          const wt = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.28, 0.32, 0.6, 8),
-            wtm,
-          );
-          wt.position.set(bw * 0.25, bh + 0.38, 0);
-          group.add(wt);
-          const wtc = new THREE.Mesh(
-            new THREE.ConeGeometry(0.32, 0.25, 8),
-            wtm,
-          );
-          wtc.position.set(bw * 0.25, bh + 0.82, 0);
-          group.add(wtc);
-          for (let leg = 0; leg < 4; leg++) {
-            const a2 = (leg / 4) * Math.PI * 2;
-            const lg = new THREE.Mesh(
-              new THREE.CylinderGeometry(0.025, 0.025, 0.4, 6),
-              new THREE.MeshStandardMaterial({
-                color: 0x303030,
-                roughness: 0.9,
-              }),
-            );
-            lg.position.set(
-              bw * 0.25 + Math.cos(a2) * 0.24,
-              bh + 0.22,
-              Math.sin(a2) * 0.24,
-            );
-            group.add(lg);
-          }
-        }
-        if (bc.type === "tower" || bc.type === "slim") {
-          for (let ac = 0; ac < 3; ac++) {
-            const acMesh = new THREE.Mesh(
-              new THREE.BoxGeometry(0.35, 0.18, 0.28),
-              new THREE.MeshStandardMaterial({
-                color: 0x7a8898,
-                roughness: 0.7,
-              }),
-            );
-            acMesh.position.set(
-              -bw / 2 + 0.3 + ac * 0.45,
-              bh + 0.1,
-              bd / 2 - 0.2,
-            );
-            group.add(acMesh);
-            const fan = new THREE.Mesh(
-              new THREE.BoxGeometry(0.22, 0.02, 0.22),
-              new THREE.MeshStandardMaterial({
-                color: 0x9ab8cc,
-                emissive: 0x304060,
-                emissiveIntensity: 0.4,
-                roughness: 0.3,
-              }),
-            );
-            fan.position.set(
-              -bw / 2 + 0.3 + ac * 0.45,
-              bh + 0.19,
-              bd / 2 - 0.2,
-            );
-            group.add(fan);
-          }
-        }
-        if (bc.type === "block") {
-          const dishMat = new THREE.MeshStandardMaterial({
-            color: 0xd0d0d0,
-            roughness: 0.5,
-            side: THREE.DoubleSide,
-          });
-          const dish = new THREE.Mesh(
-            new THREE.SphereGeometry(
-              0.22,
-              8,
-              6,
-              0,
-              Math.PI * 2,
-              0,
-              Math.PI / 2,
-            ),
-            dishMat,
-          );
-          dish.rotation.x = Math.PI / 4;
-          dish.position.set(bw * 0.2, bh + 0.05, 0);
-          group.add(dish);
-          const stem = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.03, 0.03, 0.35, 6),
-            new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.7 }),
-          );
-          stem.position.set(bw * 0.2, bh - 0.1, 0);
-          group.add(stem);
-        }
-        if (bc.type === "complex") {
-          for (let gp = 0; gp < 4; gp++) {
-            const gpM = new THREE.Mesh(
-              new THREE.BoxGeometry(
-                0.4 + Math.random() * 0.3,
-                0.08,
-                0.4 + Math.random() * 0.3,
-              ),
-              new THREE.MeshStandardMaterial({
-                color: 0x2a7a3a,
-                emissive: 0x0a3010,
-                emissiveIntensity: 0.2,
-                roughness: 0.9,
-              }),
-            );
-            gpM.position.set(
-              (Math.random() - 0.5) * bw * 0.7,
-              bh + 0.06,
-              (Math.random() - 0.5) * bd * 0.7,
-            );
-            group.add(gpM);
-          }
-        }
-
-        // Elevator light (on tall buildings)
         if (bc.floors >= 5) {
           const eColor = new THREE.Color(bc.trim).lerp(
             new THREE.Color(0xffffff),
-            0.4,
+            0.35,
           );
-          const elevGeo = new THREE.BoxGeometry(0.15, 0.28, 0.04);
           const elevMat = new THREE.MeshStandardMaterial({
             color: eColor,
             emissive: eColor,
-            emissiveIntensity: 2.2,
+            emissiveIntensity: 2.0,
             transparent: true,
-            opacity: 0.8,
+            opacity: 0.82,
           });
-          const elev = new THREE.Mesh(elevGeo, elevMat);
-          elev.position.set(bw / 2 + 0.025, bh * 0.3, 0);
+          const elev = new THREE.Mesh(
+            new THREE.BoxGeometry(0.13, 0.25, 0.038),
+            elevMat,
+          );
+          elev.position.set(bw / 2 + 0.022, bh * 0.3, 0);
           group.add(elev);
           elevatorMeshes.push({
             mesh: elev,
             min: floorH * 0.5,
             max: bh - floorH * 0.5,
-            speed: 0.28 + Math.random() * 0.38,
+            speed: 0.25 + Math.random() * 0.35,
             dir: 1,
           });
         }
 
-        // Windows
-        addWindowGrid(group, bw, bh, bd, bc.trim, bc.floors);
-
-        // Base platform
-        const base = new THREE.Mesh(
-          new THREE.BoxGeometry(bw + 0.6, 0.2, bd + 0.6),
-          new THREE.MeshStandardMaterial({
-            color: new THREE.Color(bc.color).multiplyScalar(0.48),
-            roughness: 0.8,
-          }),
+        // — WINDOWS —
+        addWindowGrid(
+          group,
+          bw,
+          bh,
+          bd,
+          bc.trim,
+          bc.floors,
+          bc.windowTint,
+          idx,
         );
-        base.position.y = 0.1;
-        base.receiveShadow = true;
-        group.add(base);
 
-        // Front sign strip
+        // — ROOF PROPS (universal) —
+        addRoofProps(group, bw, bd, bh, bc);
+
+        // — FRONT SIGN STRIP —
         const sign = new THREE.Mesh(
-          new THREE.BoxGeometry(bw * 0.7, 0.06, 0.3),
+          new THREE.BoxGeometry(bw * 0.65, 0.055, 0.28),
           new THREE.MeshStandardMaterial({
             color: bc.trim,
             emissive: bc.trim,
-            emissiveIntensity: 1.5,
+            emissiveIntensity: 1.6,
           }),
         );
-        sign.position.set(0, 0.22, bd / 2 + 0.4);
+        sign.position.set(0, 0.22, bd / 2 + 0.38);
         group.add(sign);
 
         group.position.set(px, 0, pz);
@@ -2713,8 +3347,157 @@
       });
 
       // ═══════════════════════════════════════════════════════════════
-      //  TREES
+      //  FILLER BUILDINGS — densify the city between districts
       // ═══════════════════════════════════════════════════════════════
+      (function addFillerBuildings() {
+        const fillerPositions = [
+          [-4, -9],
+          [4, -9],
+          [0, -11],
+          [-2, -7],
+          [2, -7],
+          [-9, -2],
+          [-9, 2],
+          [-11, 0],
+          [9, -2],
+          [9, 2],
+          [11, 0],
+          [-4, 10],
+          [4, 10],
+          [0, 12],
+          [-2, 8],
+          [2, 8],
+          [-6, -4],
+          [6, -4],
+          [-6, 6],
+          [6, 6],
+          [-14, -8],
+          [14, -8],
+          [-14, 6],
+          [14, 6],
+          [-8, -14],
+          [8, -14],
+          [0, -16],
+          [-5, -2],
+          [5, -2],
+          [-5, 4],
+          [5, 4],
+        ];
+        const fillerColors = [0x141420, 0x0e121c, 0x101828, 0x181218, 0x0c1410];
+        const fillerTrim = [0x3040a0, 0xa04030, 0x208040, 0x805010, 0x502080];
+
+        fillerPositions.forEach(([fx, fz]) => {
+          // Skip if too close to a main district
+          const tooClose = DISTRICTS.some((d) => {
+            const dx = d.pos[0] - fx,
+              dz = d.pos[2] - fz;
+            return Math.sqrt(dx * dx + dz * dz) < 3.8;
+          });
+          if (tooClose) return;
+
+          const ci = Math.floor(Math.random() * fillerColors.length);
+          const h = 1.2 + Math.random() * 5.5;
+          const w = 0.8 + Math.random() * 2.0;
+          const d2 = 0.8 + Math.random() * 1.6;
+          const fColor = new THREE.Color(fillerColors[ci]);
+          const fTrim = new THREE.Color(fillerTrim[ci % fillerTrim.length]);
+
+          const fg = new THREE.Group();
+          // Body
+          const fbMat = new THREE.MeshStandardMaterial({
+            color: fColor,
+            roughness: 0.88 + Math.random() * 0.08,
+            metalness: 0.05 + Math.random() * 0.15,
+          });
+          const fb = new THREE.Mesh(new THREE.BoxGeometry(w, h, d2), fbMat);
+          fb.position.y = h / 2;
+          fb.castShadow = true;
+          fb.receiveShadow = true;
+          fg.add(fb);
+
+          // Simple windows (sparse)
+          const wCount = 1 + Math.floor(Math.random() * 4);
+          for (let wi = 0; wi < wCount; wi++) {
+            const wx = (Math.random() - 0.5) * w * 0.7;
+            const wy = 0.3 + Math.random() * (h * 0.75);
+            const wMat = new THREE.MeshStandardMaterial({
+              color: fTrim,
+              emissive: fTrim,
+              emissiveIntensity:
+                Math.random() > 0.3 ? 1.2 + Math.random() * 0.6 : 0,
+              roughness: 0.05,
+            });
+            const wm = new THREE.Mesh(
+              new THREE.BoxGeometry(0.14, 0.18, 0.02),
+              wMat,
+            );
+            wm.position.set(wx, wy, d2 / 2 + 0.011);
+            fg.add(wm);
+            registerWindow(
+              wm,
+              fillerTrim[ci % fillerTrim.length],
+              `filler_${fx}_${fz}_${wi}`,
+              undefined,
+            );
+          }
+
+          // Rooftop detail
+          if (Math.random() > 0.55) {
+            const rp = new THREE.Mesh(
+              new THREE.BoxGeometry(0.25, 0.12, 0.2),
+              new THREE.MeshStandardMaterial({
+                color: 0x606870,
+                roughness: 0.7,
+              }),
+            );
+            rp.position.set(
+              (Math.random() - 0.5) * w * 0.5,
+              h + 0.07,
+              (Math.random() - 0.5) * d2 * 0.5,
+            );
+            fg.add(rp);
+          }
+          if (Math.random() > 0.65) {
+            const pipe = new THREE.Mesh(
+              new THREE.CylinderGeometry(
+                0.022,
+                0.022,
+                0.25 + Math.random() * 0.3,
+                5,
+              ),
+              new THREE.MeshStandardMaterial({
+                color: 0x484858,
+                roughness: 0.8,
+              }),
+            );
+            pipe.position.set(
+              (Math.random() - 0.5) * w * 0.6,
+              h + 0.15,
+              (Math.random() - 0.5) * d2 * 0.6,
+            );
+            fg.add(pipe);
+          }
+
+          // Base
+          const fBase = new THREE.Mesh(
+            new THREE.BoxGeometry(w + 0.3, 0.1, d2 + 0.3),
+            new THREE.MeshStandardMaterial({
+              color: fColor.clone().multiplyScalar(0.6),
+              roughness: 0.96,
+            }),
+          );
+          fBase.position.y = 0.05;
+          fg.add(fBase);
+
+          fg.position.set(
+            fx + (Math.random() - 0.5) * 0.3,
+            0,
+            fz + (Math.random() - 0.5) * 0.3,
+          );
+          fg.rotation.y = (Math.random() - 0.5) * 0.15;
+          scene.add(fg);
+        });
+      })();
       const swayMeshes = []; // {mesh, amp, phase, axisAngle}
 
       function makeTree(x, z, h, color) {
@@ -2998,41 +3781,57 @@
       });
 
       // ═══════════════════════════════════════════════════════════════
-      //  DATA FLOW PARTICLES
+      //  DATA FLOW — fast tight packet streams, not floating dots
+      //  Visual language: network traffic, not magic particles
       // ═══════════════════════════════════════════════════════════════
       const flowConnections = [];
       DISTRICTS.forEach((d, i) => {
         if (i === 0) return;
-        const start = new THREE.Vector3(0, 7.5, 0);
-        const end = new THREE.Vector3(
+        const bc = BCONFIG[i];
+        const authPos = new THREE.Vector3(0, BCONFIG[0].floors * 0.9 * 0.7, 0);
+        const distPos = new THREE.Vector3(
           d.pos[0],
-          BCONFIG[i].floors * 0.9 * 0.5,
+          bc.floors * 0.9 * 0.4,
           d.pos[2],
         );
-        const mid = start
+
+        // Very low arc — stays close to building heights, not floating in air
+        const mid = authPos
           .clone()
-          .lerp(end, 0.5)
-          .add(new THREE.Vector3(0, 2, 0));
-        const curve3 = new THREE.QuadraticBezierCurve3(start, mid, end);
-        const N = 10;
+          .lerp(distPos, 0.5)
+          .add(new THREE.Vector3(0, 0.8, 0));
+        const curve3 = new THREE.QuadraticBezierCurve3(authPos, mid, distPos);
+
+        // More packets, smaller, faster — feels like data not butterflies
+        const N = 6;
         const positions = new Float32Array(N * 3);
         const pGeo = new THREE.BufferGeometry();
         pGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+
+        // Use trim color (brighter) at very low opacity — subtle not screensaver
+        const trimC = new THREE.Color(bc.trim).multiplyScalar(0.9);
         const pMat = new THREE.PointsMaterial({
-          color: new THREE.Color(BCONFIG[i].color),
-          size: 0.14,
+          color: trimC,
+          size: 0.08,
           transparent: true,
-          opacity: 0.85,
+          opacity: 0.0, // starts invisible, only shows at night (set in loop)
           sizeAttenuation: true,
           depthWrite: false,
         });
         const pts3 = new THREE.Points(pGeo, pMat);
         scene.add(pts3);
+
+        // Stagger offsets tightly — packets close together like a burst
+        const baseOffset = Math.random();
         flowConnections.push({
           curve: curve3,
           pts: pts3,
           geo: pGeo,
-          offsets: Array.from({ length: N }, (_, k) => k / N),
+          offsets: Array.from(
+            { length: N },
+            (_, k) => (baseOffset + k * 0.06) % 1.0,
+          ),
+          speed: 0.28 + Math.random() * 0.18, // faster than before
         });
       });
 
@@ -3769,6 +4568,7 @@
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
+        composer.setSize(window.innerWidth, window.innerHeight);
       });
 
       // ═══════════════════════════════════════════════════════════════
@@ -3804,25 +4604,48 @@
       renderer.setAnimationLoop(() => {
         const dt = Math.min(clock.getDelta(), 0.05); // cap at 50ms for safety
         const t = clock.getElapsedTime();
+        const nf = timeSys.nightFactor(); // declared first — used throughout loop
 
         // ── TIME + WEATHER SYSTEMS ──
         timeSys.update(dt);
         wxSys.update(dt);
 
-        // ── DYNAMIC SKY + FOG ──
+        // ── DYNAMIC SKY + FOG — atmospheric, not flat ──
         const skyC = timeSys.getSkyColor();
         scene.background = skyC;
-        scene.fog.color.copy(skyC);
+        // Fog: deep violet-indigo at night (city glow), clear blue-grey at day
+        const fogC = skyC.clone();
+        if (nf > 0.2) fogC.lerp(new THREE.Color(0x120818), nf * 0.5);
+        scene.fog.color.copy(fogC);
         scene.fog.density = wxSys.fogCurrent;
         renderer.setClearColor(skyC);
 
         // ── DYNAMIC LIGHTING ──
-        const nf = timeSys.nightFactor();
-        ambientLight.intensity = 1.6 - nf * 0.9;
-        ambientLight.color.setHSL(0.67, 0.3, 0.08 + nf * 0.04);
-        sun.intensity = 1.1 - nf * 0.95;
-        sun.color.setHex(nf > 0.5 ? 0x2030a0 : 0xfff0cc);
-        authGlow.intensity = 2.5 + Math.sin(t * 1.2) * 0.8;
+        // Hemi: NEVER goes below 0.18 — buildings must always be readable
+        hemi.intensity = 0.45 - nf * 0.27; // day: 0.45, night: 0.18
+        hemi.color.setHex(nf > 0.5 ? 0x0d1030 : 0x334488);
+        hemi.groundColor.setHex(nf > 0.5 ? 0x060810 : 0x0a0818);
+
+        // Sun/moon — dims to 0.1 at night (moon), not fully off
+        sun.intensity = 2.2 - nf * 2.0; // day: 2.2, night: 0.2 (moonlight)
+        sun.color.setHex(nf > 0.6 ? 0x2030b0 : 0xfff0cc); // blue moonlight at night
+
+        // Rim light strengthens at night — defines silhouettes in darkness
+        rim.intensity = 0.35 + nf * 0.55; // day: 0.35, night: 0.9
+
+        // Auth tower hero lights — pulse irregularly, strengthen at night
+        const authPulse =
+          1.0 + Math.sin(t * 1.1) * 0.18 + Math.sin(t * 0.7) * 0.08;
+        const nightBoost = 1.0 + nf * 0.6; // brighter at night
+        authGlow.intensity = 4.5 * authPulse * nightBoost;
+        authHalo.intensity = 3.0 * authPulse * nightBoost;
+        authSpot.intensity = 3.5 * nightBoost;
+
+        // Bloom: stronger at night, day needs less
+        if (bloomPass) {
+          bloomPass.strength = 0.55 + nf * 0.55; // day: 0.55, night: 1.1
+          bloomPass.threshold = 0.75 - nf * 0.25; // day: 0.75, night: 0.50
+        }
 
         // ── SOUND UPDATE ──
         if (audioCtx && rainGainNode) {
@@ -3836,20 +4659,12 @@
         // ── WINDOW STATE MACHINE ──
         updateWindows(dt, t);
 
-        // ── AUTH TOWER RINGS ──
-        scene.traverse((obj) => {
-          if (obj.userData.ring)
-            obj.rotation.z = obj.userData.phase + t * obj.userData.speed;
+        // ── AUTH TOWER RINGS — direct array, no scene.traverse ──
+        ringMeshes.forEach((obj) => {
+          obj.rotation.z = obj.userData.phase + t * obj.userData.speed;
         });
 
-        // ── BUILDING GENTLE FLOAT ──
-        scene.children.forEach((obj) => {
-          if (obj.userData.districtIdx !== undefined && obj.isGroup) {
-            const i = obj.userData.districtIdx;
-            if (i !== undefined)
-              obj.position.y = Math.sin(t * 0.4 + i * 0.8) * 0.04;
-          }
-        });
+        // NOTE: building float REMOVED — buildings are grounded, not magic objects
 
         // ── TREE SWAY (wind-responsive) ──
         swayMeshes.forEach((sw) => {
@@ -3918,10 +4733,9 @@
           else car.mesh.position.z = route.z1 + (route.z2 - route.z1) * car.t;
         });
 
-        // ── DATA FLOW PARTICLES ──
-        const flowSpd = 0.18 * (1 + wxSys.rainIntensity * 0.5);
+        // ── DATA FLOW PACKETS — faster, night-boosted opacity ──
         flowConnections.forEach((fc, ci) => {
-          fc.offsets = fc.offsets.map((o) => (o + flowSpd * dt) % 1.0);
+          fc.offsets = fc.offsets.map((o) => (o + fc.speed * dt) % 1.0);
           const pos3 = fc.geo.attributes.position.array;
           fc.offsets.forEach((o, pi) => {
             const pt = fc.curve.getPoint(o);
@@ -3930,7 +4744,8 @@
             pos3[pi * 3 + 2] = pt.z;
           });
           fc.geo.attributes.position.needsUpdate = true;
-          fc.pts.material.opacity = 0.55 + Math.sin(t * 2 + ci) * 0.28;
+          // Only visible at night, fades in with night factor
+          fc.pts.material.opacity = nf * (0.35 + Math.sin(t * 1.8 + ci) * 0.12);
         });
 
         // ── AMBIENT PARTICLES ──
@@ -3979,10 +4794,12 @@
           camVel.phi *= CAM_DRAG;
           if (Math.abs(camVel.theta) < 0.0001) camVel.theta = 0;
           if (Math.abs(camVel.phi) < 0.0001) camVel.phi = 0;
+          sph.phi = Math.max(0.25, Math.min(1.35, sph.phi + camVel.phi));
           updateCam();
         }
 
-        renderer.render(scene, camera);
+        // ── RENDER — via composer for bloom ──
+        composer.render();
       });
     </script>
   </body>
