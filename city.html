@@ -3,40 +3,1639 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Aditya's World</title>
+    <title>Aditya's World — Backend Architecture</title>
     <script src="config.js"></script>
     <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --gold: #c8a84b;
+        --gold-dim: #6a5520;
+        --gold-glow: rgba(200, 168, 75, 0.15);
+        --bg: #06080f;
+        --bg2: #0a0e18;
+        --card: #0d1120;
+        --card-hover: #111828;
+        --text: #e8dcc8;
+        --text-dim: #6a7a9a;
+        --text-mid: #9aabcc;
+        --border: #1a2540;
+        --border-gold: #3a2e10;
+        --green: #2a6a3a;
+        --green-text: #5aaa7a;
+        --red: #6a2a2a;
+        --red-text: #cc6a6a;
+        --blue: #1a3a6a;
+        --blue-text: #6aaacc;
+      }
+
       body {
-        background: #06080f;
-        color: #e8dcc8;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Courier New", Courier, monospace;
+        min-height: 100vh;
+      }
+
+      /* Background grid */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(200, 168, 75, 0.02) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(200, 168, 75, 0.02) 1px, transparent 1px);
+        background-size: 60px 60px;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      /* ── HEADER ── */
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(6, 8, 15, 0.95);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--border);
+        padding: 0 32px;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .header-name {
+        font-size: 12px;
+        letter-spacing: 3px;
+        color: var(--gold);
+        font-weight: 700;
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+      }
+
+      .path-badge {
+        font-size: 9px;
+        letter-spacing: 3px;
+        color: var(--text-dim);
+        padding: 4px 12px;
+        border: 1px solid var(--border);
+      }
+
+      .path-badge.recruiter {
+        border-color: var(--gold-dim);
+        color: var(--gold);
+      }
+      .path-badge.engineer {
+        border-color: #1a4a6a;
+        color: var(--blue-text);
+      }
+
+      .back-btn {
+        font-size: 9px;
+        letter-spacing: 2px;
+        color: var(--text-dim);
+        cursor: pointer;
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+      .back-btn:hover {
+        color: var(--gold);
+      }
+
+      /* ── BRAHMASTRA PROGRESS ── */
+      #brahmastra-bar {
+        position: fixed;
+        top: 56px;
+        left: 0;
+        right: 0;
+        z-index: 90;
+        background: rgba(6, 8, 15, 0.9);
+        border-bottom: 1px solid var(--border);
+        padding: 8px 32px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-size: 9px;
+        letter-spacing: 3px;
+        color: var(--text-dim);
+      }
+
+      .fragments {
+        display: flex;
+        gap: 8px;
+      }
+
+      .fragment {
+        width: 20px;
+        height: 4px;
+        background: var(--border);
+        transition:
+          background 0.5s,
+          box-shadow 0.5s;
+      }
+
+      .fragment.collected {
+        background: var(--gold);
+        box-shadow: 0 0 8px var(--gold);
+      }
+
+      /* ── MAIN LAYOUT ── */
+      main {
+        position: relative;
+        z-index: 1;
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 40px 24px 80px;
+        padding-top: 100px;
+      }
+
+      /* ── INTRO ── */
+      .intro {
+        text-align: center;
+        margin-bottom: 64px;
+      }
+
+      .intro-tag {
+        font-size: 9px;
+        letter-spacing: 5px;
+        color: var(--text-dim);
+        margin-bottom: 16px;
+      }
+
+      .intro-title {
+        font-size: clamp(20px, 4vw, 32px);
+        color: var(--gold);
+        letter-spacing: 2px;
+        margin-bottom: 16px;
+      }
+
+      .intro-subtitle {
+        font-size: 13px;
+        color: var(--text-mid);
+        line-height: 1.8;
+      }
+
+      /* ── DISTRICT GRID ── */
+      .districts {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+        gap: 2px;
+      }
+
+      @media (max-width: 560px) {
+        .districts {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* ── DISTRICT CARD ── */
+      .district {
+        background: var(--card);
+        border: 1px solid var(--border);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .district::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 3px;
+        height: 100%;
+        background: var(--gold);
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+
+      .district:hover {
+        background: var(--card-hover);
+        border-color: var(--gold-dim);
+      }
+
+      .district:hover::before {
+        opacity: 1;
+      }
+
+      .district.visited {
+        border-color: var(--gold-dim);
+      }
+
+      .district.visited::before {
+        opacity: 0.5;
+      }
+
+      /* Card header */
+      .district-header {
+        padding: 20px 24px 16px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .district-num {
+        font-size: 9px;
+        letter-spacing: 3px;
+        color: var(--gold);
+        opacity: 0.6;
+        flex-shrink: 0;
+      }
+
+      .district-title-block {
+        flex: 1;
+      }
+
+      .district-name {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text);
+        letter-spacing: 1px;
+        margin-bottom: 4px;
+      }
+
+      .district-tag {
+        font-size: 9px;
+        letter-spacing: 3px;
+        color: var(--text-dim);
+      }
+
+      .district-status {
+        font-size: 8px;
+        letter-spacing: 2px;
+        padding: 3px 8px;
+        border: 1px solid;
+        flex-shrink: 0;
+      }
+
+      .status-operational {
+        color: var(--green-text);
+        border-color: var(--green);
+      }
+
+      .status-active {
+        color: var(--blue-text);
+        border-color: var(--blue);
+      }
+
+      /* Card body — collapsed by default */
+      .district-body {
+        display: none;
+        padding: 0 24px 24px;
+      }
+
+      .district.expanded .district-body {
+        display: block;
+      }
+
+      .district-divider {
+        height: 1px;
+        background: var(--border);
+        margin-bottom: 20px;
+      }
+
+      /* Story sections */
+      .story-section {
+        margin-bottom: 20px;
+      }
+
+      .story-label {
+        font-size: 8px;
+        letter-spacing: 4px;
+        color: var(--gold);
+        margin-bottom: 8px;
+      }
+
+      .story-text {
+        font-size: 13px;
+        line-height: 1.9;
+        color: var(--text-mid);
+      }
+
+      .story-text .em {
+        color: var(--gold);
+      }
+      .story-text .bold {
+        color: var(--text);
+        font-weight: 700;
+      }
+
+      /* Metrics row */
+      .metrics {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+        margin: 20px 0;
+        padding: 16px;
+        background: var(--bg2);
+        border: 1px solid var(--border);
+      }
+
+      .metric {
+        text-align: center;
+      }
+
+      .metric-value {
+        font-size: 18px;
+        color: var(--gold);
+        font-weight: 700;
+        display: block;
+      }
+
+      .metric-label {
+        font-size: 8px;
+        letter-spacing: 3px;
+        color: var(--text-dim);
+      }
+
+      /* Tech tags */
+      .tech-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 16px;
+      }
+
+      .tech-tag {
+        font-size: 9px;
+        letter-spacing: 2px;
+        color: var(--text-dim);
+        border: 1px solid var(--border);
+        padding: 3px 10px;
+      }
+
+      /* Engineer deep-dive toggle */
+      .engineer-toggle {
+        font-size: 9px;
+        letter-spacing: 3px;
+        color: var(--text-dim);
+        cursor: pointer;
+        padding: 10px 0;
+        border-top: 1px solid var(--border);
+        margin-top: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: color 0.2s;
+        user-select: none;
+      }
+
+      .engineer-toggle:hover {
+        color: var(--blue-text);
+      }
+
+      .engineer-deep {
+        display: none;
+        margin-top: 16px;
+        padding: 16px;
+        background: rgba(26, 58, 106, 0.1);
+        border: 1px solid var(--blue);
+        font-size: 12px;
+        line-height: 1.9;
+        color: var(--text-mid);
+      }
+
+      .engineer-deep.visible {
+        display: block;
+      }
+      .engineer-deep code {
+        color: var(--blue-text);
+        font-size: 11px;
+      }
+
+      /* Record status */
+      .record-status {
+        margin-top: 20px;
+        padding: 10px 16px;
+        background: rgba(42, 106, 58, 0.08);
+        border: 1px solid var(--green);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 9px;
+        letter-spacing: 3px;
+      }
+
+      .status-dot {
+        width: 6px;
+        height: 6px;
+        background: var(--green-text);
+        border-radius: 50%;
+        box-shadow: 0 0 8px var(--green-text);
+        animation: pulse 2s infinite;
+      }
+
+      .status-text {
+        color: var(--green-text);
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+
+      /* ── CHAOS SECTION ── */
+      #chaos-section {
+        margin: 64px 0;
+        border: 1px solid var(--border);
+        background: var(--card);
+        overflow: hidden;
+      }
+
+      .chaos-header {
+        padding: 20px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .chaos-title {
+        font-size: 11px;
+        letter-spacing: 3px;
+        color: var(--text-dim);
+      }
+
+      #chaos-btn {
+        font-size: 9px;
+        letter-spacing: 3px;
+        color: var(--red-text);
+        border: 1px solid var(--red);
+        background: transparent;
+        padding: 8px 20px;
+        cursor: pointer;
         font-family: "Courier New", monospace;
+        transition: all 0.3s;
+      }
+
+      #chaos-btn:hover {
+        background: rgba(106, 42, 42, 0.2);
+      }
+
+      #chaos-output {
+        display: none;
+        padding: 0 24px 24px;
+        font-size: 12px;
+        line-height: 2;
+      }
+
+      .chaos-line {
+        color: var(--red-text);
+      }
+      .chaos-line.ok {
+        color: var(--green-text);
+      }
+      .chaos-line.dim {
+        color: var(--text-dim);
+      }
+      .chaos-result {
+        margin-top: 20px;
+        padding: 16px;
+        border: 1px solid var(--border);
+        font-size: 11px;
+        letter-spacing: 2px;
+      }
+
+      /* ── CONTACT SECTION ── */
+      #contact-section {
+        margin-top: 64px;
+        text-align: center;
+        display: none;
+      }
+
+      #contact-section.visible {
+        display: block;
+      }
+
+      .contact-unlock-msg {
+        font-size: 9px;
+        letter-spacing: 4px;
+        color: var(--gold);
+        margin-bottom: 24px;
+      }
+
+      .contact-card {
+        display: inline-block;
+        border: 1px solid var(--gold-dim);
+        padding: 40px 56px;
+        background: var(--card);
+        position: relative;
+      }
+
+      .contact-card::before {
+        content: "";
+        position: absolute;
+        inset: -1px;
+        background: linear-gradient(
+          135deg,
+          var(--gold-dim),
+          transparent,
+          var(--gold-dim)
+        );
+        z-index: -1;
+        opacity: 0.3;
+      }
+
+      .contact-name {
+        font-size: 18px;
+        color: var(--gold);
+        letter-spacing: 3px;
+        margin-bottom: 8px;
+      }
+
+      .contact-role {
+        font-size: 9px;
+        letter-spacing: 4px;
+        color: var(--text-dim);
+        margin-bottom: 32px;
+      }
+
+      .contact-links {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .contact-link {
+        font-size: 11px;
+        letter-spacing: 2px;
+        color: var(--text-mid);
+        text-decoration: none;
+        transition: color 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .contact-link:hover {
+        color: var(--gold);
+      }
+
+      .contact-link-label {
+        font-size: 8px;
+        letter-spacing: 3px;
+        color: var(--text-dim);
+        width: 60px;
+        text-align: right;
+      }
+
+      /* ── ORACLE BUTTON ── */
+      #oracle-btn {
+        position: fixed;
+        bottom: 32px;
+        right: 32px;
+        z-index: 200;
+        width: 48px;
+        height: 48px;
+        border: 1px solid var(--gold-dim);
+        background: var(--bg);
+        color: var(--gold);
+        font-size: 18px;
+        cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        min-height: 100vh;
-        margin: 0;
+        transition: all 0.3s;
+        font-family: serif;
       }
-      .msg {
-        text-align: center;
-        color: #6a7a9a;
-        font-size: 12px;
+
+      #oracle-btn:hover {
+        background: var(--gold-glow);
+        border-color: var(--gold);
+        box-shadow: 0 0 20px rgba(200, 168, 75, 0.2);
+      }
+
+      /* ── ORACLE PANEL ── */
+      #oracle-panel {
+        position: fixed;
+        bottom: 96px;
+        right: 32px;
+        z-index: 200;
+        width: 340px;
+        background: var(--bg2);
+        border: 1px solid var(--gold-dim);
+        display: none;
+        flex-direction: column;
+        max-height: 440px;
+      }
+
+      #oracle-panel.visible {
+        display: flex;
+      }
+
+      .oracle-header {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+        font-size: 9px;
         letter-spacing: 3px;
+        color: var(--gold);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
       }
-      .msg span {
-        color: #c8a84b;
+
+      .oracle-close {
+        cursor: pointer;
+        color: var(--text-dim);
+        font-size: 14px;
+        transition: color 0.2s;
+      }
+      .oracle-close:hover {
+        color: var(--gold);
+      }
+
+      #oracle-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        font-size: 12px;
+        line-height: 1.7;
+      }
+
+      .oracle-msg {
+        padding: 10px 14px;
+        border: 1px solid var(--border);
+      }
+
+      .oracle-msg.user {
+        align-self: flex-end;
+        color: var(--text-dim);
+        font-size: 11px;
+        max-width: 80%;
+      }
+
+      .oracle-msg.assistant {
+        color: var(--text-mid);
+        border-color: var(--gold-dim);
+      }
+
+      .oracle-input-row {
+        display: flex;
+        border-top: 1px solid var(--border);
+      }
+
+      #oracle-input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: var(--text);
+        font-family: "Courier New", monospace;
+        font-size: 11px;
+        padding: 12px 16px;
+        outline: none;
+      }
+
+      #oracle-input::placeholder {
+        color: var(--text-dim);
+      }
+
+      #oracle-send {
+        background: transparent;
+        border: none;
+        border-left: 1px solid var(--border);
+        color: var(--gold);
+        font-family: "Courier New", monospace;
+        font-size: 9px;
+        letter-spacing: 2px;
+        padding: 0 16px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      #oracle-send:hover {
+        background: var(--gold-glow);
+      }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--bg);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border);
+      }
+
+      /* Expand indicator */
+      .expand-indicator {
+        padding: 10px 24px;
+        font-size: 9px;
+        letter-spacing: 3px;
+        color: var(--text-dim);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-top: 1px solid var(--border);
+        transition: color 0.2s;
+      }
+
+      .district:hover .expand-indicator {
+        color: var(--gold);
+      }
+      .district.expanded .expand-indicator {
+        display: none;
+      }
+
+      @media (max-width: 600px) {
+        header {
+          padding: 0 16px;
+        }
+        main {
+          padding: 90px 16px 80px;
+        }
+        .districts {
+          grid-template-columns: 1fr;
+        }
+        #oracle-panel {
+          width: calc(100vw - 32px);
+          right: 16px;
+        }
       }
     </style>
   </head>
   <body>
-    <div class="msg">
-      THE CITY IS BEING BUILT<br /><br />
-      <span id="path-display"></span>
+    <!-- HEADER -->
+    <header>
+      <div class="header-name">ADITYA SRIVASTAVA</div>
+      <div class="header-right">
+        <div class="path-badge" id="pathBadge">LOADING</div>
+        <a class="back-btn" href="index.html">← GATE</a>
+      </div>
+    </header>
+
+    <!-- BRAHMASTRA PROGRESS -->
+    <div id="brahmastra-bar">
+      BRAHMASTRA ASSEMBLY
+      <div class="fragments" id="fragments">
+        <div class="fragment" data-index="0"></div>
+        <div class="fragment" data-index="1"></div>
+        <div class="fragment" data-index="2"></div>
+        <div class="fragment" data-index="3"></div>
+        <div class="fragment" data-index="4"></div>
+      </div>
+      <span id="brahmastra-label">0 / 5 DISTRICTS EXPLORED</span>
     </div>
+
+    <!-- MAIN -->
+    <main>
+      <!-- INTRO -->
+      <div class="intro">
+        <div class="intro-tag" id="intro-tag">SYSTEM LOG ARCHIVE · 2034</div>
+        <div class="intro-title" id="intro-title">THE ARCHITECT'S CITY</div>
+        <div class="intro-subtitle" id="intro-subtitle">
+          Eight systems. Four years. Every one still running.<br />
+          <span style="color: var(--text-dim)"
+            >Explore each district to assemble the complete picture.</span
+          >
+        </div>
+      </div>
+
+      <!-- DISTRICTS -->
+      <div class="districts" id="districts-grid"></div>
+
+      <!-- CHAOS SECTION -->
+      <div id="chaos-section">
+        <div class="chaos-header">
+          <div>
+            <div class="chaos-title">CHAOS SIMULATION</div>
+            <div
+              style="
+                font-size: 9px;
+                letter-spacing: 2px;
+                color: var(--text-dim);
+                margin-top: 4px;
+              "
+            >
+              What happens when the architect is not here?
+            </div>
+          </div>
+          <button id="chaos-btn" onclick="runChaos()">
+            INITIATE SIMULATION
+          </button>
+        </div>
+        <div id="chaos-output"></div>
+      </div>
+
+      <!-- CONTACT -->
+      <div id="contact-section">
+        <div class="contact-unlock-msg">
+          ⚔ BRAHMASTRA ASSEMBLED · CONTACT UNLOCKED
+        </div>
+        <div class="contact-card">
+          <div class="contact-name">ADITYA SRIVASTAVA</div>
+          <div class="contact-role">
+            BACKEND ARCHITECT · AVAILABLE FOR THE RIGHT PROBLEM
+          </div>
+          <div class="contact-links">
+            <a
+              class="contact-link"
+              href="mailto:asaditya1826@gmail.com"
+              onclick="logContact()"
+            >
+              <span class="contact-link-label">EMAIL</span>
+              asaditya1826@gmail.com
+            </a>
+            <a
+              class="contact-link"
+              href="https://github.com/adityasrivastava-dev"
+              target="_blank"
+            >
+              <span class="contact-link-label">GITHUB</span>
+              adityasrivastava-dev
+            </a>
+            <a
+              class="contact-link"
+              href="https://linkedin.com/in/aditya-srivastava"
+              target="_blank"
+            >
+              <span class="contact-link-label">LINKEDIN</span>
+              aditya-srivastava
+            </a>
+          </div>
+        </div>
+        <div
+          style="
+            margin-top: 24px;
+            font-size: 11px;
+            color: var(--text-dim);
+            line-height: 1.9;
+          "
+        >
+          Not just what I can do.<br />
+          <span style="color: var(--text-mid)">What we can build.</span>
+        </div>
+      </div>
+    </main>
+
+    <!-- ORACLE -->
+    <button id="oracle-btn" onclick="toggleOracle()" title="Ask the Oracle">
+      ॐ
+    </button>
+
+    <div id="oracle-panel">
+      <div class="oracle-header">
+        THE ORACLE
+        <span class="oracle-close" onclick="toggleOracle()">✕</span>
+      </div>
+      <div id="oracle-messages">
+        <div class="oracle-msg assistant">
+          I know one person well. Ask me anything about Aditya — his work, his
+          systems, his approach to engineering.
+        </div>
+      </div>
+      <div class="oracle-input-row">
+        <input
+          id="oracle-input"
+          type="text"
+          placeholder="Ask about Aditya..."
+          onkeydown="if (event.key === 'Enter') sendOracle();"
+        />
+        <button id="oracle-send" onclick="sendOracle()">ASK</button>
+      </div>
+    </div>
+
     <script>
-      const path =
-        new URLSearchParams(window.location.search).get("path") || "recruiter";
-      document.getElementById("path-display").textContent =
-        `PATH: ${path.toUpperCase()} · COMING SOON`;
+      // ── DISTRICT DATA ──────────────────────────────────────────────
+      const DISTRICTS = [
+        {
+          id: "auth-tower",
+          num: "06",
+          name: "The Auth Tower",
+          tag: "SSO PLATFORM · JWT · SESSION MANAGEMENT",
+          status: "OPERATIONAL",
+          statusType: "operational",
+          metrics: [
+            { value: "10+", label: "APPLICATIONS" },
+            { value: "10K+", label: "SESSIONS" },
+            { value: "0", label: "BREACHES" },
+          ],
+          recruiterStory: `Every application in the company had its own login. Employees had separate passwords for each one. When someone left, someone had to manually disable their account in every system.
+
+<span class="em">Aditya built one central identity system for everything.</span>
+
+One login works across every application. One logout disconnects everywhere. When someone joins the company, one action gives them access to everything they need. When someone leaves, one action removes all their access instantly.
+
+The system tracks which device each person is logged in on. It handles tens of thousands of sessions. It has never been breached.`,
+          engineerStory: `Custom SSO platform — built without relying on Spring Security defaults, because multi-application trust boundary management required domain-level redirect validation that standard implementations don't handle.
+
+<code>Architecture:</code> JWT-based auth with custom claims. Refresh token rotation with secure cookie storage — SSO_SESSION for persistence, separate refresh with sliding expiry. Device fingerprinting in the session record.
+
+<code>Session management:</code> user_session table per user per device. SLO propagation via callback to all registered applications. Domain-mapped redirect validation prevents open redirects without manual URI whitelisting per app.
+
+<code>RBAC:</code> application-level roles evaluated per-app context — not globally. Prevents role explosion while maintaining fine-grained access control.
+
+<code>Key decision:</code> Custom auth layer instead of Spring Security defaults — because the cross-application cookie architecture conflicted with built-in CSRF and session management.`,
+          tech: [
+            "Java 17",
+            "Spring Boot",
+            "Spring Security",
+            "JWT",
+            "MySQL",
+            "Hibernate",
+          ],
+        },
+        {
+          id: "the-bridge",
+          num: "05",
+          name: "The Bridge",
+          tag: "JAVA 1.7 · IBM MQ · MYSQL 8 · HYBRID ARCHITECTURE",
+          status: "OPERATIONAL",
+          statusType: "operational",
+          metrics: [
+            { value: "0", label: "REWRITES" },
+            { value: "3", label: "CONSTRAINTS SOLVED" },
+            { value: "SOLO", label: "DESIGN" },
+          ],
+          recruiterStory: `Two systems that needed to work together but couldn't. One was old and expensive to change. The other was new and incompatible. Most engineers would have said the only solution was a full rewrite.
+
+<span class="em">Aditya designed a bridge.</span>
+
+A small new service that both systems could talk to, without either of them needing to change. The old system talks to the bridge the way it always has. The bridge talks to the new database using modern drivers. The old system never needed to know anything changed.
+
+A full rewrite would have cost months. The bridge cost a fraction of that and preserved everything that was working. <span class="em">It is still running.</span>`,
+          engineerStory: `Constraint: Java 1.7 IBM MQ client incompatible with MySQL 8 JDBC drivers. IBM MQ upgrade blocked by licensing cost. Full rewrite not feasible.
+
+<code>Solution — sole designer and implementer:</code>
+
+Java 1.8 bridge service handling all database operations requiring MySQL 8 driver compatibility. Legacy Java 1.7 MQ system invokes this service via shell script execution with argument passing for parameter exchange. MQ logic remains entirely intact — it delegates DB calls to the bridge rather than making them directly.
+
+<code>Key design decisions:</code>
+— Bridge is stateless → scalable and replaceable without touching MQ
+— Argument passing interface is explicit and typed, not generic strings → debuggable and auditable
+— Bridge deployed as standalone service → independently monitored and updated
+
+<code>The insight:</code> The constraint was driver compatibility. By isolating that concern in the bridge, the constraint was addressed without touching either side of it.`,
+          tech: [
+            "Java 1.7",
+            "Java 1.8",
+            "IBM MQ",
+            "MySQL 8",
+            "Shell Script",
+            "JDBC",
+          ],
+        },
+        {
+          id: "cloud-district",
+          num: "04",
+          name: "The Cloud District",
+          tag: "MULE ESB → AWS LAMBDA · 80+ APPLICATIONS",
+          status: "OPERATIONAL",
+          statusType: "operational",
+          metrics: [
+            { value: "80+", label: "APPS MIGRATED" },
+            { value: "1", label: "SPOF ELIMINATED" },
+            { value: "LED", label: "ARCHITECTURE" },
+          ],
+          recruiterStory: `80 separate business processes were all running through one central system. When that system had problems, every one of those 80 processes had problems simultaneously. It was fragile, expensive, and impossible to change without risk.
+
+<span class="em">Aditya led the migration away from it.</span>
+
+Every process was moved to its own independent home. Now if one breaks, the other 79 keep running. He led this with one or two engineers assisting. The design decisions — which processes went where, how execution timing would be configured per client — were his.`,
+          engineerStory: `Mule ESB replacement across 80+ integrations. Single point of failure for the entire integration layer.
+
+<code>Migration strategy — led with 2 engineers:</code>
+
+AWS Lambda for event-triggered integrations where latency and scale matter. Standalone Java JARs with cron-based execution for batch processes where simplicity and predictability outweigh elasticity.
+
+<code>Not a blanket Lambda migration</code> — each service evaluated against execution pattern, latency requirements, and operational characteristics.
+
+<code>script.sh execution layer:</code> abstraction between scheduling infrastructure and Java execution units. Handles client-specific timing configuration, environment parameter injection, and execution orchestration — without each service implementing its own scheduling logic.
+
+<code>Architectural principle:</code> no integration service should be a single point of failure for other services. Result: 80 independent services, each deployable and debuggable without affecting any other.`,
+          tech: [
+            "AWS Lambda",
+            "Java",
+            "Mule ESB",
+            "Shell Script",
+            "Cron",
+            "Event-Driven",
+          ],
+        },
+        {
+          id: "data-vaults",
+          num: "03",
+          name: "The Data Vaults",
+          tag: "MYSQL 5.X → 8.X · THREE MIGRATIONS · ZERO DOWNTIME",
+          status: "OPERATIONAL",
+          statusType: "operational",
+          metrics: [
+            { value: "3", label: "MIGRATIONS" },
+            { value: "0", label: "DATA LOST" },
+            { value: "0", label: "CRITICAL DOWNTIME" },
+          ],
+          recruiterStory: `AWS announced it was shutting down support for the database version the entire platform ran on. The foundation under the building was being removed.
+
+<span class="em">Aditya led the migration — not once, but three times across two years.</span>
+
+Moving the database through successive versions while the platform continued serving live clients. Every migration planned before it started. Every rollback ready before the cutover began.
+
+Three migrations. Hundreds of dependent components. Zero data lost. The clients using the platform never knew it was happening.`,
+          engineerStory: `AWS deprecated MySQL 5.x. Migration path: 5.x → 8.0 → 8.4. Each step introduced breaking changes requiring systematic remediation.
+
+<code>MySQL 8 STRICT mode:</code> legacy queries using implicit type coercions and out-of-spec GROUP BY expressions failed. Identified and refactored every non-compliant query — required understanding business logic behind each query, not just syntax.
+
+<code>Driver compatibility:</code> MySQL 8 JDBC driver changes broke Hibernate configuration patterns. Upgraded connection pool config, adjusted driver class references, validated ORM behaviour across all persistence layers.
+
+<code>80+ dependent services</code> validated for compatibility before each cutover.
+
+<code>Migration execution:</code> shadow validation phase — new version running in parallel with read-only validation before write operations switched over. Rollback checkpoints at each stage. Production cutover windows under 10 minutes each.
+
+<code>Coordination challenge:</code> this migration ran in parallel with the Mule ESB migration. Changes to service configurations had to account for both simultaneously.`,
+          tech: [
+            "MySQL 5.x",
+            "MySQL 8.x",
+            "Hibernate",
+            "JDBC",
+            "Spring Boot",
+            "JPA",
+          ],
+        },
+        {
+          id: "ledgerflow",
+          num: "08",
+          name: "LedgerFlow — Financial District",
+          tag: "PO · INVOICING · DISTRIBUTED CONSISTENCY",
+          status: "ACTIVE",
+          statusType: "active",
+          metrics: [
+            { value: "IDEM", label: "POTENT APIS" },
+            { value: "0", label: "2PC USED" },
+            { value: "STATE", label: "MACHINES" },
+          ],
+          recruiterStory: `Financial records cannot be wrong, cannot be duplicated, cannot be lost. LedgerFlow handles the complete lifecycle — purchase orders, approvals, invoicing, payment tracking.
+
+The hardest part was not the features. It was the architecture underneath.
+
+<span class="em">LedgerFlow connects to ATS, the logistics platform. When assets are delivered, financial records must reflect that.</span> But these are two separate systems, and networks are unreliable.
+
+What happens if the invoice message gets lost? What if it arrives twice?
+
+Aditya designed the connection so it does not matter. Messages can be safely resent. Duplicate arrivals produce no effect. The financial record is always correct regardless of what the network does.
+
+<span class="em">The difference between a system that works in a demo and one that works at 3am.</span>`,
+          engineerStory: `Core challenge: data consistency across loosely coupled systems without distributed transactions.
+
+<code>2-phase commit rejected</code> — introduces availability risk, locks resources across service boundaries, couples failure modes of independently deployable systems.
+
+<code>Three principles:</code>
+
+1. Clear data ownership — ATS owns shipment state. LedgerFlow owns financial document state. No cross-service writes. Integration through events and API calls only.
+
+2. Idempotent APIs — every state-changing operation accepts an idempotency key. Duplicate requests with same key return original response without re-executing. PO cannot be created twice. Invoice cannot be generated twice.
+
+3. State-based transitions — PO lifecycle: DRAFT → PENDING_APPROVAL → APPROVED → INVOICED → PAID. Transitions validated against current state. Invalid transitions return typed error with current state and valid next states. State machine defined as transition validity matrix.
+
+<code>Result:</code> LedgerFlow can fail mid-operation at any point, retry from last known good state, and always converge to consistent final state.
+
+Same pattern used by Stripe for payment idempotency.`,
+          tech: [
+            "Java 17",
+            "Spring Boot",
+            "MySQL 8",
+            "State Machine",
+            "Idempotency",
+            "REST API",
+          ],
+        },
+        {
+          id: "architecture-quarter",
+          num: "07",
+          name: "Architecture Quarter",
+          tag: "ATS · OPERATIONS APP · GREENFIELD SYSTEMS",
+          status: "OPERATIONAL",
+          statusType: "operational",
+          metrics: [
+            { value: "2", label: "SYSTEMS BUILT" },
+            { value: "LEAD", label: "ARCHITECT" },
+            { value: "∞", label: "EXTENSIBLE" },
+          ],
+          recruiterStory: `High-value art assets — paintings worth significant money — moving between cities. No real tracking system. No way to know where anything was at any point.
+
+<span class="em">Aditya designed the system from scratch.</span>
+
+Every asset tracked from pick-up to delivery, every state transition validated, every crew member and truck visible in real time.
+
+And then separately: a completely different system for the operations teams on the ground — the crews and drivers doing the physical work. Real-time status updates. Service checkpoints. Live coordination between field teams and operations managers.
+
+Two greenfield systems. Both designed from scratch. Both in production. Both still running.`,
+          engineerStory: `Two greenfield backend systems led end-to-end as backend architect.
+
+<code>ATS — Art Transport System:</code>
+
+Domain: end-to-end tracking and management of high-value asset movements. Central design challenge: asset lifecycle across multiple state transitions while maintaining full history for audit and liability.
+
+State machine for asset movement: transition validity matrix rather than conditional logic in service methods. Invalid transitions return typed error — state machine is self-documenting to the API consumer.
+
+API design: contract-first. Response structures agreed with frontend before implementation. Versioning from day one — /api/v1/ with explicit deprecation policy.
+
+<code>Operations App:</code>
+
+Field operatives use the app in low-connectivity environments. API design accounts for optimistic local state with server reconciliation on reconnect — field app shows operative what they submitted, server validates and confirms or corrects.
+
+<code>Both systems:</code> database schema optimised for query patterns, modular backend architecture, clean controller → service → repository separation.`,
+          tech: [
+            "Java 17",
+            "Spring Boot",
+            "MySQL 8",
+            "JPA",
+            "REST API",
+            "State Machine",
+          ],
+        },
+        {
+          id: "survey-bridge",
+          num: "02",
+          name: "The Survey Bridge",
+          tag: "END-TO-END INTEGRATION · PIPELINE DESIGN",
+          status: "OPERATIONAL",
+          statusType: "operational",
+          metrics: [
+            { value: "100%", label: "AUTOMATED" },
+            { value: "0", label: "MANUAL STEPS" },
+            { value: "∞", label: "CONSISTENT" },
+          ],
+          recruiterStory: `Survey data and the core operations system were not connected. When a survey team completed a survey on-site, that data sat separately from the system that managed the move. Someone had to manually transfer the information. Every day. For every survey.
+
+Every time a human moved that data, there was a chance of error. Wrong items. Wrong addresses. Wrong orders.
+
+<span class="em">Aditya designed a pipeline that connected the two systems completely.</span>
+
+The survey is now scheduled directly from the customer file. The team completes it on a mobile app. The moment they submit, every item, every shipment, every packaging instruction flows automatically into the service order.
+
+Nothing carried by hand. Nothing retyped. Nothing misread.`,
+          engineerStory: `Disconnected data flow between survey module and core operational system. Survey data existed in isolation — requiring manual export, transformation, and import to create shipment and service order records.
+
+<code>Pipeline designed and implemented:</code>
+
+Survey scheduling from Customer File → survey execution via mobile app (stateful with sync reliability under variable connectivity) → automatic item and shipment creation → packaging and submission workflow with validation → direct mapping of survey output to Service Orders via deterministic transformation.
+
+<code>Key architectural challenge:</code> designing reliable state management for a mobile-initiated workflow that needed to sync with server-side system, handle partial connectivity gracefully, and produce deterministic output that downstream systems could depend on.
+
+Eliminated manual reconciliation entirely. Survey schema to service order schema — no human interpretation step.`,
+          tech: [
+            "Java",
+            "Spring Boot",
+            "MySQL",
+            "Mobile Sync",
+            "Pipeline Design",
+            "REST API",
+          ],
+        },
+        {
+          id: "monolith-quarter",
+          num: "01",
+          name: "The Monolith Quarter",
+          tag: "REDSKY · STRUTS2 · SPRING 3 · HIBERNATE 5 · ORIGIN",
+          status: "OPERATIONAL",
+          statusType: "operational",
+          metrics: [
+            { value: "2022", label: "WHERE IT BEGAN" },
+            { value: "WEEKS", label: "TO FIRST FIX" },
+            { value: "∞", label: "STILL RUNNING" },
+          ],
+          recruiterStory: `January 2022. Aditya joined a system called RedSky — a massive, interconnected platform handling the complete lifecycle of corporate relocations.
+
+A system so tightly woven together that most new engineers needed months to understand it well enough to safely change anything.
+
+<span class="em">He was delivering production fixes within weeks.</span>
+
+For the first eight months, Aditya learned how a customer file becomes a survey, how a survey becomes a shipment, how a shipment becomes a service order, how a service order generates work tickets that go to crews on the ground.
+
+When operational managers had no visibility into what was happening in their own system, he built the relocation dashboard. For the first time, managers could see across all their active operations in one view.
+
+<span class="em">This is where he started. And what he carried forward — an understanding that systems exist to serve people.</span>`,
+          engineerStory: `Stack: Struts 2, Spring 3, Hibernate 5, MySQL 5.x.
+
+RedSky is a large-scale B2B relocation management platform with highly coupled monolithic architecture. Domain model spans Customer File → Survey → Shipment → Service Order → Work Ticket with complex relational dependencies and role-based access control across the entire lifecycle.
+
+<code>The challenge:</code> highly coupled codebase where changes in one module have non-obvious effects on others. Production risk was real — live enterprise clients with active relocations.
+
+<code>Contributions:</code> multiple client-specific enhancements, production bug fixes with minimal regression risk, and development of the Relocation Dashboard — cross-module data aggregation surfacing service order status to non-engineer stakeholders.
+
+<code>The lesson carried forward:</code> understanding how data moves through a system end-to-end, before writing a single line of change, is the difference between a safe engineer and a dangerous one.`,
+          tech: [
+            "Struts 2",
+            "Spring 3",
+            "Hibernate 5",
+            "MySQL 5.x",
+            "Java 8",
+            "MVC",
+          ],
+        },
+      ];
+
+      // ── STATE ────────────────────────────────────────────────────
+      const SESSION_ID =
+        sessionStorage.getItem("sessionId") || crypto.randomUUID();
+      const VISITOR_PATH =
+        new URLSearchParams(window.location.search).get("path") ||
+        sessionStorage.getItem("visitorPath") ||
+        "recruiter";
+
+      let visitedDistricts = new Set(
+        JSON.parse(localStorage.getItem("visited_districts") || "[]"),
+      );
+      let chaosRun = false;
+      let oracleOpen = false;
+
+      // ── INIT ─────────────────────────────────────────────────────
+      document.addEventListener("DOMContentLoaded", () => {
+        setupPath();
+        renderDistricts();
+        updateBrahmastra();
+        checkContact();
+      });
+
+      function setupPath() {
+        const badge = document.getElementById("pathBadge");
+        if (VISITOR_PATH === "engineer") {
+          badge.textContent = "ENGINEER PATH";
+          badge.className = "path-badge engineer";
+        } else {
+          badge.textContent = "RECRUITER PATH";
+          badge.className = "path-badge recruiter";
+        }
+      }
+
+      // ── RENDER DISTRICTS ─────────────────────────────────────────
+      function renderDistricts() {
+        const grid = document.getElementById("districts-grid");
+        grid.innerHTML = "";
+
+        DISTRICTS.forEach((d, i) => {
+          const visited = visitedDistricts.has(d.id);
+          const el = document.createElement("div");
+          el.className = `district ${visited ? "visited" : ""}`;
+          el.id = `district-${d.id}`;
+          el.setAttribute("data-id", d.id);
+
+          const metricsHTML = d.metrics
+            .map(
+              (m) => `
+            <div class="metric">
+                <span class="metric-value">${m.value}</span>
+                <span class="metric-label">${m.label}</span>
+            </div>
+        `,
+            )
+            .join("");
+
+          const techHTML = d.tech
+            .map((t) => `<span class="tech-tag">${t}</span>`)
+            .join("");
+
+          const engineerSection =
+            VISITOR_PATH === "engineer"
+              ? `
+            <div class="engineer-toggle" onclick="toggleEngineer('${d.id}', event)">
+                ▶ TECHNICAL DEPTH
+            </div>
+            <div class="engineer-deep" id="eng-${d.id}">
+                ${d.engineerStory}
+            </div>
+        `
+              : "";
+
+          el.innerHTML = `
+            <div class="district-header" onclick="toggleDistrict('${d.id}')">
+                <div class="district-num">DISTRICT ${d.num}</div>
+                <div class="district-title-block">
+                    <div class="district-name">${d.name}</div>
+                    <div class="district-tag">${d.tag}</div>
+                </div>
+                <div class="district-status status-${d.statusType}">${d.status}</div>
+            </div>
+            <div class="expand-indicator">
+                ↓ OPEN LOG
+            </div>
+            <div class="district-body">
+                <div class="district-divider"></div>
+                <div class="metrics">${metricsHTML}</div>
+                <div class="story-section">
+                    <div class="story-label">MISSION LOG</div>
+                    <div class="story-text">${d.recruiterStory.replace(/\n/g, "<br>")}</div>
+                </div>
+                <div class="tech-tags">${techHTML}</div>
+                ${engineerSection}
+                <div class="record-status">
+                    <div class="status-dot"></div>
+                    <span class="status-text">
+                        SYSTEM INTEGRITY 99.7% · LAST VERIFIED 2034 · OPERATIONAL
+                    </span>
+                </div>
+            </div>
+        `;
+
+          grid.appendChild(el);
+        });
+      }
+
+      // ── TOGGLE DISTRICT ──────────────────────────────────────────
+      function toggleDistrict(id) {
+        const el = document.getElementById(`district-${id}`);
+        const wasExpanded = el.classList.contains("expanded");
+
+        // Close all others
+        document.querySelectorAll(".district.expanded").forEach((d) => {
+          d.classList.remove("expanded");
+        });
+
+        if (!wasExpanded) {
+          el.classList.add("expanded");
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+
+          // Mark as visited
+          if (!visitedDistricts.has(id)) {
+            visitedDistricts.add(id);
+            localStorage.setItem(
+              "visited_districts",
+              JSON.stringify([...visitedDistricts]),
+            );
+            el.classList.add("visited");
+            updateBrahmastra();
+            checkContact();
+
+            // Log to backend
+            logEvent("district_entered", id);
+          }
+        }
+      }
+
+      // ── ENGINEER DEEP DIVE ───────────────────────────────────────
+      function toggleEngineer(id, event) {
+        event.stopPropagation();
+        const panel = document.getElementById(`eng-${id}`);
+        panel.classList.toggle("visible");
+        const toggle = panel.previousElementSibling;
+        toggle.textContent = panel.classList.contains("visible")
+          ? "▼ TECHNICAL DEPTH"
+          : "▶ TECHNICAL DEPTH";
+      }
+
+      // ── BRAHMASTRA PROGRESS ──────────────────────────────────────
+      function updateBrahmastra() {
+        const count = Math.min(visitedDistricts.size, 5);
+        document.querySelectorAll(".fragment").forEach((f, i) => {
+          if (i < count) f.classList.add("collected");
+          else f.classList.remove("collected");
+        });
+        document.getElementById("brahmastra-label").textContent =
+          `${count} / 5 DISTRICTS EXPLORED`;
+      }
+
+      function checkContact() {
+        if (visitedDistricts.size >= 5) {
+          document.getElementById("contact-section").classList.add("visible");
+
+          if (visitedDistricts.size === 5) {
+            logEvent("brahmastra_assembled", "all_five_districts");
+          }
+        }
+      }
+
+      // ── CHAOS SIMULATION ─────────────────────────────────────────
+      function runChaos() {
+        if (chaosRun) return;
+        chaosRun = true;
+
+        const output = document.getElementById("chaos-output");
+        const btn = document.getElementById("chaos-btn");
+        btn.textContent = "RUNNING...";
+        btn.disabled = true;
+        output.style.display = "block";
+        output.innerHTML = "";
+
+        logEvent("chaos_triggered", "simulation_started");
+
+        const recruiterLines = [
+          {
+            text: "[ 00:02 ] Removing Aditya's systems from the network...",
+            cls: "dim",
+          },
+          {
+            text: "[ 00:05 ] AUTH: Ten platforms no longer recognise their users.",
+            cls: "chaos-line",
+          },
+          {
+            text: "[ 00:08 ] AUTH: Support tickets — 847 and rising.",
+            cls: "chaos-line",
+          },
+          {
+            text: "[ 00:11 ] LOGISTICS: All 80 integration services attempting to reconnect...",
+            cls: "chaos-line",
+          },
+          {
+            text: "[ 00:14 ] LOGISTICS: Order processing stopped. Shipments frozen.",
+            cls: "chaos-line",
+          },
+          {
+            text: "[ 00:18 ] DATA: Database migration rolling back.",
+            cls: "chaos-line",
+          },
+          {
+            text: "[ 00:21 ] FINANCE: Financial records diverging. Approval workflows stalled.",
+            cls: "chaos-line",
+          },
+          {
+            text: "[ 00:25 ] ASSETS: Art tracking system — state unknown.",
+            cls: "chaos-line",
+          },
+          { text: "[ 00:30 ] Simulation complete.", cls: "dim" },
+        ];
+
+        const engineerLines = [
+          { text: "[ 00:02 ] Simulation initialising...", cls: "dim" },
+          {
+            text: "[ 00:05 ] SSO: 401 cascade — JWT validation failure. No session store accessible.",
+            cls: "chaos-line",
+          },
+          {
+            text: "[ 00:08 ] SSO: Refresh token rotation blocked. 10K+ sessions invalidated.",
+            cls: "chaos-line",
+          },
+          {
+            text: "[ 00:11 ] INTEGRATION: shell execution layer returning non-zero exit codes.",
+            cls: "chaos-line",
+          },
+          {
+            text: "[ 00:14 ] INTEGRATION: Lambda cold starts timing out. No fallback circuit breaker.",
+            cls: "chaos-line",
+          },
+          {
+            text: "[ 00:18 ] DB: MySQL 8 driver incompatibility — connection pool exhausted.",
+            cls: "chaos-line",
+          },
+          {
+            text: "[ 00:21 ] FINANCE: Idempotency keys absent in external calls. Duplicate invoices possible.",
+            cls: "chaos-line",
+          },
+          {
+            text: "[ 00:25 ] ATS: State machine bypassed by direct DB update. Asset state corrupted.",
+            cls: "chaos-line",
+          },
+          { text: "[ 00:30 ] Simulation complete.", cls: "dim" },
+        ];
+
+        const lines =
+          VISITOR_PATH === "engineer" ? engineerLines : recruiterLines;
+        let i = 0;
+
+        const interval = setInterval(() => {
+          if (i >= lines.length) {
+            clearInterval(interval);
+            showChaosResult();
+            btn.textContent = "SIMULATION COMPLETE";
+            return;
+          }
+          const div = document.createElement("div");
+          div.className = lines[i].cls;
+          div.textContent = lines[i].text;
+          output.appendChild(div);
+          output.scrollTop = output.scrollHeight;
+          i++;
+        }, 600);
+      }
+
+      function showChaosResult() {
+        const output = document.getElementById("chaos-output");
+        output.innerHTML += `
+        <div class="chaos-result">
+            <div style="color:var(--green-text);margin-bottom:12px">
+                SYSTEMS MAINTAINED BY ADITYA SRIVASTAVA
+            </div>
+            <div style="color:var(--green-text);font-size:11px;line-height:2">
+                Auth Tower ············ OPERATIONAL<br>
+                Integration Mesh ······ OPERATIONAL<br>
+                Data Vaults ··········· OPERATIONAL<br>
+                Cloud District ········ OPERATIONAL<br>
+                LedgerFlow ············ OPERATIONAL<br>
+                ATS + Operations ······ OPERATIONAL
+            </div>
+            <div style="color:var(--red-text);margin-top:12px;font-size:11px">
+                Everything outside his systems: see above.
+            </div>
+        </div>
+    `;
+      }
+
+      // ── ORACLE ───────────────────────────────────────────────────
+      function toggleOracle() {
+        oracleOpen = !oracleOpen;
+        const panel = document.getElementById("oracle-panel");
+        panel.classList.toggle("visible", oracleOpen);
+        if (oracleOpen) {
+          document.getElementById("oracle-input").focus();
+        }
+      }
+
+      async function sendOracle() {
+        const input = document.getElementById("oracle-input");
+        const question = input.value.trim();
+        if (!question) return;
+
+        input.value = "";
+        addOracleMessage(question, "user");
+
+        const thinking = addOracleMessage("...", "assistant");
+
+        try {
+          const res = await fetch(
+            `${CONFIG.API_URL}/api/${CONFIG.VERSION}/oracle/ask`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                question,
+                visitorPath: VISITOR_PATH,
+                sessionId: SESSION_ID,
+              }),
+            },
+          );
+          const json = await res.json();
+          thinking.textContent =
+            json.data?.answer || "The Oracle is momentarily silent.";
+        } catch (e) {
+          thinking.textContent =
+            "The Oracle is not available in this environment. Come back when the backend is deployed.";
+        }
+
+        logEvent("oracle_asked", question.substring(0, 100));
+      }
+
+      function addOracleMessage(text, role) {
+        const msgs = document.getElementById("oracle-messages");
+        const div = document.createElement("div");
+        div.className = `oracle-msg ${role}`;
+        div.textContent = text;
+        msgs.appendChild(div);
+        msgs.scrollTop = msgs.scrollHeight;
+        return div;
+      }
+
+      // ── CONTACT ──────────────────────────────────────────────────
+      function logContact() {
+        logEvent("contact_clicked", "email");
+      }
+
+      // ── BACKEND LOGGING ──────────────────────────────────────────
+      function logEvent(eventType, eventData) {
+        fetch(`${CONFIG.API_URL}/api/${CONFIG.VERSION}/visitor/event`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId: SESSION_ID, eventType, eventData }),
+        }).catch(() => {});
+      }
+
+      // Error capture
+      window.addEventListener("error", (e) => {
+        fetch(`${CONFIG.API_URL}/api/${CONFIG.VERSION}/visitor/error`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionId: SESSION_ID,
+            message: e.message,
+            fileName: e.filename,
+            lineNumber: e.lineno,
+            browser: navigator.userAgent,
+            page: "city",
+          }),
+        }).catch(() => {});
+      });
+
+      // Duration tracking
+      const pageLoadTime = Date.now();
+      setInterval(() => {
+        const seconds = Math.round((Date.now() - pageLoadTime) / 1000);
+        fetch(
+          `${CONFIG.API_URL}/api/${CONFIG.VERSION}/visitor/session/${SESSION_ID}/duration`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ durationSeconds: seconds }),
+          },
+        ).catch(() => {});
+      }, 30000);
     </script>
   </body>
 </html>
