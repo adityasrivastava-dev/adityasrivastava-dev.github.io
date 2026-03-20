@@ -1707,121 +1707,121 @@
 
       const BCONFIG = [
         {
-          // auth-tower — always on, gold, steady like a server room
+          // auth-tower — HERO. Warm brass-gold. Heaviest, most present.
           type: "tower",
           floors: 9,
-          color: 0x8a6e28,
-          trim: 0xffe080,
+          color: 0x1a1408, // very dark warm brown base — lit by lights, not by color
+          trim: 0xffd060,
           accent: 0xff9900,
           roofType: "pyramid",
-          roughness: 0.78,
-          metalness: 0.08,
-          windowTint: 0xffd560,
+          roughness: 0.72,
+          metalness: 0.22,
+          windowTint: 0xffd060,
           winOnProb: 0.92,
           winChangeRate: 0.4,
           winMood: "warm",
         },
         {
-          // cloud-district — fast-changing, cool blue-white, independent
+          // cloud-district — glass + steel. Cool, independent, lightweight.
           type: "block",
           floors: 5,
-          color: 0x2d2540,
-          trim: 0xc0b0ff,
-          accent: 0x7060aa,
+          color: 0x0e1520, // deep navy — glass curtain wall feel
+          trim: 0x88ccff,
+          accent: 0x4488cc,
           roofType: "flat",
-          roughness: 0.92,
-          metalness: 0.04,
-          windowTint: 0xb8a8ff,
+          roughness: 0.12,
+          metalness: 0.75, // very reflective
+          windowTint: 0xa8d8ff,
           winOnProb: 0.65,
           winChangeRate: 2.2,
           winMood: "cool",
         },
         {
-          // integration-mesh — busy, mixed, constantly moving
+          // integration-mesh — slim glass tower, active, data-moving
           type: "slim",
           floors: 7,
-          color: 0x183040,
-          trim: 0xa0e8ff,
+          color: 0x0a1825, // darkest blue-black — nearly disappears, windows pop
+          trim: 0x60d8ff,
           accent: 0x2080a0,
           roofType: "antenna",
-          roughness: 0.22,
-          metalness: 0.55,
-          windowTint: 0x80d8ff,
+          roughness: 0.1,
+          metalness: 0.85, // most reflective
+          windowTint: 0x60d8ff,
           winOnProb: 0.75,
           winChangeRate: 1.8,
           winMood: "cool",
         },
         {
-          // data-vaults — mostly dark, few lit, stable, secure
+          // data-vaults — concrete bunker. Heavy, earthen, secure.
           type: "wide",
           floors: 4,
-          color: 0x3a2c14,
-          trim: 0xffd080,
+          color: 0x181410, // dark concrete — warm undertone
+          trim: 0xe8a840,
           accent: 0xa07020,
           roofType: "stepped",
-          roughness: 0.88,
-          metalness: 0.06,
-          windowTint: 0xffc040,
+          roughness: 0.96,
+          metalness: 0.02, // most matte
+          windowTint: 0xe8a840,
           winOnProb: 0.22,
           winChangeRate: 0.15,
           winMood: "warm",
         },
         {
-          // finance-ledger — reliable, steady green glow, mostly on
+          // finance-ledger — dark green glass. Stable, institutional.
           type: "tower",
           floors: 8,
-          color: 0x14302a,
-          trim: 0x90ffcc,
+          color: 0x081810, // dark forest — almost black green
+          trim: 0x50ffaa,
           accent: 0x208050,
           roofType: "flat",
-          roughness: 0.3,
-          metalness: 0.45,
-          windowTint: 0x60ffaa,
+          roughness: 0.15,
+          metalness: 0.7,
+          windowTint: 0x50e890,
           winOnProb: 0.8,
           winChangeRate: 0.6,
           winMood: "cool",
         },
         {
-          // observability — complex, mixed, diagnostic
+          // observability — complex asymmetric. Cool blue-grey.
           type: "complex",
           floors: 6,
-          color: 0x1c2840,
-          trim: 0xb0d0ff,
+          color: 0x101828, // slate blue-black
+          trim: 0x80b8ff,
           accent: 0x3060a0,
           roofType: "pyramid",
-          roughness: 0.5,
-          metalness: 0.3,
-          windowTint: 0x90c4ff,
+          roughness: 0.35,
+          metalness: 0.55,
+          windowTint: 0x80b8ff,
           winOnProb: 0.6,
           winChangeRate: 1.4,
           winMood: "mixed",
         },
         {
-          // architecture-quarter — creative, varied
+          // architecture-quarter — warm dark brick. Human, creative.
           type: "block",
           floors: 4,
-          color: 0x3a1a30,
-          trim: 0xff90e0,
+          color: 0x180c10, // dark burgundy-black
+          trim: 0xff70b8,
           accent: 0x904080,
           roofType: "flat",
-          roughness: 0.82,
-          metalness: 0.1,
-          windowTint: 0xff70cc,
+          roughness: 0.9,
+          metalness: 0.04,
+          windowTint: 0xff70b8,
           winOnProb: 0.55,
           winChangeRate: 1.0,
           winMood: "warm",
         },
         {
-          // monolith-quarter — old, warm, heavy, always running
+          // monolith-quarter — brutalist concrete. Oldest, heaviest.
           type: "monolith",
           floors: 3,
-          color: 0x1c1c22,
-          trim: 0xd0d0e0,
+          color: 0x141418, // near-black cool grey
+          trim: 0xc0c8d8,
           accent: 0x505060,
           roofType: "flat",
-          roughness: 0.95,
-          metalness: 0.02,
-          windowTint: 0xc0c8e0,
+          roughness: 0.98,
+          metalness: 0.01, // absolute matte
+          windowTint: 0xc0c8d8,
           winOnProb: 0.88,
           winChangeRate: 0.25,
           winMood: "warm",
@@ -2348,8 +2348,10 @@
         emissiveIntensity: 0.4,
       });
       const swMat = new THREE.MeshStandardMaterial({
-        color: 0x181a2c,
-        roughness: 0.97,
+        color: 0x1c1e2e, // was 0x181a2c — brighter, reads as pavement
+        roughness: 0.94,
+        emissive: 0x080810,
+        emissiveIntensity: 0.25,
       });
       const dashMat = new THREE.MeshStandardMaterial({
         color: 0xddb844,
@@ -2436,13 +2438,16 @@
         pm.position.set(d.pos[0], 0.011, d.pos[2]);
         scene.add(pm);
       });
-      // District colour zones
+      // District colour zones — lifted emissive so they read at night
       DISTRICTS.forEach((d, i) => {
         const bc = BCONFIG[i];
+        const isAuth = i === 0;
         const zm = new THREE.Mesh(
-          new THREE.CircleGeometry(3.5, 16),
+          new THREE.CircleGeometry(isAuth ? 5.0 : 3.5, 32),
           new THREE.MeshStandardMaterial({
-            color: new THREE.Color(bc.color).multiplyScalar(0.14),
+            color: new THREE.Color(bc.trim).multiplyScalar(0.08),
+            emissive: new THREE.Color(bc.trim),
+            emissiveIntensity: isAuth ? 0.18 : 0.06,
             roughness: 1,
           }),
         );
@@ -2452,64 +2457,62 @@
       });
 
       // ═══════════════════════════════════════════════════════════════
-      //  STARFIELD
+      //  STARFIELD — varied sizes and colors, fades with night factor
       // ═══════════════════════════════════════════════════════════════
-      {
-        const N = 900,
+      const starGeo = (() => {
+        const N = 1200,
           sp = new Float32Array(N * 3);
         for (let i = 0; i < N; i++) {
           const th = Math.random() * Math.PI * 2,
-            ph = Math.acos(0.35 + Math.random() * 0.65),
-            r = 85 + Math.random() * 35;
+            ph = Math.acos(0.28 + Math.random() * 0.72),
+            r = 88 + Math.random() * 40;
           sp[i * 3] = r * Math.sin(ph) * Math.cos(th);
           sp[i * 3 + 1] = Math.abs(r * Math.cos(ph));
           sp[i * 3 + 2] = r * Math.sin(ph) * Math.sin(th);
         }
-        const sg = new THREE.BufferGeometry();
-        sg.setAttribute("position", new THREE.BufferAttribute(sp, 3));
-        scene.add(
-          new THREE.Points(
-            sg,
-            new THREE.PointsMaterial({
-              color: 0xffffff,
-              size: 0.22,
-              transparent: true,
-              opacity: 0.75,
-              sizeAttenuation: true,
-              depthWrite: false,
-            }),
-          ),
-        );
-      }
+        const g = new THREE.BufferGeometry();
+        g.setAttribute("position", new THREE.BufferAttribute(sp, 3));
+        return g;
+      })();
+      const starMat = new THREE.PointsMaterial({
+        color: 0xd0d8ff, // cool blue-white, not pure white
+        size: 0.18,
+        transparent: true,
+        opacity: 0.0,
+        sizeAttenuation: true,
+        depthWrite: false,
+      });
+      const stars = new THREE.Points(starGeo, starMat);
+      scene.add(stars);
 
       // ═══════════════════════════════════════════════════════════════
       //  DISTANT SKYLINE
       // ═══════════════════════════════════════════════════════════════
       function makeDistantSkyline() {
         const skylineColors = [
-          0x070510, 0x060812, 0x080610, 0x050814, 0x0a0608,
+          0x0e0c1a, 0x0c0e1e, 0x100c18, 0x0e1018, 0x0c0c16,
         ];
-        for (let i = 0; i < 42; i++) {
-          const ang = (i / 42) * Math.PI * 2 + (Math.random() - 0.5) * 0.12;
-          const r = 33 + Math.random() * 16;
-          const h = 1.8 + Math.random() * 11;
-          const w = 1.0 + Math.random() * 3.2;
+        for (let i = 0; i < 44; i++) {
+          const ang = (i / 44) * Math.PI * 2 + (Math.random() - 0.5) * 0.1;
+          const r = 34 + Math.random() * 14;
+          const h = 2.2 + Math.random() * 10;
+          const w = 1.2 + Math.random() * 3.0;
           const ci = Math.floor(Math.random() * skylineColors.length);
-          const geo = new THREE.BoxGeometry(w, h, w * 0.65);
           const mat = new THREE.MeshStandardMaterial({
             color: skylineColors[ci],
             roughness: 1,
             metalness: 0,
+            emissive: new THREE.Color(skylineColors[ci]).multiplyScalar(2),
+            emissiveIntensity: 0.14,
           });
-          const m = new THREE.Mesh(geo, mat);
-          m.position.set(Math.cos(ang) * r, h / 2 - 0.5, Math.sin(ang) * r);
-          m.rotation.y = ang + (Math.random() - 0.5) * 0.3;
+          const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, w * 0.6), mat);
+          m.position.set(Math.cos(ang) * r, h / 2 - 0.4, Math.sin(ang) * r);
+          m.rotation.y = ang + (Math.random() - 0.5) * 0.25;
           scene.add(m);
 
-          // Lit windows (denser on taller buildings)
-          const wCount = Math.floor((h / 2) * (0.5 + Math.random()));
-          const wG = new THREE.BoxGeometry(0.09, 0.14, 0.02);
-          const winColors = [0xffcc44, 0xaadcff, 0xffeeb8, 0x88aaff];
+          const wCount = Math.floor((h / 1.8) * (0.4 + Math.random() * 0.8));
+          const winColors = [0xffd870, 0xaad8ff, 0xfff0c0, 0x88aaff, 0xffeeaa];
+          const wG = new THREE.BoxGeometry(0.1, 0.15, 0.02);
           for (let j = 0; j < wCount; j++) {
             const wc = new THREE.Color(
               winColors[Math.floor(Math.random() * winColors.length)],
@@ -2517,31 +2520,32 @@
             const wm = new THREE.MeshStandardMaterial({
               color: wc,
               emissive: wc,
-              emissiveIntensity: 2.0 + Math.random(),
+              emissiveIntensity: 1.8 + Math.random() * 0.8,
             });
             const ww = new THREE.Mesh(wG, wm);
             ww.position.set(
-              (Math.random() - 0.5) * w * 0.72,
-              (Math.random() - 0.5) * h * 0.78,
-              w * 0.34,
+              (Math.random() - 0.5) * w * 0.7,
+              (Math.random() - 0.5) * h * 0.75,
+              w * 0.32,
             );
             m.add(ww);
             registerWindow(ww, winColors[0], `sky_${i}_${j}`, undefined);
           }
-
-          // Occasional antenna on tall distant buildings
-          if (h > 7 && Math.random() > 0.55) {
-            const antH = 0.5 + Math.random() * 1.2;
-            const ant = new THREE.Mesh(
-              new THREE.CylinderGeometry(0.04, 0.06, antH, 5),
+          if (h > 7 && Math.random() > 0.5) {
+            const blink = new THREE.Mesh(
+              new THREE.SphereGeometry(0.06, 5, 4),
               new THREE.MeshStandardMaterial({
-                color: 0xb0b8c0,
-                roughness: 0.5,
-                metalness: 0.5,
+                color: 0xff2020,
+                emissive: 0xff2020,
+                emissiveIntensity: 3.0,
               }),
             );
-            ant.position.set(0, h / 2 + antH / 2, 0);
-            m.add(ant);
+            blink.position.set(0, h / 2 + 0.06, 0);
+            blink.userData = {
+              blink: true,
+              phase: Math.random() * Math.PI * 2,
+            };
+            m.add(blink);
           }
         }
       }
@@ -4646,6 +4650,9 @@
           bloomPass.strength = 0.55 + nf * 0.55; // day: 0.55, night: 1.1
           bloomPass.threshold = 0.75 - nf * 0.25; // day: 0.75, night: 0.50
         }
+
+        // Stars fade in at night
+        if (starMat) starMat.opacity = nf * 0.85;
 
         // ── SOUND UPDATE ──
         if (audioCtx && rainGainNode) {
