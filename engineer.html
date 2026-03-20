@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Aditya Srivastava — Engineer View</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--arc:#00c8ff;--ember:#ff6b00;--acid:#7dff4f;--gold:#ffcc44;--red:#ff4040;--void:#020408;--ff:'Rajdhani',sans-serif;--fm:'Share Tech Mono',monospace;}
+html,body{width:100%;height:100%;background:var(--void);overflow:hidden;font-family:var(--ff);}
+*{cursor:none!important}
+#cur{position:fixed;width:10px;height:10px;z-index:9999;pointer-events:none;border:1px solid var(--arc);border-radius:50%;transform:translate(-50%,-50%);transition:width .2s,height .2s;mix-blend-mode:screen;}
+#cur.h{width:26px;height:26px;border-color:var(--ember);background:rgba(255,107,0,.05);}
+#ct{position:fixed;width:4px;height:4px;z-index:9998;pointer-events:none;background:var(--arc);border-radius:50%;transform:translate(-50%,-50%);opacity:.4;box-shadow:0 0 6px var(--arc);}
+canvas{position:fixed;inset:0;}
+#scan{position:fixed;inset:0;z-index:800;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,200,255,.016) 3px,rgba(0,200,255,.016) 4px);}
+#vig{position:fixed;inset:0;z-index:799;pointer-events:none;background:radial-gradient(ellipse at center,transparent 35%,rgba(2,4,8,.7) 100%);}
+.hc{position:fixed;z-index:100;pointer-events:none;}
+.hc.tl{top:0;left:0;} .hc.tr{top:0;right:0;transform:scaleX(-1);}
+.hc.bl{bottom:0;left:0;transform:scaleY(-1);} .hc.br{bottom:0;right:0;transform:scale(-1);}
+
+#hdr{position:fixed;top:0;left:0;right:0;z-index:300;height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;background:linear-gradient(180deg,rgba(2,4,8,.92) 0%,transparent 100%);border-bottom:1px solid rgba(0,200,255,.08);}
+.h-sig{font-family:var(--ff);font-size:13px;font-weight:700;letter-spacing:5px;color:var(--arc);text-shadow:0 0 18px rgba(0,200,255,.7);}
+.h-mid{position:absolute;left:50%;transform:translateX(-50%);font-family:var(--fm);font-size:8px;letter-spacing:4px;color:rgba(0,200,255,.28);}
+.h-right{display:flex;align-items:center;gap:16px;}
+.chip{font-family:var(--fm);font-size:7px;letter-spacing:3px;padding:3px 12px;border:1px solid rgba(0,200,255,.3);color:var(--arc);background:rgba(0,200,255,.04);clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%);}
+.hbtn{background:none;border:none;font-family:var(--fm);font-size:8px;letter-spacing:2px;color:rgba(0,200,255,.38);transition:color .25s;}
+.hbtn:hover{color:var(--arc);}
+
+#prog{position:fixed;top:50px;left:0;right:0;z-index:290;height:24px;background:rgba(2,4,8,.82);border-bottom:1px solid rgba(0,200,255,.05);display:flex;align-items:center;gap:10px;padding:0 26px;}
+.pl{font-family:var(--fm);font-size:7px;letter-spacing:3px;color:rgba(0,200,255,.24);}
+.frags{display:flex;gap:4px;}
+.frag{width:18px;height:2px;background:rgba(255,255,255,.04);transition:all .6s;}
+.frag.on{background:var(--arc);box-shadow:0 0 6px var(--arc),0 0 14px rgba(0,200,255,.4);}
+#fc{font-family:var(--fm);font-size:7px;letter-spacing:2px;color:rgba(0,200,255,.2);}
+
+#tip{position:fixed;z-index:400;pointer-events:none;transform:translate(-50%,-130%);opacity:0;transition:opacity .22s;}
+#tip.v{opacity:1;}
+.ti{background:rgba(0,6,18,.94);border:1px solid rgba(0,200,255,.28);padding:9px 16px;clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px));backdrop-filter:blur(14px);}
+.tn{font-family:var(--ff);font-size:11px;font-weight:600;letter-spacing:2px;color:#e8f4ff;margin-bottom:3px;}
+.ts{font-family:var(--fm);font-size:7px;letter-spacing:2px;color:rgba(0,200,255,.5);}
+
+/* Panel */
+#panel{position:fixed;top:0;right:0;bottom:0;z-index:500;width:510px;max-width:100vw;transform:translateX(110%);transition:transform .5s cubic-bezier(.4,0,.2,1);pointer-events:none;}
+#panel.open{transform:translateX(0);pointer-events:all;}
+#pi{position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,10,24,.97),rgba(0,5,14,.99));border-left:1px solid rgba(0,200,255,.15);box-shadow:-20px 0 60px rgba(0,200,255,.07),-2px 0 0 rgba(0,200,255,.15);overflow-y:auto;}
+#pi::before{content:'';position:sticky;top:0;left:0;right:0;display:block;height:1px;background:linear-gradient(90deg,transparent,var(--arc),rgba(0,200,255,.3),transparent);}
+#panel.open #pi{animation:pscan .5s ease;}
+@keyframes pscan{from{clip-path:polygon(0 0,100% 0,100% 0,0 0);}to{clip-path:polygon(0 0,100% 0,100% 100%,0 100%);}}
+#ph{position:sticky;top:1px;z-index:10;background:rgba(0,6,18,.97);border-bottom:1px solid rgba(0,200,255,.07);padding:13px 22px;display:flex;align-items:center;justify-content:space-between;}
+#phl{font-family:var(--fm);font-size:7px;letter-spacing:5px;color:rgba(0,200,255,.3);}
+#px{width:28px;height:28px;border:1px solid rgba(0,200,255,.22);display:flex;align-items:center;justify-content:center;color:rgba(0,200,255,.4);font-size:14px;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);background:none;transition:all .25s;}
+#px:hover{border-color:var(--ember);color:var(--ember);background:rgba(255,107,0,.08);}
+#pb{padding:26px 22px 60px;}
+
+/* Panel content — engineer specifics */
+.p-hero{display:inline-flex;align-items:center;gap:8px;font-family:var(--fm);font-size:7px;letter-spacing:4px;padding:4px 14px;margin-bottom:18px;clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%);}
+.p-hero.arc{color:var(--arc);border:1px solid rgba(0,200,255,.3);background:rgba(0,200,255,.06);}
+.p-hero.acid{color:var(--acid);border:1px solid rgba(125,255,79,.3);background:rgba(125,255,79,.05);}
+.p-acc{height:1px;margin-bottom:22px;position:relative;overflow:visible;}
+.p-acc::after{content:'◆';position:absolute;right:0;top:-5px;font-size:8px;color:var(--nc,var(--arc));}
+.p-num{font-family:var(--fm);font-size:7px;letter-spacing:5px;color:var(--nc,var(--arc));opacity:.5;margin-bottom:6px;}
+.p-name{font-family:var(--ff);font-size:21px;font-weight:700;letter-spacing:2px;color:#eef6ff;margin-bottom:5px;line-height:1.15;text-shadow:0 0 28px rgba(0,200,255,.28);}
+.p-tag{font-family:var(--fm);font-size:7px;letter-spacing:3px;color:rgba(0,200,255,.25);margin-bottom:18px;line-height:2;}
+.p-stat{display:inline-flex;align-items:center;gap:8px;font-family:var(--fm);font-size:7px;letter-spacing:3px;padding:4px 14px;margin-bottom:22px;clip-path:polygon(6px 0,100% 0,calc(100% - 6px) 100%,0 100%);border:1px solid;}
+.p-stat.op{color:#3dff88;border-color:rgba(61,255,136,.2);background:rgba(61,255,136,.04);}
+.p-stat.ac{color:var(--arc);border-color:rgba(0,200,255,.2);background:rgba(0,200,255,.04);}
+.sdot{width:5px;height:5px;border-radius:50%;background:currentColor;animation:pulse 2s infinite;flex-shrink:0;}
+
+.mets{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-bottom:22px;border:1px solid rgba(0,200,255,.08);background:rgba(0,200,255,.04);}
+.met{padding:13px 10px;text-align:center;background:rgba(0,6,18,.82);position:relative;}
+.met::before{content:'';position:absolute;bottom:0;left:10%;right:10%;height:1px;background:var(--nc,var(--arc));opacity:.14;}
+.mv{font-family:var(--ff);font-size:17px;font-weight:700;display:block;margin-bottom:3px;color:var(--nc,var(--arc));text-shadow:0 0 18px var(--nc,var(--arc));}
+.ml{font-family:var(--fm);font-size:6px;letter-spacing:3px;color:rgba(0,200,255,.24);}
+
+/* Section label */
+.sl{font-family:var(--fm);font-size:7px;letter-spacing:5px;color:var(--nc,var(--arc));margin-bottom:10px;margin-top:8px;opacity:.7;display:flex;align-items:center;gap:10px;}
+.sl::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--nc,var(--arc)),transparent);opacity:.2;}
+
+/* Problem block — red tint to signal pain */
+.prob{font-size:12px;line-height:2.2;color:rgba(220,180,160,.65);margin-bottom:16px;padding:14px 16px;background:rgba(255,60,60,.04);border:1px solid rgba(255,60,60,.12);border-left:2px solid rgba(255,60,60,.3);}
+.prob .em{color:#ff8888;font-weight:600;}
+
+/* Rejected approaches — crossed out feeling */
+.rejected{margin-bottom:16px;}
+.rej-item{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;margin-bottom:6px;background:rgba(255,60,60,.03);border:1px solid rgba(255,60,60,.1);font-family:var(--fm);font-size:10px;line-height:1.8;color:rgba(180,140,140,.5);}
+.rej-x{color:#ff6060;flex-shrink:0;margin-top:2px;font-size:12px;}
+.rej-reason{color:rgba(180,140,140,.45);font-style:italic;font-size:9px;margin-top:4px;display:block;}
+
+/* Decision block — the key insight */
+.decision{margin-bottom:16px;padding:14px 16px;background:rgba(0,200,255,.04);border:1px solid rgba(0,200,255,.12);border-left:2px solid rgba(0,200,255,.35);}
+.dec-label{font-family:var(--fm);font-size:7px;letter-spacing:4px;color:rgba(0,200,255,.5);margin-bottom:10px;}
+.dec-body{font-family:var(--fm);font-size:10.5px;line-height:2.1;color:rgba(120,170,210,.75);}
+.dec-body code{color:var(--arc);background:rgba(0,200,255,.07);padding:1px 5px;}
+
+/* Implementation detail */
+.impl{margin-bottom:16px;padding:14px 16px;background:rgba(125,255,79,.025);border:1px solid rgba(125,255,79,.1);border-left:2px solid rgba(125,255,79,.25);}
+.impl-label{font-family:var(--fm);font-size:7px;letter-spacing:4px;color:rgba(125,255,79,.5);margin-bottom:10px;}
+.impl-body{font-family:var(--fm);font-size:10.5px;line-height:2.1;color:rgba(140,200,140,.65);}
+.impl-body code{color:var(--acid);background:rgba(125,255,79,.07);padding:1px 5px;}
+
+/* Lesson */
+.lesson{margin-top:16px;padding:12px 16px;background:rgba(255,204,68,.03);border:1px solid rgba(255,204,68,.1);font-family:var(--fm);font-size:10px;line-height:1.9;color:rgba(220,190,100,.55);}
+.lesson-l{font-size:7px;letter-spacing:4px;color:rgba(255,204,68,.4);margin-bottom:7px;}
+
+.ttags{display:flex;flex-wrap:wrap;gap:5px;margin-top:18px;}
+.ttag{font-family:var(--fm);font-size:7px;letter-spacing:2px;color:rgba(0,200,255,.35);border:1px solid rgba(0,200,255,.1);padding:3px 10px;clip-path:polygon(4px 0,100% 0,calc(100% - 4px) 100%,0 100%);background:rgba(0,200,255,.02);}
+
+/* Oracle */
+#ob{position:fixed;bottom:24px;right:24px;z-index:400;width:46px;height:46px;background:rgba(0,6,18,.9);border:1px solid rgba(255,107,0,.4);clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);color:var(--ember);font-size:18px;font-family:serif;display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(255,107,0,.1);transition:all .3s;}
+#ob:hover{box-shadow:0 0 30px rgba(255,107,0,.25);border-color:var(--ember);background:rgba(255,107,0,.08);}
+#orp{position:fixed;bottom:82px;right:24px;z-index:400;width:350px;background:rgba(0,4,14,.97);border:1px solid rgba(255,107,0,.2);clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,0 100%);backdrop-filter:blur(20px);display:none;flex-direction:column;max-height:430px;box-shadow:-10px 10px 40px rgba(0,0,0,.6);}
+#orp.vis{display:flex;}
+.oh{padding:10px 15px;border-bottom:1px solid rgba(255,107,0,.1);font-family:var(--fm);font-size:7px;letter-spacing:3px;color:var(--ember);display:flex;justify-content:space-between;align-items:center;background:rgba(255,107,0,.03);}
+.ox{color:rgba(255,107,0,.4);font-size:14px;transition:color .2s;}.ox:hover{color:var(--ember);}
+#orm{flex:1;overflow-y:auto;padding:13px;display:flex;flex-direction:column;gap:9px;font-family:var(--fm);font-size:11px;line-height:1.9;}
+.om{padding:9px 12px;}
+.om.u{align-self:flex-end;color:rgba(0,200,255,.5);font-size:10px;max-width:82%;border:1px solid rgba(0,200,255,.1);background:rgba(0,200,255,.03);}
+.om.b{color:rgba(150,190,220,.8);border:1px solid rgba(255,107,0,.1);background:rgba(255,107,0,.025);}
+.om.t{color:rgba(0,200,255,.2);font-style:italic;border:none;padding:6px 12px;}
+.or{display:flex;border-top:1px solid rgba(255,107,0,.08);}
+#oi{flex:1;background:transparent;border:none;color:#c8dff0;font-family:var(--fm);font-size:10px;padding:10px 13px;outline:none;}
+#oi::placeholder{color:rgba(0,200,255,.15);}
+#os{background:transparent;border:none;border-left:1px solid rgba(255,107,0,.1);color:var(--ember);font-family:var(--fm);font-size:7px;letter-spacing:2px;padding:0 13px;transition:background .2s;}
+#os:hover{background:rgba(255,107,0,.08);}
+
+/* Contact */
+#con{position:fixed;inset:0;z-index:600;display:none;align-items:center;justify-content:center;background:rgba(2,4,8,.93);backdrop-filter:blur(28px);}
+#con.vis{display:flex;}
+.cc{text-align:center;padding:54px 68px;position:relative;background:rgba(0,6,18,.92);border:1px solid rgba(0,200,255,.2);clip-path:polygon(20px 0,100% 0,100% calc(100% - 20px),calc(100% - 20px) 100%,0 100%,0 20px);box-shadow:0 0 80px rgba(0,200,255,.06);}
+.cc::before{content:'';position:absolute;top:0;left:0;width:40px;height:40px;border-top:1px solid var(--arc);border-left:1px solid var(--arc);}
+.cc::after{content:'';position:absolute;bottom:0;right:0;width:40px;height:40px;border-bottom:1px solid var(--ember);border-right:1px solid var(--ember);}
+.cu{font-family:var(--fm);font-size:7px;letter-spacing:6px;color:rgba(0,200,255,.4);margin-bottom:26px;}
+.cn{font-family:var(--ff);font-size:24px;letter-spacing:4px;font-weight:700;margin-bottom:6px;background:linear-gradient(135deg,var(--arc),#fff,var(--ember));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.cco{font-family:var(--fm);font-size:8px;letter-spacing:4px;color:rgba(0,200,255,.3);margin-bottom:4px;}
+.cr{font-family:var(--fm);font-size:7px;letter-spacing:4px;color:rgba(0,200,255,.18);margin-bottom:38px;}
+.cls{display:flex;flex-direction:column;gap:16px;align-items:center;}
+.cl2{font-family:var(--fm);font-size:11px;letter-spacing:2px;color:rgba(150,200,240,.6);text-decoration:none;display:flex;align-items:center;gap:16px;transition:color .2s,text-shadow .2s;}
+.cl2:hover{color:var(--arc);text-shadow:0 0 10px rgba(0,200,255,.4);}
+.cll{font-size:7px;letter-spacing:3px;color:rgba(0,200,255,.2);width:62px;text-align:right;}
+.ccl{position:absolute;top:14px;right:14px;background:none;border:1px solid rgba(0,200,255,.15);width:28px;height:28px;color:rgba(0,200,255,.3);font-size:14px;display:flex;align-items:center;justify-content:center;clip-path:polygon(4px 0,100% 0,100% calc(100% - 4px),calc(100% - 4px) 100%,0 100%,0 4px);transition:all .25s;}
+.ccl:hover{color:var(--ember);border-color:var(--ember);}
+
+#intro{position:fixed;inset:0;z-index:700;background:var(--void);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 1.3s ease;pointer-events:none;}
+#intro.fade{opacity:0;} #intro.gone{display:none;}
+.ia{width:60px;height:60px;border-radius:50%;border:1px solid rgba(0,200,255,.3);position:relative;margin-bottom:28px;animation:ispin 4s linear infinite;}
+.ia::before{content:'';position:absolute;inset:8px;border-radius:50%;border:1px solid rgba(0,200,255,.2);animation:ispin 2.5s linear infinite reverse;}
+.ia::after{content:'';position:absolute;inset:18px;border-radius:50%;background:radial-gradient(circle,rgba(0,200,255,.4),transparent);}
+@keyframes ispin{to{transform:rotate(360deg);}}
+.il{font-family:var(--fm);font-size:8px;letter-spacing:7px;color:rgba(0,200,255,.35);margin-bottom:9px;opacity:0;animation:rise .8s ease forwards;}
+.il:nth-child(2){animation-delay:.4s;} .il:nth-child(3){animation-delay:.9s;color:var(--ember);font-size:11px;letter-spacing:5px;} .il:nth-child(4){animation-delay:1.5s;}
+
+#ctrls{position:fixed;bottom:40px;left:26px;z-index:90;font-family:var(--fm);font-size:7px;letter-spacing:2px;color:rgba(0,200,255,.12);line-height:2;pointer-events:none;}
+#hbot{position:fixed;bottom:0;left:0;right:0;z-index:200;height:32px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;background:linear-gradient(0deg,rgba(0,14,30,.7) 0%,transparent 100%);border-top:1px solid rgba(0,200,255,.05);font-family:var(--fm);font-size:7px;letter-spacing:2px;color:rgba(0,200,255,.16);pointer-events:none;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes rise{from{opacity:0;transform:translateY(13px);}to{opacity:1;transform:translateY(0);}}
+::-webkit-scrollbar{width:2px;} ::-webkit-scrollbar-track{background:rgba(0,200,255,.02);} ::-webkit-scrollbar-thumb{background:rgba(0,200,255,.15);}
+</style>
+</head>
+<body>
+<div id="cur"></div><div id="ct"></div>
+<div id="scan"></div><div id="vig"></div>
+<div class="hc tl"><svg width="54" height="54" fill="none"><path d="M2 54L2 2L54 2" stroke="rgba(0,200,255,0.3)" stroke-width="1"/><circle cx="2" cy="2" r="2" fill="rgba(0,200,255,0.65)"/></svg></div>
+<div class="hc tr"><svg width="54" height="54" fill="none"><path d="M2 54L2 2L54 2" stroke="rgba(0,200,255,0.3)" stroke-width="1"/><circle cx="2" cy="2" r="2" fill="rgba(0,200,255,0.65)"/></svg></div>
+<div class="hc bl"><svg width="54" height="54" fill="none"><path d="M2 54L2 2L54 2" stroke="rgba(255,107,0,0.22)" stroke-width="1"/><circle cx="2" cy="2" r="2" fill="rgba(255,107,0,0.5)"/></svg></div>
+<div class="hc br"><svg width="54" height="54" fill="none"><path d="M2 54L2 2L54 2" stroke="rgba(255,107,0,0.22)" stroke-width="1"/><circle cx="2" cy="2" r="2" fill="rgba(255,107,0,0.5)"/></svg></div>
+
+<header id="hdr">
+  <div class="h-sig">Aditya · Srivastava</div>
+  <div class="h-mid">ENGINEER VIEW · PROBLEMS · DECISIONS · DEPTH</div>
+  <div class="h-right">
+    <span class="chip">ENGINEER</span>
+    <button class="hbtn" onclick="document.getElementById('con').classList.add('vis')">CONTACT</button>
+    <button class="hbtn" onclick="location.href='index.html'">← BACK</button>
+  </div>
+</header>
+<div id="prog"><span class="pl">SYSTEMS EXPLORED</span><div class="frags" id="frags"></div><span id="fc">0 / 10</span></div>
+<div id="tip"><div class="ti"><div class="tn" id="tn"></div><div class="ts" id="ts"></div></div></div>
+
+<div id="panel">
+  <div id="pi">
+    <div id="ph"><div id="phl">// TECHNICAL FILE</div><button id="px" onclick="closePanel()">×</button></div>
+    <div id="pb"></div>
+  </div>
+</div>
+
+<div id="con"><div class="cc">
+  <button class="ccl" onclick="document.getElementById('con').classList.remove('vis')">×</button>
+  <div class="cu">// CLEARANCE GRANTED</div>
+  <div class="cn">ADITYA SRIVASTAVA</div>
+  <div class="cco">TRILASOFT SOLUTIONS PVT. LTD.</div>
+  <div class="cr">BACKEND ARCHITECT · 4 YEARS · NOIDA, INDIA</div>
+  <div class="cls">
+    <a class="cl2" href="mailto:hello@adityasrivastava.dev"><span class="cll">MAIL</span>hello@adityasrivastava.dev</a>
+    <a class="cl2" href="https://linkedin.com/in/adityasrivastava" target="_blank"><span class="cll">LINKEDIN</span>linkedin.com/in/adityasrivastava</a>
+    <a class="cl2" href="https://github.com/adityasrivastava" target="_blank"><span class="cll">GITHUB</span>github.com/adityasrivastava</a>
+  </div>
+</div></div>
+
+<button id="ob" onclick="toggleO()">⊕</button>
+<div id="orp"><div class="oh"><span>// ORACLE · ENGINEER MODE</span><span class="ox" onclick="toggleO()">×</span></div>
+<div id="orm"><div class="om b">Engineer mode active. Ask about root causes, architecture decisions, tradeoffs, rejected approaches, or implementation specifics.</div></div>
+<div class="or"><input id="oi" placeholder="Ask about any technical decision…" onkeydown="if(event.key==='Enter')sendO()"/><button id="os" onclick="sendO()">SEND</button></div></div>
+
+<div id="ctrls">DRAG · ORBIT &nbsp; SCROLL · ZOOM<br>CLICK NODE · OPEN FILE</div>
+<div id="hbot"><span>TRILASOFT SOLUTIONS · 10 SYSTEMS</span><span>JAVA 8 → 17 · SPRING BOOT · AWS</span><span>ALL OPERATIONAL · 0 BREACHES</span></div>
+
+<div id="intro"><div class="ia"></div>
+  <div class="il">ENGINEER VIEW · LOADING</div>
+  <div class="il">ADITYA SRIVASTAVA</div>
+  <div class="il">TECHNICAL DEPTH · INITIALIZING</div>
+  <div class="il">PROBLEMS · DECISIONS · TRADEOFFS</div>
+</div>
+
+<script>
+'use strict';
+const cur=document.getElementById('cur'),ct=document.getElementById('ct');
+let mx=0,my=0,tx=0,ty=0;
+window.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px';});
+setInterval(()=>{tx+=(mx-tx)*.15;ty+=(my-ty)*.15;ct.style.left=tx+'px';ct.style.top=ty+'px';},16);
+
+// ── NODE DATA (Engineer lens: real problem → rejected approaches → why chosen → implementation) ──
+const N=[
+  {id:'auth',num:'09',name:'The Auth Tower',tag:'SSO · JWT · PASSKEY · RBAC · SLO',st:'op',color:'#00c8ff',rgb:'0,200,255',
+   isHero:true,heroClass:'arc',heroBadge:'★ ARC REACTOR · SSO PLATFORM',
+   metrics:[{v:'10+',l:'APPS UNIFIED'},{v:'10K+',l:'SESSIONS'},{v:'0',l:'BREACHES'}],
+   problem:'Each application maintained its own user table and session management. The trust boundary problem: how do you let Application A verify a session issued by Application B, without giving every app the ability to forge sessions for every other app? Standard library auth (Spring Security) was evaluated — its built-in CSRF protection directly conflicted with the cross-domain cookie sharing model required for SSO.',
+   rejected:[
+     {what:'Spring Security OAuth2 Server',why:'The default CSRF handling intercepted cross-application redirect flows. Customizing it meant overriding the very subsystem it was built around — more risk than writing custom.'},
+     {what:'Shared secret per-app JWT verification',why:'Every app would need the signing key. Rotating the key would require coordinated redeploy of all 10+ apps simultaneously.'},
+     {what:'Session database shared across apps',why:'Creates tight coupling at the data layer. Schema changes in the auth system break all apps.'},
+   ],
+   decision:'Custom SSO layer. JWT with asymmetric keys — apps hold the public key only, never the signing key. Key rotation affects only the auth service. SSO_SESSION cookie scoped to the root domain carries a session reference; apps validate via a single lightweight /verify endpoint. Device fingerprinting stored server-side in user_session prevents token theft via cookie replay.',
+   impl:'<code>JWT</code> payload: userId, sessionId, deviceHash, appId, roles[]. Signed with RS256. Refresh token is a separate opaque token stored server-side with sliding expiry — allows revocation without key rotation.\n\n<code>SLO (Single Logout):</code> on logout, the auth service fires async callbacks to all registered application logout endpoints. Apps maintain a short-lived blocklist of revoked sessionIds — O(1) lookup at request time.\n\n<code>RBAC:</code> role assignments are app-scoped. Same user record, different role sets per application. Evaluated at the /verify response, not in the JWT — means role changes take effect immediately without token reissue.\n\n<code>PassKey flow:</code> WebAuthn credential registration stores public key in user_credential table. Challenge-response at login — server generates nonce, device signs it, server verifies with stored public key. No password ever transmitted.',
+   lesson:'The insight that made everything click: the SSO system is a trust broker, not an auth library. Once you think of it that way, the right primitives become obvious — asymmetric keys for verify-without-sign, opaque revocable tokens for sessions, server-side role state so changes are instant.',
+   tech:['Java 17','Spring Boot','JWT (RS256)','MySQL 8','WebAuthn/PassKey','RBAC','SLO Callbacks','Hibernate','Cookie Architecture']},
+
+  {id:'forge',num:'10',name:'API Forge',tag:'INTERNAL TOOLING · FLOW CHAINING · COVERAGE',st:'ac',color:'#7dff4f',rgb:'125,255,79',
+   isHero:true,heroClass:'acid',heroBadge:'★ FORGE CORE · DEVELOPER TOOL',
+   metrics:[{v:'CHAIN',l:'API FLOWS'},{v:'ZERO',l:'BOTTLENECK'},{v:'FULL',l:'COVERAGE'}],
+   problem:'The core problem was test reproducibility. Postman has no concept of a dependent API chain — if endpoint B requires a token from endpoint A, you copy it manually. This means test runs are not reproducible. The second problem: no one knew which endpoints actually had test coverage. Third: environment switching (Dev/QA/Prod) meant maintaining three separate collections that always drifted out of sync.',
+   rejected:[
+     {what:'Extend Postman with a custom runner',why:'Postman\'s collection format is JSON but the runner is a black box. No control over execution model. Can\'t add DB validation, flow chaining, or coverage tracking without forking.'},
+     {what:'Use RestAssured + JUnit for automated testing',why:'Requires engineers to write test code. QA team is not Java developers. Need a UI-driven tool.'},
+     {what:'Newman (Postman CLI)',why:'Still depends on manually maintained collections. No auto-discovery, no chaining, no coverage.'},
+   ],
+   decision:'Build a purpose-built internal tool. Key architectural decision: Swagger/OpenAPI as the source of truth for endpoint discovery — the spec is generated from the running service, so it\'s always current. Flow chaining uses a directed graph model: each test step can declare JSONPath extractors on its response, and target variable slots in subsequent steps.',
+   impl:'<code>Swagger ingestion:</code> parse OpenAPI 3.0 spec at runtime. Auto-generate test stubs with parameter templates. Detect required vs optional fields from schema.\n\n<code>Flow graph execution:</code> steps are nodes in a DAG. Each step has: request definition, response validators, and extractors (JSONPath → variable name). Executor traverses the DAG, resolving variables before each request.\n\n<code>Environment variables:</code> scoped as: global → environment → step-local. Resolution order is right-to-left — step-local wins. Same flow runs against Dev/QA/Prod by switching the environment scope.\n\n<code>DB Console:</code> JDBC connection pool per environment, configured via admin panel. Post-step DB assertions: run a query, assert a value. Closes the loop between API call and DB state.\n\n<code>Coverage tracking:</code> every endpoint in the Swagger spec gets a coverage status: untested / has-test / passing. Dashboard shows gaps.',
+   lesson:'The hardest problem was the execution model for chained flows — specifically, what happens when a step fails midway. Chose: fail-fast with full execution log from the failed step onward, including which variable failed to resolve and why. This made debugging 10x faster than a generic "test failed" message.',
+   tech:['Java','Spring Boot','Swagger/OpenAPI 3.0','JSONPath (Jayway)','JDBC','PDF (iText)','Excel (Apache POI)','DAG Execution','MySQL']},
+
+  {id:'cloud',num:'06',name:'Cloud District',tag:'MULE ESB → AWS LAMBDA · 80+ MIGRATIONS',st:'op',color:'#00c8ff',rgb:'0,200,255',
+   metrics:[{v:'80+',l:'MIGRATED'},{v:'1',l:'SPOF REMOVED'},{v:'ZERO',l:'DOWNTIME'}],
+   problem:'Mule ESB is a centralized integration bus. Every integration — 80+ of them — ran as Mule flows on a single server. The SPOF problem: one JVM, one port, one thread pool. A GC pause, a memory leak in any one flow, or an OS-level issue brought all 80 flows down simultaneously. Additionally, Mule ESB licensing cost was significant and the vendor roadmap was not aligned with the company\'s direction.',
+   rejected:[
+     {what:'Mule ESB cluster (HA setup)',why:'Doubles the license cost. Still a shared JVM model — a rogue flow can still exhaust shared thread pools. Doesn\'t solve the root problem.'},
+     {what:'Migrate everything to a single Spring Boot app',why:'Same SPOF problem, different technology. One deployment unit means one failure domain.'},
+     {what:'Apache Camel as replacement bus',why:'Still requires a centralized deployment. Better than Mule but doesn\'t achieve true isolation.'},
+   ],
+   decision:'One deployment unit per integration. AWS Lambda for event-triggered integrations (webhook receivers, queue consumers). Standalone JAR + cron for batch/scheduled jobs. The execution abstraction layer (script.sh) handles all the variability: environment-specific config injection, client-specific timing windows, retry logic, and logging — without embedding that logic in the Java code.',
+   impl:'<code>Lambda functions:</code> stateless, triggered by SQS/SNS/API Gateway. Each Lambda has exactly one responsibility — one integration, one consumer.\n\n<code>Standalone JARs:</code> for batch jobs requiring specific timing or complex retry logic. Deployed as systemd services or cron-invoked via script.sh.\n\n<code>script.sh execution model:</code> a thin shell wrapper that: sources environment config, passes typed arguments to the JAR, captures exit code, logs to a centralized location, handles retry with backoff. The Java code receives clean, validated arguments — no environment detection logic inside the JVM.\n\n<code>Migration sequence:</code> Mule flow analysis → Java service parity test → parallel run period → Mule flow disabled → Mule unregistered. Each of the 80+ migrations followed this sequence.',
+   lesson:'The script.sh layer looks trivial but it\'s doing real work: decoupling scheduling infrastructure from execution logic, making every job testable independently of its deployment environment, and making failures observable at the shell level before they reach Java.',
+   tech:['AWS Lambda','SQS','SNS','Java','Spring Boot','Shell Scripting','systemd','Cron','Mule ESB (migrated from)']},
+
+  {id:'bridge',num:'05',name:'The Bridge',tag:'JAVA 1.7 · IBM MQ · BACKWARD COMPAT ARCHITECTURE',st:'op',color:'#7dff4f',rgb:'125,255,79',
+   metrics:[{v:'0',l:'REWRITES'},{v:'0',l:'MQ CHANGES'},{v:'SOLO',l:'DESIGNED'}],
+   problem:'Hard constraint: the legacy system runs on Java 1.7 with IBM MQ client jar compiled for Java 1.7 bytecode. MySQL 8 ships a JDBC driver that requires Java 1.8+ (uses java.time APIs introduced in Java 8). You cannot load a Java 1.8 compiled class in a Java 1.7 JVM — ClassFormatError at runtime. IBM MQ license upgrade: too expensive. Legacy system rewrite: 3-6 months, significant risk.',
+   rejected:[
+     {what:'Upgrade IBM MQ to a version with Java 1.8 support',why:'License cost was blocked by management. Not a technical decision.'},
+     {what:'Use MySQL 5.x JDBC driver (compatible with Java 1.7)',why:'The target database is MySQL 8. MySQL 5.x driver against MySQL 8 server works for basic queries but breaks on: caching_sha2_password (default auth plugin in MySQL 8), strict mode differences, and certain data type handling changes.'},
+     {what:'Downgrade MySQL 8 to MySQL 5',why:'The MySQL 5 → 8 migration was already in progress for the whole platform. Can\'t hold it for one legacy service.'},
+     {what:'Rewrite the legacy MQ system in Java 1.8',why:'Months of risk. The MQ layer handles business-critical message processing. Not a safe rewrite.'},
+   ],
+   decision:'Isolate the incompatibility. The constraint is the classpath boundary between Java 1.7 and Java 1.8. The solution: put MySQL 8 on one side of that boundary (Java 1.8 process) and IBM MQ on the other (Java 1.7 process). Communication between processes: shell script + typed command-line arguments. Stateless bridge — all state ownership stays in the MQ layer.',
+   impl:'<code>Bridge architecture:</code> Java 1.8 JAR exposes a main() entry point. Accepts typed args: operation type, entity ID, field values. Performs DB operation. Returns result to stdout. Exits with code 0 (success) or non-zero (failure).\n\n<code>Legacy invocation:</code> the Java 1.7 MQ consumer calls Runtime.exec("script.sh op=UPDATE id=123 field=value") after processing each message. Reads stdout for result. Checks exit code for failure.\n\n<code>Typed arguments:</code> not positional — key=value format. Bridge validates all required args before executing. Missing or malformed args cause exit code 2 (config error, not data error) — distinguishable from exit code 1 (runtime error).\n\n<code>Statelessness:</code> bridge holds no connection pool across invocations (separate JVM process per call). Slightly higher latency than a persistent connection, acceptable for the message volume in this use case.',
+   lesson:'The constraint in this problem was a physical boundary — the JVM classloader. Once you name it correctly ("I need two JVM processes with different classpath isolation"), the solution becomes obvious: inter-process communication, not in-process workarounds. Runtime.exec is usually a code smell; here it\'s the correct architectural primitive.',
+   tech:['Java 1.7','Java 1.8','IBM MQ Client','MySQL 8 Connector/J','Runtime.exec','Shell Script','Typed Argument Protocol']},
+
+  {id:'vaults',num:'04',name:'Data Vaults',tag:'MYSQL 5.X → 8.X · 3 MIGRATIONS · ZERO LOSS',st:'op',color:'#ffcc44',rgb:'255,204,68',
+   metrics:[{v:'3×',l:'MIGRATIONS'},{v:'0',l:'DATA LOST'},{v:'<10m',l:'CUTOVER'}],
+   problem:'MySQL 8 introduced STRICT mode as default. MySQL 5.x had STRICT mode off by default — which meant years of production queries silently truncating strings, inserting zero-dates (0000-00-00), and using non-deterministic GROUP BY (selecting non-aggregated columns not in GROUP BY clause). Migrating to MySQL 8 surfaces all of these as hard errors. 80+ dependent services, each potentially containing any of these patterns. The challenge was not the migration mechanics — it was finding every instance of silent data corruption that had been masked by MySQL 5\'s lax mode.',
+   rejected:[
+     {what:'Set STRICT_TRANS_TABLES=off in MySQL 8',why:'This would let the migration "succeed" while keeping all the latent bugs. The next MySQL version will remove this compatibility shim. Kicking the problem forward.'},
+     {what:'Automated query rewriting tool',why:'Tools can catch syntactic issues (GROUP BY violations) but not semantic ones — a truncated string that was "working fine" might be business-critical data. Requires human review.'},
+     {what:'Big-bang cutover',why:'80+ services, all switched at once. If anything breaks, rollback affects everything simultaneously.'},
+   ],
+   decision:'Phased migration with shadow validation. Run MySQL 5 and MySQL 8 in parallel for a shadow period. Replay production writes to MySQL 8 asynchronously. Compare results. Find discrepancies before cutover. Migrate services in batches, not all at once.',
+   impl:'<code>STRICT mode query audit:</code> enabled query logging on MySQL 8 with sql_mode=STRICT_TRANS_TABLES. Ran a subset of production traffic against the shadow DB. Every error logged with query, error type, and source service. Prioritized fixes by frequency × business criticality.\n\n<code>Breaking change categories found:</code>\n1. GROUP BY violations (SELECT non-aggregated col without GROUP BY) — fixed by adding explicit GROUP BY or using ANY_VALUE().\n2. Zero-date insertions (DEFAULT \'0000-00-00\') — replaced with NULL or application-controlled defaults.\n3. String truncation (INSERT value longer than column) — either column widened or application-side validation added.\n4. Implicit integer/string coercions — made explicit.\n\n<code>Driver compatibility:</code> MySQL 8 Connector/J 8.x changed: default auth plugin (caching_sha2_password vs mysql_native_password), SSL default (now required), timezone handling (serverTimezone parameter required). Each Hibernate persistence layer updated.\n\n<code>Cutover process:</code> maintenance window → point-in-time snapshot → service-by-service switchover → validation query suite → rollback checkpoint at each step. Each cutover: under 10 minutes.',
+   lesson:'The real work in a database migration is not moving data — it\'s surfacing assumptions. MySQL 5\'s lax mode was silently encoding business logic as data corruption. The shadow period with strict mode turned invisible bugs into visible errors you can fix before they become production incidents.',
+   tech:['MySQL 5.x','MySQL 8.0','MySQL 8.4','Connector/J','Hibernate','JPA','Spring Boot','Shadow DB','Query Audit']},
+
+  {id:'ledger',num:'08',name:'LedgerFlow',tag:'PO · INVOICING · IDEMPOTENCY · STATE MACHINE',st:'ac',color:'#ff6b00',rgb:'255,107,0',
+   metrics:[{v:'IDEM',l:'POTENT APIS'},{v:'NO 2PC',l:'BY DESIGN'},{v:'STATE',l:'MACHINES'}],
+   problem:'The domain: purchase orders, multi-level approvals, invoice generation, payment tracking. The consistency problem: the system integrates with an external messaging layer. If a message is delivered twice (at-least-once delivery), you cannot create two invoices for the same PO. If a message is lost and retried, the retry must produce the same result as the original. Distributed transaction (2PC) was the obvious candidate — evaluate it against the actual requirements.',
+   rejected:[
+     {what:'2-phase commit (2PC)',why:'Requires both services to hold locks across a network round-trip. If the coordinator fails after Phase 1 but before Phase 2, both services are stuck waiting. Availability cost is too high for a financial system that needs to stay up.'},
+     {what:'Saga pattern with compensating transactions',why:'Compensating transactions for financial records are complex and error-prone. Reversing an invoice after it\'s been emailed to a vendor is not a technical rollback — it\'s a business process. Avoid if possible.'},
+     {what:'Single shared database transaction',why:'Only works if both services share the same DB. The messaging integration runs in a separate service with its own DB — physically impossible.'},
+   ],
+   decision:'Clear ownership + idempotency keys + state machine. No distributed transactions needed if: (1) each entity has exactly one owning service, (2) every state-changing operation accepts an idempotency key and is safe to retry, (3) state transitions are validated against a valid-transitions matrix so invalid operations are rejected at the boundary.',
+   impl:'<code>Idempotency key protocol:</code> clients generate a UUID before calling any state-changing endpoint. Server checks: has this key been processed? If yes, return the cached result (regardless of current state). If no, process and store result against the key. Key stored in idempotency_log table with: key, operation type, result hash, created_at, expires_at.\n\n<code>State machine:</code> DRAFT → PENDING_APPROVAL → APPROVED → INVOICED → PAID → CANCELLED. Invalid transitions (e.g. PAID → APPROVED) rejected with HTTP 409 + body containing: currentState, requestedTransition, validTransitions[]. Self-documenting API contract.\n\n<code>Ownership model:</code> PO is owned by procurement service. Invoice is owned by finance service. Finance service receives events from procurement — the event is idempotent (contains all data needed to create the invoice). Finance never polls procurement for state.\n\n<code>Same pattern as Stripe\'s idempotency keys</code> — documented publicly. Standard approach for payment systems.',
+   lesson:'The key insight: "distributed transaction" and "consistency" are not synonyms. You can have strong consistency without 2PC if you design ownership boundaries correctly and make every operation naturally idempotent. The state machine is not just application logic — it\'s the contract that makes the whole system auditable.',
+   tech:['Java 17','Spring Boot','MySQL 8','State Machine','Idempotency Keys','REST API','UUID','Spring Events']},
+
+  {id:'arch',num:'07',name:'Architecture Quarter',tag:'ATS · OPERATIONS APP · GREENFIELD · LEAD',st:'op',color:'#c084fc',rgb:'192,132,252',
+   metrics:[{v:'2×',l:'SYSTEMS'},{v:'LEAD',l:'ARCHITECT'},{v:'PROD',l:'BOTH RUNNING'}],
+   problem:'Two greenfield systems, led end-to-end. ATS: the state transition problem — art assets have defined lifecycle states, and not all transitions are valid. The naive approach (if/else chains) becomes unmaintainable as states grow. Operations App: the connectivity problem — field operatives work in areas with intermittent connectivity. Local state may diverge from server state. Reconciliation on reconnect must be deterministic.',
+   rejected:[
+     {what:'ATS: Conditional transition logic (if/switch)',why:'With N states, you get O(N²) conditionals. Adding a state requires touching every other state\'s transition logic. Easy to miss one. Untestable in isolation.'},
+     {what:'Operations App: Online-only architecture',why:'Field operatives cannot pause work when signal drops. Unacceptable UX.'},
+     {what:'Operations App: Last-write-wins reconciliation',why:'If the client and server diverge, last-write-wins can silently discard legitimate server-side updates (e.g. supervisor notes added while field operative was offline).'},
+   ],
+   decision:'ATS: Transition validity matrix — a 2D lookup table: validTransitions[fromState][toState] = boolean. Adding a new state = adding one row and one column. Transitions are data, not code. Operations App: Optimistic local state with vector-clock-style reconciliation — each operation is stamped with a sequence number. Server reconciliation replays client operations in sequence-order and detects conflicts explicitly.',
+   impl:'<code>ATS transition matrix (simplified):</code>\nvalidTransitions = {\n  PICKED_UP:   [IN_TRANSIT],\n  IN_TRANSIT:  [DELIVERED, RETURNED],\n  DELIVERED:   [CONFIRMED],\n  RETURNED:    [PICKED_UP]\n}\nInvalid transition response: HTTP 422 + {currentState, attemptedTransition, validTransitions[]}.\n\n<code>API contract-first:</code> OpenAPI spec written before implementation. Versioning from day one — /api/v1/... All breaking changes require a version bump. Contract tested with a spec-validation suite.\n\n<code>Operations App offline model:</code> local SQLite stores all operations as an append-only log with sequence numbers. On reconnect: client sends the full operation log since last-known-server-sequence. Server replays in order, detects conflicts (concurrent edits to the same entity), returns merged state + conflict list. Client applies merged state.',
+   lesson:'The transition validity matrix is the pattern I\'d apply to any workflow system now. It turns a state machine from an implicit, scattered concept (buried in service methods) into an explicit, testable data structure. You can unit test every transition in a single parameterized test.',
+   tech:['Java 17','Spring Boot','MySQL 8','Transition Matrix','OpenAPI 3.0','SQLite (client)','Sequence Stamping','Conflict Detection']},
+
+  {id:'survey',num:'03',name:'Survey Bridge',tag:'PIPELINE · INTEGRATION · MOBILE STATE',st:'op',color:'#00c8ff',rgb:'0,200,255',
+   metrics:[{v:'100%',l:'AUTOMATED'},{v:'0',l:'MANUAL'},{v:'0',l:'ERRORS'}],
+   problem:'The integration problem: survey data lives in one system, operational data (Service Orders, Shipments) lives in the core monolith. They use different data models. A survey "item" is not the same as a monolith "shipment line item" — there\'s a mapping step. The mobile problem: surveyors work in clients\' homes where signal is unreliable. The app must handle: partial completion, connectivity loss mid-survey, and restart after crash — all producing deterministic output.',
+   rejected:[
+     {what:'Periodic batch sync (cron job)',why:'Introduces lag. Surveyor finishes survey at 3pm, Service Order created at midnight. Operational delays cascade.'},
+     {what:'Survey app writes directly to monolith DB',why:'Creates a tight coupling between two systems\' schemas. A monolith schema change breaks the survey app. Violates service ownership.'},
+     {what:'Webhook from survey app to monolith',why:'Survey app is mobile-first. Mobile network is unreliable. Webhooks from a phone are not reliable delivery.'},
+   ],
+   decision:'Server-side pipeline triggered by survey submission. Mobile app sends survey to survey service (not monolith). Survey service is the integration point — it owns the mapping logic and drives the monolith via its public API. Mobile state is stored server-side incrementally — each survey section saved as it\'s completed, so a crash loses at most one section.',
+   impl:'<code>Survey submission pipeline:</code> survey_completed event → SurveyProcessor bean → validate survey data → map survey items to shipment line items (using configurable mapping table, not hardcoded) → call monolith /api/serviceorders/{id}/shipments endpoint → call monolith /api/serviceorders/{id}/items endpoint → mark survey as processed.\n\n<code>Mapping table:</code> survey_item_type → monolith_item_category stored in DB. Configurable without deployment. Survey ops team can add new item types without engineering involvement.\n\n<code>Mobile state persistence:</code> each survey section (header, rooms, items, notes) saved to server on section completion. Survey has status: IN_PROGRESS, AWAITING_SUBMISSION, SUBMITTED, PROCESSED. Resumable from any section on any device logged in to the same session.\n\n<code>Idempotent submission:</code> survey submission endpoint accepts survey_id as idempotency key. Re-submitting a processed survey returns 200 with the existing result — safe to retry from mobile.',
+   lesson:'The mapping table decision was key. The first version had hardcoded mapping logic — within a month, ops needed to add 4 new item types. Making the mapping configurable via DB turned a deployment event into a configuration event. Applied this pattern everywhere since.',
+   tech:['Java','Spring Boot','MySQL','Mobile State Management','Idempotent APIs','Mapping Table Pattern','Spring Events']},
+
+  {id:'pulse',num:'02',name:'MovePulse',tag:'REAL-TIME TRACKING · SQL PERFORMANCE · SHARED DB',st:'op',color:'#ff9950',rgb:'255,153,80',
+   metrics:[{v:'RT',l:'REAL-TIME'},{v:'OPT',l:'SQL PERF'},{v:'0',l:'READ IMPACT'}],
+   problem:'Performance problem: the tracking queries must read from the same MySQL instance that serves all operational writes. The operational tables (Service Order, Work Ticket, Shipment) have complex relationships and are heavily written to during business hours. Tracking reads that cause table scans or lock contention will directly degrade operational write performance. No read replica was available.',
+   rejected:[
+     {what:'Introduce a read replica',why:'Infrastructure change requiring DBA approval and additional cost. Not within scope of this feature.'},
+     {what:'Cache tracking data in Redis',why:'Cache invalidation in a high-write environment is complex. Stale cache could show clients incorrect status. Not acceptable for a client-facing feature.'},
+     {what:'Denormalized tracking table updated by triggers',why:'MySQL triggers are synchronous — they run in the write transaction. Complex trigger logic degrades write performance.'},
+   ],
+   decision:'Write tracking queries that are zero-contention: index-covered reads that touch no rows being actively written, return minimal columns, and use pagination so result sets are bounded. The goal: tracking reads that are invisible to the write path.',
+   impl:'<code>Index analysis:</code> EXPLAIN ANALYZE on every tracking query. Target: "Using index" (index-only scan) or "Using index condition" — never "Using filesort" or "Using temporary".\n\n<code>Query patterns:</code>\n— SELECT only needed columns (status, last_updated, assigned_crew) — no SELECT *\n— JOIN only needed tables — Service Order + latest Work Ticket status\n— WHERE clause on indexed columns only (customer_file_id, service_order_id)\n— LIMIT always present — never unbounded result sets\n— ORDER BY on indexed column — avoids filesort\n\n<code>Lock avoidance:</code> tracking queries use READ UNCOMMITTED isolation level where acceptable (status reads — slightly stale is acceptable, locks are not). Status fields are append-only in practice — no long-running write transactions hold locks on them.\n\n<code>API pagination:</code> /api/tracking/{file_id}/status?page=1&size=20. Bounded by contract. No infinite scroll patterns that could trigger large reads.',
+   lesson:'READ UNCOMMITTED is a tool, not a smell — for status fields where the business can tolerate a few milliseconds of staleness, accepting a dirty read in exchange for zero lock contention is a correct tradeoff. Understanding what consistency level each piece of data actually needs is the actual skill.',
+   tech:['MySQL 5','EXPLAIN ANALYZE','Index-Only Scans','Read Isolation Levels','Hibernate','Spring Data JPA','Query Optimization']},
+
+  {id:'mono',num:'01',name:'Monolith Quarter',tag:'REDSKY · STRUTS2 · LEGACY · THE FOUNDATION',st:'op',color:'#ff6b00',rgb:'255,107,0',
+   metrics:[{v:'2022',l:'JOINED'},{v:'WEEKS',l:'TO PROD FIX'},{v:'LIVE',l:'ENTERPRISE'}],
+   problem:'Legacy system reality: RedSky is a Struts2 / Spring 3 / Hibernate 5 application with years of accumulated complexity. The actual engineering challenge was not "it\'s old technology" — it was "change locality is non-obvious." A change in the Customer File module has effects in Survey, Shipment, Service Order, and Work Ticket modules — sometimes through shared Hibernate entities, sometimes through Spring bean injection chains, sometimes through Struts2 action mapping. The blast radius of any change was large and non-obvious.',
+   rejected:[
+     {what:'Read-the-whole-codebase first approach',why:'Not practical. The codebase is large. This approach treats code as documentation, but code doesn\'t explain why things are the way they are.'},
+     {what:'Make small changes and see what breaks',why:'Live enterprise clients. Breaking production is not an acceptable learning method.'},
+   ],
+   decision:'Trace-first methodology: before touching any code, trace the complete data path end-to-end for the feature you\'re changing. Customer File ID → which Hibernate entity? → which service bean? → which Struts2 action? → which JSP? Then trace backward: what other entities reference this one? What other actions use this service? What other modules share this Hibernate session?',
+   impl:'<code>Methodology applied to first production fix:</code> bug in relocation dashboard — job type count was off. Trace: DashboardAction.java → RelocationService.getJobTypes() → HQL query on ServiceOrder entity → ServiceOrder.jobType field → found: the HQL was doing a COUNT without GROUP BY correctly because MySQL 5 was silently allowing it. The fix required understanding the full path first.\n\n<code>Relocation Dashboard build:</code> new Struts2 action → new service method → optimized HQL with correct GROUP BY → Hibernate named query → JSP view. First end-to-end feature delivery.\n\n<code>Domain model internalized:</code> Customer Information → Customer File (created when move confirmed) → Survey (scheduled from Customer File) → Shipment (generated post-survey) → Service Order (work authorization) → Work Ticket (individual job assignments) → Account Claiming (billing trigger).\n\nEvery subsequent system was designed with this domain model in mind.',
+   lesson:'Legacy systems are not a technology problem — they\'re a change-locality problem. The skills learned here (trace before touching, understand entity relationships before writing HQL, verify assumptions with EXPLAIN before assuming a query is correct) transferred directly to designing every new system. Every system I\'ve built since has explicit data-flow documentation written before the first line of code.',
+   tech:['Struts 2','Spring 3','Hibernate 5','MySQL 5.x','Java 8','HQL','OGNL','Struts2 Action Chain']},
+];
+
+// Build frags
+const fEl=document.getElementById('frags');
+N.forEach(()=>{const d=document.createElement('div');d.className='frag';fEl.appendChild(d);});
+
+// THREE.JS
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.25;
+document.body.insertBefore(renderer.domElement,document.body.firstChild);
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x020408);
+scene.fog=new THREE.FogExp2(0x020408,.019);
+
+const camera=new THREE.PerspectiveCamera(50,innerWidth/innerHeight,.1,300);
+const cam={theta:-.12,phi:.36,radius:28,target:new THREE.Vector3(0,.5,3),intro:true,introT:0};
+function setC(){
+  const r=cam.intro?50+(cam.radius-50)*Math.min(cam.introT,1):cam.radius;
+  const p=cam.intro?.22+(.36-.22)*Math.min(cam.introT,1):cam.phi;
+  camera.position.set(cam.target.x+r*Math.sin(p)*Math.sin(cam.theta),cam.target.y+r*Math.cos(p),cam.target.z+r*Math.sin(p)*Math.cos(cam.theta));
+  camera.lookAt(cam.target);
+}
+setC();
+
+// Lighting — cold blue/arc for engineer
+const kl=new THREE.DirectionalLight(0xff5500,2.6);kl.position.set(-10,16,5);kl.castShadow=true;kl.shadow.mapSize.set(2048,2048);kl.shadow.camera.left=-25;kl.shadow.camera.right=25;kl.shadow.camera.top=25;kl.shadow.camera.bottom=-25;scene.add(kl);
+const fl=new THREE.DirectionalLight(0x0088ff,1.2);fl.position.set(14,5,-6);scene.add(fl);
+const rl=new THREE.DirectionalLight(0x003366,.7);rl.position.set(0,3,-18);scene.add(rl);
+scene.add(new THREE.AmbientLight(0x060810,1.8));
+const gb=new THREE.PointLight(0xff4400,1.3,30);gb.position.set(0,-1,3);scene.add(gb);
+const h1l=new THREE.PointLight(0x00c8ff,3.8,17);h1l.position.set(-3.5,7,0);scene.add(h1l);
+const h2l=new THREE.PointLight(0x7dff4f,3.0,14);h2l.position.set(3.5,7,0);scene.add(h2l);
+
+// Floor
+const flr=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshStandardMaterial({color:0x030609,roughness:.15,metalness:.85}));
+flr.rotation.x=-Math.PI/2;flr.receiveShadow=true;scene.add(flr);
+scene.add(new THREE.GridHelper(100,100,0x0e1420,0x080c14));
+
+// Particles
+const pC=1000,pP=new Float32Array(pC*3),pCl=new Float32Array(pC*3),pB=new Float32Array(pC*3),pSp=new Float32Array(pC),pPh=new Float32Array(pC);
+for(let i=0;i<pC;i++){
+  const r=2+Math.random()*26,a=Math.random()*Math.PI*2;
+  pB[i*3]=pP[i*3]=Math.cos(a)*r;pB[i*3+1]=pP[i*3+1]=Math.random()*15;pB[i*3+2]=pP[i*3+2]=Math.sin(a)*r;
+  pSp[i]=.15+Math.random()*.32;pPh[i]=Math.random()*Math.PI*2;
+  const t=Math.random();
+  if(t<.5){pCl[i*3]=0;pCl[i*3+1]=.78;pCl[i*3+2]=1;}
+  else if(t<.7){pCl[i*3]=1;pCl[i*3+1]=.42;pCl[i*3+2]=0;}
+  else{pCl[i*3]=.49;pCl[i*3+1]=1;pCl[i*3+2]=.31;}
+}
+const pGeo=new THREE.BufferGeometry();
+pGeo.setAttribute('position',new THREE.BufferAttribute(pP,3));
+pGeo.setAttribute('color',new THREE.BufferAttribute(pCl,3));
+scene.add(new THREE.Points(pGeo,new THREE.PointsMaterial({size:.042,vertexColors:true,transparent:true,opacity:.55})));
+
+// Positions
+const heroP=[new THREE.Vector3(-3.5,0,0),new THREE.Vector3(3.5,0,0)];
+const satP=[new THREE.Vector3(-6.5,0,-4.5),new THREE.Vector3(6.5,0,-4.5),new THREE.Vector3(-5.5,0,4.5),new THREE.Vector3(5.5,0,4.5),new THREE.Vector3(-3,0,8.5),new THREE.Vector3(3,0,8.5),new THREE.Vector3(-6.5,0,12),new THREE.Vector3(6.5,0,12)];
+N[0].rp=heroP[0];N[1].rp=heroP[1];
+for(let i=2;i<N.length;i++)N[i].rp=satP[i-2];
+
+function mkR(r,t,c,op){const m=new THREE.Mesh(new THREE.TorusGeometry(r,t,8,64),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:op}));return m;}
+
+const nGs=[],cTs=[];
+const ray=new THREE.Raycaster(),ms=new THREE.Vector2();
+
+N.forEach((nd,idx)=>{
+  const g=new THREE.Group();g.position.copy(nd.rp);g.userData={ni:idx};
+  const c=parseInt(nd.color.replace('#',''),16),hero=nd.isHero,s=nd.scale||1;
+  if(hero){
+    if(idx===0){
+      const t1=mkR(1.2,.12,c,.65);t1.rotation.x=Math.PI/2;g.add(t1);
+      const t2=mkR(.8,.07,c,.5);t2.rotation.x=Math.PI/2;t2.position.y=.1;g.add(t2);
+      const cr=new THREE.Mesh(new THREE.SphereGeometry(.3,16,16),new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:2.2,roughness:.1,metalness:.5}));cr.position.y=.2;g.add(cr);
+      const cg=new THREE.Mesh(new THREE.SphereGeometry(.55,16,16),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.26,side:THREE.BackSide}));cg.position.y=.2;g.add(cg);
+      const sp=new THREE.Mesh(new THREE.CylinderGeometry(.04,.2,3.2,8),new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:.8,transparent:true,opacity:.82}));sp.position.y=1.8;sp.castShadow=true;g.add(sp);
+      const o1=mkR(1.9,.025,c,.3);o1.rotation.x=.4;o1.position.y=.5;g.add(o1);
+      const o2=mkR(2.3,.018,c,.2);o2.rotation.z=.3;o2.position.y=.3;g.add(o2);
+      g.add(new THREE.Mesh(new THREE.CylinderGeometry(1.7,1.7,.04,6),new THREE.MeshStandardMaterial({color:0x030c18,roughness:.6,metalness:.9})));
+    } else {
+      const fp=new THREE.Mesh(new THREE.ConeGeometry(.95,3.4,8,1),new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:.28,roughness:.3,metalness:.8}));fp.rotation.x=Math.PI;fp.position.y=3;fp.castShadow=true;g.add(fp);
+      g.add(new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.5,.07,6),new THREE.MeshStandardMaterial({color:0x041000,roughness:.5,metalness:.9})));
+      const fr=mkR(1.15,.07,c,.58);fr.rotation.x=Math.PI/2;fr.position.y=1.3;g.add(fr);
+      const fo1=mkR(1.9,.022,c,.26);fo1.rotation.x=.5;fo1.position.y=1;g.add(fo1);
+      const fo2=mkR(2.2,.016,c,.18);fo2.rotation.z=-.4;fo2.position.y=.8;g.add(fo2);
+      const ap=new THREE.Mesh(new THREE.SphereGeometry(.2,12,12),new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:2.5,roughness:.1}));ap.position.y=4.4;g.add(ap);
+      const ag=new THREE.Mesh(new THREE.SphereGeometry(.48,12,12),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.24,side:THREE.BackSide}));ag.position.y=4.4;g.add(ag);
+    }
+    const hl=new THREE.Mesh(new THREE.CircleGeometry(3,64),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.07,side:THREE.DoubleSide}));hl.rotation.x=-Math.PI/2;hl.position.y=.01;g.add(hl);
+    const ht=new THREE.Mesh(new THREE.CylinderGeometry(2.2,2.2,4.8,8),new THREE.MeshBasicMaterial({transparent:true,opacity:0}));ht.userData={ni:idx};g.add(ht);cTs.push(ht);
+  } else {
+    const fms=[new THREE.ConeGeometry(s*.42,s*2.2,6,1),new THREE.CylinderGeometry(s*.08,s*.42,s*2,4,1),new THREE.BoxGeometry(s*.55,s*2,s*.55),new THREE.ConeGeometry(s*.38,s*2.1,5,1),new THREE.CylinderGeometry(s*.22,s*.42,s*1.8,6,1),new THREE.BoxGeometry(s*.48,s*1.75,s*.45),new THREE.ConeGeometry(s*.35,s*1.9,7,1),new THREE.CylinderGeometry(s*.08,s*.38,s*1.7,5,1)];
+    const body=new THREE.Mesh(fms[(idx-2)%fms.length],new THREE.MeshStandardMaterial({color:c,roughness:.46,metalness:.64,emissive:c,emissiveIntensity:.1}));
+    const bH=fms[(idx-2)%fms.length].parameters?.height||2;body.position.y=bH/2+.02;body.castShadow=true;body.userData={ni:idx};g.add(body);cTs.push(body);
+    const ap=new THREE.Mesh(new THREE.SphereGeometry(.1,8,8),new THREE.MeshBasicMaterial({color:c}));ap.position.y=bH+.1;g.add(ap);
+    const br=mkR(s*.85,.025,c,.35);br.rotation.x=Math.PI/2;br.position.y=.06;g.add(br);
+    const nl=new THREE.PointLight(c,1.2,5.5);nl.position.y=bH+.4;g.add(nl);
+    g.add(new THREE.Mesh(new THREE.CylinderGeometry(s*.85,s*.85,.04,6),new THREE.MeshStandardMaterial({color:0x03080e,roughness:.7,metalness:.7})));
+    const hl=new THREE.Mesh(new THREE.CircleGeometry(s*1.4,32),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.05,side:THREE.DoubleSide}));hl.rotation.x=-Math.PI/2;hl.position.y=.008;g.add(hl);
+  }
+  scene.add(g);nGs.push(g);
+});
+
+// Beams
+const bPs=[];
+function mkB(a,b,col,op){
+  const pts=[];for(let i=0;i<=24;i++){const t=i/24;pts.push(new THREE.Vector3(a.x+(b.x-a.x)*t,.3+Math.sin(t*Math.PI)*.35,a.z+(b.z-a.z)*t));}
+  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:col,transparent:true,opacity:op*.9})));
+  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:col,transparent:true,opacity:op*.2})));
+  for(let f=0;f<4;f++){const fp=new THREE.Mesh(new THREE.SphereGeometry(.055,4,4),new THREE.MeshBasicMaterial({color:col}));bPs.push({mesh:fp,pts,off:f/4,sp:.25+Math.random()*.3});scene.add(fp);}
+}
+mkB(N[0].rp,N[1].rp,0x00c8ff,.6);
+[2,3,4,5,6,7,8,9].forEach(i=>{mkB(N[0].rp,N[i].rp,0x00c8ff,.18);mkB(N[1].rp,N[i].rp,0x7dff4f,.12);});
+
+// Interaction
+let drag=false,lx,ly,hovI=null;
+const opened=new Set();
+const tip=document.getElementById('tip');
+
+function getHit(cx,cy){const r=renderer.domElement.getBoundingClientRect();ms.x=((cx-r.left)/r.width)*2-1;ms.y=-((cy-r.top)/r.height)*2+1;ray.setFromCamera(ms,camera);const h=ray.intersectObjects(cTs,true);return h.length?h[0].object.userData.ni:null;}
+
+renderer.domElement.addEventListener('mousedown',e=>{drag=false;lx=e.clientX;ly=e.clientY;});
+renderer.domElement.addEventListener('mousemove',e=>{
+  if(e.buttons===1){drag=true;cam.theta-=(e.clientX-lx)*.005;cam.phi=Math.max(.1,Math.min(1.4,cam.phi+(e.clientY-ly)*.004));lx=e.clientX;ly=e.clientY;setC();tip.classList.remove('v');return;}
+  const i=getHit(e.clientX,e.clientY);
+  if(i!==hovI){hovI=i;cur.className=i!==null?'h':'';}
+  if(i!==null){document.getElementById('tn').textContent=N[i].name;document.getElementById('ts').textContent=N[i].tag;tip.style.left=e.clientX+'px';tip.style.top=e.clientY+'px';tip.classList.add('v');}
+  else tip.classList.remove('v');
+});
+renderer.domElement.addEventListener('mouseup',e=>{if(!drag){const i=getHit(e.clientX,e.clientY);if(i!==null)openN(i);}tip.classList.remove('v');});
+renderer.domElement.addEventListener('wheel',e=>{cam.radius=Math.max(8,Math.min(44,cam.radius+e.deltaY*.02));setC();});
+
+function openN(idx){
+  const d=N[idx];opened.add(idx);
+  const fr=document.getElementById('frags').children;
+  for(let i=0;i<fr.length;i++)fr[i].className='frag'+(i<opened.size?' on':'');
+  document.getElementById('fc').textContent=`${opened.size} / ${N.length}`;
+  const tgt=new THREE.Vector3(d.rp.x*.22,.5,d.rp.z*.22+1.5);
+  const st=cam.target.clone();let t=0;
+  const a=setInterval(()=>{t=Math.min(t+.05,1);const e=1-Math.pow(1-t,4);cam.target.lerpVectors(st,tgt,e);setC();if(t>=1)clearInterval(a);},16);
+  const pb=document.getElementById('pb');
+  pb.style.setProperty('--nc',d.color);
+  pb.innerHTML=`
+    ${d.isHero?`<div class="p-hero ${d.heroClass}">${d.heroBadge}</div>`:''}
+    <div class="p-acc" style="background:linear-gradient(90deg,${d.color},transparent)"></div>
+    <div class="p-num">// SYSTEM ${d.num}</div>
+    <div class="p-name">${d.name}</div>
+    <div class="p-tag">${d.tag}</div>
+    <div class="p-stat ${d.st}"><div class="sdot"></div>${d.st==='op'?'OPERATIONAL':'ACTIVE'}</div>
+    <div class="mets">${d.metrics.map(m=>`<div class="met"><span class="mv">${m.v}</span><div class="ml">${m.l}</div></div>`).join('')}</div>
+
+    <div class="sl">THE REAL PROBLEM</div>
+    <div class="prob">${d.problem}</div>
+
+    <div class="sl">WHAT WAS REJECTED — AND WHY</div>
+    <div class="rejected">
+      ${d.rejected.map(r=>`<div class="rej-item"><span class="rej-x">✕</span><div><strong style="color:rgba(200,150,150,.7)">${r.what}</strong><span class="rej-reason">${r.why}</span></div></div>`).join('')}
+    </div>
+
+    <div class="sl">THE DECISION</div>
+    <div class="decision">
+      <div class="dec-label">// WHY THIS APPROACH</div>
+      <div class="dec-body">${d.decision}</div>
+    </div>
+
+    <div class="sl">IMPLEMENTATION</div>
+    <div class="impl">
+      <div class="impl-label">// HOW IT WORKS</div>
+      <div class="impl-body">${d.impl.replace(/\n/g,'<br>').replace(/`([^`]+)`/g,'<code>$1</code>')}</div>
+    </div>
+
+    <div class="lesson">
+      <div class="lesson-l">// KEY INSIGHT</div>
+      ${d.lesson}
+    </div>
+
+    <div class="ttags">${d.tech.map(t=>`<span class="ttag">${t}</span>`).join('')}</div>
+  `;
+  document.getElementById('panel').classList.add('open');
+}
+function closePanel(){document.getElementById('panel').classList.remove('open');}
+
+// Oracle
+const OSYS=`You are the Oracle in Aditya Srivastava's engineer portfolio. Your audience is software engineers and technical interviewers.
+
+IDENTITY: Aditya Srivastava. Trilasoft Solutions / 8086 Consultancy. Noida, India. 4 years. Trainee (Jan 2022) → Junior SE (Sep 2022) → Backend Architect (2024–present).
+
+PHILOSOPHY: "I build systems that work at 3am — not systems that work in demos." "Understand how data moves through a system end-to-end before writing a single line of change." "Isolate the constraint — don't touch either side."
+
+TECHNICAL DEPTH (for engineers):
+- Auth Tower: Custom SSO without Spring Security. RS256 JWT, SLO callbacks, WebAuthn/PassKey, app-scoped RBAC. Key insight: Spring Security's CSRF conflicted with cross-domain cookie model.
+- API Forge: Swagger-auto-discovery, JSONPath-based flow chaining DAG, environment-scoped variables, JDBC DB console, iText PDF, Apache POI Excel, coverage tracking.
+- Cloud District: Mule ESB → Lambda (event-triggered) + JARs (batch). script.sh execution abstraction layer. Isolates scheduling from execution logic.
+- The Bridge: Java 1.7 / Java 1.8 process isolation. Runtime.exec + typed key=value args. Exit codes: 0=success, 1=runtime error, 2=config error. Stateless by design.
+- Data Vaults: MySQL 5→8 strict mode audit. GROUP BY violations, zero-date insertions, string truncation, auth plugin changes (caching_sha2_password), serverTimezone param. Shadow DB parallel validation.
+- LedgerFlow: No 2PC. Idempotency keys in idempotency_log table. State machine with transition validity matrix. Ownership model: PO=procurement, Invoice=finance.
+- Architecture Quarter: ATS transition matrix (data, not code). Operations App: client-side append-only operation log with sequence stamps, server-side conflict detection. OpenAPI contract-first, versioned from day one.
+- Survey Bridge: Server-side survey state (resumable per section). Configurable item mapping table (DB-driven, no redeploy needed). Idempotent submission with survey_id as key.
+- MovePulse: READ UNCOMMITTED for status reads. Index-only scans (EXPLAIN ANALYZE verified). SELECT only needed columns. Bounded pagination enforced at API contract level.
+- Monolith: Struts2/Spring3/Hibernate5/MySQL5. Trace-first methodology. Full domain model: Customer File → Survey → Shipment → Service Order → Work Ticket → Account Claiming.
+
+Answer technical questions with specificity — implementation details, code patterns, tradeoff reasoning. 3-5 sentences. Be direct and technical.`;
+
+function toggleO(){document.getElementById('orp').classList.toggle('vis');if(document.getElementById('orp').classList.contains('vis'))document.getElementById('oi').focus();}
+const oH=[];
+async function sendO(){
+  const inp=document.getElementById('oi'),q=inp.value.trim();if(!q)return;inp.value='';
+  const msgs=document.getElementById('orm');
+  msgs.innerHTML+=`<div class="om u">${q}</div>`;
+  const th=document.createElement('div');th.className='om t';th.textContent='// processing · · ·';msgs.appendChild(th);msgs.scrollTop=msgs.scrollHeight;
+  oH.push({role:'user',content:q});
+  try{const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:OSYS,messages:oH})});const data=await r.json();const rep=data.content?.[0]?.text||'Offline.';th.className='om b';th.textContent=rep;oH.push({role:'assistant',content:rep});}
+  catch{th.className='om b';th.textContent='Oracle offline.';}
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+// Animation
+const clk=new THREE.Clock();
+function animate(){
+  requestAnimationFrame(animate);
+  const t=clk.getElapsedTime();
+  if(cam.intro){cam.introT+=.008;if(cam.introT>=1)cam.intro=false;}
+  for(let i=0;i<pC;i++){pP[i*3]=pB[i*3]+Math.sin(t*pSp[i]*.5+pPh[i])*.22;pP[i*3+1]=pB[i*3+1]+Math.sin(t*pSp[i]+pPh[i]*1.3)*.26;pP[i*3+2]=pB[i*3+2]+Math.cos(t*pSp[i]*.7+pPh[i])*.22;}
+  pGeo.attributes.position.needsUpdate=true;
+  bPs.forEach(fp=>{fp.off=(fp.off+fp.sp*.003)%1;const pts=fp.pts,sg=pts.length-1,rw=fp.off*sg,ii=Math.floor(rw),f=rw-ii;if(ii<sg){fp.mesh.position.lerpVectors(pts[ii],pts[ii+1],f);const p=Math.sin(t*4+fp.off*Math.PI*2)*.5+.5;fp.mesh.scale.setScalar(.5+p*.8);}});
+  if(nGs[0]){if(nGs[0].children[0])nGs[0].children[0].rotation.z=t*.3;if(nGs[0].children[1])nGs[0].children[1].rotation.z=-t*.5;if(nGs[0].children[2])nGs[0].children[2].material.emissiveIntensity=1.8+Math.sin(t*1.9)*.8;if(nGs[0].children[6])nGs[0].children[6].rotation.z=t*.42;if(nGs[0].children[7])nGs[0].children[7].rotation.x=t*.28;const ts=hovI===0?1.08:1;nGs[0].scale.lerp(new THREE.Vector3(ts,ts,ts),.1);}
+  if(nGs[1]){if(nGs[1].children[0])nGs[1].children[0].rotation.y=t*.22;if(nGs[1].children[2])nGs[1].children[2].rotation.z=-t*.6;if(nGs[1].children[3])nGs[1].children[3].rotation.z=t*.32;if(nGs[1].children[5])nGs[1].children[5].material.emissiveIntensity=2.2+Math.sin(t*2.1)*1;const ts=hovI===1?1.08:1;nGs[1].scale.lerp(new THREE.Vector3(ts,ts,ts),.1);}
+  for(let i=2;i<nGs.length;i++){const g=nGs[i],b=g.children[0];if(b){const bH=b.geometry.parameters?.height||2;b.position.y=bH/2+.02+Math.sin(t*.7+i*.9)*.06;}const nl=g.children[2];if(nl?.isLight)nl.intensity=1.2*(0.6+Math.sin(t*1.2+i)*.4);const br=g.children[3];if(br)br.rotation.z=t*(.2+i*.03);const ts=hovI===i?1.06:1;g.scale.lerp(new THREE.Vector3(ts,ts,ts),.1);}
+  h1l.intensity=3.8+Math.sin(t*1.6)*.9;h2l.intensity=3.0+Math.sin(t*2+1)*.7;gb.intensity=1.3+Math.sin(t*.45)*.28;
+  if(!cam.intro&&!document.getElementById('panel').classList.contains('open')){cam.theta+=.0005;setC();}
+  setC();renderer.render(scene,camera);
+}
+animate();
+
+window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+
+const intro=document.getElementById('intro');
+setTimeout(()=>intro.classList.add('fade'),2800);
+setTimeout(()=>intro.classList.add('gone'),4200);
+
+let tS=null;
+renderer.domElement.addEventListener('touchstart',e=>{tS={x:e.touches[0].clientX,y:e.touches[0].clientY};lx=tS.x;ly=tS.y;drag=false;},{passive:true});
+renderer.domElement.addEventListener('touchmove',e=>{if(!tS)return;const dx=e.touches[0].clientX-lx,dy=e.touches[0].clientY-ly;if(Math.abs(dx)>3||Math.abs(dy)>3)drag=true;cam.theta-=dx*.005;cam.phi=Math.max(.1,Math.min(1.4,cam.phi+dy*.004));lx=e.touches[0].clientX;ly=e.touches[0].clientY;setC();},{passive:true});
+renderer.domElement.addEventListener('touchend',e=>{if(!drag&&tS){const i=getHit(tS.x,tS.y);if(i!==null)openN(i);}tS=null;drag=false;});
+</script>
+</body>
+</html>

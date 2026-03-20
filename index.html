@@ -2,9 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Aditya Srivastava — Backend Architect</title>
-    <script src="config.js"></script>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Aditya Srivastava — Portfolio</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;800;900&family=Barlow:wght@300;400;500&family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
     <style>
       *,
       *::before,
@@ -15,309 +18,679 @@
       }
 
       :root {
-        --gold: #c8a84b;
-        --gold-dim: #8a7030;
-        --bg: #06080f;
-        --text: #e8dcc8;
-        --text-dim: #6a7a9a;
-        --border: #1a2540;
+        --gold: #f5c842;
+        --amber: #ff8c00;
+        --arc: #00bfff;
+        --ice: #e0f7ff;
+        --void: #06080e;
+        --dim: #0c1018;
+        --ff: "Barlow Condensed", sans-serif;
+        --fb: "Barlow", sans-serif;
+        --fm: "Share Tech Mono", monospace;
       }
 
+      html,
       body {
-        background: var(--bg);
-        color: var(--text);
-        font-family: "Courier New", Courier, monospace;
-        min-height: 100vh;
+        width: 100%;
+        height: 100%;
+        background: var(--void);
+        overflow: hidden;
+        font-family: var(--fb);
+      }
+
+      /* ── CURSOR ── */
+      *,
+      *::before,
+      *::after {
+        cursor: none !important;
+      }
+      #cur {
+        position: fixed;
+        z-index: 9999;
+        pointer-events: none;
+        width: 8px;
+        height: 8px;
+        background: #fff;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        transition:
+          width 0.2s,
+          height 0.2s,
+          background 0.2s,
+          opacity 0.2s;
+        mix-blend-mode: difference;
+      }
+      #cur.big {
+        width: 48px;
+        height: 48px;
+        opacity: 0.15;
+      }
+
+      /* ── LAYOUT: Two full panels side by side ── */
+      #stage {
+        width: 100%;
+        height: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        position: relative;
+      }
+
+      /* ── CENTER DIVIDER ── */
+      #divider {
+        position: absolute;
+        left: 50%;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: linear-gradient(
+          180deg,
+          transparent 0%,
+          rgba(255, 255, 255, 0.06) 20%,
+          rgba(255, 255, 255, 0.12) 50%,
+          rgba(255, 255, 255, 0.06) 80%,
+          transparent 100%
+        );
+        z-index: 10;
+        transform: translateX(-50%);
+      }
+      #divider::before {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 7px;
+        height: 7px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        box-shadow: 0 0 16px rgba(255, 255, 255, 0.15);
+      }
+
+      /* ── PANEL BASE ── */
+      .panel {
+        position: relative;
+        overflow: hidden;
         display: flex;
         flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
+        justify-content: flex-end;
+        padding: 0 0 64px 0;
+        transition: flex-grow 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .panel:hover {
+        z-index: 5;
       }
 
-      /* Subtle background grid */
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        background-image:
-          linear-gradient(rgba(200, 168, 75, 0.03) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(200, 168, 75, 0.03) 1px, transparent 1px);
-        background-size: 60px 60px;
-        pointer-events: none;
+      /* ── RECRUITER PANEL ── */
+      #rec-panel {
+        background: #07090f;
       }
 
-      .container {
-        text-align: center;
-        max-width: 640px;
-        padding: 0 32px;
-        position: relative;
-        z-index: 1;
-      }
-
-      /* Top tag */
-      .tag {
-        font-size: 10px;
-        letter-spacing: 5px;
-        color: var(--text-dim);
-        margin-bottom: 52px;
-        opacity: 0;
-        animation: rise 1s ease forwards 0.3s;
-      }
-
-      /* Name */
-      .name {
-        font-size: clamp(30px, 6vw, 52px);
-        font-weight: 700;
-        color: var(--gold);
-        letter-spacing: 3px;
-        line-height: 1.1;
-        margin-bottom: 12px;
-        opacity: 0;
-        animation: rise 1s ease forwards 0.7s;
-      }
-
-      /* Role */
-      .role {
-        font-size: 11px;
-        letter-spacing: 4px;
-        color: var(--text-dim);
-        margin-bottom: 56px;
-        opacity: 0;
-        animation: rise 1s ease forwards 1s;
-      }
-
-      /* Transmission text */
-      .transmission {
-        font-size: 15px;
-        line-height: 2;
-        color: #8a9bc0;
-        margin-bottom: 64px;
-        opacity: 0;
-        animation: rise 1s ease forwards 1.4s;
-      }
-
-      .transmission .highlight {
-        color: var(--gold);
-      }
-
-      /* Gate */
-      .gate-label {
-        font-size: 9px;
-        letter-spacing: 5px;
-        color: var(--text-dim);
-        margin-bottom: 20px;
-        opacity: 0;
-        animation: rise 1s ease forwards 2s;
-      }
-
-      .buttons {
-        display: flex;
-        gap: 16px;
-        justify-content: center;
-        flex-wrap: wrap;
-        opacity: 0;
-        animation: rise 1s ease forwards 2.2s;
-      }
-
-      .btn {
-        background: transparent;
-        border: 1px solid var(--border);
-        color: var(--text-dim);
-        font-family: "Courier New", monospace;
-        font-size: 10px;
-        letter-spacing: 3px;
-        padding: 18px 36px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-transform: uppercase;
-        min-width: 220px;
-        position: relative;
-      }
-
-      .btn::before {
+      /* Dramatic background image layer */
+      #rec-panel::before {
         content: "";
         position: absolute;
         inset: 0;
-        background: var(--gold);
-        opacity: 0;
-        transition: opacity 0.3s;
+        background:
+          radial-gradient(
+            ellipse 70% 60% at 40% 30%,
+            rgba(245, 200, 66, 0.07) 0%,
+            transparent 65%
+          ),
+          radial-gradient(
+            ellipse 50% 40% at 20% 80%,
+            rgba(255, 140, 0, 0.05) 0%,
+            transparent 55%
+          ),
+          linear-gradient(160deg, rgba(245, 200, 66, 0.04) 0%, transparent 50%);
+        z-index: 0;
       }
 
-      .btn:hover {
-        border-color: var(--gold);
+      /* Large number watermark */
+      #rec-panel::after {
+        content: "01";
+        position: absolute;
+        right: -20px;
+        bottom: -40px;
+        font-family: var(--ff);
+        font-size: 280px;
+        font-weight: 900;
+        line-height: 1;
+        color: rgba(245, 200, 66, 0.03);
+        letter-spacing: -10px;
+        z-index: 0;
+        user-select: none;
+      }
+
+      /* ── ENGINEER PANEL ── */
+      #eng-panel {
+        background: #060810;
+        border-left: none;
+      }
+
+      #eng-panel::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(
+            ellipse 70% 60% at 60% 30%,
+            rgba(0, 191, 255, 0.07) 0%,
+            transparent 65%
+          ),
+          radial-gradient(
+            ellipse 50% 40% at 80% 80%,
+            rgba(0, 120, 200, 0.05) 0%,
+            transparent 55%
+          ),
+          linear-gradient(200deg, rgba(0, 191, 255, 0.04) 0%, transparent 50%);
+        z-index: 0;
+      }
+
+      #eng-panel::after {
+        content: "02";
+        position: absolute;
+        right: -20px;
+        bottom: -40px;
+        font-family: var(--ff);
+        font-size: 280px;
+        font-weight: 900;
+        line-height: 1;
+        color: rgba(0, 191, 255, 0.03);
+        letter-spacing: -10px;
+        z-index: 0;
+        user-select: none;
+      }
+
+      /* ── HOVER OVERLAY ── */
+      .panel-overlay {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+        z-index: 1;
+        pointer-events: none;
+      }
+      #rec-panel:hover .panel-overlay {
+        opacity: 1;
+        background: radial-gradient(
+          ellipse 80% 70% at 45% 60%,
+          rgba(245, 200, 66, 0.06) 0%,
+          transparent 70%
+        );
+      }
+      #eng-panel:hover .panel-overlay {
+        opacity: 1;
+        background: radial-gradient(
+          ellipse 80% 70% at 55% 60%,
+          rgba(0, 191, 255, 0.06) 0%,
+          transparent 70%
+        );
+      }
+
+      /* ── PANEL CONTENT ── */
+      .panel-content {
+        position: relative;
+        z-index: 2;
+        padding: 0 64px;
+      }
+
+      /* Category label */
+      .cat-label {
+        font-family: var(--fm);
+        font-size: 10px;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        margin-bottom: 28px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .cat-label::before {
+        content: "";
+        width: 24px;
+        height: 1px;
+      }
+      #rec-panel .cat-label {
+        color: rgba(245, 200, 66, 0.5);
+      }
+      #rec-panel .cat-label::before {
+        background: rgba(245, 200, 66, 0.4);
+      }
+      #eng-panel .cat-label {
+        color: rgba(0, 191, 255, 0.5);
+      }
+      #eng-panel .cat-label::before {
+        background: rgba(0, 191, 255, 0.4);
+      }
+
+      /* Big audience word */
+      .audience {
+        font-family: var(--ff);
+        font-size: clamp(68px, 9vw, 120px);
+        font-weight: 900;
+        line-height: 0.9;
+        letter-spacing: -2px;
+        margin-bottom: 32px;
+        display: block;
+      }
+      #rec-panel .audience {
+        color: var(--gold);
+        text-shadow:
+          0 0 60px rgba(245, 200, 66, 0.2),
+          0 0 120px rgba(245, 200, 66, 0.08);
+      }
+      #eng-panel .audience {
+        color: var(--arc);
+        text-shadow:
+          0 0 60px rgba(0, 191, 255, 0.2),
+          0 0 120px rgba(0, 191, 255, 0.08);
+      }
+
+      /* Description */
+      .desc {
+        font-family: var(--fb);
+        font-size: 16px;
+        font-weight: 300;
+        line-height: 1.75;
+        max-width: 380px;
+        margin-bottom: 40px;
+      }
+      #rec-panel .desc {
+        color: rgba(245, 200, 66, 0.45);
+      }
+      #eng-panel .desc {
+        color: rgba(0, 191, 255, 0.45);
+      }
+
+      /* Feature list */
+      .features {
+        list-style: none;
+        margin-bottom: 48px;
+      }
+      .features li {
+        font-family: var(--fm);
+        font-size: 11px;
+        letter-spacing: 2px;
+        padding: 10px 0;
+        border-bottom: 1px solid;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .features li::before {
+        content: "";
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      #rec-panel .features li {
+        color: rgba(245, 200, 66, 0.38);
+        border-color: rgba(245, 200, 66, 0.08);
+      }
+      #rec-panel .features li::before {
+        background: rgba(245, 200, 66, 0.5);
+      }
+      #eng-panel .features li {
+        color: rgba(0, 191, 255, 0.38);
+        border-color: rgba(0, 191, 255, 0.08);
+      }
+      #eng-panel .features li::before {
+        background: rgba(0, 191, 255, 0.5);
+      }
+
+      /* CTA Button */
+      .cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 16px;
+        border: none;
+        background: none;
+        padding: 0;
+        transition: gap 0.3s ease;
+      }
+      .cta:hover {
+        gap: 24px;
+      }
+
+      .cta-text {
+        font-family: var(--ff);
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+      }
+      .cta-arrow {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: 1px solid;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+        transition:
+          transform 0.3s ease,
+          background 0.3s ease;
+      }
+      .cta:hover .cta-arrow {
+        transform: translateX(4px);
+      }
+
+      #rec-panel .cta-text {
         color: var(--gold);
       }
-
-      .btn-primary:hover {
-        background: rgba(200, 168, 75, 0.05);
-        box-shadow: 0 0 30px rgba(200, 168, 75, 0.1);
+      #rec-panel .cta-arrow {
+        border-color: rgba(245, 200, 66, 0.35);
+        color: var(--gold);
+        background: rgba(245, 200, 66, 0.04);
+      }
+      #rec-panel .cta:hover .cta-arrow {
+        background: rgba(245, 200, 66, 0.1);
       }
 
-      /* Visitor count */
-      .visitor-badge {
+      #eng-panel .cta-text {
+        color: var(--arc);
+      }
+      #eng-panel .cta-arrow {
+        border-color: rgba(0, 191, 255, 0.35);
+        color: var(--arc);
+        background: rgba(0, 191, 255, 0.04);
+      }
+      #eng-panel .cta:hover .cta-arrow {
+        background: rgba(0, 191, 255, 0.1);
+      }
+
+      /* ── TOP HEADER ── */
+      #top-bar {
         position: fixed;
-        bottom: 28px;
-        right: 28px;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 64px;
+        background: linear-gradient(
+          180deg,
+          rgba(6, 8, 14, 0.95) 0%,
+          transparent 100%
+        );
+      }
+      .top-name {
+        font-family: var(--ff);
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 6px;
+        color: rgba(255, 255, 255, 0.7);
+      }
+      .top-meta {
+        font-family: var(--fm);
         font-size: 9px;
         letter-spacing: 3px;
-        color: var(--border);
-        transition: color 0.5s;
+        color: rgba(255, 255, 255, 0.18);
       }
 
-      .visitor-badge.loaded {
-        color: var(--text-dim);
+      /* ── BOTTOM STATUS BAR ── */
+      #bottom-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 64px;
+        background: linear-gradient(
+          0deg,
+          rgba(6, 8, 14, 0.9) 0%,
+          transparent 100%
+        );
+        border-top: 1px solid rgba(255, 255, 255, 0.04);
       }
-
-      /* Divider line */
-      .divider {
-        width: 60px;
-        height: 1px;
-        background: var(--gold-dim);
-        margin: 0 auto 56px;
-        opacity: 0;
-        animation: rise 1s ease forwards 1.2s;
+      .status-item {
+        font-family: var(--fm);
+        font-size: 9px;
+        letter-spacing: 3px;
+        color: rgba(255, 255, 255, 0.15);
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
-
-      @keyframes rise {
-        from {
-          opacity: 0;
-          transform: translateY(16px);
-        }
-        to {
+      .status-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: #3dff88;
+        box-shadow: 0 0 8px #3dff88;
+        animation: blink 2.5s ease infinite;
+      }
+      @keyframes blink {
+        0%,
+        100% {
           opacity: 1;
-          transform: translateY(0);
+        }
+        50% {
+          opacity: 0.3;
         }
       }
 
-      /* Mobile */
-      @media (max-width: 480px) {
-        .buttons {
-          flex-direction: column;
-          align-items: center;
+      /* ── VERTICAL LABEL on side of panel ── */
+      .side-label {
+        position: absolute;
+        top: 50%;
+        font-family: var(--ff);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 6px;
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        transform: translateY(-50%);
+        z-index: 3;
+        pointer-events: none;
+        opacity: 0.12;
+      }
+      #rec-panel .side-label {
+        right: 28px;
+        color: var(--gold);
+        transform: translateY(-50%) rotate(180deg);
+      }
+      #eng-panel .side-label {
+        left: 28px;
+        color: var(--arc);
+      }
+
+      /* ── FLASH TRANSITION ── */
+      #flash {
+        position: fixed;
+        inset: 0;
+        z-index: 9000;
+        background: var(--void);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.45s ease;
+      }
+      #flash.out {
+        opacity: 1;
+        pointer-events: all;
+      }
+
+      /* ── INTRO ANIMATION ── */
+      .panel-content {
+        opacity: 0;
+        transform: translateY(24px);
+        transition:
+          opacity 0.8s ease,
+          transform 0.8s ease;
+      }
+      .panel-content.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Responsive */
+      @media (max-width: 700px) {
+        #stage {
+          grid-template-columns: 1fr;
+          grid-template-rows: 1fr 1fr;
         }
-        .btn {
-          min-width: 280px;
+        #divider {
+          left: 0;
+          right: 0;
+          top: 50%;
+          bottom: auto;
+          width: 100%;
+          height: 1px;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.08),
+            transparent
+          );
+        }
+        .panel-content {
+          padding: 0 28px;
+        }
+        #top-bar,
+        #bottom-bar {
+          padding: 0 28px;
+        }
+        #rec-panel .side-label,
+        #eng-panel .side-label {
+          display: none;
         }
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <div class="tag">RECEIVING TRANSMISSION · 2034 · NOIDA, INDIA</div>
+    <div id="cur"></div>
+    <div id="flash"></div>
 
-      <div class="name">Aditya Srivastava</div>
-      <div class="role">
-        BACKEND ARCHITECT · JAVA · SPRING BOOT · MYSQL · AWS
+    <!-- Top bar -->
+    <header id="top-bar">
+      <div class="top-name">ADITYA SRIVASTAVA</div>
+      <div class="top-meta">
+        BACKEND ARCHITECT &nbsp;·&nbsp; TRILASOFT SOLUTIONS &nbsp;·&nbsp; NOIDA,
+        INDIA
+      </div>
+    </header>
+
+    <!-- Main stage -->
+    <div id="stage">
+      <!-- RECRUITER PANEL -->
+      <div class="panel" id="rec-panel" onclick="go('recruiter')">
+        <div class="panel-overlay"></div>
+        <div class="side-label">BUSINESS &amp; IMPACT</div>
+
+        <div class="panel-content" id="rec-content">
+          <div class="cat-label">FOR HIRING MANAGERS</div>
+
+          <span class="audience">RECRUITER</span>
+
+          <p class="desc">
+            See the system map. Understand what was built, what problem it
+            solved, and how every project connects to the next.
+          </p>
+
+          <ul class="features">
+            <li>Business problem &amp; outcome for every system</li>
+            <li>How 10 systems connect and depend on each other</li>
+            <li>Scope, leadership, and measurable impact</li>
+            <li>4-year career story in one interactive stage</li>
+          </ul>
+
+          <button class="cta">
+            <span class="cta-text">Enter</span>
+            <span class="cta-arrow">→</span>
+          </button>
+        </div>
       </div>
 
-      <div class="divider"></div>
+      <!-- CENTER DIVIDER -->
+      <div id="divider"></div>
 
-      <div class="transmission">
-        I build systems that hold under
-        <span class="highlight">real-world pressure.</span><br />
-        Not systems that work in demos —<br />
-        systems that work at <span class="highlight">3am</span>, when the
-        network fails,<br />
-        when requirements change after the code is deployed.<br /><br />
-        Four years. Every system still running.
-      </div>
+      <!-- ENGINEER PANEL -->
+      <div class="panel" id="eng-panel" onclick="go('engineer')">
+        <div class="panel-overlay"></div>
+        <div class="side-label">ARCHITECTURE &amp; DEPTH</div>
 
-      <div class="gate-label">CHOOSE HOW YOU WANT TO EXPLORE</div>
+        <div class="panel-content" id="eng-content">
+          <div class="cat-label">FOR ENGINEERS</div>
 
-      <div class="buttons">
-        <button class="btn btn-primary" onclick="enter('recruiter')">
-          I make hiring decisions
-        </button>
-        <button class="btn" onclick="enter('engineer')">
-          I evaluate engineers
-        </button>
+          <span class="audience">ENGINEER</span>
+
+          <p class="desc">
+            See the real problems. Every constraint faced, every approach
+            rejected, and exactly why each architecture decision was made.
+          </p>
+
+          <ul class="features">
+            <li>Root cause analysis for every system</li>
+            <li>Rejected approaches and the reasons why</li>
+            <li>Architecture decisions with full technical reasoning</li>
+            <li>
+              Implementation details that only someone who built it would know
+            </li>
+          </ul>
+
+          <button class="cta">
+            <span class="cta-text">Enter</span>
+            <span class="cta-arrow">→</span>
+          </button>
+        </div>
       </div>
     </div>
 
-    <div class="visitor-badge" id="visitorBadge">VISITOR #--</div>
+    <!-- Bottom bar -->
+    <footer id="bottom-bar">
+      <div class="status-item">
+        <span class="status-dot"></span>
+        ALL SYSTEMS OPERATIONAL
+      </div>
+      <div class="status-item">
+        10 SYSTEMS &nbsp;·&nbsp; 4 YEARS &nbsp;·&nbsp; 0 BREACHES
+      </div>
+      <div class="status-item">JAVA · SPRING BOOT · AWS · MYSQL</div>
+    </footer>
 
     <script>
-      const SESSION_ID = crypto.randomUUID();
-      sessionStorage.setItem("sessionId", SESSION_ID);
-
-      // Log visit to backend
-      async function logVisit() {
-        try {
-          const res = await fetch(
-            `${CONFIG.API_URL}/api/${CONFIG.VERSION}/visitor/ping`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                sessionId: SESSION_ID,
-                page: "gate",
-                referrer: document.referrer || "direct",
-              }),
-            },
-          );
-          const json = await res.json();
-          if (json.data && json.data.visitorNumber) {
-            const badge = document.getElementById("visitorBadge");
-            badge.textContent = `VISITOR #${json.data.visitorNumber}`;
-            badge.classList.add("loaded");
-          }
-        } catch (e) {
-          // Backend not available — portfolio still works perfectly
-          console.log("Backend not reachable — running in offline mode");
-        }
-      }
-
-      // Log visitor path choice then redirect
-      function enter(path) {
-        sessionStorage.setItem("visitorPath", path);
-
-        // Log the choice to backend (fire and forget)
-        fetch(`${CONFIG.API_URL}/api/${CONFIG.VERSION}/visitor/event`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sessionId: SESSION_ID,
-            eventType: "path_chosen",
-            eventData: path,
-          }),
-        }).catch(() => {});
-
-        // Navigate to city
-        window.location.href = `city.html?path=${path}`;
-      }
-
-      // Capture JS errors silently
-      window.addEventListener("error", (e) => {
-        fetch(`${CONFIG.API_URL}/api/${CONFIG.VERSION}/visitor/error`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sessionId: SESSION_ID,
-            message: e.message,
-            fileName: e.filename,
-            lineNumber: e.lineno,
-            browser: navigator.userAgent,
-            page: "gate",
-          }),
-        }).catch(() => {});
+      // Cursor
+      const cur = document.getElementById("cur");
+      window.addEventListener("mousemove", (e) => {
+        cur.style.left = e.clientX + "px";
+        cur.style.top = e.clientY + "px";
+      });
+      document.querySelectorAll(".panel").forEach((p) => {
+        p.addEventListener("mouseenter", () => cur.classList.add("big"));
+        p.addEventListener("mouseleave", () => cur.classList.remove("big"));
       });
 
-      // Update duration every 30 seconds
-      setInterval(() => {
-        const seconds = Math.round((Date.now() - pageLoadTime) / 1000);
-        fetch(
-          `${CONFIG.API_URL}/api/${CONFIG.VERSION}/visitor/session/${SESSION_ID}/duration`,
-          {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ durationSeconds: seconds }),
-          },
-        ).catch(() => {});
-      }, 30000);
+      // Animate panels in
+      window.addEventListener("load", () => {
+        setTimeout(
+          () => document.getElementById("rec-content").classList.add("show"),
+          200,
+        );
+        setTimeout(
+          () => document.getElementById("eng-content").classList.add("show"),
+          400,
+        );
+      });
 
-      const pageLoadTime = Date.now();
-      logVisit();
+      // Navigation with flash transition
+      function go(path) {
+        sessionStorage.setItem("vp", path);
+        const flash = document.getElementById("flash");
+        flash.classList.add("out");
+        setTimeout(() => {
+          window.location.href = path + ".html";
+        }, 460);
+      }
     </script>
   </body>
 </html>

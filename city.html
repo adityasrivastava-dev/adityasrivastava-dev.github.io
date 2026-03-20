@@ -1910,10 +1910,11 @@
         },
         getSkyColor() {
           const n = this.nightFactor();
-          // Night: deep indigo-violet (not black). Day: rich azure.
-          const day = new THREE.Color(0x4a7ab8);
-          const night = new THREE.Color(0x0d0a1e);
-          return day.clone().lerp(night, n);
+          const day = new THREE.Color(0x3a6090); // deep azure — not washed out
+          const dusk = new THREE.Color(0x1a1040); // deep indigo transition
+          const night = new THREE.Color(0x08061a); // deep space indigo — matches fog/background
+          if (n < 0.5) return day.clone().lerp(dusk, n * 2);
+          return dusk.clone().lerp(night, (n - 0.5) * 2);
         },
       };
 
@@ -2118,8 +2119,8 @@
       // (renderer already fully configured above)
 
       const scene = new THREE.Scene();
-      scene.fog = new THREE.FogExp2(0x0d0820, 0.007); // was 0x0a0a1a/0.025 — lighter, sparser
-      scene.background = new THREE.Color(0x0d0a1e); // was 0x060411 — deep violet not black
+      scene.fog = new THREE.FogExp2(0x08061a, 0.007); // deep indigo fog
+      scene.background = new THREE.Color(0x08061a); // deep indigo — not blue, not black
 
       const camera = new THREE.PerspectiveCamera(
         50,
@@ -2153,9 +2154,9 @@
       composer.addPass(new THREE.RenderPass(scene, camera));
       const bloomPass = new THREE.UnrealBloomPass(
         new THREE.Vector2(window.innerWidth, window.innerHeight),
-        0.85, // strength — was 0.55, needs to be stronger for cinematic glow
-        0.55, // radius — wider spread
-        0.6, // threshold — was 0.78, lower = more surfaces bloom
+        0.7, // strength — reduced from 0.85, less glow soup
+        0.4, // radius — tighter radius, more precise glow
+        0.72, // threshold — raised from 0.60, only bright emissives bloom
       );
       composer.addPass(bloomPass);
 
@@ -2216,12 +2217,12 @@
       scene.add(authSpot);
       scene.add(authSpot.target);
 
-      // Per-district accent lights — colour identity, not fill
+      // Per-district accent lights — colour identity only, NOT competing with auth tower
       const districtLights = [
-        { pos: [-7, 1.5, -6], color: 0x5030bb, intensity: 2.5, dist: 14 }, // bridge — violet
-        { pos: [7, 1.5, -6], color: 0x1870c0, intensity: 2.5, dist: 14 }, // cloud — blue
-        { pos: [-7, 1.5, 4], color: 0xb06010, intensity: 2.5, dist: 14 }, // vaults — amber
-        { pos: [7, 1.5, 4], color: 0x108848, intensity: 2.5, dist: 14 }, // finance — green
+        { pos: [-7, 1.5, -6], color: 0x5030bb, intensity: 1.4, dist: 12 }, // bridge
+        { pos: [7, 1.5, -6], color: 0x1870c0, intensity: 1.4, dist: 12 }, // cloud
+        { pos: [-7, 1.5, 4], color: 0xb06010, intensity: 1.4, dist: 12 }, // vaults
+        { pos: [7, 1.5, 4], color: 0x108848, intensity: 1.4, dist: 12 }, // finance
       ];
       districtLights.forEach((dl) => {
         const pl = new THREE.PointLight(dl.color, dl.intensity, dl.dist);
@@ -2238,24 +2239,24 @@
       const ground = new THREE.Mesh(
         new THREE.CircleGeometry(60, 80),
         new THREE.MeshStandardMaterial({
-          color: 0x100c20, // was 0x0a0618 — visible dark violet
-          roughness: 0.97,
-          emissive: 0x060412,
-          emissiveIntensity: 0.3,
+          color: 0x0c0a18, // dark indigo-black asphalt
+          roughness: 0.98,
+          metalness: 0.01,
+          // NO emissive — ground eats light, doesn't emit it
         }),
       );
       ground.rotation.x = -Math.PI / 2;
       ground.receiveShadow = true;
       scene.add(ground);
 
-      // Auth tower hero ground circle — gold halo on floor around base
+      // Auth tower hero ground circle — very subtle gold warmth, not a glowing disc
       const authGroundHalo = new THREE.Mesh(
-        new THREE.CircleGeometry(5.5, 48),
+        new THREE.CircleGeometry(4.5, 48),
         new THREE.MeshStandardMaterial({
-          color: 0x2a1a04,
-          emissive: 0xc87020,
-          emissiveIntensity: 0.55,
-          roughness: 0.9,
+          color: 0x140e02,
+          emissive: 0xb86010,
+          emissiveIntensity: 0.12, // was 0.55 — whisper not shout
+          roughness: 0.95,
         }),
       );
       authGroundHalo.rotation.x = -Math.PI / 2;
@@ -2307,7 +2308,8 @@
       }
 
       // ═══════════════════════════════════════════════════════════════
-      //  HORIZON GLOW — warm amber city light pollution at base of sky
+      //  HORIZON GLOW — subliminal atmosphere, NOT a visible object
+      //  Rule: you should FEEL it, not SEE it
       // ═══════════════════════════════════════════════════════════════
       (function makeHorizonGlow() {
         const cvs = document.createElement("canvas");
@@ -2315,15 +2317,15 @@
         cvs.height = 256;
         const ctx = cvs.getContext("2d");
         const grad = ctx.createLinearGradient(0, 256, 0, 0);
-        grad.addColorStop(0.0, "rgba(140, 60, 200, 0.45)"); // deep violet base
-        grad.addColorStop(0.08, "rgba(200, 90, 30, 0.35)"); // warm amber band
-        grad.addColorStop(0.22, "rgba(80, 30, 120, 0.18)"); // purple mid
-        grad.addColorStop(0.55, "rgba(20, 10, 40,  0.06)"); // near transparent
-        grad.addColorStop(1.0, "rgba(0,  0,  0,   0.0)");
+        // All stops at max 0.07 opacity — subliminal only
+        grad.addColorStop(0.0, "rgba(180, 80, 20,  0.07)"); // warm amber at horizon
+        grad.addColorStop(0.06, "rgba(100, 40, 140, 0.05)"); // slight violet above
+        grad.addColorStop(0.18, "rgba(30,  15, 60,  0.02)"); // nearly gone
+        grad.addColorStop(0.4, "rgba(0,   0,  0,   0.0)"); // transparent
+        grad.addColorStop(1.0, "rgba(0,   0,  0,   0.0)");
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, 4, 256);
         const tex = new THREE.CanvasTexture(cvs);
-
         const mat = new THREE.MeshBasicMaterial({
           map: tex,
           side: THREE.BackSide,
@@ -2331,9 +2333,10 @@
           depthWrite: false,
           fog: false,
         });
-        const geo = new THREE.CylinderGeometry(92, 92, 28, 48, 1, true);
+        // Shorter cylinder — only covers the ground horizon band
+        const geo = new THREE.CylinderGeometry(88, 88, 12, 48, 1, true);
         const glow = new THREE.Mesh(geo, mat);
-        glow.position.y = -2;
+        glow.position.y = 0;
         scene.add(glow);
       })();
 
@@ -2341,17 +2344,15 @@
       //  ROAD NETWORK
       // ═══════════════════════════════════════════════════════════════
       const roadMat = new THREE.MeshStandardMaterial({
-        color: 0x282830, // was 0x1f1f1f — slightly lighter, reads at night
-        roughness: 0.88,
-        metalness: 0.08,
-        emissive: 0x080810,
-        emissiveIntensity: 0.4,
+        color: 0x1e1e26, // dark asphalt with cool undertone
+        roughness: 0.92,
+        metalness: 0.04,
+        // NO emissive — roads are lit by street lamps, not self-lit
       });
       const swMat = new THREE.MeshStandardMaterial({
-        color: 0x1c1e2e, // was 0x181a2c — brighter, reads as pavement
-        roughness: 0.94,
-        emissive: 0x080810,
-        emissiveIntensity: 0.25,
+        color: 0x22222e, // slightly lighter than road — kerb separation
+        roughness: 0.96,
+        // NO emissive — lit by environment only
       });
       const dashMat = new THREE.MeshStandardMaterial({
         color: 0xddb844,
@@ -2438,16 +2439,16 @@
         pm.position.set(d.pos[0], 0.011, d.pos[2]);
         scene.add(pm);
       });
-      // District colour zones — lifted emissive so they read at night
+      // District colour zones — very subtle territory markers, not bright circles
       DISTRICTS.forEach((d, i) => {
         const bc = BCONFIG[i];
         const isAuth = i === 0;
         const zm = new THREE.Mesh(
-          new THREE.CircleGeometry(isAuth ? 5.0 : 3.5, 32),
+          new THREE.CircleGeometry(isAuth ? 4.2 : 3.0, 32),
           new THREE.MeshStandardMaterial({
-            color: new THREE.Color(bc.trim).multiplyScalar(0.08),
+            color: new THREE.Color(bc.trim).multiplyScalar(0.04),
             emissive: new THREE.Color(bc.trim),
-            emissiveIntensity: isAuth ? 0.18 : 0.06,
+            emissiveIntensity: isAuth ? 0.06 : 0.03, // was 0.18/0.06 — halved again
             roughness: 1,
           }),
         );
@@ -2489,30 +2490,33 @@
       //  DISTANT SKYLINE
       // ═══════════════════════════════════════════════════════════════
       function makeDistantSkyline() {
+        // Key rule: distant buildings should feel FAR — smaller, lighter than sky, atmospheric
         const skylineColors = [
-          0x0e0c1a, 0x0c0e1e, 0x100c18, 0x0e1018, 0x0c0c16,
+          0x0f0d1c, 0x0d0f1e, 0x11101a, 0x0f1018, 0x0d0c14,
         ];
-        for (let i = 0; i < 44; i++) {
-          const ang = (i / 44) * Math.PI * 2 + (Math.random() - 0.5) * 0.1;
-          const r = 34 + Math.random() * 14;
-          const h = 2.2 + Math.random() * 10;
-          const w = 1.2 + Math.random() * 3.0;
+        for (let i = 0; i < 50; i++) {
+          const ang = (i / 50) * Math.PI * 2 + (Math.random() - 0.5) * 0.09;
+          const r = 42 + Math.random() * 18; // pushed further out — was 34-48
+          const h = 1.5 + Math.random() * 7; // shorter max — was 12. Monoliths removed.
+          const w = 0.6 + Math.random() * 1.8; // narrower — was 4.2. No grey walls.
           const ci = Math.floor(Math.random() * skylineColors.length);
           const mat = new THREE.MeshStandardMaterial({
             color: skylineColors[ci],
             roughness: 1,
             metalness: 0,
-            emissive: new THREE.Color(skylineColors[ci]).multiplyScalar(2),
-            emissiveIntensity: 0.14,
+            // Slight self-emissive so they read lighter than sky — atmosphere fakes depth
+            emissive: new THREE.Color(0x0a0820),
+            emissiveIntensity: 0.08,
           });
-          const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, w * 0.6), mat);
-          m.position.set(Math.cos(ang) * r, h / 2 - 0.4, Math.sin(ang) * r);
-          m.rotation.y = ang + (Math.random() - 0.5) * 0.25;
+          const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, w * 0.55), mat);
+          m.position.set(Math.cos(ang) * r, h / 2 - 0.3, Math.sin(ang) * r);
+          m.rotation.y = ang + (Math.random() - 0.5) * 0.2;
           scene.add(m);
 
-          const wCount = Math.floor((h / 1.8) * (0.4 + Math.random() * 0.8));
-          const winColors = [0xffd870, 0xaad8ff, 0xfff0c0, 0x88aaff, 0xffeeaa];
-          const wG = new THREE.BoxGeometry(0.1, 0.15, 0.02);
+          // Sparse warm windows — very low density at this distance
+          const wCount = Math.floor(h * 0.3 * Math.random());
+          const winColors = [0xffd060, 0xaad0ff, 0xffeea0];
+          const wG = new THREE.BoxGeometry(0.08, 0.11, 0.015);
           for (let j = 0; j < wCount; j++) {
             const wc = new THREE.Color(
               winColors[Math.floor(Math.random() * winColors.length)],
@@ -2520,27 +2524,28 @@
             const wm = new THREE.MeshStandardMaterial({
               color: wc,
               emissive: wc,
-              emissiveIntensity: 1.8 + Math.random() * 0.8,
+              emissiveIntensity: 1.6 + Math.random() * 0.6,
             });
             const ww = new THREE.Mesh(wG, wm);
             ww.position.set(
-              (Math.random() - 0.5) * w * 0.7,
-              (Math.random() - 0.5) * h * 0.75,
-              w * 0.32,
+              (Math.random() - 0.5) * w * 0.65,
+              (Math.random() - 0.5) * h * 0.7,
+              w * 0.3,
             );
             m.add(ww);
             registerWindow(ww, winColors[0], `sky_${i}_${j}`, undefined);
           }
-          if (h > 7 && Math.random() > 0.5) {
+          // Red aviation blink on taller buildings only
+          if (h > 5 && Math.random() > 0.55) {
             const blink = new THREE.Mesh(
-              new THREE.SphereGeometry(0.06, 5, 4),
+              new THREE.SphereGeometry(0.05, 5, 4),
               new THREE.MeshStandardMaterial({
-                color: 0xff2020,
-                emissive: 0xff2020,
-                emissiveIntensity: 3.0,
+                color: 0xff1010,
+                emissive: 0xff1010,
+                emissiveIntensity: 2.5,
               }),
             );
-            blink.position.set(0, h / 2 + 0.06, 0);
+            blink.position.set(0, h / 2 + 0.05, 0);
             blink.userData = {
               blink: true,
               phase: Math.random() * Math.PI * 2,
@@ -3507,63 +3512,51 @@
       function makeTree(x, z, h, color) {
         const g = new THREE.Group();
         const tH = h * 0.32;
+        // Trunk — very dark brown, barely visible
         const trunk = new THREE.Mesh(
           new THREE.CylinderGeometry(0.055, 0.12, tH, 7),
-          new THREE.MeshStandardMaterial({ color: 0x3d2410, roughness: 0.95 }),
+          new THREE.MeshStandardMaterial({ color: 0x1a0e08, roughness: 0.98 }),
         );
         trunk.position.y = tH / 2;
         trunk.castShadow = true;
         g.add(trunk);
-        const baseC = new THREE.Color(color);
+        // Foliage — near-black dark green silhouette. Trees at night = shadows.
+        // DO NOT lerp toward bright green. The eye should read "tree shape", not "green object".
         for (let i = 0; i < 4; i++) {
           const t2 = i / 3;
           const r = (0.68 - t2 * 0.2) * (h / 3.0);
           const ch = h * 0.33 * (1 - t2 * 0.15);
-          const layerC = baseC
-            .clone()
-            .lerp(new THREE.Color(0x66ff88), t2 * 0.09);
+          // Very dark — nearly black-green. Slightly cooler at top for depth.
+          const darkGreen = new THREE.Color(0x060c06).lerp(
+            new THREE.Color(0x080e0a),
+            t2 * 0.4,
+          );
           const cone = new THREE.Mesh(
             new THREE.ConeGeometry(r, ch, 7),
             new THREE.MeshStandardMaterial({
-              color: layerC,
-              emissive: layerC.clone().multiplyScalar(0.05),
-              roughness: 0.82,
+              color: darkGreen,
+              roughness: 0.96,
+              metalness: 0.0,
             }),
           );
           cone.position.y = tH + i * h * 0.19;
           cone.rotation.y = i * 0.55;
           cone.castShadow = true;
           g.add(cone);
-          // Tag for sway
-          const swayAmp = 0.016 + i * 0.006;
-          const swayPhase = Math.random() * Math.PI * 2;
-          const axisAngle = Math.random() * Math.PI * 2;
           swayMeshes.push({
             mesh: cone,
-            amp: swayAmp,
-            phase: swayPhase,
-            axis: axisAngle,
+            amp: 0.016 + i * 0.006,
+            phase: Math.random() * Math.PI * 2,
+            axis: Math.random() * Math.PI * 2,
           });
         }
-        if (Math.random() > 0.52) {
-          const fC = baseC.clone().lerp(new THREE.Color(0xffffff), 0.55);
-          const fairy = new THREE.Mesh(
-            new THREE.SphereGeometry(0.055, 5, 4),
-            new THREE.MeshStandardMaterial({
-              color: fC,
-              emissive: fC,
-              emissiveIntensity: 2.5,
-            }),
-          );
-          fairy.position.y = tH + h * 0.76;
-          fairy.userData = { blink: true, phase: Math.random() * Math.PI * 2 };
-          g.add(fairy);
-        }
+        // NO fairy lights — they were drawing the eye to trees, wrong priority
         g.position.set(x, 0, z);
         return g;
       }
 
-      const treeColors = [0x2a7a40, 0x3a8a50, 0x20a050, 0x4a9060, 0x1a6030];
+      // Dark tree palette — night silhouettes only
+      const treeColors = [0x060c06, 0x05080a, 0x070c07, 0x060a08, 0x080c06];
       const treePosArr = [
         [-12, -10],
         [-14, -4],
@@ -4588,8 +4581,8 @@
         function introStep(now) {
           const p = Math.min((now - introStart) / introDur, 1),
             e = 1 - Math.pow(1 - p, 3);
-          sph.phi = startPhi + (0.85 - startPhi) * e;
-          sph.radius = startR + (34 - startR) * e;
+          sph.phi = startPhi + (0.82 - startPhi) * e;
+          sph.radius = startR + (28 - startR) * e; // was 34 — tighter crops out void
           updateCam();
           if (p < 1) requestAnimationFrame(introStep);
           else {
@@ -4614,41 +4607,39 @@
         timeSys.update(dt);
         wxSys.update(dt);
 
-        // ── DYNAMIC SKY + FOG — atmospheric, not flat ──
+        // ── DYNAMIC SKY + FOG ──
         const skyC = timeSys.getSkyColor();
         scene.background = skyC;
-        // Fog: deep violet-indigo at night (city glow), clear blue-grey at day
-        const fogC = skyC.clone();
-        if (nf > 0.2) fogC.lerp(new THREE.Color(0x120818), nf * 0.5);
-        scene.fog.color.copy(fogC);
+        // Fog stays close to sky color — no warm tint (that was causing muddy look)
+        scene.fog.color.copy(skyC);
         scene.fog.density = wxSys.fogCurrent;
         renderer.setClearColor(skyC);
 
         // ── DYNAMIC LIGHTING ──
-        // Hemi: NEVER goes below 0.18 — buildings must always be readable
-        hemi.intensity = 0.45 - nf * 0.27; // day: 0.45, night: 0.18
-        hemi.color.setHex(nf > 0.5 ? 0x0d1030 : 0x334488);
-        hemi.groundColor.setHex(nf > 0.5 ? 0x060810 : 0x0a0818);
+        // Hemi minimum 0.15 — buildings must read but ground stays dark
+        hemi.intensity = 0.42 - nf * 0.25; // day: 0.42, night: 0.17
+        hemi.color.setHex(nf > 0.5 ? 0x080c1a : 0x2a3870); // cooler at night
+        hemi.groundColor.setHex(nf > 0.5 ? 0x040408 : 0x080810); // near-black ground
 
-        // Sun/moon — dims to 0.1 at night (moon), not fully off
-        sun.intensity = 2.2 - nf * 2.0; // day: 2.2, night: 0.2 (moonlight)
-        sun.color.setHex(nf > 0.6 ? 0x2030b0 : 0xfff0cc); // blue moonlight at night
+        // Sun fades to moonlight — not fully off, gives directional shape at night
+        sun.intensity = 2.2 - nf * 2.05; // day: 2.2, night: 0.15
+        sun.color.setHex(nf > 0.6 ? 0x1828a0 : 0xfff0cc);
 
-        // Rim light strengthens at night — defines silhouettes in darkness
-        rim.intensity = 0.35 + nf * 0.55; // day: 0.35, night: 0.9
+        // Rim: cold edge light — strongest at night to separate building silhouettes
+        rim.intensity = 0.3 + nf * 0.65; // day: 0.30, night: 0.95
 
-        // Auth tower hero lights — pulse irregularly, strengthen at night
+        // Auth tower hero lights — dual-frequency pulse, nightBoost
         const authPulse =
-          1.0 + Math.sin(t * 1.1) * 0.18 + Math.sin(t * 0.7) * 0.08;
-        const nightBoost = 1.0 + nf * 0.6; // brighter at night
-        authGlow.intensity = 4.5 * authPulse * nightBoost;
-        authHalo.intensity = 3.0 * authPulse * nightBoost;
-        authSpot.intensity = 3.5 * nightBoost;
+          1.0 + Math.sin(t * 1.1) * 0.15 + Math.sin(t * 0.67) * 0.06;
+        const nightBoost = 1.0 + nf * 0.55;
+        authGlow.intensity = 4.2 * authPulse * nightBoost;
+        authHalo.intensity = 2.8 * authPulse * nightBoost;
+        authSpot.intensity = 3.2 * nightBoost;
 
-        // Bloom: stronger at night, day needs less
+        // Bloom: selective strengthening at night — windows glow, not everything
         if (bloomPass) {
-          bloomPass.strength = 0.55 + nf * 0.55; // day: 0.55, night: 1.1
-          bloomPass.threshold = 0.75 - nf * 0.25; // day: 0.75, night: 0.50
+          bloomPass.strength = 0.55 + nf * 0.45; // day: 0.55, night: 1.0
+          bloomPass.threshold = 0.8 - nf * 0.2; // day: 0.80, night: 0.60 — selective
         }
 
         // Stars fade in at night
@@ -4751,8 +4742,8 @@
             pos3[pi * 3 + 2] = pt.z;
           });
           fc.geo.attributes.position.needsUpdate = true;
-          // Only visible at night, fades in with night factor
-          fc.pts.material.opacity = nf * (0.35 + Math.sin(t * 1.8 + ci) * 0.12);
+          // Night-only: architectural threads show auth tower's reach
+          fc.pts.material.opacity = nf * (0.28 + Math.sin(t * 1.8 + ci) * 0.1);
         });
 
         // ── AMBIENT PARTICLES ──
