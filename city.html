@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Aditya's World</title>
     <script src="config.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
       *,
@@ -14,16 +19,23 @@
         padding: 0;
         box-sizing: border-box;
       }
+      :root {
+        --gold: #c8a84b;
+        --gold-dim: #8a7030;
+        --bg: #060411;
+        --text: #e8dcc8;
+        --text-dim: #6a7a9a;
+        --border: #1a2540;
+        font-family: "Inter", sans-serif;
+      }
       html,
       body {
         width: 100%;
         height: 100%;
         overflow: hidden;
-        background: #0a0612;
-        font-family: "Courier New", monospace;
-        color: #e8dcc8;
+        background: var(--bg);
+        color: var(--text);
       }
-
       canvas {
         position: fixed;
         inset: 0;
@@ -33,25 +45,26 @@
         cursor: grabbing;
       }
 
-      /* HEADER */
+      /* ── HEADER ── */
       header {
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
         z-index: 100;
-        background: rgba(8, 4, 18, 0.88);
+        background: rgba(6, 4, 17, 0.9);
         backdrop-filter: blur(16px);
-        border-bottom: 1px solid rgba(200, 140, 255, 0.15);
+        border-bottom: 1px solid rgba(200, 140, 255, 0.12);
         height: 50px;
-        padding: 0 24px;
+        padding: 0 20px;
         display: flex;
         align-items: center;
         justify-content: space-between;
       }
       .h-name {
-        font-size: 12px;
+        font-size: 11px;
         letter-spacing: 3px;
+        font-weight: 600;
         background: linear-gradient(90deg, #c8a84b, #e8d080);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -59,10 +72,10 @@
       .h-right {
         display: flex;
         align-items: center;
-        gap: 18px;
+        gap: 14px;
       }
       .path-badge {
-        font-size: 9px;
+        font-size: 8px;
         letter-spacing: 3px;
         padding: 3px 10px;
         border: 1px solid;
@@ -76,14 +89,14 @@
         border-color: rgba(122, 212, 255, 0.4);
       }
       .h-btn {
-        font-size: 9px;
+        font-size: 8px;
         letter-spacing: 2px;
         color: #7a8aaa;
         cursor: pointer;
         text-decoration: none;
         background: none;
         border: none;
-        font-family: inherit;
+        font-family: "Inter", sans-serif;
         transition: color 0.2s;
         padding: 0;
       }
@@ -91,21 +104,57 @@
         color: #c8a84b;
       }
 
-      /* BRAHMASTRA */
+      /* ── WEATHER CONTROLS ── */
+      .wx-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .wx-btn {
+        font-size: 7px;
+        letter-spacing: 2px;
+        padding: 3px 8px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: transparent;
+        color: #3a4a6a;
+        cursor: pointer;
+        font-family: "Inter", sans-serif;
+        transition: all 0.2s;
+        border-radius: 2px;
+      }
+      .wx-btn:hover,
+      .wx-btn.active {
+        color: #c8a84b;
+        border-color: rgba(200, 168, 75, 0.4);
+        background: rgba(200, 168, 75, 0.06);
+      }
+      .wx-sep {
+        color: rgba(255, 255, 255, 0.1);
+        font-size: 10px;
+        margin: 0 2px;
+      }
+      #time-display {
+        font-size: 8px;
+        letter-spacing: 2px;
+        color: #3a4a6a;
+        min-width: 40px;
+      }
+
+      /* ── BRAHMASTRA ── */
       #brahmastra {
         position: fixed;
         top: 50px;
         left: 0;
         right: 0;
         z-index: 90;
-        background: rgba(8, 4, 18, 0.82);
+        background: rgba(6, 4, 17, 0.82);
         backdrop-filter: blur(8px);
-        border-bottom: 1px solid rgba(200, 140, 255, 0.1);
-        padding: 6px 24px;
+        border-bottom: 1px solid rgba(200, 140, 255, 0.08);
+        padding: 6px 20px;
         display: flex;
         align-items: center;
         gap: 14px;
-        font-size: 9px;
+        font-size: 8px;
         letter-spacing: 3px;
         color: #5a6a8a;
       }
@@ -127,12 +176,12 @@
           0 0 20px rgba(200, 168, 75, 0.4);
       }
 
-      /* TOOLTIP */
+      /* ── TOOLTIP ── */
       #tooltip {
         position: fixed;
         z-index: 90;
         pointer-events: none;
-        background: rgba(8, 4, 18, 0.9);
+        background: rgba(6, 4, 17, 0.92);
         backdrop-filter: blur(12px);
         border: 1px solid rgba(200, 168, 75, 0.3);
         padding: 10px 16px;
@@ -148,6 +197,7 @@
         letter-spacing: 2px;
         color: #e8dcc8;
         margin-bottom: 3px;
+        font-weight: 500;
       }
       .tt-tag {
         font-size: 8px;
@@ -155,7 +205,7 @@
         color: #7a8aaa;
       }
 
-      /* PANEL */
+      /* ── SIDE PANEL ── */
       #panel {
         position: fixed;
         top: 0;
@@ -164,7 +214,7 @@
         z-index: 150;
         width: 480px;
         max-width: 100vw;
-        background: rgba(8, 4, 18, 0.97);
+        background: rgba(6, 4, 17, 0.97);
         border-left: 1px solid rgba(200, 140, 255, 0.15);
         backdrop-filter: blur(20px);
         overflow-y: auto;
@@ -179,7 +229,7 @@
         position: sticky;
         top: 0;
         z-index: 10;
-        background: rgba(8, 4, 18, 0.95);
+        background: rgba(6, 4, 17, 0.95);
         border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         padding: 14px 20px;
         display: flex;
@@ -191,7 +241,7 @@
         color: #c8a84b;
       }
       #ph-label {
-        font-size: 9px;
+        font-size: 8px;
         letter-spacing: 3px;
         color: #5a6a8a;
       }
@@ -205,7 +255,7 @@
       }
 
       .p-num {
-        font-size: 9px;
+        font-size: 8px;
         letter-spacing: 4px;
         background: linear-gradient(90deg, #c8a84b, transparent);
         -webkit-background-clip: text;
@@ -255,7 +305,6 @@
         background: currentColor;
         animation: pulse 2s infinite;
       }
-
       .metrics {
         display: flex;
         gap: 0;
@@ -286,7 +335,6 @@
         letter-spacing: 3px;
         color: #4a5a7a;
       }
-
       .slabel {
         font-size: 8px;
         letter-spacing: 4px;
@@ -301,19 +349,13 @@
       }
       .story .em {
         color: #c8a84b;
-        font-style: normal;
       }
-      .story br {
-        display: block;
-        content: "";
-      }
-
       .eng-toggle {
         display: flex;
         align-items: center;
         gap: 8px;
         margin-top: 20px;
-        font-size: 9px;
+        font-size: 8px;
         letter-spacing: 3px;
         color: #4a5a7a;
         cursor: pointer;
@@ -342,9 +384,7 @@
       .eng-deep code {
         color: #7ad4ff;
         font-size: 11px;
-        font-family: "Courier New", monospace;
       }
-
       .tech-tags {
         display: flex;
         flex-wrap: wrap;
@@ -359,7 +399,6 @@
         padding: 3px 9px;
         border-radius: 2px;
       }
-
       .rec-status {
         margin-top: 24px;
         padding: 10px 14px;
@@ -373,8 +412,30 @@
         letter-spacing: 3px;
         color: #5aaa7a;
       }
+      .enter-room-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 22px;
+        padding: 14px 20px;
+        background: rgba(200, 168, 75, 0.06);
+        border: 1px solid rgba(200, 168, 75, 0.3);
+        color: #c8a84b;
+        font-family: "Inter", sans-serif;
+        font-size: 8px;
+        letter-spacing: 4px;
+        cursor: pointer;
+        width: 100%;
+        transition: all 0.25s;
+      }
+      .enter-room-btn:hover {
+        background: rgba(200, 168, 75, 0.12);
+        box-shadow: 0 0 20px rgba(200, 168, 75, 0.1);
+        letter-spacing: 5px;
+      }
 
-      /* ORACLE */
+      /* ── ORACLE ── */
       #oracle-btn {
         position: fixed;
         bottom: 28px;
@@ -382,7 +443,7 @@
         z-index: 200;
         width: 48px;
         height: 48px;
-        background: rgba(8, 4, 18, 0.9);
+        background: rgba(6, 4, 17, 0.9);
         border: 1px solid rgba(200, 168, 75, 0.4);
         color: #c8a84b;
         font-size: 20px;
@@ -407,7 +468,7 @@
         right: 28px;
         z-index: 200;
         width: 320px;
-        background: rgba(8, 4, 18, 0.95);
+        background: rgba(6, 4, 17, 0.95);
         backdrop-filter: blur(20px);
         border: 1px solid rgba(200, 168, 75, 0.3);
         border-radius: 4px;
@@ -422,7 +483,7 @@
       .o-head {
         padding: 12px 16px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-        font-size: 9px;
+        font-size: 8px;
         letter-spacing: 3px;
         color: #c8a84b;
         display: flex;
@@ -474,7 +535,7 @@
         background: transparent;
         border: none;
         color: #e8dcc8;
-        font-family: "Courier New", monospace;
+        font-family: "Inter", sans-serif;
         font-size: 11px;
         padding: 11px 14px;
         outline: none;
@@ -487,8 +548,8 @@
         border: none;
         border-left: 1px solid rgba(255, 255, 255, 0.06);
         color: #c8a84b;
-        font-family: "Courier New", monospace;
-        font-size: 9px;
+        font-family: "Inter", sans-serif;
+        font-size: 8px;
         letter-spacing: 2px;
         padding: 0 14px;
         cursor: pointer;
@@ -498,7 +559,7 @@
         background: rgba(200, 168, 75, 0.08);
       }
 
-      /* CHAOS */
+      /* ── CHAOS ── */
       #chaos-overlay {
         position: fixed;
         inset: 0;
@@ -544,14 +605,14 @@
       }
       #chaos-close {
         margin-top: 20px;
-        font-size: 9px;
+        font-size: 8px;
         letter-spacing: 3px;
         color: #5a6a8a;
         cursor: pointer;
         padding: 10px 24px;
         border: 1px solid rgba(255, 255, 255, 0.1);
         background: none;
-        font-family: "Courier New", monospace;
+        font-family: "Inter", sans-serif;
         transition: all 0.2s;
         border-radius: 2px;
       }
@@ -560,7 +621,7 @@
         border-color: rgba(200, 168, 75, 0.3);
       }
 
-      /* CONTACT */
+      /* ── CONTACT ── */
       #contact-overlay {
         position: fixed;
         inset: 0;
@@ -585,7 +646,7 @@
           inset 0 0 80px rgba(200, 168, 75, 0.02);
       }
       .c-unlock {
-        font-size: 9px;
+        font-size: 8px;
         letter-spacing: 4px;
         color: #c8a84b;
         margin-bottom: 28px;
@@ -601,7 +662,7 @@
         -webkit-text-fill-color: transparent;
       }
       .c-role {
-        font-size: 9px;
+        font-size: 8px;
         letter-spacing: 4px;
         color: #4a5a7a;
         margin-bottom: 36px;
@@ -648,7 +709,7 @@
         color: #c8a84b;
       }
 
-      /* CONTROLS */
+      /* ── CONTROLS HINT ── */
       #controls {
         position: fixed;
         bottom: 28px;
@@ -661,6 +722,7 @@
         pointer-events: none;
       }
 
+      /* ── ANIMATIONS ── */
       @keyframes pulse {
         0%,
         100% {
@@ -670,33 +732,6 @@
           opacity: 0.3;
         }
       }
-      ::-webkit-scrollbar {
-        width: 3px;
-      }
-      ::-webkit-scrollbar-track {
-        background: rgba(0, 0, 0, 0.3);
-      }
-      ::-webkit-scrollbar-thumb {
-        background: rgba(200, 168, 75, 0.2);
-      }
-
-      @media (max-width: 600px) {
-        #panel {
-          width: 100vw;
-        }
-        .c-card {
-          padding: 32px 24px;
-        }
-        #oracle-panel {
-          width: calc(100vw - 40px);
-          right: 20px;
-        }
-        #controls {
-          display: none;
-        }
-      }
-
-      /* ── SHAKE ANIMATION ─────────────────────────────────────── */
       @keyframes vaultShake {
         0%,
         100% {
@@ -714,32 +749,33 @@
         32% {
           transform: translate(3px, -2px) rotate(0.2deg);
         }
-        40% {
-          transform: translate(-2px, 3px) rotate(-0.1deg);
-        }
         48% {
           transform: translate(2px, -1px) rotate(0.1deg);
         }
-        56% {
-          transform: translate(-1px, 2px) rotate(-0.05deg);
-        }
         64% {
           transform: translate(1px, -1px) rotate(0deg);
-        }
-        72% {
-          transform: translate(-1px, 1px) rotate(0deg);
         }
       }
       canvas.shake {
         animation: vaultShake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97);
       }
+      @keyframes introFade {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
 
-      /* ── CINEMATIC INTRO ─────────────────────────────────────── */
+      /* ── INTRO ── */
       #intro-overlay {
         position: fixed;
         inset: 0;
         z-index: 300;
-        background: #0a0614;
+        background: #060411;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -773,18 +809,8 @@
       .intro-line:nth-child(3) {
         animation-delay: 1.4s;
       }
-      @keyframes introFade {
-        from {
-          opacity: 0;
-          transform: translateY(10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
 
-      /* ── SSO FLASH OVERLAY ───────────────────────────────────── */
+      /* ── SSO FLASH ── */
       #sso-flash {
         position: fixed;
         inset: 0;
@@ -802,14 +828,14 @@
         opacity: 1;
       }
 
-      /* ── DATA VAULT CRACK ────────────────────────────────────── */
+      /* ── VAULT CRACK ── */
       #vault-crack {
         position: fixed;
         bottom: 60px;
         left: 50%;
         transform: translateX(-50%);
         z-index: 200;
-        font-size: 9px;
+        font-size: 8px;
         letter-spacing: 4px;
         color: #e08050;
         background: rgba(8, 4, 18, 0.9);
@@ -822,12 +848,494 @@
       #vault-crack.vis {
         opacity: 1;
       }
+
+      /* ── WEATHER INDICATOR ── */
+      #wx-indicator {
+        position: fixed;
+        bottom: 28px;
+        right: 90px;
+        z-index: 90;
+        font-size: 8px;
+        letter-spacing: 3px;
+        color: #3a4a6a;
+        pointer-events: none;
+        transition: color 0.5s;
+      }
+      #wx-indicator.active {
+        color: #7a8aaa;
+      }
+
+      /* ── SCROLLBARS ── */
+      ::-webkit-scrollbar {
+        width: 3px;
+      }
+      ::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.3);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(200, 168, 75, 0.2);
+      }
+
+      /* ── ROOM MODE ── */
+      #room-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 500;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(
+          ellipse at 50% 120%,
+          rgba(10, 8, 24, 0) 0%,
+          #050312 70%
+        );
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+        --room-color: #c8a84b;
+        overflow: hidden;
+      }
+      #room-overlay.vis {
+        opacity: 1;
+        pointer-events: all;
+      }
+      #room-city-blur {
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(
+            ellipse 100% 50% at 50% 100%,
+            rgba(20, 12, 48, 0.92) 0%,
+            #040210 60%
+          ),
+          radial-gradient(
+            ellipse 60% 30% at 50% 80%,
+            var(--room-color) 0%,
+            transparent 70%
+          );
+        opacity: 0.18;
+      }
+      #room-ground {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 38%;
+        background: linear-gradient(
+          to top,
+          rgba(8, 6, 24, 0.85) 0%,
+          transparent 100%
+        );
+        border-top: 1px solid rgba(255, 255, 255, 0.03);
+      }
+      #room-overlay::before,
+      #room-overlay::after {
+        content: "";
+        position: absolute;
+        top: 10%;
+        width: 280px;
+        height: 70%;
+        border-radius: 50%;
+        filter: blur(80px);
+        pointer-events: none;
+        background: var(--room-color);
+        opacity: 0.04;
+      }
+      #room-overlay::before {
+        left: -80px;
+      }
+      #room-overlay::after {
+        right: -80px;
+      }
+      #room-board-wrap {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
+      }
+      #room-board {
+        width: min(720px, 92vw);
+        background: rgba(6, 4, 18, 0.97);
+        border: 2px solid var(--room-color);
+        border-bottom: none;
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.04),
+          0 0 60px rgba(0, 0, 0, 0.9),
+          inset 0 0 60px rgba(0, 0, 0, 0.4),
+          0 -2px 40px rgba(200, 168, 75, 0.12);
+        position: relative;
+      }
+      #room-board-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 20px 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+        background: rgba(255, 255, 255, 0.025);
+      }
+      #room-dist-badge {
+        font-size: 8px;
+        letter-spacing: 5px;
+        color: var(--room-color);
+      }
+      #room-dist-name {
+        font-size: 13px;
+        letter-spacing: 2px;
+        font-weight: 700;
+        color: #f0e8d8;
+      }
+      #room-slide-badge {
+        font-size: 8px;
+        letter-spacing: 3px;
+        color: #3a4a6a;
+      }
+      #room-board-content {
+        min-height: 300px;
+        max-height: 54vh;
+        overflow-y: auto;
+        padding: 30px 36px 24px;
+        transition: opacity 0.18s ease;
+      }
+      #room-board-content::-webkit-scrollbar {
+        width: 3px;
+      }
+      #room-board-content::-webkit-scrollbar-thumb {
+        background: rgba(200, 168, 75, 0.2);
+      }
+      #room-board-stand {
+        width: 8px;
+        height: 48px;
+        background: linear-gradient(
+          to bottom,
+          var(--room-color),
+          rgba(0, 0, 0, 0)
+        );
+        margin: 0 auto;
+        box-shadow: 0 0 20px rgba(200, 168, 75, 0.3);
+      }
+      #room-board-base {
+        width: min(320px, 60vw);
+        height: 10px;
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 2px;
+        box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+      }
+      #room-dots {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+        align-items: center;
+        justify-content: center;
+      }
+      .room-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.12);
+        cursor: pointer;
+        transition: all 0.3s;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .room-dot.active {
+        background: var(--room-color);
+        box-shadow: 0 0 8px var(--room-color);
+        border-color: var(--room-color);
+        width: 18px;
+        border-radius: 4px;
+      }
+      .room-nav {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 3;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+      #room-prev-wrap {
+        left: clamp(16px, 4vw, 80px);
+      }
+      #room-next-wrap {
+        right: clamp(16px, 4vw, 80px);
+      }
+      .room-nav-btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: rgba(6, 4, 18, 0.9);
+        border: 2px solid var(--room-color);
+        color: var(--room-color);
+        font-size: 22px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.25s;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+        font-family: "Inter", sans-serif;
+        user-select: none;
+      }
+      .room-nav-btn:hover {
+        background: rgba(200, 168, 75, 0.1);
+        box-shadow:
+          0 0 30px rgba(0, 0, 0, 0.6),
+          0 0 20px rgba(200, 168, 75, 0.25);
+        transform: scale(1.08);
+      }
+      .room-nav-btn:active {
+        transform: scale(0.95);
+      }
+      .room-nav-label {
+        font-size: 8px;
+        letter-spacing: 4px;
+        color: rgba(255, 255, 255, 0.22);
+        pointer-events: none;
+      }
+      .room-post {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        z-index: 1;
+        width: 3px;
+        background: linear-gradient(
+          to bottom,
+          transparent 0%,
+          rgba(255, 255, 255, 0.08) 20%,
+          rgba(255, 255, 255, 0.08) 80%,
+          transparent 100%
+        );
+      }
+      #room-post-l {
+        left: clamp(46px, 6vw, 110px);
+      }
+      #room-post-r {
+        right: clamp(46px, 6vw, 110px);
+      }
+      #room-controls {
+        position: absolute;
+        bottom: 28px;
+        left: 28px;
+        z-index: 10;
+        background: rgba(8, 6, 20, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        backdrop-filter: blur(8px);
+        padding: 14px 18px;
+        min-width: 140px;
+      }
+      .rc-title {
+        font-size: 7px;
+        letter-spacing: 4px;
+        color: #3a4a6a;
+        margin-bottom: 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        padding-bottom: 6px;
+      }
+      .rc-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 7px;
+        font-size: 9px;
+      }
+      .rc-key {
+        font-size: 8px;
+        letter-spacing: 1px;
+        color: var(--room-color);
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 2px 7px;
+        min-width: 32px;
+        text-align: center;
+        border-radius: 2px;
+      }
+      .rc-lbl {
+        color: #4a5a7a;
+        letter-spacing: 2px;
+      }
+      #room-exit {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 10;
+        font-size: 8px;
+        letter-spacing: 3px;
+        color: #3a4a6a;
+        background: rgba(8, 6, 20, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        padding: 8px 16px;
+        cursor: pointer;
+        font-family: "Inter", sans-serif;
+        transition: all 0.2s;
+      }
+      #room-exit:hover {
+        color: #c8a84b;
+        border-color: rgba(200, 168, 75, 0.3);
+      }
+      .slide-title {
+        font-size: 8px;
+        letter-spacing: 5px;
+        color: var(--room-color);
+        margin-bottom: 18px;
+      }
+      .slide-story {
+        font-size: 13.5px;
+        line-height: 2.1;
+        color: #8a9bbb;
+      }
+      .slide-story .em {
+        color: var(--room-color);
+      }
+      .slide-metrics {
+        display: flex;
+        gap: 0;
+        margin-top: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .slide-metric {
+        flex: 1;
+        padding: 24px 16px;
+        text-align: center;
+        border-right: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .slide-metric:last-child {
+        border-right: none;
+      }
+      .sm-val {
+        display: block;
+        font-size: 42px;
+        font-weight: 700;
+        line-height: 1;
+        background: linear-gradient(180deg, #e8d080, var(--room-color));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 10px;
+      }
+      .sm-lbl {
+        font-size: 7px;
+        letter-spacing: 4px;
+        color: #3a4a6a;
+      }
+      .slide-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 14px;
+      }
+      .slide-tag {
+        font-size: 9px;
+        letter-spacing: 2px;
+        color: #5a6a8a;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 6px 14px;
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.025);
+        transition: all 0.2s;
+        cursor: default;
+      }
+      .slide-tag:hover {
+        color: var(--room-color);
+      }
+      .slide-subtitle {
+        font-size: 10px;
+        letter-spacing: 3px;
+        color: #3a4a6a;
+        margin-bottom: 14px;
+        margin-top: -6px;
+      }
+      .slide-eng {
+        font-size: 12px;
+        line-height: 1.95;
+        color: #7a9aaa;
+        border: 1px solid rgba(122, 212, 255, 0.12);
+        background: rgba(122, 212, 255, 0.03);
+        padding: 18px 20px;
+      }
+      .slide-eng code {
+        color: #7ad4ff;
+        font-size: 11px;
+      }
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      #room-board-content > * {
+        animation: slideIn 0.35s ease forwards;
+      }
+
+      /* ── RESPONSIVE ── */
+      @media (max-width: 700px) {
+        #room-prev-wrap {
+          left: 8px;
+        }
+        #room-next-wrap {
+          right: 8px;
+        }
+        .room-nav-btn {
+          width: 44px;
+          height: 44px;
+          font-size: 16px;
+        }
+        #room-board-content {
+          padding: 20px 18px;
+        }
+        #room-controls,
+        #controls {
+          display: none;
+        }
+        .wx-row {
+          display: none;
+        }
+        #panel {
+          width: 100vw;
+        }
+        .c-card {
+          padding: 32px 24px;
+        }
+      }
     </style>
   </head>
   <body>
     <header>
       <div class="h-name">ADITYA SRIVASTAVA</div>
       <div class="h-right">
+        <div class="wx-row">
+          <span id="time-display">22:00</span>
+          <span class="wx-sep">|</span>
+          <button
+            class="wx-btn active"
+            id="wx-clear"
+            onclick="setWeather('clear')"
+          >
+            CLEAR
+          </button>
+          <button class="wx-btn" id="wx-rain" onclick="setWeather('rain')">
+            RAIN
+          </button>
+          <button class="wx-btn" id="wx-fog" onclick="setWeather('fog')">
+            FOG
+          </button>
+          <button class="wx-btn" id="wx-wind" onclick="setWeather('wind')">
+            WIND
+          </button>
+          <button
+            class="wx-btn"
+            id="wx-time"
+            onclick="toggleTimeFlow()"
+            title="Toggle time flow"
+          >
+            ⏱
+          </button>
+          <span class="wx-sep">|</span>
+        </div>
         <div class="path-badge" id="pathBadge">LOADING</div>
         <button class="h-btn" onclick="showChaos()">⚡ CHAOS</button>
         <a class="h-btn" href="index.html">← GATE</a>
@@ -850,6 +1358,7 @@
     <div id="controls">
       DRAG → ORBIT &nbsp; SCROLL → ZOOM &nbsp; CLICK → EXPLORE
     </div>
+    <div id="wx-indicator">CLEAR · NIGHT</div>
 
     <div id="tooltip">
       <div class="tt-name" id="tt-name"></div>
@@ -891,18 +1400,62 @@
       <button id="chaos-close" onclick="closeChaos()">CLOSE SIMULATION</button>
     </div>
 
-    <!-- Cinematic Intro -->
     <div id="intro-overlay">
       <div class="intro-line">INITIALISING CITY SYSTEMS</div>
       <div class="intro-line">ADITYA'S WORLD</div>
       <div class="intro-line">LOADING DISTRICTS · · ·</div>
     </div>
-
-    <!-- SSO Flash -->
     <div id="sso-flash"></div>
-
-    <!-- Vault crack warning -->
     <div id="vault-crack">⚠ MIGRATION IN PROGRESS · STANDBY</div>
+
+    <!-- ROOM MODE -->
+    <div id="room-overlay">
+      <div id="room-city-blur"></div>
+      <div id="room-ground"></div>
+      <div class="room-post" id="room-post-l"></div>
+      <div class="room-post" id="room-post-r"></div>
+      <button id="room-exit" onclick="exitRoomMode()">✕ EXIT [ESC]</button>
+      <div class="room-nav" id="room-prev-wrap">
+        <button class="room-nav-btn" id="room-prev" onclick="roomPrev()">
+          ←
+        </button>
+        <span class="room-nav-label">PREV</span>
+      </div>
+      <div id="room-board-wrap">
+        <div id="room-board">
+          <div id="room-board-top">
+            <span id="room-dist-badge">DISTRICT 00</span>
+            <span id="room-dist-name">LOADING</span>
+            <span id="room-slide-badge"
+              ><span id="room-slide-cur">1</span> /
+              <span id="room-slide-tot">4</span></span
+            >
+          </div>
+          <div id="room-board-content"></div>
+        </div>
+        <div id="room-board-stand"></div>
+        <div id="room-board-base"></div>
+        <div id="room-dots"></div>
+      </div>
+      <div class="room-nav" id="room-next-wrap">
+        <button class="room-nav-btn" id="room-next" onclick="roomNext()">
+          →
+        </button>
+        <span class="room-nav-label">NEXT</span>
+      </div>
+      <div id="room-controls">
+        <div class="rc-title">CONTROLS</div>
+        <div class="rc-row">
+          <span class="rc-key">→</span><span class="rc-lbl">NEXT</span>
+        </div>
+        <div class="rc-row">
+          <span class="rc-key">←</span><span class="rc-lbl">PREV</span>
+        </div>
+        <div class="rc-row">
+          <span class="rc-key">ESC</span><span class="rc-lbl">EXIT</span>
+        </div>
+      </div>
+    </div>
 
     <div id="contact-overlay">
       <div class="c-card">
@@ -939,7 +1492,9 @@
     </div>
 
     <script>
-      // ── DISTRICT DATA ─────────────────────────────────────────────
+      // ═══════════════════════════════════════════════════════════════
+      //  DISTRICT DATA
+      // ═══════════════════════════════════════════════════════════════
       const DISTRICTS = [
         {
           id: "auth-tower",
@@ -954,8 +1509,8 @@
             { v: "10K+", l: "SESSIONS" },
             { v: "0", l: "BREACHES" },
           ],
-          story: `Every application in the company had its own login. Employees had separate passwords for each one. When someone left, someone had to manually disable their account in every system.\n\n<span class="em">Aditya built one central identity system for everything.</span>\n\nOne login works across every application. One logout disconnects everywhere. When someone leaves the company, one action removes all their access instantly.\n\nThe system tracks which device each person is logged in on. It handles tens of thousands of sessions. It has never been breached.`,
-          eng: `Custom SSO — built without Spring Security defaults, because multi-application trust boundary management required domain-level redirect validation that standard implementations don't handle.\n\n<code>JWT</code> with custom claims. Refresh token rotation. <code>SSO_SESSION</code> cookie + separate refresh with sliding expiry. Device fingerprinting in session record.\n\n<code>SLO</code> propagation via callback to all registered applications.\n\n<code>RBAC:</code> application-level roles evaluated per-app context — not globally.\n\n<code>Key decision:</code> Custom auth layer — Spring Security's built-in CSRF and session management conflicted with the cross-application cookie architecture.`,
+          story: `Every application in the company had its own login. Employees had separate passwords for each one. When someone left, someone had to manually disable their account in every system.\n\n<span class="em">Aditya built one central identity system for everything.</span>\n\nOne login works across every application. One logout disconnects everywhere. When someone leaves, one action removes all access instantly.\n\nThe system tracks which device each person is logged in on. It handles tens of thousands of sessions. It has never been breached.`,
+          eng: `Custom SSO — built without Spring Security defaults, because multi-application trust boundary management required domain-level redirect validation.\n\n<code>JWT</code> with custom claims. Refresh token rotation. <code>SSO_SESSION</code> cookie + separate refresh with sliding expiry. Device fingerprinting in session record.\n\n<code>SLO</code> propagation via callback to all registered applications.\n\n<code>RBAC:</code> application-level roles evaluated per-app context.\n\n<code>Key decision:</code> Custom auth layer — Spring Security's built-in CSRF conflicted with cross-application cookie architecture.`,
           tech: [
             "Java 17",
             "Spring Boot",
@@ -978,8 +1533,8 @@
             { v: "3", l: "CONSTRAINTS" },
             { v: "SOLO", l: "DESIGN" },
           ],
-          story: `Two systems that needed to work together but couldn't. One was old and expensive to change. The other was new and incompatible.\n\n<span class="em">Aditya designed a bridge.</span>\n\nA small new service that both systems could talk to, without either of them needing to change. The old system talks to the bridge the way it always has. The bridge talks to the new database using modern drivers.\n\nA full rewrite would have cost months. The bridge cost a fraction of that. <span class="em">It is still running.</span>`,
-          eng: `Constraint: Java 1.7 IBM MQ client incompatible with MySQL 8 JDBC drivers. IBM MQ upgrade blocked by licensing cost.\n\n<code>Sole designer and implementer.</code>\n\nJava 1.8 bridge service for all DB operations. Legacy Java 1.7 MQ invokes via shell script with argument passing. MQ logic intact — it delegates DB calls to the bridge.\n\n<code>Key decisions:</code> Bridge is stateless → scalable without touching MQ. Explicit typed arguments → debuggable and auditable.\n\n<code>The insight:</code> Isolate the constraint in the bridge — don't touch either side.`,
+          story: `Two systems that needed to work together but couldn't. One was old and expensive to change. The other was new and incompatible.\n\n<span class="em">Aditya designed a bridge.</span>\n\nA small new service that both systems could talk to, without either needing to change. The old system talks to the bridge as it always has. The bridge talks to the new database using modern drivers.\n\nA full rewrite would have cost months. The bridge cost a fraction of that. <span class="em">It is still running.</span>`,
+          eng: `Constraint: Java 1.7 IBM MQ client incompatible with MySQL 8 JDBC drivers. IBM MQ upgrade blocked by licensing cost.\n\n<code>Sole designer and implementer.</code>\n\nJava 1.8 bridge service for all DB operations. Legacy Java 1.7 MQ invokes via shell script with argument passing. MQ logic intact — delegates DB calls to the bridge.\n\n<code>Key decisions:</code> Bridge is stateless → scalable. Explicit typed arguments → debuggable and auditable.\n\n<code>The insight:</code> Isolate the constraint — don't touch either side.`,
           tech: [
             "Java 1.7",
             "Java 1.8",
@@ -1002,8 +1557,8 @@
             { v: "1", l: "SPOF ELIMINATED" },
             { v: "LED", l: "BY ADITYA" },
           ],
-          story: `80 separate business processes were all running through one central system. When that system had problems, every one of those 80 processes had problems simultaneously.\n\n<span class="em">Aditya led the migration away from it.</span>\n\nEvery process was moved to its own independent home. Now if one breaks, the other 79 keep running. The design decisions — which processes went where, how execution timing would be configured per client — were his.`,
-          eng: `Mule ESB replacement across 80+ integrations. Single point of failure for entire integration layer.\n\nAWS Lambda for event-triggered integrations. Standalone Java JARs for batch/cron processes.\n\n<code>script.sh execution layer:</code> abstraction between scheduling infrastructure and Java execution units. Handles client-specific timing configuration and environment parameter injection.\n\n<code>Principle:</code> no integration service should be a single point of failure for other services.`,
+          story: `80 separate business processes were all running through one central system. When that system had problems, every one of those 80 processes had problems simultaneously.\n\n<span class="em">Aditya led the migration away from it.</span>\n\nEvery process was moved to its own independent home. Now if one breaks, the other 79 keep running. The design decisions were his.`,
+          eng: `Mule ESB replacement across 80+ integrations. Single point of failure for entire integration layer.\n\nAWS Lambda for event-triggered integrations. Standalone Java JARs for batch/cron processes.\n\n<code>script.sh execution layer:</code> abstraction between scheduling infrastructure and Java execution units. Handles client-specific timing and environment parameter injection.\n\n<code>Principle:</code> no integration service should be a SPOF for other services.`,
           tech: [
             "AWS Lambda",
             "Java",
@@ -1027,7 +1582,7 @@
             { v: "0", l: "CRITICAL DOWNTIME" },
           ],
           story: `AWS announced it was shutting down support for the database version the entire platform ran on. The foundation under the building was being removed.\n\n<span class="em">Aditya led the migration — not once, but three times across two years.</span>\n\nThree migrations. Hundreds of dependent components. Zero data lost. The clients never knew it was happening.`,
-          eng: `MySQL 5.x → 8.0 → 8.4. Each step introduced breaking changes.\n\n<code>STRICT mode:</code> legacy queries refactored — required understanding business logic, not just syntax.\n\n<code>Driver compatibility:</code> MySQL 8 JDBC driver changes broke Hibernate configuration patterns. Upgraded connection pool config across all persistence layers.\n\n<code>80+ dependent services</code> validated for compatibility before each cutover.\n\nShadow validation phase. Rollback checkpoints at each stage. Production cutover windows under 10 minutes each.`,
+          eng: `MySQL 5.x → 8.0 → 8.4. Each step introduced breaking changes.\n\n<code>STRICT mode:</code> legacy queries refactored — required understanding business logic.\n\n<code>Driver compatibility:</code> MySQL 8 JDBC driver changes broke Hibernate. Upgraded connection pool config across all persistence layers.\n\n<code>80+ dependent services</code> validated for compatibility before each cutover.\n\nShadow validation phase. Rollback checkpoints. Production cutover windows under 10 minutes each.`,
           tech: [
             "MySQL 5.x",
             "MySQL 8.x",
@@ -1050,8 +1605,8 @@
             { v: "0", l: "2PC USED" },
             { v: "STATE", l: "MACHINES" },
           ],
-          story: `Financial records cannot be wrong, cannot be duplicated, cannot be lost. LedgerFlow handles the complete lifecycle — purchase orders, approvals, invoicing, payment tracking.\n\n<span class="em">What happens if a message gets lost? What if it arrives twice?</span>\n\nAditya designed the connection so it does not matter. Messages can be safely resent. Duplicate arrivals produce no effect. The financial record is always correct regardless of what the network does.\n\n<span class="em">The difference between a system that works in a demo and one that works at 3am.</span>`,
-          eng: `Core challenge: data consistency across loosely coupled systems without distributed transactions.\n\n<code>2-phase commit rejected</code> — availability risk, locks resources across service boundaries.\n\n<code>Three principles:</code>\n\n1. Clear data ownership — no cross-service writes.\n2. Idempotent APIs — every state-changing operation accepts an idempotency key.\n3. State-based transitions — DRAFT → PENDING → APPROVED → INVOICED → PAID. Transition validity matrix — not conditional logic.\n\n<code>Same pattern used by Stripe for payment idempotency.</code>`,
+          story: `Financial records cannot be wrong, cannot be duplicated, cannot be lost. LedgerFlow handles the complete lifecycle — purchase orders, approvals, invoicing, payment tracking.\n\n<span class="em">What happens if a message gets lost? What if it arrives twice?</span>\n\nAditya designed the connection so it does not matter. Messages can be safely resent. Duplicate arrivals produce no effect. <span class="em">The difference between a system that works in a demo and one that works at 3am.</span>`,
+          eng: `Core challenge: data consistency across loosely coupled systems without distributed transactions.\n\n<code>2-phase commit rejected</code> — availability risk, locks resources across service boundaries.\n\n<code>Three principles:</code> 1. Clear data ownership. 2. Idempotent APIs — every state-changing operation accepts an idempotency key. 3. State-based transitions — DRAFT → PENDING → APPROVED → INVOICED → PAID.\n\n<code>Same pattern used by Stripe for payment idempotency.</code>`,
           tech: [
             "Java 17",
             "Spring Boot",
@@ -1099,7 +1654,7 @@
             { v: "∞", l: "CONSISTENT" },
           ],
           story: `Survey data and the core operations system were not connected. Someone had to manually transfer the information. Every day. For every survey.\n\nEvery time a human moved that data, there was a chance of error.\n\n<span class="em">Aditya designed a pipeline that connected the two systems completely.</span>\n\nNothing carried by hand. Nothing retyped. Nothing misread.`,
-          eng: `Pipeline: survey scheduling from Customer File → mobile app execution (stateful, handles partial connectivity) → automatic item and shipment creation → deterministic mapping to Service Orders.\n\n<code>Key challenge:</code> reliable state management for a mobile-initiated workflow that produces deterministic output downstream systems can depend on.\n\nEliminated manual reconciliation entirely.`,
+          eng: `Pipeline: survey scheduling from Customer File → mobile app execution (stateful, handles partial connectivity) → automatic item and shipment creation → deterministic mapping to Service Orders.\n\n<code>Key challenge:</code> reliable state management for a mobile-initiated workflow that produces deterministic output.\n\nEliminated manual reconciliation entirely.`,
           tech: [
             "Java",
             "Spring Boot",
@@ -1122,7 +1677,7 @@
             { v: "WEEKS", l: "TO FIRST FIX" },
             { v: "∞", l: "STILL RUNNING" },
           ],
-          story: `January 2022. Aditya joined RedSky — a massive, interconnected platform handling the complete lifecycle of corporate relocations.\n\nA system so tightly coupled that most new engineers needed months to understand it safely.\n\n<span class="em">He was delivering production fixes within weeks.</span>\n\n<span class="em">This is where he started. And what he carried forward — an understanding that systems exist to serve people.</span>`,
+          story: `January 2022. Aditya joined RedSky — a massive, interconnected platform handling the complete lifecycle of corporate relocations.\n\nA system so tightly coupled that most new engineers needed months to understand it safely.\n\n<span class="em">He was delivering production fixes within weeks.</span>\n\n<span class="em">This is where he started. And what he carried forward.</span>`,
           eng: `Stack: Struts 2, Spring 3, Hibernate 5, MySQL 5.x.\n\nHighly coupled monolithic architecture. Domain model: Customer File → Survey → Shipment → Service Order → Work Ticket.\n\n<code>The challenge:</code> changes in one module have non-obvious effects on others. Production risk real — live enterprise clients.\n\n<code>Lesson:</code> Understand how data moves through a system end-to-end before writing a single line of change.`,
           tech: [
             "Struts 2",
@@ -1135,9 +1690,7 @@
         },
       ];
 
-      // Building visual configs — each district gets a unique visual style
       const BCONFIG = [
-        // Auth Tower — tall gold tower
         {
           type: "tower",
           floors: 8,
@@ -1145,9 +1698,7 @@
           trim: 0xffe080,
           accent: 0xff9900,
           roofType: "pyramid",
-          lights: 5,
         },
-        // The Bridge — medium industrial
         {
           type: "block",
           floors: 5,
@@ -1155,9 +1706,7 @@
           trim: 0xc0b0ff,
           accent: 0x7060aa,
           roofType: "flat",
-          lights: 3,
         },
-        // Cloud District — sleek modern glass
         {
           type: "slim",
           floors: 6,
@@ -1165,9 +1714,7 @@
           trim: 0xa0e8ff,
           accent: 0x2080a0,
           roofType: "antenna",
-          lights: 4,
         },
-        // Data Vaults — squat fortress
         {
           type: "wide",
           floors: 3,
@@ -1175,9 +1722,7 @@
           trim: 0xffd080,
           accent: 0xa07020,
           roofType: "stepped",
-          lights: 3,
         },
-        // LedgerFlow — tall green finance
         {
           type: "tower",
           floors: 7,
@@ -1185,9 +1730,7 @@
           trim: 0x90ffcc,
           accent: 0x208050,
           roofType: "flat",
-          lights: 4,
         },
-        // Architecture Quarter — complex wide
         {
           type: "complex",
           floors: 5,
@@ -1195,9 +1738,7 @@
           trim: 0xb0d0ff,
           accent: 0x3060a0,
           roofType: "pyramid",
-          lights: 4,
         },
-        // Survey Bridge — medium colorful
         {
           type: "block",
           floors: 4,
@@ -1205,9 +1746,7 @@
           trim: 0xff90e0,
           accent: 0x904080,
           roofType: "flat",
-          lights: 3,
         },
-        // Monolith — large old building
         {
           type: "monolith",
           floors: 2,
@@ -1215,41 +1754,199 @@
           trim: 0xb0b0b0,
           accent: 0x505050,
           roofType: "flat",
-          lights: 2,
         },
       ];
 
-      // ── STATE ──────────────────────────────────────────────────────
+      // ═══════════════════════════════════════════════════════════════
+      //  STATE
+      // ═══════════════════════════════════════════════════════════════
       const SESSION_ID =
         sessionStorage.getItem("sessionId") || crypto.randomUUID();
+      sessionStorage.setItem("sessionId", SESSION_ID);
       const VISITOR_PATH =
         new URLSearchParams(window.location.search).get("path") ||
         sessionStorage.getItem("visitorPath") ||
         "recruiter";
       let visited = new Set(JSON.parse(localStorage.getItem("vd2") || "[]"));
-      let oracleOpen = false;
-      let chaosPlayed = false;
-      let panelOpen = false;
+      let oracleOpen = false,
+        chaosPlayed = false,
+        panelOpen = false;
+      let roomMode = false,
+        roomDistrictIdx = -1,
+        roomSlide = 0,
+        roomSlides = [];
+      let introActive = true;
 
-      // Path badge
       const badge = document.getElementById("pathBadge");
       badge.textContent =
         VISITOR_PATH === "engineer" ? "ENGINEER PATH" : "RECRUITER PATH";
       badge.className = `path-badge ${VISITOR_PATH}`;
 
-      // ── CINEMATIC INTRO ───────────────────────────────────────────
-      let introActive = true;
-      const introEl = document.getElementById("intro-overlay");
-      // Start from high aerial position, fly down
-      // We'll override camera start position after scene setup
-      let introPhase = {
-        phi: 0.2,
-        radius: 70,
-        targetPhi: 0.85,
-        targetRadius: 34,
+      // ═══════════════════════════════════════════════════════════════
+      //  TIME SYSTEM
+      // ═══════════════════════════════════════════════════════════════
+      const timeSys = {
+        hour: 22, // 0-24
+        flowing: false, // if true, time advances
+        speed: 0.3,
+        update(dt) {
+          if (this.flowing) this.hour = (this.hour + dt * this.speed) % 24;
+          document.getElementById("time-display").textContent =
+            String(Math.floor(this.hour)).padStart(2, "0") +
+            ":" +
+            String(Math.floor((this.hour % 1) * 60)).padStart(2, "0");
+        },
+        nightFactor() {
+          const h = this.hour;
+          if (h >= 6 && h <= 8) return 1 - (h - 6) / 2;
+          if (h > 8 && h < 18) return 0;
+          if (h >= 18 && h <= 20) return (h - 18) / 2;
+          return 1;
+        },
+        getSkyColor() {
+          const n = this.nightFactor();
+          const day = new THREE.Color(0x3a6696);
+          const night = new THREE.Color(0x060411);
+          return day.clone().lerp(night, n);
+        },
       };
 
-      // ── THREE.JS ───────────────────────────────────────────────────
+      function toggleTimeFlow() {
+        timeSys.flowing = !timeSys.flowing;
+        document
+          .getElementById("wx-time")
+          .classList.toggle("active", timeSys.flowing);
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      //  WEATHER SYSTEM
+      // ═══════════════════════════════════════════════════════════════
+      const wxSys = {
+        current: "clear",
+        target: "clear",
+        blend: 1.0,
+        rainIntensity: 0,
+        fogTarget: 0.014,
+        fogCurrent: 0.014,
+        windStrength: 1.0,
+
+        set(name) {
+          if (this.target === name) return;
+          this.target = name;
+          this.blend = 0;
+          ["wx-clear", "wx-rain", "wx-fog", "wx-wind"].forEach((id) => {
+            document
+              .getElementById(id)
+              .classList.toggle("active", id === "wx-" + name);
+          });
+        },
+        update(dt) {
+          if (this.blend < 1) {
+            this.blend = Math.min(1, this.blend + dt * 0.5);
+            if (this.blend >= 1) this.current = this.target;
+          }
+          // Fog target
+          const fBase = 0.014;
+          if (this.target === "fog") this.fogTarget = fBase * 4.5;
+          else if (this.target === "rain") this.fogTarget = fBase * 2.2;
+          else this.fogTarget = fBase;
+          this.fogCurrent += (this.fogTarget - this.fogCurrent) * dt * 1.2;
+          // Wind
+          const wTarget =
+            this.target === "wind" ? 2.8 : this.target === "rain" ? 1.5 : 1.0;
+          this.windStrength += (wTarget - this.windStrength) * dt * 1.5;
+          // Rain
+          const rTarget = this.target === "rain" ? 1.0 : 0.0;
+          this.rainIntensity += (rTarget - this.rainIntensity) * dt * 1.5;
+          // HUD
+          const wName = this.target.toUpperCase();
+          const nFactor = timeSys.nightFactor();
+          const tName =
+            nFactor > 0.5 ? "NIGHT" : nFactor > 0.0 ? "DUSK" : "DAY";
+          const wxEl = document.getElementById("wx-indicator");
+          wxEl.textContent = `${wName} · ${tName}`;
+          wxEl.classList.toggle(
+            "active",
+            this.target !== "clear" || nFactor > 0.3,
+          );
+        },
+      };
+
+      function setWeather(w) {
+        wxSys.set(w);
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      //  WINDOW STATE MACHINE
+      // ═══════════════════════════════════════════════════════════════
+      const WIN = { OFF: 0, DIM: 1, ON: 2, FLICKER: 3, TV: 4 };
+      const windowMeshes = []; // {mesh, state, timer, baseColor}
+
+      function registerWindow(mesh, baseColorHex) {
+        const r = Math.random();
+        let state;
+        if (r < 0.15) state = WIN.OFF;
+        else if (r < 0.25) state = WIN.DIM;
+        else if (r < 0.96) state = WIN.ON;
+        else if (r < 0.99) state = WIN.FLICKER;
+        else state = WIN.TV;
+        const timer = Math.random() * 10;
+        const baseColor = new THREE.Color(baseColorHex);
+        windowMeshes.push({ mesh, state, timer, baseColor });
+        applyWinState(mesh, state, 0, baseColor);
+      }
+
+      function applyWinState(mesh, state, t, baseColor) {
+        const m = mesh.material;
+        switch (state) {
+          case WIN.OFF:
+            m.emissiveIntensity = 0;
+            break;
+          case WIN.DIM:
+            m.emissive.set(0x1a1a2a);
+            m.emissiveIntensity = 0.25;
+            break;
+          case WIN.ON:
+            m.emissive.copy(baseColor);
+            m.emissiveIntensity =
+              1.3 + Math.sin(t * 0.15 + mesh.uuid.charCodeAt(0)) * 0.08;
+            break;
+          case WIN.FLICKER:
+            m.emissive.copy(baseColor);
+            m.emissiveIntensity = Math.random() > 0.94 ? 0 : 1.2;
+            break;
+          case WIN.TV: {
+            const phase = t * 2.8;
+            const bright = Math.sin(phase) > 0.2;
+            m.emissive.setHex(bright ? 0x3058cc : 0x0a1840);
+            m.emissiveIntensity = bright ? 0.9 : 0.15;
+            break;
+          }
+        }
+      }
+
+      function updateWindows(dt, t) {
+        const nf = timeSys.nightFactor();
+        windowMeshes.forEach((w) => {
+          w.timer -= dt;
+          if (w.timer <= 0) {
+            // More lights ON at night
+            const onProb = 0.55 + nf * 0.35;
+            const r = Math.random();
+            if (r < (1 - onProb) * 0.6) w.state = WIN.OFF;
+            else if (r < 1 - onProb) w.state = WIN.DIM;
+            else if (r < onProb + (1 - onProb) * 0.9) w.state = WIN.ON;
+            else if (r < onProb + (1 - onProb) * 0.96) w.state = WIN.FLICKER;
+            else w.state = WIN.TV;
+            w.timer = 4 + Math.random() * 14;
+          }
+          applyWinState(w.mesh, w.state, t, w.baseColor);
+        });
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      //  THREE.JS SETUP
+      // ═══════════════════════════════════════════════════════════════
       const canvas = document.getElementById("c");
       const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -1257,23 +1954,21 @@
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.2;
-      renderer.setClearColor(0x0a0614);
+      renderer.toneMappingExposure = 1.25;
+      renderer.setClearColor(0x060411);
 
       const scene = new THREE.Scene();
-      scene.fog = new THREE.FogExp2(0x0a0614, 0.018);
-      scene.background = new THREE.Color(0x0a0614);
+      scene.fog = new THREE.FogExp2(0x060411, 0.014);
+      scene.background = new THREE.Color(0x060411);
 
       const camera = new THREE.PerspectiveCamera(
         50,
         window.innerWidth / window.innerHeight,
         0.1,
-        200,
+        250,
       );
-      camera.position.set(0, 22, 24);
-      camera.lookAt(0, 0, 0);
 
-      // Override sph for cinematic intro start
+      const introPhase = { phi: 0.22, radius: 72 };
       const sph = {
         theta: 0.4,
         phi: introPhase.phi,
@@ -1281,12 +1976,23 @@
       };
       const target = new THREE.Vector3(0, 0, 2);
 
-      // ── LIGHTS ─────────────────────────────────────────────────────
-      // Ambient
-      scene.add(new THREE.AmbientLight(0x1a1030, 1.2));
+      function updateCam() {
+        camera.position.set(
+          target.x + sph.radius * Math.sin(sph.phi) * Math.sin(sph.theta),
+          target.y + sph.radius * Math.cos(sph.phi),
+          target.z + sph.radius * Math.sin(sph.phi) * Math.cos(sph.theta),
+        );
+        camera.lookAt(target);
+      }
+      updateCam();
 
-      // Main directional — warm
-      const sun = new THREE.DirectionalLight(0xfff0cc, 0.8);
+      // ═══════════════════════════════════════════════════════════════
+      //  LIGHTS (dynamic refs for day/night)
+      // ═══════════════════════════════════════════════════════════════
+      const ambientLight = new THREE.AmbientLight(0x1a1030, 1.6);
+      scene.add(ambientLight);
+
+      const sun = new THREE.DirectionalLight(0xfff0cc, 1.1);
       sun.position.set(15, 25, 10);
       sun.castShadow = true;
       sun.shadow.mapSize.width = 2048;
@@ -1300,22 +2006,19 @@
       sun.shadow.bias = -0.001;
       scene.add(sun);
 
-      // Cool fill from opposite side
       const fill = new THREE.DirectionalLight(0x304060, 0.4);
       fill.position.set(-10, 10, -10);
       scene.add(fill);
 
-      // Auth Tower gold glow — center
       const authGlow = new THREE.PointLight(0xc8a84b, 3, 18);
       authGlow.position.set(0, 10, 0);
       scene.add(authGlow);
 
-      // Colored district point lights
       const districtLights = [
-        { pos: [-7, 3, -6], color: 0xaa90ff, intensity: 2, dist: 12 },
-        { pos: [7, 3, -6], color: 0x60d8ff, intensity: 2, dist: 12 },
-        { pos: [-7, 3, 4], color: 0xffcc50, intensity: 2, dist: 12 },
-        { pos: [7, 3, 4], color: 0x50ffaa, intensity: 2, dist: 12 },
+        { pos: [-7, 3, -6], color: 0xaa90ff, intensity: 3.5, dist: 14 },
+        { pos: [7, 3, -6], color: 0x60d8ff, intensity: 3.5, dist: 14 },
+        { pos: [-7, 3, 4], color: 0xffcc50, intensity: 3.5, dist: 14 },
+        { pos: [7, 3, 4], color: 0x50ffaa, intensity: 3.5, dist: 14 },
       ];
       districtLights.forEach((dl) => {
         const pl = new THREE.PointLight(dl.color, dl.intensity, dl.dist);
@@ -1323,25 +2026,22 @@
         scene.add(pl);
       });
 
-      // ── GROUND ─────────────────────────────────────────────────────
-      // Base ground
-      const groundGeo = new THREE.CircleGeometry(50, 64);
-      const groundMat = new THREE.MeshStandardMaterial({
-        color: 0x0d0820,
-        roughness: 0.95,
-        metalness: 0.0,
-      });
-      const ground = new THREE.Mesh(groundGeo, groundMat);
+      // ═══════════════════════════════════════════════════════════════
+      //  GROUND + HEX GRID
+      // ═══════════════════════════════════════════════════════════════
+      const ground = new THREE.Mesh(
+        new THREE.CircleGeometry(55, 64),
+        new THREE.MeshStandardMaterial({ color: 0x0d0820, roughness: 0.95 }),
+      );
       ground.rotation.x = -Math.PI / 2;
       ground.receiveShadow = true;
       scene.add(ground);
 
-      // Hex grid pattern on ground using lines
       function makeHexGrid(radius, count, color) {
         const mat = new THREE.LineBasicMaterial({
           color,
           transparent: true,
-          opacity: 0.15,
+          opacity: 0.12,
         });
         const size = radius / count;
         for (let i = -count; i <= count; i++) {
@@ -1360,165 +2060,322 @@
                   ),
                 );
               }
-              const geo = new THREE.BufferGeometry().setFromPoints(pts);
-              scene.add(new THREE.Line(geo, mat));
+              scene.add(
+                new THREE.Line(
+                  new THREE.BufferGeometry().setFromPoints(pts),
+                  mat,
+                ),
+              );
             }
           }
         }
       }
       makeHexGrid(30, 8, 0xc8a84b);
 
-      // Ground color zones under each district
+      // ═══════════════════════════════════════════════════════════════
+      //  ROAD NETWORK
+      // ═══════════════════════════════════════════════════════════════
+      const roadMat = new THREE.MeshStandardMaterial({
+        color: 0x0e1020,
+        roughness: 0.93,
+      });
+      const swMat = new THREE.MeshStandardMaterial({
+        color: 0x181a2c,
+        roughness: 0.97,
+      });
+      const dashMat = new THREE.MeshStandardMaterial({
+        color: 0xddb844,
+        roughness: 0.75,
+      });
+      const edgeMat = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        roughness: 0.8,
+        transparent: true,
+        opacity: 0.25,
+      });
+      const cwMat = new THREE.MeshStandardMaterial({
+        color: 0x2a2e48,
+        roughness: 0.9,
+      });
+      const RW = 1.85,
+        SW = 0.55,
+        YR = 0.014,
+        YS = 0.012,
+        YM = 0.021;
+
+      function flatPlane(w, h, mat, x, y, z, ry) {
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+        m.rotation.x = -Math.PI / 2;
+        if (ry) m.rotation.z = ry;
+        m.position.set(x, y, z);
+        m.receiveShadow = true;
+        scene.add(m);
+      }
+      // N-S
+      flatPlane(RW, 34, roadMat, 0, YR, 1);
+      flatPlane(SW, 34, swMat, -(RW / 2 + SW / 2), YS, 1);
+      flatPlane(SW, 34, swMat, RW / 2 + SW / 2, YS, 1);
+      flatPlane(0.045, 34, edgeMat, -(RW / 2 - 0.04), YM, 1);
+      flatPlane(0.045, 34, edgeMat, RW / 2 - 0.04, YM, 1);
+      for (let cz = -15; cz < 17; cz += 1.18)
+        flatPlane(0.06, 0.52, dashMat, 0, YM, cz);
+      // E-W
+      flatPlane(34, RW, roadMat, 0, YR, -0.4);
+      flatPlane(34, SW, swMat, 0, YS, -0.4 - (RW / 2 + SW / 2));
+      flatPlane(34, SW, swMat, 0, YS, -0.4 + (RW / 2 + SW / 2));
+      flatPlane(34, 0.045, edgeMat, 0, YM, -0.4 - (RW / 2 - 0.04));
+      flatPlane(34, 0.045, edgeMat, 0, YM, -0.4 + (RW / 2 - 0.04));
+      for (let cx = -16; cx < 16; cx += 1.18)
+        flatPlane(0.52, 0.06, dashMat, cx, YM, -0.4);
+      // Secondary
+      [
+        { z: -6, len: 17 },
+        { z: 4, len: 17 },
+        { z: 8, len: 10 },
+      ].forEach((r) => {
+        flatPlane(r.len, RW * 0.82, roadMat, 0, YR, r.z);
+        flatPlane(
+          r.len,
+          SW * 0.8,
+          swMat,
+          0,
+          YS,
+          r.z - ((RW * 0.82) / 2 + (SW * 0.8) / 2),
+        );
+        flatPlane(
+          r.len,
+          SW * 0.8,
+          swMat,
+          0,
+          YS,
+          r.z + ((RW * 0.82) / 2 + (SW * 0.8) / 2),
+        );
+        for (let cx2 = -(r.len / 2 - 0.6); cx2 < r.len / 2 - 0.6; cx2 += 1.1)
+          flatPlane(0.48, 0.055, dashMat, cx2, YM, r.z);
+      });
+      // Crosswalk
+      for (let si = -5; si <= 5; si++) {
+        flatPlane(0.22, RW * 0.82, cwMat, si * 0.36, YM + 0.002, -0.4);
+        flatPlane(RW * 0.82, 0.22, cwMat, 0, YM + 0.002, -0.4 + si * 0.36);
+      }
+      // Pavement under buildings
+      DISTRICTS.forEach((d) => {
+        const pm = new THREE.Mesh(
+          new THREE.CircleGeometry(2.6, 12),
+          new THREE.MeshStandardMaterial({ color: 0x14162a, roughness: 0.96 }),
+        );
+        pm.rotation.x = -Math.PI / 2;
+        pm.position.set(d.pos[0], 0.011, d.pos[2]);
+        scene.add(pm);
+      });
+      // District colour zones
       DISTRICTS.forEach((d, i) => {
         const bc = BCONFIG[i];
-        const zoneGeo = new THREE.CircleGeometry(3.5, 16);
-        const zoneMat = new THREE.MeshStandardMaterial({
-          color: new THREE.Color(bc.color).multiplyScalar(0.15),
-          roughness: 1,
-          metalness: 0,
-        });
-        const zone = new THREE.Mesh(zoneGeo, zoneMat);
-        zone.rotation.x = -Math.PI / 2;
-        zone.position.set(d.pos[0], 0.01, d.pos[2]);
-        scene.add(zone);
+        const zm = new THREE.Mesh(
+          new THREE.CircleGeometry(3.5, 16),
+          new THREE.MeshStandardMaterial({
+            color: new THREE.Color(bc.color).multiplyScalar(0.14),
+            roughness: 1,
+          }),
+        );
+        zm.rotation.x = -Math.PI / 2;
+        zm.position.set(d.pos[0], 0.01, d.pos[2]);
+        scene.add(zm);
       });
 
-      // ── HELPER FUNCTIONS ────────────────────────────────────────────
-      function makeMaterial(color, emissive, intensity = 0.3, roughness = 0.6) {
+      // ═══════════════════════════════════════════════════════════════
+      //  STARFIELD
+      // ═══════════════════════════════════════════════════════════════
+      {
+        const N = 900,
+          sp = new Float32Array(N * 3);
+        for (let i = 0; i < N; i++) {
+          const th = Math.random() * Math.PI * 2,
+            ph = Math.acos(0.35 + Math.random() * 0.65),
+            r = 85 + Math.random() * 35;
+          sp[i * 3] = r * Math.sin(ph) * Math.cos(th);
+          sp[i * 3 + 1] = Math.abs(r * Math.cos(ph));
+          sp[i * 3 + 2] = r * Math.sin(ph) * Math.sin(th);
+        }
+        const sg = new THREE.BufferGeometry();
+        sg.setAttribute("position", new THREE.BufferAttribute(sp, 3));
+        scene.add(
+          new THREE.Points(
+            sg,
+            new THREE.PointsMaterial({
+              color: 0xffffff,
+              size: 0.22,
+              transparent: true,
+              opacity: 0.75,
+              sizeAttenuation: true,
+              depthWrite: false,
+            }),
+          ),
+        );
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      //  DISTANT SKYLINE
+      // ═══════════════════════════════════════════════════════════════
+      function makeDistantSkyline() {
+        for (let i = 0; i < 28; i++) {
+          const ang = (i / 28) * Math.PI * 2;
+          const r = 36 + Math.random() * 12;
+          const h = 2.5 + Math.random() * 8;
+          const w = 1.4 + Math.random() * 2.8;
+          const geo = new THREE.BoxGeometry(w, h, w * 0.7);
+          const mat = new THREE.MeshStandardMaterial({
+            color: 0x0a0818,
+            roughness: 1,
+            metalness: 0,
+          });
+          const m = new THREE.Mesh(geo, mat);
+          m.position.set(Math.cos(ang) * r, h / 2 - 0.5, Math.sin(ang) * r);
+          m.rotation.y = ang;
+          scene.add(m);
+          // Sparse lit windows
+          const wc = Math.floor(Math.random() * 5);
+          const wG = new THREE.BoxGeometry(0.09, 0.13, 0.02);
+          for (let j = 0; j < wc; j++) {
+            const wm = new THREE.MeshStandardMaterial({
+              color: 0xffcc66,
+              emissive: 0xffcc44,
+              emissiveIntensity: 2.2,
+            });
+            const ww = new THREE.Mesh(wG, wm);
+            ww.position.set(
+              (Math.random() - 0.5) * w * 0.7,
+              (Math.random() - 0.5) * h * 0.75,
+              w * 0.36,
+            );
+            m.add(ww);
+          }
+        }
+      }
+      makeDistantSkyline();
+
+      // ═══════════════════════════════════════════════════════════════
+      //  HELPER: MATERIALS + LAMP
+      // ═══════════════════════════════════════════════════════════════
+      function makeMat(color, emissive, intensity = 0.2, roughness = 0.62) {
         return new THREE.MeshStandardMaterial({
           color,
           emissive,
           emissiveIntensity: intensity,
           roughness,
-          metalness: 0.2,
+          metalness: 0.18,
         });
-      }
-
-      function addWindows(group, bx, by, bz, color, count) {
-        const wMat = new THREE.MeshStandardMaterial({
-          color: color,
-          emissive: color,
-          emissiveIntensity: 2.0,
-          roughness: 0.1,
-          metalness: 0.5,
-        });
-        for (let i = 0; i < count; i++) {
-          const wg = new THREE.BoxGeometry(0.12, 0.18, 0.04);
-          const w = new THREE.Mesh(wg, wMat);
-          const face = Math.floor(Math.random() * 4);
-          const angle = (face * Math.PI) / 2;
-          const side = face < 2 ? bx : bz;
-          w.position.set(
-            face < 2
-              ? (face === 0 ? 1 : -1) * (side / 2 + 0.03)
-              : (Math.random() - 0.5) * (bx * 0.8),
-            0.3 + Math.random() * (by - 0.6),
-            face >= 2
-              ? (face === 2 ? 1 : -1) * (side / 2 + 0.03)
-              : (Math.random() - 0.5) * (bz * 0.8),
-          );
-          // randomly dim some windows
-          if (Math.random() < 0.3) w.material = w.material.clone();
-          group.add(w);
-        }
-      }
-
-      function makeTree(x, z, height, color) {
-        const group = new THREE.Group();
-        // Trunk
-        const tg = new THREE.CylinderGeometry(0.08, 0.12, height * 0.4, 6);
-        const tm = new THREE.MeshStandardMaterial({
-          color: 0x4a3020,
-          roughness: 0.9,
-        });
-        const trunk = new THREE.Mesh(tg, tm);
-        trunk.position.y = height * 0.2;
-        trunk.castShadow = true;
-        group.add(trunk);
-        // Canopy layers (low-poly cones)
-        const layers = 3;
-        for (let i = 0; i < layers; i++) {
-          const r = 0.7 - i * 0.18;
-          const h = height * 0.5;
-          const cg = new THREE.ConeGeometry(r, h, 6);
-          const cm = new THREE.MeshStandardMaterial({
-            color: new THREE.Color(color),
-            emissive: new THREE.Color(color).multiplyScalar(0.1),
-            roughness: 0.8,
-          });
-          const cone = new THREE.Mesh(cg, cm);
-          cone.position.y = height * 0.4 + i * (h * 0.45);
-          cone.castShadow = true;
-          group.add(cone);
-        }
-        group.position.set(x, 0, z);
-        return group;
-      }
-
-      function makeRock(x, z, scale) {
-        const rg = new THREE.DodecahedronGeometry(scale, 0);
-        // Randomize vertices for natural look
-        const pos = rg.attributes.position;
-        for (let i = 0; i < pos.count; i++) {
-          pos.setXYZ(
-            i,
-            pos.getX(i) * (0.8 + Math.random() * 0.4),
-            pos.getY(i) * (0.8 + Math.random() * 0.4),
-            pos.getZ(i) * (0.8 + Math.random() * 0.4),
-          );
-        }
-        rg.computeVertexNormals();
-        const rm = new THREE.MeshStandardMaterial({
-          color: 0x506070,
-          roughness: 0.9,
-          metalness: 0.1,
-        });
-        const rock = new THREE.Mesh(rg, rm);
-        rock.position.set(x, scale * 0.4, z);
-        rock.rotation.y = Math.random() * Math.PI * 2;
-        rock.castShadow = true;
-        return rock;
       }
 
       function makeLamp(x, z) {
-        const group = new THREE.Group();
-        const postG = new THREE.CylinderGeometry(0.04, 0.06, 1.8, 8);
-        const postM = new THREE.MeshStandardMaterial({
-          color: 0x303040,
-          roughness: 0.7,
-        });
-        group.add(new THREE.Mesh(postG, postM)).position.y = 0.9;
-        // lamp head
-        const headG = new THREE.SphereGeometry(0.15, 8, 6);
-        const headM = new THREE.MeshStandardMaterial({
-          color: 0xffffcc,
-          emissive: 0xffffaa,
-          emissiveIntensity: 2,
-        });
-        const head = new THREE.Mesh(headG, headM);
+        const g = new THREE.Group();
+        const post = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.04, 0.06, 1.8, 8),
+          new THREE.MeshStandardMaterial({ color: 0x303040, roughness: 0.7 }),
+        );
+        post.position.y = 0.9;
+        g.add(post);
+        const head = new THREE.Mesh(
+          new THREE.SphereGeometry(0.15, 8, 6),
+          new THREE.MeshStandardMaterial({
+            color: 0xffffcc,
+            emissive: 0xffffaa,
+            emissiveIntensity: 2,
+          }),
+        );
         head.position.y = 1.85;
-        group.add(head);
-        // point light
+        g.add(head);
         const pl = new THREE.PointLight(0xffffaa, 0.8, 6);
         pl.position.y = 1.85;
-        group.add(pl);
-        group.position.set(x, 0, z);
-        return group;
+        g.add(pl);
+        g.position.set(x, 0, z);
+        return g;
       }
 
-      // ── BUILD BUILDINGS ────────────────────────────────────────────
+      // ═══════════════════════════════════════════════════════════════
+      //  WINDOW GRID
+      // ═══════════════════════════════════════════════════════════════
+      function addWindowGrid(group, bw, bh, bd, colorHex, floors) {
+        const baseC = new THREE.Color(colorHex);
+        const floorH = bh / floors;
+        const wH = floorH * 0.5;
+        const faces = [
+          { axis: "z", dir: 1, span: bw, depth: bd },
+          { axis: "z", dir: -1, span: bw, depth: bd },
+          { axis: "x", dir: 1, span: bd, depth: bw },
+          { axis: "x", dir: -1, span: bd, depth: bw },
+        ];
+        faces.forEach((face) => {
+          const cols = Math.max(2, Math.floor(face.span / 0.44));
+          const colStep = face.span / (cols + 1);
+          const wW = Math.min(0.22, colStep * 0.72);
+          const halfDepth = (face.axis === "z" ? bd : bw) / 2 + 0.042;
+          for (let fl = 0; fl < floors; fl++) {
+            for (let col = 0; col < cols; col++) {
+              const r2 = Math.random();
+              let wC;
+              if (r2 > 0.75)
+                wC = baseC.clone().lerp(new THREE.Color(0xfff0cc), 0.45);
+              else if (r2 > 0.55)
+                wC = baseC.clone().lerp(new THREE.Color(0xaad4ff), 0.35);
+              else wC = baseC.clone().lerp(new THREE.Color(0xffffff), 0.25);
+              const wg =
+                face.axis === "z"
+                  ? new THREE.BoxGeometry(wW, wH, 0.048)
+                  : new THREE.BoxGeometry(0.048, wH, wW);
+              const wm = new THREE.MeshStandardMaterial({
+                color: wC,
+                emissive: wC,
+                emissiveIntensity: 1.2,
+                roughness: 0.08,
+                metalness: 0.35,
+              });
+              wm.emissive = wC.clone();
+              const w = new THREE.Mesh(wg, wm);
+              const offset = -face.span / 2 + colStep * (col + 1);
+              const y = fl * floorH + floorH * 0.28 + wH / 2;
+              if (face.axis === "z")
+                w.position.set(offset, y, face.dir * halfDepth);
+              else w.position.set(face.dir * halfDepth, y, offset);
+              group.add(w);
+              registerWindow(w, colorHex);
+            }
+          }
+          // floor reveals
+          for (let fl2 = 1; fl2 < floors; fl2++) {
+            const fc = baseC.clone().multiplyScalar(0.18);
+            const fg =
+              face.axis === "z"
+                ? new THREE.BoxGeometry(face.span, 0.035, 0.018)
+                : new THREE.BoxGeometry(0.018, 0.035, face.span);
+            const fmesh = new THREE.Mesh(
+              fg,
+              new THREE.MeshStandardMaterial({ color: fc, roughness: 0.95 }),
+            );
+            const hd = (face.axis === "z" ? bd : bw) / 2 + 0.008;
+            if (face.axis === "z")
+              fmesh.position.set(0, fl2 * floorH, face.dir * hd);
+            else fmesh.position.set(face.dir * hd, fl2 * floorH, 0);
+            group.add(fmesh);
+          }
+        });
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      //  BUILDINGS
+      // ═══════════════════════════════════════════════════════════════
       const clickables = [];
+      const buildingBodies = {};
+      const elevatorMeshes = []; // {mesh, min, max, speed, dir}
+      const allWireMeshes = []; // for wire sway
 
       DISTRICTS.forEach((d, idx) => {
         const bc = BCONFIG[idx];
         const group = new THREE.Group();
         const [px, , pz] = d.pos;
-
         const mainColor = new THREE.Color(bc.color);
         const trimColor = new THREE.Color(bc.trim);
         const darkColor = mainColor.clone().multiplyScalar(0.4);
-
-        // ── BUILDING BODY by type ──────────────────────────────────
         const floorH = 0.9;
         const bw =
           bc.type === "wide" || bc.type === "monolith"
@@ -1536,44 +2393,49 @@
               : 1.8;
         const bh = bc.floors * floorH;
 
-        // Main body
+        // Body — slight random offset for realism
+        const offsetX = (Math.random() - 0.5) * 0.06;
+        const offsetZ = (Math.random() - 0.5) * 0.06;
         const bodyGeo = new THREE.BoxGeometry(bw, bh, bd);
-        const bodyMat = makeMaterial(mainColor, darkColor, 0.2);
+        const bodyMat = makeMat(mainColor, darkColor, 0.18, 0.62);
         const body = new THREE.Mesh(bodyGeo, bodyMat);
-        body.position.y = bh / 2;
+        body.position.set(offsetX, bh / 2, offsetZ);
         body.castShadow = true;
         body.receiveShadow = true;
         body.userData = { districtIdx: idx };
         group.add(body);
         clickables.push(body);
 
-        // ── FLOOR LINES ──────────────────────────────────────────────
+        // Floor lines
         for (let f = 1; f < bc.floors; f++) {
-          const lineGeo = new THREE.BoxGeometry(bw + 0.02, 0.05, bd + 0.02);
-          const lineMat = new THREE.MeshStandardMaterial({
-            color: trimColor.clone().multiplyScalar(0.3),
-          });
-          const line = new THREE.Mesh(lineGeo, lineMat);
-          line.position.y = f * floorH;
-          group.add(line);
+          const lm = new THREE.Mesh(
+            new THREE.BoxGeometry(bw + 0.02, 0.05, bd + 0.02),
+            new THREE.MeshStandardMaterial({
+              color: trimColor.clone().multiplyScalar(0.28),
+            }),
+          );
+          lm.position.set(offsetX, f * floorH, offsetZ);
+          group.add(lm);
         }
 
-        // ── COMPLEX BUILDING — extra wing ───────────────────────────
+        // Wings
         if (bc.type === "complex") {
-          const wingGeo = new THREE.BoxGeometry(1.2, bh * 0.6, bd);
-          const wing = new THREE.Mesh(wingGeo, bodyMat.clone());
+          const wing = new THREE.Mesh(
+            new THREE.BoxGeometry(1.2, bh * 0.6, bd),
+            bodyMat.clone(),
+          );
           wing.position.set(bw / 2 + 0.6, bh * 0.3, 0);
           wing.castShadow = true;
           wing.userData = { districtIdx: idx };
           group.add(wing);
           clickables.push(wing);
         }
-
-        // ── MONOLITH — extra wide wings ─────────────────────────────
         if (bc.type === "monolith") {
           [-1, 1].forEach((side) => {
-            const wg = new THREE.BoxGeometry(1.2, bh * 0.8, bd * 0.8);
-            const w = new THREE.Mesh(wg, bodyMat.clone());
+            const w = new THREE.Mesh(
+              new THREE.BoxGeometry(1.2, bh * 0.8, bd * 0.8),
+              bodyMat.clone(),
+            );
             w.position.set(side * (bw / 2 + 0.6), bh * 0.4, 0);
             w.castShadow = true;
             w.userData = { districtIdx: idx };
@@ -1582,87 +2444,85 @@
           });
         }
 
-        // ── ROOF ─────────────────────────────────────────────────────
-        const roofMat = makeMaterial(
-          trimColor.clone().multiplyScalar(0.6),
+        // Roof
+        const roofMat = makeMat(
+          trimColor.clone().multiplyScalar(0.55),
           darkColor,
-          0.3,
+          0.28,
         );
         if (bc.roofType === "pyramid") {
-          const rg = new THREE.ConeGeometry(
-            Math.max(bw, bd) * 0.7,
-            bh * 0.2,
-            4,
+          const roof = new THREE.Mesh(
+            new THREE.ConeGeometry(Math.max(bw, bd) * 0.7, bh * 0.2, 4),
+            roofMat,
           );
-          const roof = new THREE.Mesh(rg, roofMat);
           roof.position.y = bh + bh * 0.1;
           roof.rotation.y = Math.PI / 4;
           group.add(roof);
         } else if (bc.roofType === "stepped") {
           [0.8, 0.6].forEach((scale, i) => {
-            const sg = new THREE.BoxGeometry(
-              bw * scale,
-              floorH * 0.4,
-              bd * scale,
+            const s = new THREE.Mesh(
+              new THREE.BoxGeometry(bw * scale, floorH * 0.4, bd * scale),
+              roofMat,
             );
-            const s = new THREE.Mesh(sg, roofMat);
             s.position.y = bh + i * floorH * 0.4 + floorH * 0.2;
             group.add(s);
           });
         } else if (bc.roofType === "antenna") {
-          const ag = new THREE.CylinderGeometry(0.04, 0.04, bh * 0.25, 8);
           const am = new THREE.MeshStandardMaterial({
             color: trimColor,
             emissive: trimColor,
             emissiveIntensity: 1,
           });
-          const ant = new THREE.Mesh(ag, am);
+          const ant = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.04, 0.04, bh * 0.25, 8),
+            am,
+          );
           ant.position.y = bh + bh * 0.12;
           group.add(ant);
-          // Blinking light
-          const blinkG = new THREE.SphereGeometry(0.08, 8, 6);
-          const blinkM = am.clone();
-          const blink = new THREE.Mesh(blinkG, blinkM);
+          const blink = new THREE.Mesh(
+            new THREE.SphereGeometry(0.08, 8, 6),
+            am.clone(),
+          );
           blink.position.y = bh + bh * 0.25;
           blink.userData = { blink: true, phase: Math.random() * Math.PI * 2 };
           group.add(blink);
         }
 
-        // Auth Tower special — tall spire
+        // Auth Tower special
         if (d.id === "auth-tower") {
-          const spireG = new THREE.CylinderGeometry(0.05, 0.2, bh * 0.4, 8);
           const spireMat = new THREE.MeshStandardMaterial({
             color: 0xffe080,
             emissive: 0xc8a84b,
             emissiveIntensity: 1.5,
           });
-          const spire = new THREE.Mesh(spireG, spireMat);
+          const spire = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.05, 0.2, bh * 0.4, 8),
+            spireMat,
+          );
           spire.position.y = bh + bh * 0.2;
           group.add(spire);
-
-          // Gold orb at top
-          const orbG = new THREE.SphereGeometry(0.25, 16, 12);
-          const orbM = new THREE.MeshStandardMaterial({
-            color: 0xffe080,
-            emissive: 0xc8a84b,
-            emissiveIntensity: 3,
-            roughness: 0.1,
-          });
-          const orb = new THREE.Mesh(orbG, orbM);
+          const orb = new THREE.Mesh(
+            new THREE.SphereGeometry(0.25, 16, 12),
+            new THREE.MeshStandardMaterial({
+              color: 0xffe080,
+              emissive: 0xc8a84b,
+              emissiveIntensity: 3,
+              roughness: 0.1,
+            }),
+          );
           orb.position.y = bh + bh * 0.4 + 0.25;
           group.add(orb);
-
-          // Connection rings
           for (let r = 0; r < 3; r++) {
-            const ringG = new THREE.TorusGeometry(0.5 + r * 0.3, 0.02, 8, 32);
-            const ringM = new THREE.MeshStandardMaterial({
-              color: 0xc8a84b,
-              emissive: 0xc8a84b,
-              emissiveIntensity: 0.5,
-              transparent: true,
-              opacity: 0.4 - r * 0.1,
-            });
-            const ring = new THREE.Mesh(ringG, ringM);
+            const ring = new THREE.Mesh(
+              new THREE.TorusGeometry(0.5 + r * 0.3, 0.02, 8, 32),
+              new THREE.MeshStandardMaterial({
+                color: 0xc8a84b,
+                emissive: 0xc8a84b,
+                emissiveIntensity: 0.5,
+                transparent: true,
+                opacity: 0.4 - r * 0.1,
+              }),
+            );
             ring.position.y = bh + bh * 0.25;
             ring.rotation.x = Math.PI / 2;
             ring.userData = {
@@ -1674,40 +2534,250 @@
           }
         }
 
-        // ── WINDOWS ─────────────────────────────────────────────────
-        addWindows(group, bw, bh, bd, bc.trim, bc.lights * 6);
+        // Rooftop props
+        if (bc.type === "wide" || bc.type === "monolith") {
+          const wtm = new THREE.MeshStandardMaterial({
+            color: 0x5a4a30,
+            roughness: 0.8,
+          });
+          const wt = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.28, 0.32, 0.6, 8),
+            wtm,
+          );
+          wt.position.set(bw * 0.25, bh + 0.38, 0);
+          group.add(wt);
+          const wtc = new THREE.Mesh(
+            new THREE.ConeGeometry(0.32, 0.25, 8),
+            wtm,
+          );
+          wtc.position.set(bw * 0.25, bh + 0.82, 0);
+          group.add(wtc);
+          for (let leg = 0; leg < 4; leg++) {
+            const a2 = (leg / 4) * Math.PI * 2;
+            const lg = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.025, 0.025, 0.4, 6),
+              new THREE.MeshStandardMaterial({
+                color: 0x303030,
+                roughness: 0.9,
+              }),
+            );
+            lg.position.set(
+              bw * 0.25 + Math.cos(a2) * 0.24,
+              bh + 0.22,
+              Math.sin(a2) * 0.24,
+            );
+            group.add(lg);
+          }
+        }
+        if (bc.type === "tower" || bc.type === "slim") {
+          for (let ac = 0; ac < 3; ac++) {
+            const acMesh = new THREE.Mesh(
+              new THREE.BoxGeometry(0.35, 0.18, 0.28),
+              new THREE.MeshStandardMaterial({
+                color: 0x7a8898,
+                roughness: 0.7,
+              }),
+            );
+            acMesh.position.set(
+              -bw / 2 + 0.3 + ac * 0.45,
+              bh + 0.1,
+              bd / 2 - 0.2,
+            );
+            group.add(acMesh);
+            const fan = new THREE.Mesh(
+              new THREE.BoxGeometry(0.22, 0.02, 0.22),
+              new THREE.MeshStandardMaterial({
+                color: 0x9ab8cc,
+                emissive: 0x304060,
+                emissiveIntensity: 0.4,
+                roughness: 0.3,
+              }),
+            );
+            fan.position.set(
+              -bw / 2 + 0.3 + ac * 0.45,
+              bh + 0.19,
+              bd / 2 - 0.2,
+            );
+            group.add(fan);
+          }
+        }
+        if (bc.type === "block") {
+          const dishMat = new THREE.MeshStandardMaterial({
+            color: 0xd0d0d0,
+            roughness: 0.5,
+            side: THREE.DoubleSide,
+          });
+          const dish = new THREE.Mesh(
+            new THREE.SphereGeometry(
+              0.22,
+              8,
+              6,
+              0,
+              Math.PI * 2,
+              0,
+              Math.PI / 2,
+            ),
+            dishMat,
+          );
+          dish.rotation.x = Math.PI / 4;
+          dish.position.set(bw * 0.2, bh + 0.05, 0);
+          group.add(dish);
+          const stem = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.03, 0.03, 0.35, 6),
+            new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.7 }),
+          );
+          stem.position.set(bw * 0.2, bh - 0.1, 0);
+          group.add(stem);
+        }
+        if (bc.type === "complex") {
+          for (let gp = 0; gp < 4; gp++) {
+            const gpM = new THREE.Mesh(
+              new THREE.BoxGeometry(
+                0.4 + Math.random() * 0.3,
+                0.08,
+                0.4 + Math.random() * 0.3,
+              ),
+              new THREE.MeshStandardMaterial({
+                color: 0x2a7a3a,
+                emissive: 0x0a3010,
+                emissiveIntensity: 0.2,
+                roughness: 0.9,
+              }),
+            );
+            gpM.position.set(
+              (Math.random() - 0.5) * bw * 0.7,
+              bh + 0.06,
+              (Math.random() - 0.5) * bd * 0.7,
+            );
+            group.add(gpM);
+          }
+        }
 
-        // ── BASE PLATFORM ────────────────────────────────────────────
-        const baseGeo = new THREE.BoxGeometry(bw + 0.6, 0.2, bd + 0.6);
-        const baseMat = new THREE.MeshStandardMaterial({
-          color: new THREE.Color(bc.color).multiplyScalar(0.5),
-          roughness: 0.8,
-        });
-        const base = new THREE.Mesh(baseGeo, baseMat);
+        // Elevator light (on tall buildings)
+        if (bc.floors >= 5) {
+          const eColor = new THREE.Color(bc.trim).lerp(
+            new THREE.Color(0xffffff),
+            0.4,
+          );
+          const elevGeo = new THREE.BoxGeometry(0.15, 0.28, 0.04);
+          const elevMat = new THREE.MeshStandardMaterial({
+            color: eColor,
+            emissive: eColor,
+            emissiveIntensity: 2.2,
+            transparent: true,
+            opacity: 0.8,
+          });
+          const elev = new THREE.Mesh(elevGeo, elevMat);
+          elev.position.set(bw / 2 + 0.025, bh * 0.3, 0);
+          group.add(elev);
+          elevatorMeshes.push({
+            mesh: elev,
+            min: floorH * 0.5,
+            max: bh - floorH * 0.5,
+            speed: 0.28 + Math.random() * 0.38,
+            dir: 1,
+          });
+        }
+
+        // Windows
+        addWindowGrid(group, bw, bh, bd, bc.trim, bc.floors);
+
+        // Base platform
+        const base = new THREE.Mesh(
+          new THREE.BoxGeometry(bw + 0.6, 0.2, bd + 0.6),
+          new THREE.MeshStandardMaterial({
+            color: new THREE.Color(bc.color).multiplyScalar(0.48),
+            roughness: 0.8,
+          }),
+        );
         base.position.y = 0.1;
         base.receiveShadow = true;
         group.add(base);
 
-        // ── DISTRICT SIGN ────────────────────────────────────────────
-        // (simple glowing platform sign — using a flat box with emissive)
-        const signGeo = new THREE.BoxGeometry(bw * 0.7, 0.06, 0.3);
-        const signMat = new THREE.MeshStandardMaterial({
-          color: bc.trim,
-          emissive: bc.trim,
-          emissiveIntensity: 1.5,
-        });
-        const sign = new THREE.Mesh(signGeo, signMat);
+        // Front sign strip
+        const sign = new THREE.Mesh(
+          new THREE.BoxGeometry(bw * 0.7, 0.06, 0.3),
+          new THREE.MeshStandardMaterial({
+            color: bc.trim,
+            emissive: bc.trim,
+            emissiveIntensity: 1.5,
+          }),
+        );
         sign.position.set(0, 0.22, bd / 2 + 0.4);
         group.add(sign);
 
         group.position.set(px, 0, pz);
         group.userData = { districtIdx: idx };
         scene.add(group);
+        buildingBodies[idx] = body;
       });
 
-      // ── TREES ─────────────────────────────────────────────────────
+      // ═══════════════════════════════════════════════════════════════
+      //  TREES
+      // ═══════════════════════════════════════════════════════════════
+      const swayMeshes = []; // {mesh, amp, phase, axisAngle}
+
+      function makeTree(x, z, h, color) {
+        const g = new THREE.Group();
+        const tH = h * 0.32;
+        const trunk = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.055, 0.12, tH, 7),
+          new THREE.MeshStandardMaterial({ color: 0x3d2410, roughness: 0.95 }),
+        );
+        trunk.position.y = tH / 2;
+        trunk.castShadow = true;
+        g.add(trunk);
+        const baseC = new THREE.Color(color);
+        for (let i = 0; i < 4; i++) {
+          const t2 = i / 3;
+          const r = (0.68 - t2 * 0.2) * (h / 3.0);
+          const ch = h * 0.33 * (1 - t2 * 0.15);
+          const layerC = baseC
+            .clone()
+            .lerp(new THREE.Color(0x66ff88), t2 * 0.09);
+          const cone = new THREE.Mesh(
+            new THREE.ConeGeometry(r, ch, 7),
+            new THREE.MeshStandardMaterial({
+              color: layerC,
+              emissive: layerC.clone().multiplyScalar(0.05),
+              roughness: 0.82,
+            }),
+          );
+          cone.position.y = tH + i * h * 0.19;
+          cone.rotation.y = i * 0.55;
+          cone.castShadow = true;
+          g.add(cone);
+          // Tag for sway
+          const swayAmp = 0.016 + i * 0.006;
+          const swayPhase = Math.random() * Math.PI * 2;
+          const axisAngle = Math.random() * Math.PI * 2;
+          swayMeshes.push({
+            mesh: cone,
+            amp: swayAmp,
+            phase: swayPhase,
+            axis: axisAngle,
+          });
+        }
+        if (Math.random() > 0.52) {
+          const fC = baseC.clone().lerp(new THREE.Color(0xffffff), 0.55);
+          const fairy = new THREE.Mesh(
+            new THREE.SphereGeometry(0.055, 5, 4),
+            new THREE.MeshStandardMaterial({
+              color: fC,
+              emissive: fC,
+              emissiveIntensity: 2.5,
+            }),
+          );
+          fairy.position.y = tH + h * 0.76;
+          fairy.userData = { blink: true, phase: Math.random() * Math.PI * 2 };
+          g.add(fairy);
+        }
+        g.position.set(x, 0, z);
+        return g;
+      }
+
       const treeColors = [0x2a7a40, 0x3a8a50, 0x20a050, 0x4a9060, 0x1a6030];
-      const treePositions = [
+      const treePosArr = [
         [-12, -10],
         [-14, -4],
         [-12, 2],
@@ -1737,21 +2807,28 @@
         [-10, 0],
         [10, 0],
       ];
-      treePositions.forEach(([x, z]) => {
+      treePosArr.forEach(([tx, tz]) => {
         if (
           DISTRICTS.some((d) => {
-            const dx = d.pos[0] - x,
-              dz = d.pos[2] - z;
+            const dx = d.pos[0] - tx,
+              dz = d.pos[2] - tz;
             return Math.sqrt(dx * dx + dz * dz) < 4;
           })
         )
           return;
-        const h = 1.5 + Math.random() * 1.5;
-        const col = treeColors[Math.floor(Math.random() * treeColors.length)];
-        scene.add(makeTree(x, z, h, col));
+        scene.add(
+          makeTree(
+            tx,
+            tz,
+            1.5 + Math.random() * 1.5,
+            treeColors[Math.floor(Math.random() * treeColors.length)],
+          ),
+        );
       });
 
-      // ── ROCKS ─────────────────────────────────────────────────────
+      // ═══════════════════════════════════════════════════════════════
+      //  ROCKS + LAMPS
+      // ═══════════════════════════════════════════════════════════════
       [
         [-11, -7],
         [11, -7],
@@ -1763,19 +2840,37 @@
         [13, 4],
         [-7, -12],
         [7, -12],
-      ].forEach(([x, z]) => {
+      ].forEach(([rx, rz]) => {
         if (Math.random() > 0.5) {
-          scene.add(
-            makeRock(
-              x + Math.random() - 0.5,
-              z + Math.random() - 0.5,
-              0.2 + Math.random() * 0.3,
-            ),
+          const scale = 0.2 + Math.random() * 0.3;
+          const rg = new THREE.DodecahedronGeometry(scale, 0);
+          const pos2 = rg.attributes.position;
+          for (let i = 0; i < pos2.count; i++)
+            pos2.setXYZ(
+              i,
+              pos2.getX(i) * (0.8 + Math.random() * 0.4),
+              pos2.getY(i) * (0.8 + Math.random() * 0.4),
+              pos2.getZ(i) * (0.8 + Math.random() * 0.4),
+            );
+          rg.computeVertexNormals();
+          const rock = new THREE.Mesh(
+            rg,
+            new THREE.MeshStandardMaterial({
+              color: 0x506070,
+              roughness: 0.9,
+              metalness: 0.1,
+            }),
           );
+          rock.position.set(
+            rx + Math.random() - 0.5,
+            scale * 0.4,
+            rz + Math.random() - 0.5,
+          );
+          rock.rotation.y = Math.random() * Math.PI * 2;
+          rock.castShadow = true;
+          scene.add(rock);
         }
       });
-
-      // ── LAMP POSTS ────────────────────────────────────────────────
       [
         [-3, -3],
         [3, -3],
@@ -1787,20 +2882,75 @@
         [5, 1],
         [-5, 10],
         [5, 10],
-      ].forEach(([x, z]) => {
+      ].forEach(([lx, lz]) => {
         if (
           DISTRICTS.some((d) => {
-            const dx = d.pos[0] - x,
-              dz = d.pos[2] - z;
+            const dx = d.pos[0] - lx,
+              dz = d.pos[2] - lz;
             return Math.sqrt(dx * dx + dz * dz) < 3.5;
           })
         )
           return;
-        scene.add(makeLamp(x, z));
+        scene.add(makeLamp(lx, lz));
       });
 
-      // ── CONNECTION LINES FROM AUTH TOWER ──────────────────────────
-      const authLineMats = []; // store for SSO flash effect
+      // ═══════════════════════════════════════════════════════════════
+      //  HANGING WIRES
+      // ═══════════════════════════════════════════════════════════════
+      function makeWire(sx, sy, sz, ex, ey, ez, sag, phase) {
+        const mid = new THREE.Vector3(
+          (sx + ex) / 2,
+          (sy + ey) / 2 - sag,
+          (sz + ez) / 2,
+        );
+        const curve = new THREE.QuadraticBezierCurve3(
+          new THREE.Vector3(sx, sy, sz),
+          mid,
+          new THREE.Vector3(ex, ey, ez),
+        );
+        const pts = curve.getPoints(24);
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        const mat = new THREE.LineBasicMaterial({
+          color: 0x222234,
+          transparent: true,
+          opacity: 0.65,
+        });
+        const line = new THREE.Line(geo, mat);
+        allWireMeshes.push({
+          line,
+          curve,
+          sag,
+          phase,
+          pts,
+          geo,
+          sx,
+          sy,
+          sz,
+          ex,
+          ey,
+          ez,
+        });
+        scene.add(line);
+      }
+      // Add wires between neighbouring buildings
+      [
+        [0, 5.5, 0, -7, 3.5, -6, 0.9],
+        [0, 5.5, 0, 7, 3.5, -6, 0.9],
+        [0, 5.5, 0, -7, 2.0, 4, 1.0],
+        [0, 5.5, 0, 7, 2.0, 4, 1.0],
+        [-7, 2.0, -6, -7, 2.0, 4, 0.7],
+        [7, 2.0, -6, 7, 2.0, 4, 0.7],
+        [-3, 3.5, 8, 3, 3.2, 8, 0.5],
+        [0, 1.8, 12, -3, 3.0, 8, 0.8],
+        [0, 1.8, 12, 3, 2.8, 8, 0.8],
+      ].forEach(([sx, sy, sz, ex, ey, ez, sag], i) => {
+        makeWire(sx, sy, sz, ex, ey, ez, sag, i * 0.6);
+      });
+
+      // ═══════════════════════════════════════════════════════════════
+      //  AUTH TOWER CONNECTION LINES
+      // ═══════════════════════════════════════════════════════════════
+      const authLineMats = [];
       DISTRICTS.forEach((d, i) => {
         if (i === 0) return;
         const start = new THREE.Vector3(0, 7.5, 0);
@@ -1813,37 +2963,43 @@
           .clone()
           .lerp(end, 0.5)
           .add(new THREE.Vector3(0, 2, 0));
-
-        // Bezier curve connection
-        const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
-        const points = curve.getPoints(20);
-        const geo = new THREE.BufferGeometry().setFromPoints(points);
-        const mat = new THREE.LineBasicMaterial({
+        const curve2 = new THREE.QuadraticBezierCurve3(start, mid, end);
+        const mat2 = new THREE.LineBasicMaterial({
           color: 0xc8a84b,
           transparent: true,
           opacity: 0.12,
         });
-        authLineMats.push(mat);
-        scene.add(new THREE.Line(geo, mat));
+        authLineMats.push(mat2);
+        scene.add(
+          new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints(curve2.getPoints(20)),
+            mat2,
+          ),
+        );
       });
 
-      // ── PATH WALKWAYS ─────────────────────────────────────────────
+      // Path walkways
       DISTRICTS.forEach((d, i) => {
         if (i === 0) return;
-        const from = new THREE.Vector3(0, 0.03, 0);
-        const to = new THREE.Vector3(d.pos[0], 0.03, d.pos[2]);
-        const pts = [from, to];
-        const geo = new THREE.BufferGeometry().setFromPoints(pts);
-        const mat = new THREE.LineBasicMaterial({
+        const mat3 = new THREE.LineBasicMaterial({
           color: new THREE.Color(BCONFIG[i].color).multiplyScalar(0.3),
           transparent: true,
           opacity: 0.4,
         });
-        scene.add(new THREE.Line(geo, mat));
+        scene.add(
+          new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints([
+              new THREE.Vector3(0, 0.03, 0),
+              new THREE.Vector3(d.pos[0], 0.03, d.pos[2]),
+            ]),
+            mat3,
+          ),
+        );
       });
 
-      // ── DATA FLOW PARTICLES ───────────────────────────────────────
-      // Particles flowing from Auth Tower along bezier curves to each district
+      // ═══════════════════════════════════════════════════════════════
+      //  DATA FLOW PARTICLES
+      // ═══════════════════════════════════════════════════════════════
       const flowConnections = [];
       DISTRICTS.forEach((d, i) => {
         if (i === 0) return;
@@ -1857,16 +3013,13 @@
           .clone()
           .lerp(end, 0.5)
           .add(new THREE.Vector3(0, 2, 0));
-        const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
-
+        const curve3 = new THREE.QuadraticBezierCurve3(start, mid, end);
         const N = 10;
         const positions = new Float32Array(N * 3);
         const pGeo = new THREE.BufferGeometry();
         pGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-
-        const distColor = new THREE.Color(BCONFIG[i].color);
         const pMat = new THREE.PointsMaterial({
-          color: distColor,
+          color: new THREE.Color(BCONFIG[i].color),
           size: 0.14,
           transparent: true,
           opacity: 0.85,
@@ -1875,23 +3028,26 @@
         });
         const pts3 = new THREE.Points(pGeo, pMat);
         scene.add(pts3);
-
-        // Stagger particle offsets evenly
-        const offsets = Array.from({ length: N }, (_, k) => k / N);
-        flowConnections.push({ curve, pts: pts3, geo: pGeo, offsets });
+        flowConnections.push({
+          curve: curve3,
+          pts: pts3,
+          geo: pGeo,
+          offsets: Array.from({ length: N }, (_, k) => k / N),
+        });
       });
 
-      // ── AMBIENT CITY PARTICLES ────────────────────────────────────
-      // Tiny floating particles suggesting data activity across the city
+      // ═══════════════════════════════════════════════════════════════
+      //  AMBIENT PARTICLES
+      // ═══════════════════════════════════════════════════════════════
       const ambientCount = 180;
       const ambPos = new Float32Array(ambientCount * 3);
       const ambVel = new Float32Array(ambientCount * 3);
       for (let i = 0; i < ambientCount; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const r = 2 + Math.random() * 18;
-        ambPos[i * 3] = Math.cos(angle) * r;
+        const ang2 = Math.random() * Math.PI * 2,
+          r2 = 2 + Math.random() * 18;
+        ambPos[i * 3] = Math.cos(ang2) * r2;
         ambPos[i * 3 + 1] = 0.5 + Math.random() * 9;
-        ambPos[i * 3 + 2] = Math.sin(angle) * r;
+        ambPos[i * 3 + 2] = Math.sin(ang2) * r2;
         ambVel[i * 3] = (Math.random() - 0.5) * 0.008;
         ambVel[i * 3 + 1] = 0.003 + Math.random() * 0.006;
         ambVel[i * 3 + 2] = (Math.random() - 0.5) * 0.008;
@@ -1902,32 +3058,191 @@
         color: 0xc8a84b,
         size: 0.06,
         transparent: true,
-        opacity: 0.35,
+        opacity: 0.32,
         sizeAttenuation: true,
         depthWrite: false,
       });
       scene.add(new THREE.Points(ambGeo, ambMat));
 
-      // ── BUILDING BODY REFS for hover/effect ───────────────────────
-      // clickables already populated; map districtIdx → mesh
-      const buildingBodies = {};
-      clickables.forEach((mesh) => {
-        buildingBodies[mesh.userData.districtIdx] = mesh;
+      // ═══════════════════════════════════════════════════════════════
+      //  RAIN SYSTEM
+      // ═══════════════════════════════════════════════════════════════
+      const RAIN_N = 3200;
+      const rainPos = new Float32Array(RAIN_N * 3);
+      const rainVelArr = new Float32Array(RAIN_N * 3);
+      for (let i = 0; i < RAIN_N; i++) {
+        rainPos[i * 3] = (Math.random() - 0.5) * 60;
+        rainPos[i * 3 + 1] = Math.random() * 28;
+        rainPos[i * 3 + 2] = (Math.random() - 0.5) * 60;
+        rainVelArr[i * 3] = -0.02;
+        rainVelArr[i * 3 + 1] = -(2.8 + Math.random() * 1.4);
+        rainVelArr[i * 3 + 2] = -0.01;
+      }
+      const rainGeo = new THREE.BufferGeometry();
+      rainGeo.setAttribute("position", new THREE.BufferAttribute(rainPos, 3));
+      const rainMat = new THREE.PointsMaterial({
+        color: 0xaaccff,
+        size: 0.06,
+        transparent: true,
+        opacity: 0,
+        sizeAttenuation: true,
+        depthWrite: false,
+      });
+      scene.add(new THREE.Points(rainGeo, rainMat));
+
+      // ═══════════════════════════════════════════════════════════════
+      //  CARS
+      // ═══════════════════════════════════════════════════════════════
+      const cars = [];
+      function makeCar(colorHex) {
+        const g = new THREE.Group();
+        const bC = new THREE.Color(colorHex);
+        const body = new THREE.Mesh(
+          new THREE.BoxGeometry(0.52, 0.2, 0.95),
+          new THREE.MeshStandardMaterial({
+            color: bC,
+            roughness: 0.22,
+            metalness: 0.52,
+          }),
+        );
+        body.position.y = 0.17;
+        body.castShadow = true;
+        g.add(body);
+        const cabC = bC.clone().lerp(new THREE.Color(0x88aacc), 0.3);
+        const cab = new THREE.Mesh(
+          new THREE.BoxGeometry(0.34, 0.16, 0.44),
+          new THREE.MeshStandardMaterial({
+            color: cabC,
+            roughness: 0.05,
+            metalness: 0.3,
+            transparent: true,
+            opacity: 0.88,
+          }),
+        );
+        cab.position.set(0, 0.35, -0.06);
+        g.add(cab);
+        const wG = new THREE.CylinderGeometry(0.095, 0.095, 0.075, 10);
+        const wM = new THREE.MeshStandardMaterial({
+          color: 0x111111,
+          roughness: 0.95,
+        });
+        [
+          [-0.27, 0.095, 0.3],
+          [0.27, 0.095, 0.3],
+          [-0.27, 0.095, -0.3],
+          [0.27, 0.095, -0.3],
+        ].forEach(([wx, wy, wz]) => {
+          const wh = new THREE.Mesh(wG, wM);
+          wh.rotation.z = Math.PI / 2;
+          wh.position.set(wx, wy, wz);
+          g.add(wh);
+        });
+        const hlG = new THREE.BoxGeometry(0.09, 0.055, 0.04);
+        const hlM = new THREE.MeshStandardMaterial({
+          color: 0xffffee,
+          emissive: 0xffffcc,
+          emissiveIntensity: 3.5,
+        });
+        const tlM = new THREE.MeshStandardMaterial({
+          color: 0xff1100,
+          emissive: 0xff0800,
+          emissiveIntensity: 3.5,
+        });
+        [-0.15, 0.15].forEach((hx) => {
+          const hl = new THREE.Mesh(hlG, hlM);
+          hl.position.set(hx, 0.155, 0.495);
+          g.add(hl);
+          const tl = new THREE.Mesh(hlG.clone(), tlM);
+          tl.position.set(hx, 0.155, -0.495);
+          g.add(tl);
+        });
+        return g;
+      }
+      const carRoutes = [
+        { ax: "x", x1: -17, x2: 17, z: 0.45, dir: 1, spd: 0.0019 },
+        { ax: "x", x1: 17, x2: -17, z: -0.85, dir: -1, spd: 0.0023 },
+        { ax: "z", z1: -16, z2: 17, x: 0.45, dir: 1, spd: 0.0021 },
+        { ax: "z", z1: 17, z2: -16, x: -0.45, dir: -1, spd: 0.0017 },
+        { ax: "x", x1: -8, x2: 8, z: -5.65, dir: 1, spd: 0.0025 },
+        { ax: "x", x1: 8, x2: -8, z: -6.35, dir: -1, spd: 0.0022 },
+        { ax: "x", x1: -8, x2: 8, z: 4.35, dir: 1, spd: 0.002 },
+        { ax: "x", x1: 8, x2: -8, z: 3.65, dir: -1, spd: 0.0024 },
+        { ax: "x", x1: -4, x2: 4, z: 8.35, dir: 1, spd: 0.0028 },
+      ];
+      const carPalette = [
+        0xcc3333, 0x3355cc, 0x229944, 0xcc7722, 0x882299, 0x22aaaa, 0xcc5522,
+        0xaabb22, 0x666699,
+      ];
+      carRoutes.forEach((route, i) => {
+        const car = makeCar(carPalette[i % carPalette.length]);
+        scene.add(car);
+        const t0 = Math.random();
+        if (route.ax === "x") {
+          car.position.set(route.x1 + (route.x2 - route.x1) * t0, 0, route.z);
+          car.rotation.y = route.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+        } else {
+          car.position.set(route.x, 0, route.z1 + (route.z2 - route.z1) * t0);
+          car.rotation.y = route.dir > 0 ? 0 : Math.PI;
+        }
+        // Stop timer: cars occasionally pause
+        cars.push({ mesh: car, route, t: t0, stopped: false, stopTimer: 0 });
       });
 
-      // ── CAMERA ORBIT ──────────────────────────────────────────────
+      // ═══════════════════════════════════════════════════════════════
+      //  SOUND SYSTEM
+      // ═══════════════════════════════════════════════════════════════
+      let audioCtx = null,
+        cityHumGain = null,
+        rainGainNode = null;
+      function initSound() {
+        if (audioCtx) return;
+        try {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          // City hum — low freq sine
+          const osc = audioCtx.createOscillator();
+          cityHumGain = audioCtx.createGain();
+          osc.frequency.value = 55;
+          osc.type = "sine";
+          cityHumGain.gain.value = 0.018;
+          osc.connect(cityHumGain);
+          cityHumGain.connect(audioCtx.destination);
+          osc.start();
+          // Rain — filtered noise
+          const bufSize = 2 * audioCtx.sampleRate;
+          const buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+          const data = buf.getChannelData(0);
+          for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+          const noise = audioCtx.createBufferSource();
+          noise.buffer = buf;
+          noise.loop = true;
+          const filter = audioCtx.createBiquadFilter();
+          filter.type = "highpass";
+          filter.frequency.value = 2200;
+          rainGainNode = audioCtx.createGain();
+          rainGainNode.gain.value = 0;
+          noise.connect(filter);
+          filter.connect(rainGainNode);
+          rainGainNode.connect(audioCtx.destination);
+          noise.start();
+        } catch (e) {
+          /* audio not available */
+        }
+      }
+      // Init on first user interaction
+      document.addEventListener("click", initSound, { once: true });
+      document.addEventListener("keydown", initSound, { once: true });
+
+      // ═══════════════════════════════════════════════════════════════
+      //  CAMERA — INERTIA SYSTEM
+      // ═══════════════════════════════════════════════════════════════
       let isDrag = false,
         prevMouse = { x: 0, y: 0 };
+      const camVel = { theta: 0, phi: 0 };
+      const CAM_DRAG = 0.88;
 
-      function updateCam() {
-        camera.position.set(
-          target.x + sph.radius * Math.sin(sph.phi) * Math.sin(sph.theta),
-          target.y + sph.radius * Math.cos(sph.phi),
-          target.z + sph.radius * Math.sin(sph.phi) * Math.cos(sph.theta),
-        );
-        camera.lookAt(target);
+      function updateCam2() {
+        updateCam();
       }
-      updateCam();
 
       canvas.addEventListener("mousedown", (e) => {
         isDrag = true;
@@ -1935,15 +3250,15 @@
       });
       canvas.addEventListener("mousemove", (e) => {
         if (isDrag) {
-          sph.theta -= (e.clientX - prevMouse.x) * 0.007;
-          sph.phi = Math.max(
-            0.25,
-            Math.min(1.35, sph.phi + (e.clientY - prevMouse.y) * 0.007),
-          );
+          const dx = e.clientX - prevMouse.x,
+            dy = e.clientY - prevMouse.y;
+          camVel.theta = -dx * 0.007;
+          camVel.phi = dy * 0.007;
+          sph.theta += camVel.theta;
+          sph.phi = Math.max(0.25, Math.min(1.35, sph.phi + camVel.phi));
           prevMouse = { x: e.clientX, y: e.clientY };
           updateCam();
         }
-        // Hover tooltip
         hoverCheck(e);
       });
       canvas.addEventListener("mouseup", () => (isDrag = false));
@@ -1957,7 +3272,6 @@
         },
         { passive: false },
       );
-
       let touch0 = null;
       canvas.addEventListener("touchstart", (e) => {
         touch0 = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -1979,11 +3293,12 @@
       );
       canvas.addEventListener("touchend", () => (touch0 = null));
 
-      // ── RAYCASTING ────────────────────────────────────────────────
+      // ═══════════════════════════════════════════════════════════════
+      //  RAYCASTING
+      // ═══════════════════════════════════════════════════════════════
       const raycaster = new THREE.Raycaster();
       const mouse2 = new THREE.Vector2();
       let downPos = { x: 0, y: 0 };
-
       canvas.addEventListener("mousedown", (e) => {
         downPos = { x: e.clientX, y: e.clientY };
       });
@@ -2002,8 +3317,8 @@
         if (hits.length) openDistrict(hits[0].object.userData.districtIdx);
       });
 
-      let hoveredIdx = -1;
-      let prevHoveredIdx = -1;
+      let hoveredIdx = -1,
+        prevHoveredIdx = -1;
       function hoverCheck(e) {
         if (isDrag) return;
         mouse2.set(
@@ -2028,34 +3343,29 @@
           canvas.style.cursor = isDrag ? "grabbing" : "grab";
           hoveredIdx = -1;
         }
-        // Glow in/out on hover change
         if (hoveredIdx !== prevHoveredIdx) {
-          if (prevHoveredIdx >= 0 && buildingBodies[prevHoveredIdx]) {
-            buildingBodies[prevHoveredIdx].material.emissiveIntensity = 0.2;
-          }
-          if (hoveredIdx >= 0 && buildingBodies[hoveredIdx]) {
+          if (prevHoveredIdx >= 0 && buildingBodies[prevHoveredIdx])
+            buildingBodies[prevHoveredIdx].material.emissiveIntensity = 0.18;
+          if (hoveredIdx >= 0 && buildingBodies[hoveredIdx])
             buildingBodies[hoveredIdx].material.emissiveIntensity = 0.75;
-          }
           prevHoveredIdx = hoveredIdx;
         }
       }
 
-      // ── OPEN DISTRICT ─────────────────────────────────────────────
+      // ═══════════════════════════════════════════════════════════════
+      //  OPEN DISTRICT
+      // ═══════════════════════════════════════════════════════════════
       function openDistrict(idx) {
         const d = DISTRICTS[idx];
         const bc = BCONFIG[idx];
-
         if (!visited.has(d.id)) {
           visited.add(d.id);
           localStorage.setItem("vd2", JSON.stringify([...visited]));
           updateBrahmastra();
           logEvt("district_entered", d.id);
         }
-
-        // ── DISTRICT SPECIAL EFFECTS ──────────────────────────────
         if (d.id === "auth-tower") triggerSSOCascade();
         if (d.id === "data-vaults") triggerVaultShake();
-
         const c = "#" + new THREE.Color(bc.color).getHexString();
         const mHTML = d.metrics
           .map(
@@ -2066,73 +3376,53 @@
         const tHTML = d.tech
           .map((t) => `<span class="tech-tag">${t}</span>`)
           .join("");
-        // Engineer path: tech depth auto-expanded
-        const engVisible = VISITOR_PATH === "engineer";
-        const eng =
-          VISITOR_PATH === "engineer"
-            ? `
-    <div class="eng-toggle" onclick="this.nextElementSibling.classList.toggle('vis');
-      this.textContent=this.nextElementSibling.classList.contains('vis')?'▼ TECHNICAL DEPTH':'▶ TECHNICAL DEPTH'">
-      ▼ TECHNICAL DEPTH
-    </div>
-    <div class="eng-deep ${engVisible ? "vis" : ""}">${d.eng.replace(/\n/g, "<br>")}</div>
-  `
-            : "";
-
+        const engVis = VISITOR_PATH === "engineer";
+        const eng = engVis
+          ? `<div class="eng-toggle" onclick="this.nextElementSibling.classList.toggle('vis');this.textContent=this.nextElementSibling.classList.contains('vis')?'▼ TECHNICAL DEPTH':'▶ TECHNICAL DEPTH'">▼ TECHNICAL DEPTH</div><div class="eng-deep vis">${d.eng.replace(/\n/g, "<br>")}</div>`
+          : "";
         document.getElementById("panel-body").innerHTML = `
-    <div class="p-num" style="color:${c}">DISTRICT ${d.num}</div>
-    <div class="p-name">${d.name}</div>
-    <div class="p-tag">${d.tag}</div>
-    <div class="p-status ${d.st}"><span class="sdot"></span>${d.status}</div>
-    <div class="metrics">${mHTML}</div>
-    <div class="slabel">MISSION LOG</div>
-    <div class="story">${d.story.replace(/\n/g, "<br>")}</div>
-    <div class="tech-tags">${tHTML}</div>
-    ${eng}
-    <div class="rec-status"><span class="sdot"></span>
-      SYSTEM INTEGRITY 99.7% · LAST VERIFIED 2034 · OPERATIONAL
-    </div>
-  `;
+      <div class="p-num" style="color:${c}">DISTRICT ${d.num}</div>
+      <div class="p-name">${d.name}</div>
+      <div class="p-tag">${d.tag}</div>
+      <div class="p-status ${d.st}"><span class="sdot"></span>${d.status}</div>
+      <div class="metrics">${mHTML}</div>
+      <div class="slabel">MISSION LOG</div>
+      <div class="story">${d.story.replace(/\n/g, "<br>")}</div>
+      <div class="tech-tags">${tHTML}</div>
+      ${eng}
+      <div class="rec-status"><span class="sdot"></span>SYSTEM INTEGRITY 99.7% · LAST VERIFIED 2034 · OPERATIONAL</div>
+      <button class="enter-room-btn" onclick="enterRoomMode(${idx})">⬡ &nbsp;ENTER DISTRICT &nbsp;→</button>
+    `;
         document.getElementById("panel").classList.add("open");
         panelOpen = true;
-
-        // Smooth zoom toward district
         animTarget(new THREE.Vector3(d.pos[0], 0, d.pos[2]), 18);
       }
 
-      // ── SSO CASCADE EFFECT ────────────────────────────────────────
+      // ═══════════════════════════════════════════════════════════════
+      //  SPECIAL EFFECTS
+      // ═══════════════════════════════════════════════════════════════
       function triggerSSOCascade() {
-        // Flash all auth connection lines bright
-        authLineMats.forEach((mat) => {
-          mat.opacity = 0.9;
-        });
-        // Flash all buildings
-        Object.values(buildingBodies).forEach((mesh) => {
-          mesh.material.emissiveIntensity = 1.0;
-        });
-        // Flash screen overlay
-        const flash = document.getElementById("sso-flash");
-        flash.classList.add("vis");
-        // Fade back over 1.5s
+        authLineMats.forEach((m) => (m.opacity = 0.9));
+        Object.values(buildingBodies).forEach(
+          (m) => (m.material.emissiveIntensity = 1.0),
+        );
+        document.getElementById("sso-flash").classList.add("vis");
         setTimeout(() => {
-          flash.classList.remove("vis");
-          authLineMats.forEach((mat) => {
-            mat.opacity = 0.12;
-          });
-          Object.entries(buildingBodies).forEach(([i, mesh]) => {
-            mesh.material.emissiveIntensity = 0.2;
-          });
+          document.getElementById("sso-flash").classList.remove("vis");
+          authLineMats.forEach((m) => (m.opacity = 0.12));
+          Object.values(buildingBodies).forEach(
+            (m) => (m.material.emissiveIntensity = 0.18),
+          );
         }, 1400);
       }
 
-      // ── DATA VAULT SHAKE ─────────────────────────────────────────
       function triggerVaultShake() {
-        const c = document.getElementById("c");
+        const cn = document.getElementById("c");
         const crack = document.getElementById("vault-crack");
-        c.classList.add("shake");
+        cn.classList.add("shake");
         crack.classList.add("vis");
         setTimeout(() => {
-          c.classList.remove("shake");
+          cn.classList.remove("shake");
           setTimeout(() => crack.classList.remove("vis"), 1200);
         }, 700);
       }
@@ -2151,8 +3441,8 @@
           dur = 700;
         if (camAnim) cancelAnimationFrame(camAnim);
         function step(now) {
-          const p = Math.min((now - t0) / dur, 1);
-          const e = p < 0.5 ? 2 * p * p : -1 + (4 - 2 * p) * p;
+          const p = Math.min((now - t0) / dur, 1),
+            e = p < 0.5 ? 2 * p * p : -1 + (4 - 2 * p) * p;
           target.lerpVectors(st, newT, e);
           sph.radius = sr + (newR - sr) * e;
           updateCam();
@@ -2161,7 +3451,9 @@
         camAnim = requestAnimationFrame(step);
       }
 
-      // ── BRAHMASTRA ────────────────────────────────────────────────
+      // ═══════════════════════════════════════════════════════════════
+      //  BRAHMASTRA
+      // ═══════════════════════════════════════════════════════════════
       function updateBrahmastra() {
         const n = Math.min(visited.size, 5);
         document
@@ -2181,7 +3473,9 @@
         document.getElementById("contact-overlay").classList.remove("vis");
       }
 
-      // ── CHAOS ─────────────────────────────────────────────────────
+      // ═══════════════════════════════════════════════════════════════
+      //  CHAOS
+      // ═══════════════════════════════════════════════════════════════
       function showChaos() {
         document.getElementById("chaos-overlay").classList.add("vis");
         if (chaosPlayed) return;
@@ -2255,51 +3549,36 @@
         ];
         const lines =
           VISITOR_PATH === "engineer" ? engineerLines : recruiterLines;
-        let i = 0;
+        let idx2 = 0;
         const iv = setInterval(() => {
-          if (i >= lines.length) {
+          if (idx2 >= lines.length) {
             clearInterval(iv);
             showChaosResult();
             return;
           }
           const el = document.createElement("div");
-          el.className = lines[i].c;
-          el.textContent = lines[i].t;
+          el.className = lines[idx2].c;
+          el.textContent = lines[idx2].t;
           box.appendChild(el);
           box.scrollTop = box.scrollHeight;
-          i++;
+          idx2++;
         }, 380);
       }
-
       function showChaosResult() {
         const box = document.getElementById("chaos-box");
         const r = document.createElement("div");
         r.id = "chaos-result";
-        r.innerHTML = `
-    <div style="color:#5aaa7a;font-size:11px;letter-spacing:2px;margin-bottom:14px">
-      SYSTEMS MAINTAINED BY ADITYA SRIVASTAVA
-    </div>
-    <div style="color:#5aaa7a;font-size:11px;line-height:2.2">
-      Auth Tower ············ OPERATIONAL<br>
-      Integration Mesh ······ OPERATIONAL<br>
-      Data Vaults ··········· OPERATIONAL<br>
-      Cloud District ········ OPERATIONAL<br>
-      LedgerFlow ············ OPERATIONAL<br>
-      ATS + Operations ······ OPERATIONAL
-    </div>
-    <div style="color:#cc6a6a;margin-top:14px;font-size:11px">
-      Everything outside his systems: see above.
-    </div>
-  `;
+        r.innerHTML = `<div style="color:#5aaa7a;font-size:11px;letter-spacing:2px;margin-bottom:14px">SYSTEMS MAINTAINED BY ADITYA SRIVASTAVA</div><div style="color:#5aaa7a;font-size:11px;line-height:2.2">Auth Tower ············ OPERATIONAL<br>Integration Mesh ······ OPERATIONAL<br>Data Vaults ··········· OPERATIONAL<br>Cloud District ········ OPERATIONAL<br>LedgerFlow ············ OPERATIONAL<br>ATS + Operations ······ OPERATIONAL</div><div style="color:#cc6a6a;margin-top:14px;font-size:11px">Everything outside his systems: see above.</div>`;
         box.appendChild(r);
         box.scrollTop = box.scrollHeight;
       }
-
       function closeChaos() {
         document.getElementById("chaos-overlay").classList.remove("vis");
       }
 
-      // ── ORACLE ────────────────────────────────────────────────────
+      // ═══════════════════════════════════════════════════════════════
+      //  ORACLE
+      // ═══════════════════════════════════════════════════════════════
       function toggleOracle() {
         oracleOpen = !oracleOpen;
         document
@@ -2307,14 +3586,13 @@
           .classList.toggle("vis", oracleOpen);
         if (oracleOpen) document.getElementById("oracle-input").focus();
       }
-
       async function sendOracle() {
         const inp = document.getElementById("oracle-input");
         const q = inp.value.trim();
         if (!q) return;
         inp.value = "";
         addMsg(q, "user");
-        const t = addMsg("...", "bot");
+        const t2 = addMsg("...", "bot");
         try {
           const res = await fetch(
             `${CONFIG.API_URL}/api/${CONFIG.VERSION}/oracle/ask`,
@@ -2329,13 +3607,13 @@
             },
           );
           const j = await res.json();
-          t.textContent = j.data?.answer || "The Oracle is momentarily silent.";
+          t2.textContent =
+            j.data?.answer || "The Oracle is momentarily silent.";
         } catch (e) {
-          t.textContent = "The Oracle requires a live backend connection.";
+          t2.textContent = "The Oracle requires a live backend connection.";
         }
         logEvt("oracle_asked", q.substring(0, 100));
       }
-
       function addMsg(text, role) {
         const m = document.getElementById("oracle-msgs");
         const d = document.createElement("div");
@@ -2346,7 +3624,108 @@
         return d;
       }
 
-      // ── BACKEND ───────────────────────────────────────────────────
+      // ═══════════════════════════════════════════════════════════════
+      //  ROOM MODE
+      // ═══════════════════════════════════════════════════════════════
+      function enterRoomMode(idx) {
+        const d = DISTRICTS[idx];
+        const bc = BCONFIG[idx];
+        const c = "#" + new THREE.Color(bc.color).getHexString();
+        roomMode = true;
+        roomDistrictIdx = idx;
+        roomSlide = 0;
+        roomSlides = [
+          { type: "story", label: "MISSION LOG" },
+          { type: "metrics", label: "SYSTEM METRICS" },
+          { type: "stack", label: "TECHNOLOGY STACK" },
+          { type: "engineering", label: "UNDER THE HOOD" },
+        ];
+        document
+          .getElementById("room-overlay")
+          .style.setProperty("--room-color", c);
+        document.getElementById("room-dots").innerHTML = roomSlides
+          .map(
+            (_, i) =>
+              `<div class="room-dot${i === 0 ? " active" : ""}" onclick="goToRoomSlide(${i})"></div>`,
+          )
+          .join("");
+        document.getElementById("room-dist-badge").textContent =
+          `DISTRICT ${d.num}`;
+        document.getElementById("room-dist-name").textContent = d.name;
+        document.getElementById("room-slide-tot").textContent =
+          roomSlides.length;
+        closePanel();
+        document.getElementById("room-overlay").classList.add("vis");
+        renderRoomSlide();
+        logEvt("room_mode_entered", d.id);
+      }
+      function renderRoomSlide() {
+        const d = DISTRICTS[roomDistrictIdx];
+        const slide = roomSlides[roomSlide];
+        document.getElementById("room-slide-cur").textContent = roomSlide + 1;
+        document
+          .querySelectorAll(".room-dot")
+          .forEach((dot, i) => dot.classList.toggle("active", i === roomSlide));
+        document.getElementById("room-prev").style.opacity =
+          roomSlide > 0 ? "1" : "0.28";
+        document.getElementById("room-next").style.opacity =
+          roomSlide < roomSlides.length - 1 ? "1" : "0.28";
+        let html = "";
+        if (slide.type === "story")
+          html = `<div class="slide-title">${slide.label}</div><div class="slide-story">${d.story.replace(/\n/g, "<br>").replace(/<span class="em">/g, '<span class="em" style="color:var(--room-color)">')}</div>`;
+        else if (slide.type === "metrics")
+          html = `<div class="slide-title">${slide.label}</div><div class="slide-metrics">${d.metrics.map((m) => `<div class="slide-metric"><span class="sm-val">${m.v}</span><span class="sm-lbl">${m.l}</span></div>`).join("")}</div>`;
+        else if (slide.type === "stack")
+          html = `<div class="slide-title">${slide.label}</div><div class="slide-subtitle">${d.tag}</div><div class="slide-tags">${d.tech.map((t) => `<span class="slide-tag">${t}</span>`).join("")}</div>`;
+        else if (slide.type === "engineering")
+          html = `<div class="slide-title">${slide.label}</div><div class="slide-eng">${d.eng.replace(/\n/g, "<br>")}</div>`;
+        const content = document.getElementById("room-board-content");
+        content.style.opacity = "0";
+        content.style.transform = "translateY(10px)";
+        setTimeout(() => {
+          content.innerHTML = html;
+          content.style.transition = "opacity 0.28s ease,transform 0.28s ease";
+          content.style.opacity = "1";
+          content.style.transform = "translateY(0)";
+        }, 180);
+      }
+      function roomNext() {
+        if (roomSlide < roomSlides.length - 1) {
+          roomSlide++;
+          renderRoomSlide();
+        }
+      }
+      function roomPrev() {
+        if (roomSlide > 0) {
+          roomSlide--;
+          renderRoomSlide();
+        }
+      }
+      function goToRoomSlide(i) {
+        roomSlide = i;
+        renderRoomSlide();
+      }
+      function exitRoomMode() {
+        document.getElementById("room-overlay").classList.remove("vis");
+        roomMode = false;
+      }
+      window.addEventListener("keydown", (e) => {
+        if (roomMode) {
+          if (e.key === "ArrowRight") {
+            roomNext();
+            e.preventDefault();
+          }
+          if (e.key === "ArrowLeft") {
+            roomPrev();
+            e.preventDefault();
+          }
+          if (e.key === "Escape") exitRoomMode();
+        }
+      });
+
+      // ═══════════════════════════════════════════════════════════════
+      //  BACKEND LOGGING
+      // ═══════════════════════════════════════════════════════════════
       function logEvt(type, data) {
         fetch(`${CONFIG.API_URL}/api/${CONFIG.VERSION}/visitor/event`, {
           method: "POST",
@@ -2358,7 +3737,6 @@
           }),
         }).catch(() => {});
       }
-
       window.addEventListener("error", (e) => {
         fetch(`${CONFIG.API_URL}/api/${CONFIG.VERSION}/visitor/error`, {
           method: "POST",
@@ -2369,12 +3747,11 @@
             fileName: e.filename,
             lineNumber: e.lineno,
             browser: navigator.userAgent,
-            page: "city-3d-v2",
+            page: "city-3d-v3",
           }),
         }).catch(() => {});
       });
-
-      const t0 = Date.now();
+      const t0start = Date.now();
       setInterval(() => {
         fetch(
           `${CONFIG.API_URL}/api/${CONFIG.VERSION}/visitor/session/${SESSION_ID}/duration`,
@@ -2382,31 +3759,31 @@
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              durationSeconds: Math.round((Date.now() - t0) / 1000),
+              durationSeconds: Math.round((Date.now() - t0start) / 1000),
             }),
           },
         ).catch(() => {});
       }, 30000);
 
-      // ── RESIZE ────────────────────────────────────────────────────
       window.addEventListener("resize", () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
       });
 
-      // ── CINEMATIC INTRO TRIGGER ───────────────────────────────────
+      // ═══════════════════════════════════════════════════════════════
+      //  CINEMATIC INTRO
+      // ═══════════════════════════════════════════════════════════════
+      const introEl = document.getElementById("intro-overlay");
       setTimeout(() => {
         introEl.classList.add("fade");
-        // Fly camera down to normal position over 2.5s
-        const introStart = performance.now();
-        const introDur = 2500;
-        const startPhi = introPhase.phi;
-        const startR = introPhase.radius;
+        const introStart = performance.now(),
+          introDur = 2600,
+          startPhi = introPhase.phi,
+          startR = introPhase.radius;
         function introStep(now) {
-          const p = Math.min((now - introStart) / introDur, 1);
-          // Cubic ease out
-          const e = 1 - Math.pow(1 - p, 3);
+          const p = Math.min((now - introStart) / introDur, 1),
+            e = 1 - Math.pow(1 - p, 3);
           sph.phi = startPhi + (0.85 - startPhi) * e;
           sph.radius = startR + (34 - startR) * e;
           updateCam();
@@ -2419,78 +3796,189 @@
         requestAnimationFrame(introStep);
       }, 2000);
 
-      // ── ANIMATION LOOP ────────────────────────────────────────────
+      // ═══════════════════════════════════════════════════════════════
+      //  ANIMATION LOOP
+      // ═══════════════════════════════════════════════════════════════
       const clock = new THREE.Clock();
 
       renderer.setAnimationLoop(() => {
+        const dt = Math.min(clock.getDelta(), 0.05); // cap at 50ms for safety
         const t = clock.getElapsedTime();
 
-        // Auth Tower gold glow pulse
+        // ── TIME + WEATHER SYSTEMS ──
+        timeSys.update(dt);
+        wxSys.update(dt);
+
+        // ── DYNAMIC SKY + FOG ──
+        const skyC = timeSys.getSkyColor();
+        scene.background = skyC;
+        scene.fog.color.copy(skyC);
+        scene.fog.density = wxSys.fogCurrent;
+        renderer.setClearColor(skyC);
+
+        // ── DYNAMIC LIGHTING ──
+        const nf = timeSys.nightFactor();
+        ambientLight.intensity = 1.6 - nf * 0.9;
+        ambientLight.color.setHSL(0.67, 0.3, 0.08 + nf * 0.04);
+        sun.intensity = 1.1 - nf * 0.95;
+        sun.color.setHex(nf > 0.5 ? 0x2030a0 : 0xfff0cc);
         authGlow.intensity = 2.5 + Math.sin(t * 1.2) * 0.8;
 
-        // Rotate Auth Tower rings + blink windows
+        // ── SOUND UPDATE ──
+        if (audioCtx && rainGainNode) {
+          rainGainNode.gain.setTargetAtTime(
+            wxSys.rainIntensity * 0.04,
+            audioCtx.currentTime,
+            0.3,
+          );
+        }
+
+        // ── WINDOW STATE MACHINE ──
+        updateWindows(dt, t);
+
+        // ── AUTH TOWER RINGS ──
         scene.traverse((obj) => {
-          if (obj.userData.ring) {
+          if (obj.userData.ring)
             obj.rotation.z = obj.userData.phase + t * obj.userData.speed;
-          }
-          if (obj.userData.blink) {
-            obj.material.emissiveIntensity =
-              1 + Math.sin(t * 3 + obj.userData.phase) * 0.8;
-          }
         });
 
-        // Gentle building float
+        // ── BUILDING GENTLE FLOAT ──
         scene.children.forEach((obj) => {
           if (obj.userData.districtIdx !== undefined && obj.isGroup) {
             const i = obj.userData.districtIdx;
-            if (i !== undefined) {
+            if (i !== undefined)
               obj.position.y = Math.sin(t * 0.4 + i * 0.8) * 0.04;
-            }
           }
         });
 
-        // ── DATA FLOW PARTICLES ─────────────────────────────────────
-        const flowSpeed = 0.18;
-        flowConnections.forEach((fc, ci) => {
-          fc.offsets = fc.offsets.map((o) => (o + flowSpeed * 0.016) % 1.0);
-          const pos = fc.geo.attributes.position.array;
-          fc.offsets.forEach((o, pi) => {
-            const pt = fc.curve.getPoint(o);
-            pos[pi * 3] = pt.x;
-            pos[pi * 3 + 1] = pt.y;
-            pos[pi * 3 + 2] = pt.z;
-          });
-          fc.geo.attributes.position.needsUpdate = true;
-          // Pulse opacity slightly
-          fc.pts.material.opacity = 0.6 + Math.sin(t * 2 + ci) * 0.25;
+        // ── TREE SWAY (wind-responsive) ──
+        swayMeshes.forEach((sw) => {
+          const wind = wxSys.windStrength;
+          sw.mesh.rotation.x = Math.sin(t * 0.75 + sw.phase) * sw.amp * wind;
+          sw.mesh.rotation.z =
+            Math.cos(t * 0.55 + sw.axis) * sw.amp * wind * 0.65;
         });
 
-        // ── AMBIENT PARTICLES ───────────────────────────────────────
+        // ── HANGING WIRE SWAY ──
+        allWireMeshes.forEach((wr) => {
+          const swing =
+            Math.sin(t * 0.4 + wr.phase) * 0.04 * wxSys.windStrength;
+          const midY = wr.sy - wr.sag + (wr.ey - wr.sy) * 0.5 + swing;
+          const midX = (wr.sx + wr.ex) / 2;
+          const midZ = (wr.sz + wr.ez) / 2 + swing * 0.3;
+          const mid2 = new THREE.Vector3(midX, midY, midZ);
+          const c2 = new THREE.QuadraticBezierCurve3(
+            new THREE.Vector3(wr.sx, wr.sy, wr.sz),
+            mid2,
+            new THREE.Vector3(wr.ex, wr.ey, wr.ez),
+          );
+          const newPts = c2.getPoints(24);
+          const posArr = wr.geo.attributes.position.array;
+          newPts.forEach((p, idx3) => {
+            posArr[idx3 * 3] = p.x;
+            posArr[idx3 * 3 + 1] = p.y;
+            posArr[idx3 * 3 + 2] = p.z;
+          });
+          wr.geo.attributes.position.needsUpdate = true;
+        });
+
+        // ── ELEVATOR LIGHTS ──
+        elevatorMeshes.forEach((el) => {
+          el.mesh.position.y += el.speed * dt * el.dir;
+          if (el.mesh.position.y > el.max) {
+            el.dir = -1;
+            el.mesh.position.y = el.max;
+          } else if (el.mesh.position.y < el.min) {
+            el.dir = 1;
+            el.mesh.position.y = el.min;
+          }
+        });
+
+        // ── CARS (with occasional stops) ──
+        const rainSlowdown = wxSys.rainIntensity * 0.45;
+        cars.forEach((car) => {
+          car.stopTimer -= dt;
+          if (car.stopTimer <= 0) {
+            if (car.stopped) {
+              car.stopped = false;
+              car.stopTimer = 6 + Math.random() * 12;
+            } else if (Math.random() < 0.004) {
+              car.stopped = true;
+              car.stopTimer = 1 + Math.random() * 2.5;
+            } else {
+              car.stopTimer = 0.5;
+            }
+          }
+          if (car.stopped) return;
+          const spd = car.route.spd * (1 - rainSlowdown);
+          car.t = (car.t + spd) % 1;
+          const { route } = car;
+          if (route.ax === "x")
+            car.mesh.position.x = route.x1 + (route.x2 - route.x1) * car.t;
+          else car.mesh.position.z = route.z1 + (route.z2 - route.z1) * car.t;
+        });
+
+        // ── DATA FLOW PARTICLES ──
+        const flowSpd = 0.18 * (1 + wxSys.rainIntensity * 0.5);
+        flowConnections.forEach((fc, ci) => {
+          fc.offsets = fc.offsets.map((o) => (o + flowSpd * dt) % 1.0);
+          const pos3 = fc.geo.attributes.position.array;
+          fc.offsets.forEach((o, pi) => {
+            const pt = fc.curve.getPoint(o);
+            pos3[pi * 3] = pt.x;
+            pos3[pi * 3 + 1] = pt.y;
+            pos3[pi * 3 + 2] = pt.z;
+          });
+          fc.geo.attributes.position.needsUpdate = true;
+          fc.pts.material.opacity = 0.55 + Math.sin(t * 2 + ci) * 0.28;
+        });
+
+        // ── AMBIENT PARTICLES ──
         const ap = ambGeo.attributes.position.array;
         for (let i = 0; i < ambientCount; i++) {
           ap[i * 3] += ambVel[i * 3];
           ap[i * 3 + 1] += ambVel[i * 3 + 1];
           ap[i * 3 + 2] += ambVel[i * 3 + 2];
-          // Reset if too high or drifted too far
           if (
             ap[i * 3 + 1] > 12 ||
             Math.abs(ap[i * 3]) > 22 ||
             Math.abs(ap[i * 3 + 2]) > 22
           ) {
-            const angle = Math.random() * Math.PI * 2;
-            const r = 3 + Math.random() * 14;
-            ap[i * 3] = Math.cos(angle) * r;
+            const ang3 = Math.random() * Math.PI * 2,
+              r3 = 3 + Math.random() * 14;
+            ap[i * 3] = Math.cos(ang3) * r3;
             ap[i * 3 + 1] = 0.3;
-            ap[i * 3 + 2] = Math.sin(angle) * r;
+            ap[i * 3 + 2] = Math.sin(ang3) * r3;
           }
         }
         ambGeo.attributes.position.needsUpdate = true;
-        // Pulse ambient opacity
-        ambMat.opacity = 0.22 + Math.sin(t * 0.7) * 0.1;
+        ambMat.opacity = (0.18 + Math.sin(t * 0.7) * 0.08) * nf;
 
-        // Subtle camera auto-rotate when not interacting & not in intro
+        // ── RAIN PARTICLES ──
+        if (wxSys.rainIntensity > 0.01) {
+          const rp = rainGeo.attributes.position.array;
+          const windDrift = wxSys.windStrength * 0.012;
+          for (let i = 0; i < RAIN_N; i++) {
+            rp[i * 3] += rainVelArr[i * 3] * dt * 60 + windDrift;
+            rp[i * 3 + 1] += rainVelArr[i * 3 + 1] * dt * 60;
+            rp[i * 3 + 2] += rainVelArr[i * 3 + 2] * dt * 60;
+            if (rp[i * 3 + 1] < 0) {
+              rp[i * 3] = (Math.random() - 0.5) * 60;
+              rp[i * 3 + 1] = 25 + Math.random() * 4;
+              rp[i * 3 + 2] = (Math.random() - 0.5) * 60;
+            }
+          }
+          rainGeo.attributes.position.needsUpdate = true;
+        }
+        rainMat.opacity = wxSys.rainIntensity * 0.62;
+
+        // ── CAMERA INERTIA ──
         if (!isDrag && !panelOpen && !introActive) {
-          sph.theta += 0.0008;
+          sph.theta += 0.0008 + camVel.theta * 0.3;
+          camVel.theta *= CAM_DRAG;
+          camVel.phi *= CAM_DRAG;
+          if (Math.abs(camVel.theta) < 0.0001) camVel.theta = 0;
+          if (Math.abs(camVel.phi) < 0.0001) camVel.phi = 0;
           updateCam();
         }
 
