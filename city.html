@@ -3,8 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Aditya's World — Backend Architecture</title>
+    <title>Aditya's World</title>
     <script src="config.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
       *,
       *::before,
@@ -13,7 +14,6 @@
         padding: 0;
         box-sizing: border-box;
       }
-
       :root {
         --gold: #c8a84b;
         --gold-dim: #6a5520;
@@ -21,589 +21,337 @@
         --bg: #06080f;
         --bg2: #0a0e18;
         --card: #0d1120;
-        --card-hover: #111828;
         --text: #e8dcc8;
         --text-dim: #6a7a9a;
         --text-mid: #9aabcc;
         --border: #1a2540;
-        --border-gold: #3a2e10;
-        --green: #2a6a3a;
         --green-text: #5aaa7a;
-        --red: #6a2a2a;
         --red-text: #cc6a6a;
-        --blue: #1a3a6a;
         --blue-text: #6aaacc;
       }
-
+      html,
       body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
         background: var(--bg);
+      }
+      body {
+        font-family: "Courier New", monospace;
         color: var(--text);
-        font-family: "Courier New", Courier, monospace;
-        min-height: 100vh;
       }
 
-      /* Background grid */
-      body::before {
-        content: "";
+      /* CANVAS */
+      #canvas {
         position: fixed;
         inset: 0;
-        background-image:
-          linear-gradient(rgba(200, 168, 75, 0.02) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(200, 168, 75, 0.02) 1px, transparent 1px);
-        background-size: 60px 60px;
-        pointer-events: none;
-        z-index: 0;
+        cursor: grab;
+      }
+      #canvas:active {
+        cursor: grabbing;
       }
 
-      /* ── HEADER ── */
+      /* HEADER */
       header {
-        position: sticky;
+        position: fixed;
         top: 0;
+        left: 0;
+        right: 0;
         z-index: 100;
-        background: rgba(6, 8, 15, 0.95);
-        backdrop-filter: blur(10px);
+        background: rgba(6, 8, 15, 0.9);
+        backdrop-filter: blur(12px);
         border-bottom: 1px solid var(--border);
-        padding: 0 32px;
-        height: 56px;
+        height: 52px;
+        padding: 0 24px;
         display: flex;
         align-items: center;
         justify-content: space-between;
       }
-
-      .header-name {
-        font-size: 12px;
+      .h-name {
+        font-size: 11px;
         letter-spacing: 3px;
         color: var(--gold);
         font-weight: 700;
       }
-
-      .header-right {
+      .h-right {
         display: flex;
         align-items: center;
-        gap: 24px;
+        gap: 20px;
       }
-
       .path-badge {
         font-size: 9px;
         letter-spacing: 3px;
-        color: var(--text-dim);
-        padding: 4px 12px;
-        border: 1px solid var(--border);
+        padding: 3px 10px;
+        border: 1px solid;
       }
-
       .path-badge.recruiter {
-        border-color: var(--gold-dim);
         color: var(--gold);
+        border-color: var(--gold-dim);
       }
       .path-badge.engineer {
-        border-color: #1a4a6a;
         color: var(--blue-text);
+        border-color: #1a4a6a;
       }
-
-      .back-btn {
+      .h-btn {
         font-size: 9px;
         letter-spacing: 2px;
         color: var(--text-dim);
         cursor: pointer;
         text-decoration: none;
         transition: color 0.2s;
+        background: none;
+        border: none;
+        font-family: inherit;
       }
-      .back-btn:hover {
+      .h-btn:hover {
         color: var(--gold);
       }
 
-      /* ── BRAHMASTRA PROGRESS ── */
-      #brahmastra-bar {
+      /* BRAHMASTRA */
+      #brahmastra {
         position: fixed;
-        top: 56px;
+        top: 52px;
         left: 0;
         right: 0;
         z-index: 90;
-        background: rgba(6, 8, 15, 0.9);
+        background: rgba(6, 8, 15, 0.85);
         border-bottom: 1px solid var(--border);
-        padding: 8px 32px;
+        padding: 7px 24px;
         display: flex;
         align-items: center;
-        gap: 16px;
+        gap: 14px;
         font-size: 9px;
         letter-spacing: 3px;
         color: var(--text-dim);
       }
-
-      .fragments {
+      .frags {
         display: flex;
-        gap: 8px;
+        gap: 7px;
       }
-
-      .fragment {
-        width: 20px;
-        height: 4px;
+      .frag {
+        width: 22px;
+        height: 3px;
         background: var(--border);
         transition:
           background 0.5s,
           box-shadow 0.5s;
       }
-
-      .fragment.collected {
+      .frag.on {
         background: var(--gold);
         box-shadow: 0 0 8px var(--gold);
       }
 
-      /* ── MAIN LAYOUT ── */
-      main {
-        position: relative;
-        z-index: 1;
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 40px 24px 80px;
-        padding-top: 100px;
-      }
-
-      /* ── INTRO ── */
-      .intro {
-        text-align: center;
-        margin-bottom: 64px;
-      }
-
-      .intro-tag {
+      /* CONTROLS HINT */
+      #controls-hint {
+        position: fixed;
+        bottom: 24px;
+        left: 24px;
+        z-index: 90;
         font-size: 9px;
-        letter-spacing: 5px;
-        color: var(--text-dim);
-        margin-bottom: 16px;
-      }
-
-      .intro-title {
-        font-size: clamp(20px, 4vw, 32px);
-        color: var(--gold);
         letter-spacing: 2px;
-        margin-bottom: 16px;
+        color: var(--text-dim);
+        line-height: 2;
+        pointer-events: none;
       }
 
-      .intro-subtitle {
-        font-size: 13px;
-        color: var(--text-mid);
-        line-height: 1.8;
-      }
-
-      /* ── DISTRICT GRID ── */
-      .districts {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
-        gap: 2px;
-      }
-
-      @media (max-width: 560px) {
-        .districts {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      /* ── DISTRICT CARD ── */
-      .district {
-        background: var(--card);
-        border: 1px solid var(--border);
-        cursor: pointer;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-      }
-
-      .district::before {
-        content: "";
-        position: absolute;
+      /* DISTRICT PANEL */
+      #panel {
+        position: fixed;
         top: 0;
-        left: 0;
-        width: 3px;
-        height: 100%;
-        background: var(--gold);
-        opacity: 0;
-        transition: opacity 0.3s;
-      }
-
-      .district:hover {
-        background: var(--card-hover);
-        border-color: var(--gold-dim);
-      }
-
-      .district:hover::before {
-        opacity: 1;
-      }
-
-      .district.visited {
-        border-color: var(--gold-dim);
-      }
-
-      .district.visited::before {
-        opacity: 0.5;
-      }
-
-      /* Card header */
-      .district-header {
-        padding: 20px 24px 16px;
+        right: -520px;
+        bottom: 0;
+        z-index: 150;
+        width: 500px;
+        max-width: 100vw;
+        background: rgba(6, 8, 15, 0.97);
+        border-left: 1px solid var(--border);
+        overflow-y: auto;
+        transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16px;
+        flex-direction: column;
       }
-
-      .district-num {
+      #panel.open {
+        right: 0;
+      }
+      #panel-close {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: rgba(6, 8, 15, 0.95);
+        border-bottom: 1px solid var(--border);
+        padding: 14px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+      }
+      #panel-close-label {
         font-size: 9px;
         letter-spacing: 3px;
-        color: var(--gold);
-        opacity: 0.6;
-        flex-shrink: 0;
+        color: var(--text-dim);
       }
-
-      .district-title-block {
+      #panel-close-x {
+        font-size: 16px;
+        color: var(--text-dim);
+        transition: color 0.2s;
+      }
+      #panel-close:hover #panel-close-x {
+        color: var(--gold);
+      }
+      #panel-content {
+        padding: 24px;
         flex: 1;
       }
 
-      .district-name {
-        font-size: 14px;
-        font-weight: 700;
+      /* Panel internals */
+      .p-num {
+        font-size: 9px;
+        letter-spacing: 4px;
+        color: var(--gold);
+        opacity: 0.6;
+        margin-bottom: 6px;
+      }
+      .p-name {
+        font-size: 20px;
         color: var(--text);
         letter-spacing: 1px;
         margin-bottom: 4px;
+        font-weight: 700;
       }
-
-      .district-tag {
+      .p-tag {
         font-size: 9px;
         letter-spacing: 3px;
         color: var(--text-dim);
+        margin-bottom: 20px;
       }
-
-      .district-status {
+      .p-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
         font-size: 8px;
-        letter-spacing: 2px;
-        padding: 3px 8px;
+        letter-spacing: 3px;
+        padding: 4px 12px;
         border: 1px solid;
-        flex-shrink: 0;
+        margin-bottom: 24px;
       }
-
-      .status-operational {
+      .p-status.op {
         color: var(--green-text);
-        border-color: var(--green);
+        border-color: #2a6a3a;
       }
-
-      .status-active {
+      .p-status.ac {
         color: var(--blue-text);
-        border-color: var(--blue);
+        border-color: #1a3a6a;
       }
-
-      /* Card body — collapsed by default */
-      .district-body {
-        display: none;
-        padding: 0 24px 24px;
+      .status-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: currentColor;
+        animation: pulse 2s infinite;
       }
-
-      .district.expanded .district-body {
+      .metrics {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        padding: 16px;
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        margin-bottom: 24px;
+      }
+      .metric-v {
+        font-size: 22px;
+        color: var(--gold);
+        font-weight: 700;
         display: block;
       }
-
-      .district-divider {
-        height: 1px;
-        background: var(--border);
-        margin-bottom: 20px;
+      .metric-l {
+        font-size: 8px;
+        letter-spacing: 3px;
+        color: var(--text-dim);
       }
-
-      /* Story sections */
-      .story-section {
-        margin-bottom: 20px;
-      }
-
-      .story-label {
+      .section-label {
         font-size: 8px;
         letter-spacing: 4px;
         color: var(--gold);
         margin-bottom: 8px;
       }
-
-      .story-text {
+      .story {
         font-size: 13px;
         line-height: 1.9;
         color: var(--text-mid);
+        margin-bottom: 20px;
       }
-
-      .story-text .em {
+      .story .em {
         color: var(--gold);
       }
-      .story-text .bold {
-        color: var(--text);
-        font-weight: 700;
-      }
-
-      /* Metrics row */
-      .metrics {
-        display: flex;
-        gap: 24px;
-        flex-wrap: wrap;
-        margin: 20px 0;
-        padding: 16px;
-        background: var(--bg2);
-        border: 1px solid var(--border);
-      }
-
-      .metric {
-        text-align: center;
-      }
-
-      .metric-value {
-        font-size: 18px;
-        color: var(--gold);
-        font-weight: 700;
-        display: block;
-      }
-
-      .metric-label {
-        font-size: 8px;
-        letter-spacing: 3px;
-        color: var(--text-dim);
-      }
-
-      /* Tech tags */
-      .tech-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 16px;
-      }
-
-      .tech-tag {
-        font-size: 9px;
-        letter-spacing: 2px;
-        color: var(--text-dim);
-        border: 1px solid var(--border);
-        padding: 3px 10px;
-      }
-
-      /* Engineer deep-dive toggle */
-      .engineer-toggle {
+      .eng-toggle {
         font-size: 9px;
         letter-spacing: 3px;
         color: var(--text-dim);
         cursor: pointer;
         padding: 10px 0;
         border-top: 1px solid var(--border);
-        margin-top: 16px;
         display: flex;
         align-items: center;
         gap: 8px;
         transition: color 0.2s;
         user-select: none;
+        margin-bottom: 0;
       }
-
-      .engineer-toggle:hover {
+      .eng-toggle:hover {
         color: var(--blue-text);
       }
-
-      .engineer-deep {
+      .eng-deep {
         display: none;
-        margin-top: 16px;
-        padding: 16px;
+        margin-top: 12px;
+        padding: 14px;
         background: rgba(26, 58, 106, 0.1);
-        border: 1px solid var(--blue);
+        border: 1px solid #1a3a6a;
         font-size: 12px;
         line-height: 1.9;
         color: var(--text-mid);
       }
-
-      .engineer-deep.visible {
+      .eng-deep.vis {
         display: block;
       }
-      .engineer-deep code {
+      .eng-deep code {
         color: var(--blue-text);
         font-size: 11px;
       }
-
-      /* Record status */
+      .tech-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        margin-top: 16px;
+      }
+      .tech-tag {
+        font-size: 8px;
+        letter-spacing: 2px;
+        color: var(--text-dim);
+        border: 1px solid var(--border);
+        padding: 3px 9px;
+      }
       .record-status {
         margin-top: 20px;
-        padding: 10px 16px;
+        padding: 10px 14px;
         background: rgba(42, 106, 58, 0.08);
-        border: 1px solid var(--green);
+        border: 1px solid #2a6a3a;
         display: flex;
         align-items: center;
-        gap: 12px;
-        font-size: 9px;
-        letter-spacing: 3px;
-      }
-
-      .status-dot {
-        width: 6px;
-        height: 6px;
-        background: var(--green-text);
-        border-radius: 50%;
-        box-shadow: 0 0 8px var(--green-text);
-        animation: pulse 2s infinite;
-      }
-
-      .status-text {
-        color: var(--green-text);
-      }
-
-      @keyframes pulse {
-        0%,
-        100% {
-          opacity: 1;
-        }
-        50% {
-          opacity: 0.4;
-        }
-      }
-
-      /* ── CHAOS SECTION ── */
-      #chaos-section {
-        margin: 64px 0;
-        border: 1px solid var(--border);
-        background: var(--card);
-        overflow: hidden;
-      }
-
-      .chaos-header {
-        padding: 20px 24px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-
-      .chaos-title {
-        font-size: 11px;
-        letter-spacing: 3px;
-        color: var(--text-dim);
-      }
-
-      #chaos-btn {
-        font-size: 9px;
-        letter-spacing: 3px;
-        color: var(--red-text);
-        border: 1px solid var(--red);
-        background: transparent;
-        padding: 8px 20px;
-        cursor: pointer;
-        font-family: "Courier New", monospace;
-        transition: all 0.3s;
-      }
-
-      #chaos-btn:hover {
-        background: rgba(106, 42, 42, 0.2);
-      }
-
-      #chaos-output {
-        display: none;
-        padding: 0 24px 24px;
-        font-size: 12px;
-        line-height: 2;
-      }
-
-      .chaos-line {
-        color: var(--red-text);
-      }
-      .chaos-line.ok {
-        color: var(--green-text);
-      }
-      .chaos-line.dim {
-        color: var(--text-dim);
-      }
-      .chaos-result {
-        margin-top: 20px;
-        padding: 16px;
-        border: 1px solid var(--border);
-        font-size: 11px;
-        letter-spacing: 2px;
-      }
-
-      /* ── CONTACT SECTION ── */
-      #contact-section {
-        margin-top: 64px;
-        text-align: center;
-        display: none;
-      }
-
-      #contact-section.visible {
-        display: block;
-      }
-
-      .contact-unlock-msg {
-        font-size: 9px;
-        letter-spacing: 4px;
-        color: var(--gold);
-        margin-bottom: 24px;
-      }
-
-      .contact-card {
-        display: inline-block;
-        border: 1px solid var(--gold-dim);
-        padding: 40px 56px;
-        background: var(--card);
-        position: relative;
-      }
-
-      .contact-card::before {
-        content: "";
-        position: absolute;
-        inset: -1px;
-        background: linear-gradient(
-          135deg,
-          var(--gold-dim),
-          transparent,
-          var(--gold-dim)
-        );
-        z-index: -1;
-        opacity: 0.3;
-      }
-
-      .contact-name {
-        font-size: 18px;
-        color: var(--gold);
-        letter-spacing: 3px;
-        margin-bottom: 8px;
-      }
-
-      .contact-role {
-        font-size: 9px;
-        letter-spacing: 4px;
-        color: var(--text-dim);
-        margin-bottom: 32px;
-      }
-
-      .contact-links {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        align-items: center;
-      }
-
-      .contact-link {
-        font-size: 11px;
-        letter-spacing: 2px;
-        color: var(--text-mid);
-        text-decoration: none;
-        transition: color 0.2s;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .contact-link:hover {
-        color: var(--gold);
-      }
-
-      .contact-link-label {
+        gap: 10px;
         font-size: 8px;
         letter-spacing: 3px;
-        color: var(--text-dim);
-        width: 60px;
-        text-align: right;
+        color: var(--green-text);
       }
 
-      /* ── ORACLE BUTTON ── */
+      /* ORACLE */
       #oracle-btn {
         position: fixed;
-        bottom: 32px;
-        right: 32px;
+        bottom: 24px;
+        right: 24px;
         z-index: 200;
-        width: 48px;
-        height: 48px;
+        width: 46px;
+        height: 46px;
         border: 1px solid var(--gold-dim);
         background: var(--bg);
         color: var(--gold);
@@ -615,33 +363,28 @@
         transition: all 0.3s;
         font-family: serif;
       }
-
       #oracle-btn:hover {
         background: var(--gold-glow);
         border-color: var(--gold);
         box-shadow: 0 0 20px rgba(200, 168, 75, 0.2);
       }
-
-      /* ── ORACLE PANEL ── */
       #oracle-panel {
         position: fixed;
-        bottom: 96px;
-        right: 32px;
+        bottom: 82px;
+        right: 24px;
         z-index: 200;
-        width: 340px;
+        width: 320px;
         background: var(--bg2);
         border: 1px solid var(--gold-dim);
         display: none;
         flex-direction: column;
-        max-height: 440px;
+        max-height: 420px;
       }
-
-      #oracle-panel.visible {
+      #oracle-panel.vis {
         display: flex;
       }
-
-      .oracle-header {
-        padding: 12px 16px;
+      .o-header {
+        padding: 11px 14px;
         border-bottom: 1px solid var(--border);
         font-size: 9px;
         letter-spacing: 3px;
@@ -650,50 +393,43 @@
         justify-content: space-between;
         align-items: center;
       }
-
-      .oracle-close {
+      .o-close {
         cursor: pointer;
         color: var(--text-dim);
         font-size: 14px;
         transition: color 0.2s;
       }
-      .oracle-close:hover {
+      .o-close:hover {
         color: var(--gold);
       }
-
-      #oracle-messages {
+      #oracle-msgs {
         flex: 1;
         overflow-y: auto;
-        padding: 16px;
+        padding: 14px;
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 10px;
         font-size: 12px;
         line-height: 1.7;
       }
-
-      .oracle-msg {
-        padding: 10px 14px;
+      .o-msg {
+        padding: 9px 13px;
         border: 1px solid var(--border);
       }
-
-      .oracle-msg.user {
+      .o-msg.user {
         align-self: flex-end;
         color: var(--text-dim);
         font-size: 11px;
         max-width: 80%;
       }
-
-      .oracle-msg.assistant {
+      .o-msg.bot {
         color: var(--text-mid);
         border-color: var(--gold-dim);
       }
-
-      .oracle-input-row {
+      .o-row {
         display: flex;
         border-top: 1px solid var(--border);
       }
-
       #oracle-input {
         flex: 1;
         background: transparent;
@@ -701,14 +437,12 @@
         color: var(--text);
         font-family: "Courier New", monospace;
         font-size: 11px;
-        padding: 12px 16px;
+        padding: 11px 14px;
         outline: none;
       }
-
       #oracle-input::placeholder {
         color: var(--text-dim);
       }
-
       #oracle-send {
         background: transparent;
         border: none;
@@ -717,18 +451,157 @@
         font-family: "Courier New", monospace;
         font-size: 9px;
         letter-spacing: 2px;
-        padding: 0 16px;
+        padding: 0 14px;
         cursor: pointer;
         transition: background 0.2s;
       }
-
       #oracle-send:hover {
         background: var(--gold-glow);
       }
 
-      /* Scrollbar */
+      /* CHAOS */
+      #chaos-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 300;
+        background: rgba(6, 8, 15, 0.96);
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+      #chaos-overlay.vis {
+        display: flex;
+      }
+      #chaos-box {
+        width: 100%;
+        max-width: 640px;
+        border: 1px solid #6a2a2a;
+        background: var(--bg2);
+        padding: 24px;
+        font-size: 12px;
+        line-height: 2;
+        max-height: 70vh;
+        overflow-y: auto;
+      }
+      .c-line {
+        color: #cc6a6a;
+      }
+      .c-ok {
+        color: var(--green-text);
+      }
+      .c-dim {
+        color: var(--text-dim);
+      }
+      #chaos-close {
+        margin-top: 20px;
+        font-size: 9px;
+        letter-spacing: 3px;
+        color: var(--text-dim);
+        cursor: pointer;
+        padding: 10px 24px;
+        border: 1px solid var(--border);
+        background: none;
+        font-family: "Courier New", monospace;
+        transition: all 0.2s;
+      }
+      #chaos-close:hover {
+        color: var(--gold);
+        border-color: var(--gold-dim);
+      }
+
+      /* CONTACT */
+      #contact-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 300;
+        background: rgba(6, 8, 15, 0.96);
+        display: none;
+        align-items: center;
+        justify-content: center;
+      }
+      #contact-overlay.vis {
+        display: flex;
+      }
+      .contact-card {
+        text-align: center;
+        border: 1px solid var(--gold-dim);
+        padding: 48px 64px;
+        background: var(--card);
+        position: relative;
+      }
+      .c-unlock {
+        font-size: 9px;
+        letter-spacing: 4px;
+        color: var(--gold);
+        margin-bottom: 28px;
+      }
+      .c-name {
+        font-size: 22px;
+        color: var(--gold);
+        letter-spacing: 3px;
+        margin-bottom: 6px;
+      }
+      .c-role {
+        font-size: 9px;
+        letter-spacing: 4px;
+        color: var(--text-dim);
+        margin-bottom: 32px;
+      }
+      .c-links {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        align-items: center;
+      }
+      .c-link {
+        font-size: 11px;
+        letter-spacing: 2px;
+        color: var(--text-mid);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        transition: color 0.2s;
+      }
+      .c-link:hover {
+        color: var(--gold);
+      }
+      .c-ll {
+        font-size: 8px;
+        letter-spacing: 3px;
+        color: var(--text-dim);
+        width: 60px;
+        text-align: right;
+      }
+      .contact-close {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        cursor: pointer;
+        color: var(--text-dim);
+        font-size: 18px;
+        transition: color 0.2s;
+        background: none;
+        border: none;
+        font-family: inherit;
+      }
+      .contact-close:hover {
+        color: var(--gold);
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
       ::-webkit-scrollbar {
-        width: 4px;
+        width: 3px;
       }
       ::-webkit-scrollbar-track {
         background: var(--bg);
@@ -737,39 +610,19 @@
         background: var(--border);
       }
 
-      /* Expand indicator */
-      .expand-indicator {
-        padding: 10px 24px;
-        font-size: 9px;
-        letter-spacing: 3px;
-        color: var(--text-dim);
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        border-top: 1px solid var(--border);
-        transition: color 0.2s;
-      }
-
-      .district:hover .expand-indicator {
-        color: var(--gold);
-      }
-      .district.expanded .expand-indicator {
-        display: none;
-      }
-
       @media (max-width: 600px) {
-        header {
-          padding: 0 16px;
+        #panel {
+          width: 100vw;
         }
-        main {
-          padding: 90px 16px 80px;
-        }
-        .districts {
-          grid-template-columns: 1fr;
+        .contact-card {
+          padding: 32px 24px;
         }
         #oracle-panel {
           width: calc(100vw - 32px);
           right: 16px;
+        }
+        #controls-hint {
+          display: none;
         }
       }
     </style>
@@ -777,137 +630,62 @@
   <body>
     <!-- HEADER -->
     <header>
-      <div class="header-name">ADITYA SRIVASTAVA</div>
-      <div class="header-right">
+      <div class="h-name">ADITYA SRIVASTAVA</div>
+      <div class="h-right">
         <div class="path-badge" id="pathBadge">LOADING</div>
-        <a class="back-btn" href="index.html">← GATE</a>
+        <button class="h-btn" onclick="showChaos()">CHAOS</button>
+        <a class="h-btn" href="index.html">← GATE</a>
       </div>
     </header>
 
-    <!-- BRAHMASTRA PROGRESS -->
-    <div id="brahmastra-bar">
-      BRAHMASTRA ASSEMBLY
-      <div class="fragments" id="fragments">
-        <div class="fragment" data-index="0"></div>
-        <div class="fragment" data-index="1"></div>
-        <div class="fragment" data-index="2"></div>
-        <div class="fragment" data-index="3"></div>
-        <div class="fragment" data-index="4"></div>
+    <!-- BRAHMASTRA -->
+    <div id="brahmastra">
+      BRAHMASTRA
+      <div class="frags" id="frags">
+        <div class="frag" data-i="0"></div>
+        <div class="frag" data-i="1"></div>
+        <div class="frag" data-i="2"></div>
+        <div class="frag" data-i="3"></div>
+        <div class="frag" data-i="4"></div>
       </div>
-      <span id="brahmastra-label">0 / 5 DISTRICTS EXPLORED</span>
+      <span id="frag-label">0 / 5</span>
     </div>
 
-    <!-- MAIN -->
-    <main>
-      <!-- INTRO -->
-      <div class="intro">
-        <div class="intro-tag" id="intro-tag">SYSTEM LOG ARCHIVE · 2034</div>
-        <div class="intro-title" id="intro-title">THE ARCHITECT'S CITY</div>
-        <div class="intro-subtitle" id="intro-subtitle">
-          Eight systems. Four years. Every one still running.<br />
-          <span style="color: var(--text-dim)"
-            >Explore each district to assemble the complete picture.</span
-          >
-        </div>
-      </div>
+    <!-- 3D CANVAS -->
+    <canvas id="canvas"></canvas>
 
-      <!-- DISTRICTS -->
-      <div class="districts" id="districts-grid"></div>
+    <!-- CONTROLS HINT -->
+    <div id="controls-hint">
+      DRAG → ORBIT &nbsp; SCROLL → ZOOM<br />
+      CLICK BUILDING → EXPLORE
+    </div>
 
-      <!-- CHAOS SECTION -->
-      <div id="chaos-section">
-        <div class="chaos-header">
-          <div>
-            <div class="chaos-title">CHAOS SIMULATION</div>
-            <div
-              style="
-                font-size: 9px;
-                letter-spacing: 2px;
-                color: var(--text-dim);
-                margin-top: 4px;
-              "
-            >
-              What happens when the architect is not here?
-            </div>
-          </div>
-          <button id="chaos-btn" onclick="runChaos()">
-            INITIATE SIMULATION
-          </button>
-        </div>
-        <div id="chaos-output"></div>
+    <!-- DISTRICT PANEL -->
+    <div id="panel">
+      <div id="panel-close" onclick="closePanel()">
+        <span id="panel-close-label">CLOSE LOG</span>
+        <span id="panel-close-x">✕</span>
       </div>
-
-      <!-- CONTACT -->
-      <div id="contact-section">
-        <div class="contact-unlock-msg">
-          ⚔ BRAHMASTRA ASSEMBLED · CONTACT UNLOCKED
-        </div>
-        <div class="contact-card">
-          <div class="contact-name">ADITYA SRIVASTAVA</div>
-          <div class="contact-role">
-            BACKEND ARCHITECT · AVAILABLE FOR THE RIGHT PROBLEM
-          </div>
-          <div class="contact-links">
-            <a
-              class="contact-link"
-              href="mailto:asaditya1826@gmail.com"
-              onclick="logContact()"
-            >
-              <span class="contact-link-label">EMAIL</span>
-              asaditya1826@gmail.com
-            </a>
-            <a
-              class="contact-link"
-              href="https://github.com/adityasrivastava-dev"
-              target="_blank"
-            >
-              <span class="contact-link-label">GITHUB</span>
-              adityasrivastava-dev
-            </a>
-            <a
-              class="contact-link"
-              href="https://linkedin.com/in/aditya-srivastava"
-              target="_blank"
-            >
-              <span class="contact-link-label">LINKEDIN</span>
-              aditya-srivastava
-            </a>
-          </div>
-        </div>
-        <div
-          style="
-            margin-top: 24px;
-            font-size: 11px;
-            color: var(--text-dim);
-            line-height: 1.9;
-          "
-        >
-          Not just what I can do.<br />
-          <span style="color: var(--text-mid)">What we can build.</span>
-        </div>
-      </div>
-    </main>
+      <div id="panel-content"></div>
+    </div>
 
     <!-- ORACLE -->
     <button id="oracle-btn" onclick="toggleOracle()" title="Ask the Oracle">
       ॐ
     </button>
-
     <div id="oracle-panel">
-      <div class="oracle-header">
-        THE ORACLE
-        <span class="oracle-close" onclick="toggleOracle()">✕</span>
+      <div class="o-header">
+        THE ORACLE <span class="o-close" onclick="toggleOracle()">✕</span>
       </div>
-      <div id="oracle-messages">
-        <div class="oracle-msg assistant">
-          I know one person well. Ask me anything about Aditya — his work, his
-          systems, his approach to engineering.
+      <div id="oracle-msgs">
+        <div class="o-msg bot">
+          I know one person well. Ask me anything about Aditya — his systems,
+          his decisions, his approach.
         </div>
       </div>
-      <div class="oracle-input-row">
+      <div class="o-row">
         <input
           id="oracle-input"
-          type="text"
           placeholder="Ask about Aditya..."
           onkeydown="if (event.key === 'Enter') sendOracle();"
         />
@@ -915,8 +693,49 @@
       </div>
     </div>
 
+    <!-- CHAOS OVERLAY -->
+    <div id="chaos-overlay">
+      <div id="chaos-box"></div>
+      <button id="chaos-close" onclick="closeChaos()">CLOSE SIMULATION</button>
+    </div>
+
+    <!-- CONTACT OVERLAY -->
+    <div id="contact-overlay">
+      <div class="contact-card">
+        <button class="contact-close" onclick="closeContact()">✕</button>
+        <div class="c-unlock">⚔ BRAHMASTRA ASSEMBLED · CONTACT UNLOCKED</div>
+        <div class="c-name">ADITYA SRIVASTAVA</div>
+        <div class="c-role">
+          BACKEND ARCHITECT · AVAILABLE FOR THE RIGHT PROBLEM
+        </div>
+        <div class="c-links">
+          <a
+            class="c-link"
+            href="mailto:asaditya1826@gmail.com"
+            onclick="logEvent('contact_clicked', 'email')"
+          >
+            <span class="c-ll">EMAIL</span>asaditya1826@gmail.com
+          </a>
+          <a
+            class="c-link"
+            href="https://github.com/adityasrivastava-dev"
+            target="_blank"
+          >
+            <span class="c-ll">GITHUB</span>adityasrivastava-dev
+          </a>
+          <a
+            class="c-link"
+            href="https://www.linkedin.com/in/aditya-srivastava-43b686226"
+            target="_blank"
+          >
+            <span class="c-ll">LINKEDIN</span>aditya-srivastava
+          </a>
+        </div>
+      </div>
+    </div>
+
     <script>
-      // ── DISTRICT DATA ──────────────────────────────────────────────
+      // ── DATA ──────────────────────────────────────────────────────
       const DISTRICTS = [
         {
           id: "auth-tower",
@@ -924,34 +743,24 @@
           name: "The Auth Tower",
           tag: "SSO PLATFORM · JWT · SESSION MANAGEMENT",
           status: "OPERATIONAL",
-          statusType: "operational",
+          statusType: "op",
+          pos: [0, 0, 0],
+          size: [3, 9, 3],
+          color: 0xc8a84b,
+          emissive: 0x3a2a00,
           metrics: [
-            { value: "10+", label: "APPLICATIONS" },
-            { value: "10K+", label: "SESSIONS" },
-            { value: "0", label: "BREACHES" },
+            { v: "10+", l: "APPLICATIONS" },
+            { v: "10K+", l: "SESSIONS" },
+            { v: "0", l: "BREACHES" },
           ],
-          recruiterStory: `Every application in the company had its own login. Employees had separate passwords for each one. When someone left, someone had to manually disable their account in every system.
-
-<span class="em">Aditya built one central identity system for everything.</span>
-
-One login works across every application. One logout disconnects everywhere. When someone joins the company, one action gives them access to everything they need. When someone leaves, one action removes all their access instantly.
-
-The system tracks which device each person is logged in on. It handles tens of thousands of sessions. It has never been breached.`,
-          engineerStory: `Custom SSO platform — built without relying on Spring Security defaults, because multi-application trust boundary management required domain-level redirect validation that standard implementations don't handle.
-
-<code>Architecture:</code> JWT-based auth with custom claims. Refresh token rotation with secure cookie storage — SSO_SESSION for persistence, separate refresh with sliding expiry. Device fingerprinting in the session record.
-
-<code>Session management:</code> user_session table per user per device. SLO propagation via callback to all registered applications. Domain-mapped redirect validation prevents open redirects without manual URI whitelisting per app.
-
-<code>RBAC:</code> application-level roles evaluated per-app context — not globally. Prevents role explosion while maintaining fine-grained access control.
-
-<code>Key decision:</code> Custom auth layer instead of Spring Security defaults — because the cross-application cookie architecture conflicted with built-in CSRF and session management.`,
+          story: `Every application in the company had its own login. Employees had separate passwords for each one. When someone left, someone had to manually disable their account in every system.\n\n<span class="em">Aditya built one central identity system for everything.</span>\n\nOne login works across every application. One logout disconnects everywhere. When someone joins the company, one action gives them access to everything they need. When someone leaves, one action removes all their access instantly.\n\nThe system tracks which device each person is logged in on. It handles tens of thousands of sessions. It has never been breached.`,
+          eng: `Custom SSO — built without Spring Security defaults, because multi-application trust boundary management required domain-level redirect validation that standard implementations don't handle.\n\n<code>JWT</code> with custom claims. Refresh token rotation. <code>SSO_SESSION</code> cookie + separate refresh with sliding expiry. Device fingerprinting in session record.\n\n<code>SLO</code> propagation via callback to all registered applications. Domain-mapped redirect validation prevents open redirects.\n\n<code>RBAC</code>: application-level roles evaluated per-app context — not globally. Prevents role explosion.\n\n<code>Key decision:</code> Custom auth layer — Spring Security's built-in CSRF and session management conflicted with the cross-application cookie architecture.`,
           tech: [
             "Java 17",
             "Spring Boot",
             "Spring Security",
             "JWT",
-            "MySQL",
+            "MySQL 8",
             "Hibernate",
           ],
         },
@@ -959,33 +768,20 @@ The system tracks which device each person is logged in on. It handles tens of t
           id: "the-bridge",
           num: "05",
           name: "The Bridge",
-          tag: "JAVA 1.7 · IBM MQ · MYSQL 8 · HYBRID ARCHITECTURE",
+          tag: "JAVA 1.7 · IBM MQ · MYSQL 8 · HYBRID",
           status: "OPERATIONAL",
-          statusType: "operational",
+          statusType: "op",
+          pos: [-6, 0, -5],
+          size: [2.5, 5, 2.5],
+          color: 0x7a6aaa,
+          emissive: 0x1a1035,
           metrics: [
-            { value: "0", label: "REWRITES" },
-            { value: "3", label: "CONSTRAINTS SOLVED" },
-            { value: "SOLO", label: "DESIGN" },
+            { v: "0", l: "REWRITES" },
+            { v: "3", l: "CONSTRAINTS" },
+            { v: "SOLO", l: "DESIGN" },
           ],
-          recruiterStory: `Two systems that needed to work together but couldn't. One was old and expensive to change. The other was new and incompatible. Most engineers would have said the only solution was a full rewrite.
-
-<span class="em">Aditya designed a bridge.</span>
-
-A small new service that both systems could talk to, without either of them needing to change. The old system talks to the bridge the way it always has. The bridge talks to the new database using modern drivers. The old system never needed to know anything changed.
-
-A full rewrite would have cost months. The bridge cost a fraction of that and preserved everything that was working. <span class="em">It is still running.</span>`,
-          engineerStory: `Constraint: Java 1.7 IBM MQ client incompatible with MySQL 8 JDBC drivers. IBM MQ upgrade blocked by licensing cost. Full rewrite not feasible.
-
-<code>Solution — sole designer and implementer:</code>
-
-Java 1.8 bridge service handling all database operations requiring MySQL 8 driver compatibility. Legacy Java 1.7 MQ system invokes this service via shell script execution with argument passing for parameter exchange. MQ logic remains entirely intact — it delegates DB calls to the bridge rather than making them directly.
-
-<code>Key design decisions:</code>
-— Bridge is stateless → scalable and replaceable without touching MQ
-— Argument passing interface is explicit and typed, not generic strings → debuggable and auditable
-— Bridge deployed as standalone service → independently monitored and updated
-
-<code>The insight:</code> The constraint was driver compatibility. By isolating that concern in the bridge, the constraint was addressed without touching either side of it.`,
+          story: `Two systems that needed to work together but couldn't. One was old and expensive to change. The other was new and incompatible. Most engineers would have said the only solution was a full rewrite.\n\n<span class="em">Aditya designed a bridge.</span>\n\nA small new service that both systems could talk to, without either of them needing to change. The old system talks to the bridge the way it always has. The bridge talks to the new database using modern drivers. The old system never knew anything changed.\n\nA full rewrite would have cost months. The bridge cost a fraction of that. <span class="em">It is still running.</span>`,
+          eng: `Constraint: Java 1.7 IBM MQ client incompatible with MySQL 8 JDBC drivers. IBM MQ upgrade blocked by licensing cost.\n\n<code>Sole designer and implementer.</code>\n\nJava 1.8 bridge service handling all DB operations requiring MySQL 8 driver compatibility. Legacy Java 1.7 MQ system invokes via shell script with argument passing. MQ logic intact — it delegates DB calls to the bridge.\n\n<code>Key decisions:</code> Bridge is stateless → scalable without touching MQ. Argument passing is explicit and typed — not generic strings → debuggable and auditable.\n\n<code>The insight:</code> The constraint was driver compatibility. By isolating that concern in the bridge, the constraint was addressed without touching either side of it.`,
           tech: [
             "Java 1.7",
             "Java 1.8",
@@ -998,31 +794,21 @@ Java 1.8 bridge service handling all database operations requiring MySQL 8 drive
         {
           id: "cloud-district",
           num: "04",
-          name: "The Cloud District",
+          name: "Cloud District",
           tag: "MULE ESB → AWS LAMBDA · 80+ APPLICATIONS",
           status: "OPERATIONAL",
-          statusType: "operational",
+          statusType: "op",
+          pos: [6, 0, -5],
+          size: [2.5, 4, 2.5],
+          color: 0x4a9aaa,
+          emissive: 0x001a20,
           metrics: [
-            { value: "80+", label: "APPS MIGRATED" },
-            { value: "1", label: "SPOF ELIMINATED" },
-            { value: "LED", label: "ARCHITECTURE" },
+            { v: "80+", l: "APPS MIGRATED" },
+            { v: "1", l: "SPOF ELIMINATED" },
+            { v: "LED", l: "ARCHITECTURE" },
           ],
-          recruiterStory: `80 separate business processes were all running through one central system. When that system had problems, every one of those 80 processes had problems simultaneously. It was fragile, expensive, and impossible to change without risk.
-
-<span class="em">Aditya led the migration away from it.</span>
-
-Every process was moved to its own independent home. Now if one breaks, the other 79 keep running. He led this with one or two engineers assisting. The design decisions — which processes went where, how execution timing would be configured per client — were his.`,
-          engineerStory: `Mule ESB replacement across 80+ integrations. Single point of failure for the entire integration layer.
-
-<code>Migration strategy — led with 2 engineers:</code>
-
-AWS Lambda for event-triggered integrations where latency and scale matter. Standalone Java JARs with cron-based execution for batch processes where simplicity and predictability outweigh elasticity.
-
-<code>Not a blanket Lambda migration</code> — each service evaluated against execution pattern, latency requirements, and operational characteristics.
-
-<code>script.sh execution layer:</code> abstraction between scheduling infrastructure and Java execution units. Handles client-specific timing configuration, environment parameter injection, and execution orchestration — without each service implementing its own scheduling logic.
-
-<code>Architectural principle:</code> no integration service should be a single point of failure for other services. Result: 80 independent services, each deployable and debuggable without affecting any other.`,
+          story: `80 separate business processes were all running through one central system. When that system had problems, every one of those 80 processes had problems simultaneously.\n\n<span class="em">Aditya led the migration away from it.</span>\n\nEvery process was moved to its own independent home. Now if one breaks, the other 79 keep running. He led this with one or two engineers assisting. The design decisions — which processes went where, how execution timing would be configured per client — were his.`,
+          eng: `Mule ESB replacement across 80+ integrations. Single point of failure for entire integration layer.\n\n<code>Migration strategy — led with 2 engineers:</code>\n\nAWS Lambda for event-triggered integrations. Standalone Java JARs with cron-based execution for batch processes. Not a blanket Lambda migration — each service evaluated against its execution pattern.\n\n<code>script.sh execution layer:</code> abstraction between scheduling infrastructure and Java execution units. Handles client-specific timing configuration and environment parameter injection.\n\n<code>Architectural principle:</code> no integration service should be a single point of failure for other services.`,
           tech: [
             "AWS Lambda",
             "Java",
@@ -1038,30 +824,18 @@ AWS Lambda for event-triggered integrations where latency and scale matter. Stan
           name: "The Data Vaults",
           tag: "MYSQL 5.X → 8.X · THREE MIGRATIONS · ZERO DOWNTIME",
           status: "OPERATIONAL",
-          statusType: "operational",
+          statusType: "op",
+          pos: [-6, 0, 4],
+          size: [3, 3, 3],
+          color: 0xaa8a3a,
+          emissive: 0x201200,
           metrics: [
-            { value: "3", label: "MIGRATIONS" },
-            { value: "0", label: "DATA LOST" },
-            { value: "0", label: "CRITICAL DOWNTIME" },
+            { v: "3", l: "MIGRATIONS" },
+            { v: "0", l: "DATA LOST" },
+            { v: "0", l: "CRITICAL DOWNTIME" },
           ],
-          recruiterStory: `AWS announced it was shutting down support for the database version the entire platform ran on. The foundation under the building was being removed.
-
-<span class="em">Aditya led the migration — not once, but three times across two years.</span>
-
-Moving the database through successive versions while the platform continued serving live clients. Every migration planned before it started. Every rollback ready before the cutover began.
-
-Three migrations. Hundreds of dependent components. Zero data lost. The clients using the platform never knew it was happening.`,
-          engineerStory: `AWS deprecated MySQL 5.x. Migration path: 5.x → 8.0 → 8.4. Each step introduced breaking changes requiring systematic remediation.
-
-<code>MySQL 8 STRICT mode:</code> legacy queries using implicit type coercions and out-of-spec GROUP BY expressions failed. Identified and refactored every non-compliant query — required understanding business logic behind each query, not just syntax.
-
-<code>Driver compatibility:</code> MySQL 8 JDBC driver changes broke Hibernate configuration patterns. Upgraded connection pool config, adjusted driver class references, validated ORM behaviour across all persistence layers.
-
-<code>80+ dependent services</code> validated for compatibility before each cutover.
-
-<code>Migration execution:</code> shadow validation phase — new version running in parallel with read-only validation before write operations switched over. Rollback checkpoints at each stage. Production cutover windows under 10 minutes each.
-
-<code>Coordination challenge:</code> this migration ran in parallel with the Mule ESB migration. Changes to service configurations had to account for both simultaneously.`,
+          story: `AWS announced it was shutting down support for the database version the entire platform ran on. The foundation under the building was being removed.\n\n<span class="em">Aditya led the migration — not once, but three times across two years.</span>\n\nMoving the database through successive versions while the platform continued serving live clients. Every migration planned before it started. Every rollback ready before the cutover began.\n\nThree migrations. Hundreds of dependent components. Zero data lost. The clients never knew it was happening.`,
+          eng: `AWS deprecated MySQL 5.x. Migration path: 5.x → 8.0 → 8.4. Each step introduced breaking changes.\n\n<code>MySQL 8 STRICT mode:</code> legacy queries refactored — required understanding business logic, not just syntax.\n\n<code>Driver compatibility:</code> MySQL 8 JDBC driver changes broke Hibernate configuration patterns. Upgraded connection pool config across all persistence layers.\n\n<code>80+ dependent services</code> validated for compatibility before each cutover.\n\n<code>Execution:</code> shadow validation phase. Rollback checkpoints at each stage. Production cutover windows under 10 minutes each.\n\n<code>Coordination challenge:</code> this migration ran in parallel with the Mule ESB migration simultaneously.`,
           tech: [
             "MySQL 5.x",
             "MySQL 8.x",
@@ -1074,41 +848,21 @@ Three migrations. Hundreds of dependent components. Zero data lost. The clients 
         {
           id: "ledgerflow",
           num: "08",
-          name: "LedgerFlow — Financial District",
-          tag: "PO · INVOICING · DISTRIBUTED CONSISTENCY",
+          name: "LedgerFlow",
+          tag: "FINANCIAL DISTRICT · PO · INVOICING · DISTRIBUTED CONSISTENCY",
           status: "ACTIVE",
-          statusType: "active",
+          statusType: "ac",
+          pos: [6, 0, 4],
+          size: [2.5, 6, 2.5],
+          color: 0x4aaa7a,
+          emissive: 0x002015,
           metrics: [
-            { value: "IDEM", label: "POTENT APIS" },
-            { value: "0", label: "2PC USED" },
-            { value: "STATE", label: "MACHINES" },
+            { v: "IDEM", l: "POTENT APIS" },
+            { v: "0", l: "2PC USED" },
+            { v: "STATE", l: "MACHINES" },
           ],
-          recruiterStory: `Financial records cannot be wrong, cannot be duplicated, cannot be lost. LedgerFlow handles the complete lifecycle — purchase orders, approvals, invoicing, payment tracking.
-
-The hardest part was not the features. It was the architecture underneath.
-
-<span class="em">LedgerFlow connects to ATS, the logistics platform. When assets are delivered, financial records must reflect that.</span> But these are two separate systems, and networks are unreliable.
-
-What happens if the invoice message gets lost? What if it arrives twice?
-
-Aditya designed the connection so it does not matter. Messages can be safely resent. Duplicate arrivals produce no effect. The financial record is always correct regardless of what the network does.
-
-<span class="em">The difference between a system that works in a demo and one that works at 3am.</span>`,
-          engineerStory: `Core challenge: data consistency across loosely coupled systems without distributed transactions.
-
-<code>2-phase commit rejected</code> — introduces availability risk, locks resources across service boundaries, couples failure modes of independently deployable systems.
-
-<code>Three principles:</code>
-
-1. Clear data ownership — ATS owns shipment state. LedgerFlow owns financial document state. No cross-service writes. Integration through events and API calls only.
-
-2. Idempotent APIs — every state-changing operation accepts an idempotency key. Duplicate requests with same key return original response without re-executing. PO cannot be created twice. Invoice cannot be generated twice.
-
-3. State-based transitions — PO lifecycle: DRAFT → PENDING_APPROVAL → APPROVED → INVOICED → PAID. Transitions validated against current state. Invalid transitions return typed error with current state and valid next states. State machine defined as transition validity matrix.
-
-<code>Result:</code> LedgerFlow can fail mid-operation at any point, retry from last known good state, and always converge to consistent final state.
-
-Same pattern used by Stripe for payment idempotency.`,
+          story: `Financial records cannot be wrong, cannot be duplicated, cannot be lost. LedgerFlow handles the complete lifecycle — purchase orders, approvals, invoicing, payment tracking.\n\nThe hardest part was not the features. It was the architecture underneath.\n\n<span class="em">What happens if a message gets lost? What if it arrives twice?</span>\n\nAditya designed the connection so it does not matter. Messages can be safely resent. Duplicate arrivals produce no effect. The financial record is always correct regardless of what the network does.\n\n<span class="em">The difference between a system that works in a demo and one that works at 3am.</span>`,
+          eng: `Core challenge: data consistency across loosely coupled systems without distributed transactions.\n\n<code>2-phase commit rejected</code> — availability risk, locks resources across service boundaries.\n\n<code>Three principles:</code>\n\n1. Clear data ownership — ATS owns shipment state. LedgerFlow owns financial state. No cross-service writes.\n\n2. Idempotent APIs — every state-changing operation accepts an idempotency key. Duplicates return original response without re-executing.\n\n3. State-based transitions — DRAFT → PENDING_APPROVAL → APPROVED → INVOICED → PAID. Invalid transitions return typed error. Transition validity matrix — not conditional logic.\n\n<code>Same pattern used by Stripe for payment idempotency.</code>`,
           tech: [
             "Java 17",
             "Spring Boot",
@@ -1124,36 +878,18 @@ Same pattern used by Stripe for payment idempotency.`,
           name: "Architecture Quarter",
           tag: "ATS · OPERATIONS APP · GREENFIELD SYSTEMS",
           status: "OPERATIONAL",
-          statusType: "operational",
+          statusType: "op",
+          pos: [-3, 0, 7],
+          size: [4, 5.5, 2],
+          color: 0x6a8aaa,
+          emissive: 0x051525,
           metrics: [
-            { value: "2", label: "SYSTEMS BUILT" },
-            { value: "LEAD", label: "ARCHITECT" },
-            { value: "∞", label: "EXTENSIBLE" },
+            { v: "2", l: "SYSTEMS BUILT" },
+            { v: "LEAD", l: "ARCHITECT" },
+            { v: "∞", l: "EXTENSIBLE" },
           ],
-          recruiterStory: `High-value art assets — paintings worth significant money — moving between cities. No real tracking system. No way to know where anything was at any point.
-
-<span class="em">Aditya designed the system from scratch.</span>
-
-Every asset tracked from pick-up to delivery, every state transition validated, every crew member and truck visible in real time.
-
-And then separately: a completely different system for the operations teams on the ground — the crews and drivers doing the physical work. Real-time status updates. Service checkpoints. Live coordination between field teams and operations managers.
-
-Two greenfield systems. Both designed from scratch. Both in production. Both still running.`,
-          engineerStory: `Two greenfield backend systems led end-to-end as backend architect.
-
-<code>ATS — Art Transport System:</code>
-
-Domain: end-to-end tracking and management of high-value asset movements. Central design challenge: asset lifecycle across multiple state transitions while maintaining full history for audit and liability.
-
-State machine for asset movement: transition validity matrix rather than conditional logic in service methods. Invalid transitions return typed error — state machine is self-documenting to the API consumer.
-
-API design: contract-first. Response structures agreed with frontend before implementation. Versioning from day one — /api/v1/ with explicit deprecation policy.
-
-<code>Operations App:</code>
-
-Field operatives use the app in low-connectivity environments. API design accounts for optimistic local state with server reconciliation on reconnect — field app shows operative what they submitted, server validates and confirms or corrects.
-
-<code>Both systems:</code> database schema optimised for query patterns, modular backend architecture, clean controller → service → repository separation.`,
+          story: `High-value art assets — paintings worth significant money — moving between cities. No tracking system. No visibility.\n\n<span class="em">Aditya designed the system from scratch.</span>\n\nEvery asset tracked from pick-up to delivery. Every state transition validated. Every crew member and truck visible in real time.\n\nAnd then separately: a completely different system for operations teams on the ground — the crews and drivers doing the physical work. Real-time status updates. Service checkpoints. Live coordination.\n\nTwo greenfield systems. Both designed from scratch. Both in production. Both still running.`,
+          eng: `Two greenfield backend systems led end-to-end.\n\n<code>ATS:</code> State machine for asset movement via transition validity matrix — not conditional logic in service methods. Invalid transitions return typed error with current state and valid next states — self-documenting API.\n\nAPI design: contract-first. Response structures agreed with frontend before implementation. Versioning from day one.\n\n<code>Operations App:</code> Field operatives use app in low-connectivity environments. API accounts for optimistic local state with server reconciliation on reconnect.\n\n<code>Both systems:</code> database schema optimised for query patterns, modular controller → service → repository separation.`,
           tech: [
             "Java 17",
             "Spring Boot",
@@ -1166,33 +902,21 @@ Field operatives use the app in low-connectivity environments. API design accoun
         {
           id: "survey-bridge",
           num: "02",
-          name: "The Survey Bridge",
+          name: "Survey Bridge",
           tag: "END-TO-END INTEGRATION · PIPELINE DESIGN",
           status: "OPERATIONAL",
-          statusType: "operational",
+          statusType: "op",
+          pos: [3, 0, 7],
+          size: [4, 4, 2],
+          color: 0xaa6a9a,
+          emissive: 0x200015,
           metrics: [
-            { value: "100%", label: "AUTOMATED" },
-            { value: "0", label: "MANUAL STEPS" },
-            { value: "∞", label: "CONSISTENT" },
+            { v: "100%", l: "AUTOMATED" },
+            { v: "0", l: "MANUAL STEPS" },
+            { v: "∞", l: "CONSISTENT" },
           ],
-          recruiterStory: `Survey data and the core operations system were not connected. When a survey team completed a survey on-site, that data sat separately from the system that managed the move. Someone had to manually transfer the information. Every day. For every survey.
-
-Every time a human moved that data, there was a chance of error. Wrong items. Wrong addresses. Wrong orders.
-
-<span class="em">Aditya designed a pipeline that connected the two systems completely.</span>
-
-The survey is now scheduled directly from the customer file. The team completes it on a mobile app. The moment they submit, every item, every shipment, every packaging instruction flows automatically into the service order.
-
-Nothing carried by hand. Nothing retyped. Nothing misread.`,
-          engineerStory: `Disconnected data flow between survey module and core operational system. Survey data existed in isolation — requiring manual export, transformation, and import to create shipment and service order records.
-
-<code>Pipeline designed and implemented:</code>
-
-Survey scheduling from Customer File → survey execution via mobile app (stateful with sync reliability under variable connectivity) → automatic item and shipment creation → packaging and submission workflow with validation → direct mapping of survey output to Service Orders via deterministic transformation.
-
-<code>Key architectural challenge:</code> designing reliable state management for a mobile-initiated workflow that needed to sync with server-side system, handle partial connectivity gracefully, and produce deterministic output that downstream systems could depend on.
-
-Eliminated manual reconciliation entirely. Survey schema to service order schema — no human interpretation step.`,
+          story: `Survey data and the core operations system were not connected. Someone had to manually transfer the information. Every day. For every survey.\n\nEvery time a human moved that data, there was a chance of error. Wrong items. Wrong addresses. Wrong orders.\n\n<span class="em">Aditya designed a pipeline that connected the two systems completely.</span>\n\nThe survey is now scheduled directly from the customer file. The team completes it on a mobile app. The moment they submit, every item, every shipment, every packaging instruction flows automatically into the service order. Nothing carried by hand. Nothing retyped.`,
+          eng: `Disconnected data flow between survey module and core operational system.\n\n<code>Pipeline:</code> survey scheduling from Customer File → survey execution via mobile app (stateful with sync reliability under variable connectivity) → automatic item and shipment creation → packaging workflow with validation → direct mapping to Service Orders via deterministic transformation.\n\n<code>Key challenge:</code> reliable state management for a mobile-initiated workflow that handles partial connectivity gracefully and produces deterministic output that downstream systems can depend on.\n\nEliminated manual reconciliation entirely.`,
           tech: [
             "Java",
             "Spring Boot",
@@ -1208,32 +932,18 @@ Eliminated manual reconciliation entirely. Survey schema to service order schema
           name: "The Monolith Quarter",
           tag: "REDSKY · STRUTS2 · SPRING 3 · HIBERNATE 5 · ORIGIN",
           status: "OPERATIONAL",
-          statusType: "operational",
+          statusType: "op",
+          pos: [0, 0, 10],
+          size: [5, 2.5, 4],
+          color: 0x8a8a8a,
+          emissive: 0x101010,
           metrics: [
-            { value: "2022", label: "WHERE IT BEGAN" },
-            { value: "WEEKS", label: "TO FIRST FIX" },
-            { value: "∞", label: "STILL RUNNING" },
+            { v: "2022", l: "WHERE IT BEGAN" },
+            { v: "WEEKS", l: "TO FIRST FIX" },
+            { v: "∞", l: "STILL RUNNING" },
           ],
-          recruiterStory: `January 2022. Aditya joined a system called RedSky — a massive, interconnected platform handling the complete lifecycle of corporate relocations.
-
-A system so tightly woven together that most new engineers needed months to understand it well enough to safely change anything.
-
-<span class="em">He was delivering production fixes within weeks.</span>
-
-For the first eight months, Aditya learned how a customer file becomes a survey, how a survey becomes a shipment, how a shipment becomes a service order, how a service order generates work tickets that go to crews on the ground.
-
-When operational managers had no visibility into what was happening in their own system, he built the relocation dashboard. For the first time, managers could see across all their active operations in one view.
-
-<span class="em">This is where he started. And what he carried forward — an understanding that systems exist to serve people.</span>`,
-          engineerStory: `Stack: Struts 2, Spring 3, Hibernate 5, MySQL 5.x.
-
-RedSky is a large-scale B2B relocation management platform with highly coupled monolithic architecture. Domain model spans Customer File → Survey → Shipment → Service Order → Work Ticket with complex relational dependencies and role-based access control across the entire lifecycle.
-
-<code>The challenge:</code> highly coupled codebase where changes in one module have non-obvious effects on others. Production risk was real — live enterprise clients with active relocations.
-
-<code>Contributions:</code> multiple client-specific enhancements, production bug fixes with minimal regression risk, and development of the Relocation Dashboard — cross-module data aggregation surfacing service order status to non-engineer stakeholders.
-
-<code>The lesson carried forward:</code> understanding how data moves through a system end-to-end, before writing a single line of change, is the difference between a safe engineer and a dangerous one.`,
+          story: `January 2022. Aditya joined a system called RedSky — a massive, interconnected platform handling the complete lifecycle of corporate relocations.\n\nA system so tightly woven together that most new engineers needed months to understand it well enough to safely change anything.\n\n<span class="em">He was delivering production fixes within weeks.</span>\n\nFor the first eight months, Aditya learned how a customer file becomes a survey, how a survey becomes a shipment, how a shipment becomes a service order, how a service order generates work tickets that go to crews on the ground.\n\n<span class="em">This is where he started. And what he carried forward — an understanding that systems exist to serve people.</span>`,
+          eng: `Stack: Struts 2, Spring 3, Hibernate 5, MySQL 5.x.\n\nHighly coupled monolithic architecture. Domain model: Customer File → Survey → Shipment → Service Order → Work Ticket. Complex relational dependencies and RBAC across the entire lifecycle.\n\n<code>The challenge:</code> changes in one module have non-obvious effects on others. Production risk real — live enterprise clients with active relocations.\n\n<code>Contributions:</code> production bug fixes with minimal regression risk. Relocation Dashboard — cross-module data aggregation surfacing service order status to non-engineer stakeholders.\n\n<code>Lesson carried forward:</code> understand how data moves through a system end-to-end before writing a single line of change.`,
           tech: [
             "Struts 2",
             "Spring 3",
@@ -1245,320 +955,564 @@ RedSky is a large-scale B2B relocation management platform with highly coupled m
         },
       ];
 
-      // ── STATE ────────────────────────────────────────────────────
+      // ── STATE ─────────────────────────────────────────────────────
       const SESSION_ID =
         sessionStorage.getItem("sessionId") || crypto.randomUUID();
       const VISITOR_PATH =
         new URLSearchParams(window.location.search).get("path") ||
         sessionStorage.getItem("visitorPath") ||
         "recruiter";
-
-      let visitedDistricts = new Set(
-        JSON.parse(localStorage.getItem("visited_districts") || "[]"),
-      );
-      let chaosRun = false;
+      let visited = new Set(JSON.parse(localStorage.getItem("vd") || "[]"));
+      let activeBuilding = null;
       let oracleOpen = false;
+      let chaosPlayed = false;
 
-      // ── INIT ─────────────────────────────────────────────────────
-      document.addEventListener("DOMContentLoaded", () => {
-        setupPath();
-        renderDistricts();
-        updateBrahmastra();
-        checkContact();
+      // ── SETUP PATH BADGE ─────────────────────────────────────────
+      const badge = document.getElementById("pathBadge");
+      if (VISITOR_PATH === "engineer") {
+        badge.textContent = "ENGINEER PATH";
+        badge.className = "path-badge engineer";
+      } else {
+        badge.textContent = "RECRUITER PATH";
+        badge.className = "path-badge recruiter";
+      }
+
+      // ── THREE.JS SETUP ────────────────────────────────────────────
+      const canvas = document.getElementById("canvas");
+      const renderer = new THREE.WebGLRenderer({
+        canvas,
+        antialias: true,
+        alpha: false,
+      });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.setClearColor(0x06080f);
+
+      const scene = new THREE.Scene();
+      scene.fog = new THREE.Fog(0x06080f, 40, 90);
+
+      // Camera — angled for isometric feel
+      const camera = new THREE.PerspectiveCamera(
+        45,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        200,
+      );
+      camera.position.set(0, 28, 28);
+      camera.lookAt(0, 0, 0);
+
+      // ── LIGHTING ──────────────────────────────────────────────────
+      const ambientLight = new THREE.AmbientLight(0x1a2040, 0.8);
+      scene.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0xfff8e0, 0.6);
+      dirLight.position.set(10, 20, 10);
+      dirLight.castShadow = true;
+      dirLight.shadow.mapSize.width = 2048;
+      dirLight.shadow.mapSize.height = 2048;
+      scene.add(dirLight);
+
+      // Gold rim light from the Auth Tower center
+      const goldLight = new THREE.PointLight(0xc8a84b, 1.5, 25);
+      goldLight.position.set(0, 12, 0);
+      scene.add(goldLight);
+
+      // ── GROUND ────────────────────────────────────────────────────
+      const groundGeo = new THREE.PlaneGeometry(80, 80, 40, 40);
+      const groundMat = new THREE.MeshStandardMaterial({
+        color: 0x08101a,
+        roughness: 0.95,
+        metalness: 0.1,
+        wireframe: false,
+      });
+      const ground = new THREE.Mesh(groundGeo, groundMat);
+      ground.rotation.x = -Math.PI / 2;
+      ground.receiveShadow = true;
+      scene.add(ground);
+
+      // Grid lines on ground
+      const gridHelper = new THREE.GridHelper(80, 40, 0x1a2540, 0x0d1520);
+      gridHelper.position.y = 0.01;
+      scene.add(gridHelper);
+
+      // ── BUILDINGS ─────────────────────────────────────────────────
+      const buildingMeshes = [];
+
+      DISTRICTS.forEach((d, idx) => {
+        const group = new THREE.Group();
+        const [px, py, pz] = d.pos;
+        const [sw, sh, sd] = d.size;
+
+        // Main building body
+        const geo = new THREE.BoxGeometry(sw, sh, sd);
+        const mat = new THREE.MeshStandardMaterial({
+          color: d.color,
+          emissive: d.emissive,
+          roughness: 0.7,
+          metalness: 0.3,
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.y = sh / 2;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.userData = { districtIdx: idx, type: "building" };
+        group.add(mesh);
+
+        // Glowing windows — small bright boxes on the building faces
+        const windowCount = Math.floor(sh * 1.5);
+        for (let w = 0; w < windowCount; w++) {
+          const wGeo = new THREE.BoxGeometry(0.15, 0.25, 0.05);
+          const wMat = new THREE.MeshStandardMaterial({
+            color: d.color,
+            emissive: d.color,
+            emissiveIntensity: Math.random() > 0.3 ? 1.5 : 0.2,
+          });
+          const win = new THREE.Mesh(wGeo, wMat);
+          // Place on front face
+          const side = Math.random() > 0.5 ? 1 : -1;
+          win.position.set(
+            (Math.random() - 0.5) * (sw * 0.7),
+            0.5 + Math.random() * (sh - 1),
+            side * (sd / 2 + 0.03),
+          );
+          group.add(win);
+        }
+
+        // Roof antenna for Auth Tower
+        if (d.id === "auth-tower") {
+          const antGeo = new THREE.CylinderGeometry(0.05, 0.05, 3, 8);
+          const antMat = new THREE.MeshStandardMaterial({
+            color: 0xc8a84b,
+            emissive: 0xc8a84b,
+            emissiveIntensity: 1,
+          });
+          const ant = new THREE.Mesh(antGeo, antMat);
+          ant.position.y = sh + 1.5;
+          group.add(ant);
+
+          // Connection lines to other buildings
+          DISTRICTS.forEach((other, oi) => {
+            if (oi === 0) return;
+            const points = [
+              new THREE.Vector3(px, sh * 0.7, pz),
+              new THREE.Vector3(
+                other.pos[0],
+                other.size[1] * 0.5,
+                other.pos[2],
+              ),
+            ];
+            const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+            const lineMat = new THREE.LineBasicMaterial({
+              color: 0xc8a84b,
+              transparent: true,
+              opacity: 0.15,
+            });
+            scene.add(new THREE.Line(lineGeo, lineMat));
+          });
+        }
+
+        // Building label (sprite)
+        group.position.set(px, 0, pz);
+        group.userData = { districtIdx: idx, id: d.id };
+        scene.add(group);
+
+        buildingMeshes.push({ group, mesh, district: d });
       });
 
-      function setupPath() {
-        const badge = document.getElementById("pathBadge");
-        if (VISITOR_PATH === "engineer") {
-          badge.textContent = "ENGINEER PATH";
-          badge.className = "path-badge engineer";
-        } else {
-          badge.textContent = "RECRUITER PATH";
-          badge.className = "path-badge recruiter";
+      // ── CAMERA CONTROLS ───────────────────────────────────────────
+      let isDragging = false;
+      let prevMouse = { x: 0, y: 0 };
+      let spherical = {
+        theta: 0.3, // horizontal angle
+        phi: 0.9, // vertical angle (0=top, PI=bottom)
+        radius: 38, // distance
+      };
+      const target = new THREE.Vector3(0, 0, 2);
+
+      function updateCamera() {
+        camera.position.x =
+          target.x +
+          spherical.radius *
+            Math.sin(spherical.phi) *
+            Math.sin(spherical.theta);
+        camera.position.y =
+          target.y + spherical.radius * Math.cos(spherical.phi);
+        camera.position.z =
+          target.z +
+          spherical.radius *
+            Math.sin(spherical.phi) *
+            Math.cos(spherical.theta);
+        camera.lookAt(target);
+      }
+      updateCamera();
+
+      canvas.addEventListener("mousedown", (e) => {
+        isDragging = true;
+        prevMouse = { x: e.clientX, y: e.clientY };
+      });
+
+      canvas.addEventListener("mousemove", (e) => {
+        if (!isDragging) return;
+        const dx = (e.clientX - prevMouse.x) * 0.008;
+        const dy = (e.clientY - prevMouse.y) * 0.008;
+        spherical.theta -= dx;
+        spherical.phi = Math.max(0.2, Math.min(1.4, spherical.phi + dy));
+        prevMouse = { x: e.clientX, y: e.clientY };
+        updateCamera();
+      });
+
+      canvas.addEventListener("mouseup", () => {
+        isDragging = false;
+      });
+      canvas.addEventListener("mouseleave", () => {
+        isDragging = false;
+      });
+
+      canvas.addEventListener(
+        "wheel",
+        (e) => {
+          spherical.radius = Math.max(
+            10,
+            Math.min(70, spherical.radius + e.deltaY * 0.05),
+          );
+          updateCamera();
+          e.preventDefault();
+        },
+        { passive: false },
+      );
+
+      // Touch controls
+      let prevTouch = null;
+      canvas.addEventListener("touchstart", (e) => {
+        prevTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      });
+      canvas.addEventListener(
+        "touchmove",
+        (e) => {
+          if (!prevTouch) return;
+          const dx = (e.touches[0].clientX - prevTouch.x) * 0.01;
+          const dy = (e.touches[0].clientY - prevTouch.y) * 0.01;
+          spherical.theta -= dx;
+          spherical.phi = Math.max(0.2, Math.min(1.4, spherical.phi + dy));
+          prevTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+          updateCamera();
+          e.preventDefault();
+        },
+        { passive: false },
+      );
+      canvas.addEventListener("touchend", () => {
+        prevTouch = null;
+      });
+
+      // ── RAYCASTING ────────────────────────────────────────────────
+      const raycaster = new THREE.Raycaster();
+      const mouse2D = new THREE.Vector2();
+      let mouseDownPos = { x: 0, y: 0 };
+
+      canvas.addEventListener("mousedown", (e) => {
+        mouseDownPos = { x: e.clientX, y: e.clientY };
+      });
+
+      canvas.addEventListener("click", (e) => {
+        // Only register click if mouse didn't move much (not a drag)
+        const dx = Math.abs(e.clientX - mouseDownPos.x);
+        const dy = Math.abs(e.clientY - mouseDownPos.y);
+        if (dx > 5 || dy > 5) return;
+
+        mouse2D.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouse2D.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        raycaster.setFromCamera(mouse2D, camera);
+
+        const allMeshes = buildingMeshes.map((b) => b.mesh);
+        const intersects = raycaster.intersectObjects(allMeshes);
+        if (intersects.length > 0) {
+          const idx = intersects[0].object.userData.districtIdx;
+          openDistrict(idx);
         }
-      }
+      });
 
-      // ── RENDER DISTRICTS ─────────────────────────────────────────
-      function renderDistricts() {
-        const grid = document.getElementById("districts-grid");
-        grid.innerHTML = "";
+      // Hover effect
+      let hoveredIdx = -1;
+      canvas.addEventListener("mousemove", (e) => {
+        if (isDragging) return;
+        mouse2D.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouse2D.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        raycaster.setFromCamera(mouse2D, camera);
+        const allMeshes = buildingMeshes.map((b) => b.mesh);
+        const intersects = raycaster.intersectObjects(allMeshes);
 
-        DISTRICTS.forEach((d, i) => {
-          const visited = visitedDistricts.has(d.id);
-          const el = document.createElement("div");
-          el.className = `district ${visited ? "visited" : ""}`;
-          el.id = `district-${d.id}`;
-          el.setAttribute("data-id", d.id);
-
-          const metricsHTML = d.metrics
-            .map(
-              (m) => `
-            <div class="metric">
-                <span class="metric-value">${m.value}</span>
-                <span class="metric-label">${m.label}</span>
-            </div>
-        `,
-            )
-            .join("");
-
-          const techHTML = d.tech
-            .map((t) => `<span class="tech-tag">${t}</span>`)
-            .join("");
-
-          const engineerSection =
-            VISITOR_PATH === "engineer"
-              ? `
-            <div class="engineer-toggle" onclick="toggleEngineer('${d.id}', event)">
-                ▶ TECHNICAL DEPTH
-            </div>
-            <div class="engineer-deep" id="eng-${d.id}">
-                ${d.engineerStory}
-            </div>
-        `
-              : "";
-
-          el.innerHTML = `
-            <div class="district-header" onclick="toggleDistrict('${d.id}')">
-                <div class="district-num">DISTRICT ${d.num}</div>
-                <div class="district-title-block">
-                    <div class="district-name">${d.name}</div>
-                    <div class="district-tag">${d.tag}</div>
-                </div>
-                <div class="district-status status-${d.statusType}">${d.status}</div>
-            </div>
-            <div class="expand-indicator">
-                ↓ OPEN LOG
-            </div>
-            <div class="district-body">
-                <div class="district-divider"></div>
-                <div class="metrics">${metricsHTML}</div>
-                <div class="story-section">
-                    <div class="story-label">MISSION LOG</div>
-                    <div class="story-text">${d.recruiterStory.replace(/\n/g, "<br>")}</div>
-                </div>
-                <div class="tech-tags">${techHTML}</div>
-                ${engineerSection}
-                <div class="record-status">
-                    <div class="status-dot"></div>
-                    <span class="status-text">
-                        SYSTEM INTEGRITY 99.7% · LAST VERIFIED 2034 · OPERATIONAL
-                    </span>
-                </div>
-            </div>
-        `;
-
-          grid.appendChild(el);
-        });
-      }
-
-      // ── TOGGLE DISTRICT ──────────────────────────────────────────
-      function toggleDistrict(id) {
-        const el = document.getElementById(`district-${id}`);
-        const wasExpanded = el.classList.contains("expanded");
-
-        // Close all others
-        document.querySelectorAll(".district.expanded").forEach((d) => {
-          d.classList.remove("expanded");
-        });
-
-        if (!wasExpanded) {
-          el.classList.add("expanded");
-          el.scrollIntoView({ behavior: "smooth", block: "start" });
-
-          // Mark as visited
-          if (!visitedDistricts.has(id)) {
-            visitedDistricts.add(id);
-            localStorage.setItem(
-              "visited_districts",
-              JSON.stringify([...visitedDistricts]),
-            );
-            el.classList.add("visited");
-            updateBrahmastra();
-            checkContact();
-
-            // Log to backend
-            logEvent("district_entered", id);
+        if (intersects.length > 0) {
+          const idx = intersects[0].object.userData.districtIdx;
+          if (idx !== hoveredIdx) {
+            if (hoveredIdx >= 0) resetHover(hoveredIdx);
+            hoveredIdx = idx;
+            setHover(idx);
           }
+          canvas.style.cursor = "pointer";
+        } else {
+          if (hoveredIdx >= 0) resetHover(hoveredIdx);
+          hoveredIdx = -1;
+          canvas.style.cursor = isDragging ? "grabbing" : "grab";
         }
+      });
+
+      function setHover(idx) {
+        const { mesh, district } = buildingMeshes[idx];
+        mesh.material.emissiveIntensity = 0.6;
+        mesh.scale.y = 1.05;
       }
 
-      // ── ENGINEER DEEP DIVE ───────────────────────────────────────
-      function toggleEngineer(id, event) {
-        event.stopPropagation();
-        const panel = document.getElementById(`eng-${id}`);
-        panel.classList.toggle("visible");
-        const toggle = panel.previousElementSibling;
-        toggle.textContent = panel.classList.contains("visible")
+      function resetHover(idx) {
+        const { mesh } = buildingMeshes[idx];
+        mesh.material.emissiveIntensity = 0;
+        mesh.scale.y = 1;
+      }
+
+      // ── DISTRICT PANEL ────────────────────────────────────────────
+      function openDistrict(idx) {
+        const d = DISTRICTS[idx];
+        activeBuilding = idx;
+
+        // Mark visited
+        if (!visited.has(d.id)) {
+          visited.add(d.id);
+          localStorage.setItem("vd", JSON.stringify([...visited]));
+          updateBrahmastra();
+          logEvent("district_entered", d.id);
+        }
+
+        // Build panel content
+        const metricsHTML = d.metrics
+          .map(
+            (m) =>
+              `<div class="metric"><span class="metric-v">${m.v}</span><span class="metric-l">${m.l}</span></div>`,
+          )
+          .join("");
+
+        const techHTML = d.tech
+          .map((t) => `<span class="tech-tag">${t}</span>`)
+          .join("");
+
+        const engSection =
+          VISITOR_PATH === "engineer"
+            ? `
+        <div class="eng-toggle" onclick="toggleEng(this)">▶ TECHNICAL DEPTH</div>
+        <div class="eng-deep">${d.eng.replace(/\n/g, "<br>")}</div>
+    `
+            : "";
+
+        document.getElementById("panel-content").innerHTML = `
+        <div class="p-num">DISTRICT ${d.num}</div>
+        <div class="p-name">${d.name}</div>
+        <div class="p-tag">${d.tag}</div>
+        <div class="p-status ${d.statusType}">
+            <span class="status-dot"></span>${d.status}
+        </div>
+        <div class="metrics">${metricsHTML}</div>
+        <div class="section-label">MISSION LOG</div>
+        <div class="story">${d.story.replace(/\n/g, "<br>")}</div>
+        <div class="tech-tags">${techHTML}</div>
+        ${engSection}
+        <div class="record-status">
+            <span class="status-dot"></span>
+            SYSTEM INTEGRITY 99.7% · LAST VERIFIED 2034 · OPERATIONAL
+        </div>
+    `;
+
+        document.getElementById("panel").classList.add("open");
+
+        // Zoom camera toward the building
+        const dist = DISTRICTS[idx];
+        const newTarget = new THREE.Vector3(dist.pos[0], 0, dist.pos[2]);
+        animateCameraTarget(newTarget, 22);
+      }
+
+      function closePanel() {
+        document.getElementById("panel").classList.remove("open");
+        animateCameraTarget(new THREE.Vector3(0, 0, 2), 38);
+        activeBuilding = null;
+      }
+
+      function toggleEng(el) {
+        const deep = el.nextElementSibling;
+        deep.classList.toggle("vis");
+        el.textContent = deep.classList.contains("vis")
           ? "▼ TECHNICAL DEPTH"
           : "▶ TECHNICAL DEPTH";
       }
 
-      // ── BRAHMASTRA PROGRESS ──────────────────────────────────────
-      function updateBrahmastra() {
-        const count = Math.min(visitedDistricts.size, 5);
-        document.querySelectorAll(".fragment").forEach((f, i) => {
-          if (i < count) f.classList.add("collected");
-          else f.classList.remove("collected");
-        });
-        document.getElementById("brahmastra-label").textContent =
-          `${count} / 5 DISTRICTS EXPLORED`;
+      // Smooth camera target animation
+      let camTargetAnim = null;
+      function animateCameraTarget(newTarget, newRadius) {
+        const startTarget = target.clone();
+        const startRadius = spherical.radius;
+        const startTime = performance.now();
+        const duration = 800;
+
+        if (camTargetAnim) cancelAnimationFrame(camTargetAnim);
+
+        function step(now) {
+          const t = Math.min((now - startTime) / duration, 1);
+          const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+          target.lerpVectors(startTarget, newTarget, ease);
+          spherical.radius = startRadius + (newRadius - startRadius) * ease;
+          updateCamera();
+          if (t < 1) camTargetAnim = requestAnimationFrame(step);
+        }
+        camTargetAnim = requestAnimationFrame(step);
       }
 
-      function checkContact() {
-        if (visitedDistricts.size >= 5) {
-          document.getElementById("contact-section").classList.add("visible");
-
-          if (visitedDistricts.size === 5) {
+      // ── BRAHMASTRA ────────────────────────────────────────────────
+      function updateBrahmastra() {
+        const count = Math.min(visited.size, 5);
+        document.querySelectorAll(".frag").forEach((f, i) => {
+          f.classList.toggle("on", i < count);
+        });
+        document.getElementById("frag-label").textContent = `${count} / 5`;
+        if (visited.size >= 5) {
+          setTimeout(() => {
+            document.getElementById("contact-overlay").classList.add("vis");
             logEvent("brahmastra_assembled", "all_five_districts");
-          }
+          }, 500);
         }
       }
+      updateBrahmastra();
 
-      // ── CHAOS SIMULATION ─────────────────────────────────────────
-      function runChaos() {
-        if (chaosRun) return;
-        chaosRun = true;
+      function closeContact() {
+        document.getElementById("contact-overlay").classList.remove("vis");
+      }
 
-        const output = document.getElementById("chaos-output");
-        const btn = document.getElementById("chaos-btn");
-        btn.textContent = "RUNNING...";
-        btn.disabled = true;
-        output.style.display = "block";
-        output.innerHTML = "";
-
+      // ── CHAOS ─────────────────────────────────────────────────────
+      function showChaos() {
+        document.getElementById("chaos-overlay").classList.add("vis");
+        if (chaosPlayed) return;
+        chaosPlayed = true;
         logEvent("chaos_triggered", "simulation_started");
+
+        const box = document.getElementById("chaos-box");
+        box.innerHTML = "";
 
         const recruiterLines = [
           {
-            text: "[ 00:02 ] Removing Aditya's systems from the network...",
-            cls: "dim",
+            t: "[ 00:02 ] Removing Aditya's systems from the network...",
+            c: "c-dim",
           },
           {
-            text: "[ 00:05 ] AUTH: Ten platforms no longer recognise their users.",
-            cls: "chaos-line",
+            t: "[ 00:05 ] AUTH: Ten platforms no longer recognise their users.",
+            c: "c-line",
           },
           {
-            text: "[ 00:08 ] AUTH: Support tickets — 847 and rising.",
-            cls: "chaos-line",
+            t: "[ 00:08 ] AUTH: Support tickets — 847 and rising.",
+            c: "c-line",
           },
           {
-            text: "[ 00:11 ] LOGISTICS: All 80 integration services attempting to reconnect...",
-            cls: "chaos-line",
+            t: "[ 00:12 ] INTEGRATION: All 80 services attempting to reconnect.",
+            c: "c-line",
           },
           {
-            text: "[ 00:14 ] LOGISTICS: Order processing stopped. Shipments frozen.",
-            cls: "chaos-line",
+            t: "[ 00:15 ] INTEGRATION: Order processing stopped. Shipments frozen.",
+            c: "c-line",
           },
           {
-            text: "[ 00:18 ] DATA: Database migration rolling back.",
-            cls: "chaos-line",
+            t: "[ 00:19 ] DATA: Database migration rollback triggered.",
+            c: "c-line",
           },
+          { t: "[ 00:23 ] FINANCE: Financial records diverging.", c: "c-line" },
           {
-            text: "[ 00:21 ] FINANCE: Financial records diverging. Approval workflows stalled.",
-            cls: "chaos-line",
+            t: "[ 00:27 ] ASSETS: Art tracking system — state unknown.",
+            c: "c-line",
           },
-          {
-            text: "[ 00:25 ] ASSETS: Art tracking system — state unknown.",
-            cls: "chaos-line",
-          },
-          { text: "[ 00:30 ] Simulation complete.", cls: "dim" },
+          { t: "[ 00:30 ] Simulation complete.", c: "c-dim" },
+          { t: "", c: "c-dim" },
+          { t: "SYSTEMS MAINTAINED BY ADITYA SRIVASTAVA:", c: "c-ok" },
+          { t: "Auth Tower ·········· OPERATIONAL", c: "c-ok" },
+          { t: "Integration Mesh ···· OPERATIONAL", c: "c-ok" },
+          { t: "Data Vaults ········· OPERATIONAL", c: "c-ok" },
+          { t: "Cloud District ······ OPERATIONAL", c: "c-ok" },
+          { t: "LedgerFlow ·········· OPERATIONAL", c: "c-ok" },
+          { t: "Everything outside his systems: see above.", c: "c-line" },
         ];
 
         const engineerLines = [
-          { text: "[ 00:02 ] Simulation initialising...", cls: "dim" },
+          { t: "[ 00:02 ] Simulation initialising...", c: "c-dim" },
           {
-            text: "[ 00:05 ] SSO: 401 cascade — JWT validation failure. No session store accessible.",
-            cls: "chaos-line",
+            t: "[ 00:05 ] SSO: 401 cascade — JWT validation failure. No session store.",
+            c: "c-line",
           },
           {
-            text: "[ 00:08 ] SSO: Refresh token rotation blocked. 10K+ sessions invalidated.",
-            cls: "chaos-line",
+            t: "[ 00:08 ] SSO: Refresh token rotation blocked. 10K+ sessions invalidated.",
+            c: "c-line",
           },
           {
-            text: "[ 00:11 ] INTEGRATION: shell execution layer returning non-zero exit codes.",
-            cls: "chaos-line",
+            t: "[ 00:12 ] INTEGRATION: script.sh returning non-zero exit codes.",
+            c: "c-line",
           },
           {
-            text: "[ 00:14 ] INTEGRATION: Lambda cold starts timing out. No fallback circuit breaker.",
-            cls: "chaos-line",
+            t: "[ 00:15 ] INTEGRATION: Lambda cold starts timing out. No circuit breaker.",
+            c: "c-line",
           },
           {
-            text: "[ 00:18 ] DB: MySQL 8 driver incompatibility — connection pool exhausted.",
-            cls: "chaos-line",
+            t: "[ 00:19 ] DB: MySQL 8 driver incompatibility — connection pool exhausted.",
+            c: "c-line",
           },
           {
-            text: "[ 00:21 ] FINANCE: Idempotency keys absent in external calls. Duplicate invoices possible.",
-            cls: "chaos-line",
+            t: "[ 00:23 ] FINANCE: Idempotency keys absent. Duplicate invoices possible.",
+            c: "c-line",
           },
           {
-            text: "[ 00:25 ] ATS: State machine bypassed by direct DB update. Asset state corrupted.",
-            cls: "chaos-line",
+            t: "[ 00:27 ] ATS: State machine bypassed. Asset state corrupted.",
+            c: "c-line",
           },
-          { text: "[ 00:30 ] Simulation complete.", cls: "dim" },
+          { t: "[ 00:30 ] Simulation complete.", c: "c-dim" },
+          { t: "", c: "c-dim" },
+          { t: "SYSTEMS MAINTAINED BY ADITYA SRIVASTAVA:", c: "c-ok" },
+          { t: "Auth Tower ·········· OPERATIONAL", c: "c-ok" },
+          { t: "Integration Mesh ···· OPERATIONAL", c: "c-ok" },
+          { t: "Data Vaults ········· OPERATIONAL", c: "c-ok" },
+          { t: "Cloud District ······ OPERATIONAL", c: "c-ok" },
+          { t: "LedgerFlow ·········· OPERATIONAL", c: "c-ok" },
+          { t: "Everything outside his systems: see above.", c: "c-line" },
         ];
 
         const lines =
           VISITOR_PATH === "engineer" ? engineerLines : recruiterLines;
         let i = 0;
-
-        const interval = setInterval(() => {
+        const iv = setInterval(() => {
           if (i >= lines.length) {
-            clearInterval(interval);
-            showChaosResult();
-            btn.textContent = "SIMULATION COMPLETE";
+            clearInterval(iv);
             return;
           }
           const div = document.createElement("div");
-          div.className = lines[i].cls;
-          div.textContent = lines[i].text;
-          output.appendChild(div);
-          output.scrollTop = output.scrollHeight;
+          div.className = lines[i].c;
+          div.textContent = lines[i].t;
+          box.appendChild(div);
+          box.scrollTop = box.scrollHeight;
           i++;
-        }, 600);
+        }, 350);
       }
 
-      function showChaosResult() {
-        const output = document.getElementById("chaos-output");
-        output.innerHTML += `
-        <div class="chaos-result">
-            <div style="color:var(--green-text);margin-bottom:12px">
-                SYSTEMS MAINTAINED BY ADITYA SRIVASTAVA
-            </div>
-            <div style="color:var(--green-text);font-size:11px;line-height:2">
-                Auth Tower ············ OPERATIONAL<br>
-                Integration Mesh ······ OPERATIONAL<br>
-                Data Vaults ··········· OPERATIONAL<br>
-                Cloud District ········ OPERATIONAL<br>
-                LedgerFlow ············ OPERATIONAL<br>
-                ATS + Operations ······ OPERATIONAL
-            </div>
-            <div style="color:var(--red-text);margin-top:12px;font-size:11px">
-                Everything outside his systems: see above.
-            </div>
-        </div>
-    `;
+      function closeChaos() {
+        document.getElementById("chaos-overlay").classList.remove("vis");
       }
 
-      // ── ORACLE ───────────────────────────────────────────────────
+      // ── ORACLE ────────────────────────────────────────────────────
       function toggleOracle() {
         oracleOpen = !oracleOpen;
-        const panel = document.getElementById("oracle-panel");
-        panel.classList.toggle("visible", oracleOpen);
-        if (oracleOpen) {
-          document.getElementById("oracle-input").focus();
-        }
+        document
+          .getElementById("oracle-panel")
+          .classList.toggle("vis", oracleOpen);
+        if (oracleOpen) document.getElementById("oracle-input").focus();
       }
 
       async function sendOracle() {
         const input = document.getElementById("oracle-input");
-        const question = input.value.trim();
-        if (!question) return;
-
+        const q = input.value.trim();
+        if (!q) return;
         input.value = "";
-        addOracleMessage(question, "user");
-
-        const thinking = addOracleMessage("...", "assistant");
-
+        addMsg(q, "user");
+        const thinking = addMsg("...", "bot");
         try {
           const res = await fetch(
             `${CONFIG.API_URL}/api/${CONFIG.VERSION}/oracle/ask`,
@@ -1566,7 +1520,7 @@ RedSky is a large-scale B2B relocation management platform with highly coupled m
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                question,
+                question: q,
                 visitorPath: VISITOR_PATH,
                 sessionId: SESSION_ID,
               }),
@@ -1577,37 +1531,34 @@ RedSky is a large-scale B2B relocation management platform with highly coupled m
             json.data?.answer || "The Oracle is momentarily silent.";
         } catch (e) {
           thinking.textContent =
-            "The Oracle is not available in this environment. Come back when the backend is deployed.";
+            "The Oracle requires a live backend connection.";
         }
-
-        logEvent("oracle_asked", question.substring(0, 100));
+        logEvent("oracle_asked", q.substring(0, 100));
       }
 
-      function addOracleMessage(text, role) {
-        const msgs = document.getElementById("oracle-messages");
+      function addMsg(text, role) {
+        const msgs = document.getElementById("oracle-msgs");
         const div = document.createElement("div");
-        div.className = `oracle-msg ${role}`;
+        div.className = `o-msg ${role}`;
         div.textContent = text;
         msgs.appendChild(div);
         msgs.scrollTop = msgs.scrollHeight;
         return div;
       }
 
-      // ── CONTACT ──────────────────────────────────────────────────
-      function logContact() {
-        logEvent("contact_clicked", "email");
-      }
-
-      // ── BACKEND LOGGING ──────────────────────────────────────────
-      function logEvent(eventType, eventData) {
+      // ── BACKEND ───────────────────────────────────────────────────
+      function logEvent(type, data) {
         fetch(`${CONFIG.API_URL}/api/${CONFIG.VERSION}/visitor/event`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId: SESSION_ID, eventType, eventData }),
+          body: JSON.stringify({
+            sessionId: SESSION_ID,
+            eventType: type,
+            eventData: data,
+          }),
         }).catch(() => {});
       }
 
-      // Error capture
       window.addEventListener("error", (e) => {
         fetch(`${CONFIG.API_URL}/api/${CONFIG.VERSION}/visitor/error`, {
           method: "POST",
@@ -1618,24 +1569,51 @@ RedSky is a large-scale B2B relocation management platform with highly coupled m
             fileName: e.filename,
             lineNumber: e.lineno,
             browser: navigator.userAgent,
-            page: "city",
+            page: "city-3d",
           }),
         }).catch(() => {});
       });
 
-      // Duration tracking
       const pageLoadTime = Date.now();
       setInterval(() => {
-        const seconds = Math.round((Date.now() - pageLoadTime) / 1000);
         fetch(
           `${CONFIG.API_URL}/api/${CONFIG.VERSION}/visitor/session/${SESSION_ID}/duration`,
           {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ durationSeconds: seconds }),
+            body: JSON.stringify({
+              durationSeconds: Math.round((Date.now() - pageLoadTime) / 1000),
+            }),
           },
         ).catch(() => {});
       }, 30000);
+
+      // ── RESIZE ────────────────────────────────────────────────────
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // ── ANIMATION LOOP ────────────────────────────────────────────
+      let clock = new THREE.Clock();
+
+      function animate() {
+        requestAnimationFrame(animate);
+        const t = clock.getElapsedTime();
+
+        // Pulse the gold light (Auth Tower glow)
+        goldLight.intensity = 1.2 + Math.sin(t * 1.5) * 0.3;
+
+        // Subtle building float animation
+        buildingMeshes.forEach(({ group, district }, i) => {
+          const offset = i * 0.7;
+          group.position.y = Math.sin(t * 0.5 + offset) * 0.05;
+        });
+
+        renderer.render(scene, camera);
+      }
+      animate();
     </script>
   </body>
 </html>
