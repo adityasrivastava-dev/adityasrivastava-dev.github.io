@@ -695,6 +695,133 @@
           display: none;
         }
       }
+
+      /* ── SHAKE ANIMATION ─────────────────────────────────────── */
+      @keyframes vaultShake {
+        0%,
+        100% {
+          transform: translate(0, 0) rotate(0deg);
+        }
+        8% {
+          transform: translate(-4px, 3px) rotate(-0.3deg);
+        }
+        16% {
+          transform: translate(4px, -3px) rotate(0.3deg);
+        }
+        24% {
+          transform: translate(-3px, 4px) rotate(-0.2deg);
+        }
+        32% {
+          transform: translate(3px, -2px) rotate(0.2deg);
+        }
+        40% {
+          transform: translate(-2px, 3px) rotate(-0.1deg);
+        }
+        48% {
+          transform: translate(2px, -1px) rotate(0.1deg);
+        }
+        56% {
+          transform: translate(-1px, 2px) rotate(-0.05deg);
+        }
+        64% {
+          transform: translate(1px, -1px) rotate(0deg);
+        }
+        72% {
+          transform: translate(-1px, 1px) rotate(0deg);
+        }
+      }
+      canvas.shake {
+        animation: vaultShake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+      }
+
+      /* ── CINEMATIC INTRO ─────────────────────────────────────── */
+      #intro-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 300;
+        background: #0a0614;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        transition: opacity 1.2s ease;
+      }
+      #intro-overlay.fade {
+        opacity: 0;
+      }
+      #intro-overlay.gone {
+        display: none;
+      }
+      .intro-line {
+        font-size: 10px;
+        letter-spacing: 6px;
+        color: #3a4a6a;
+        margin-bottom: 8px;
+        opacity: 0;
+        animation: introFade 0.8s ease forwards;
+      }
+      .intro-line:nth-child(1) {
+        animation-delay: 0.3s;
+      }
+      .intro-line:nth-child(2) {
+        animation-delay: 0.8s;
+        color: #c8a84b;
+        font-size: 13px;
+        letter-spacing: 4px;
+      }
+      .intro-line:nth-child(3) {
+        animation-delay: 1.4s;
+      }
+      @keyframes introFade {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* ── SSO FLASH OVERLAY ───────────────────────────────────── */
+      #sso-flash {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        background: radial-gradient(
+          ellipse at center,
+          rgba(200, 168, 75, 0.08) 0%,
+          transparent 70%
+        );
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      #sso-flash.vis {
+        opacity: 1;
+      }
+
+      /* ── DATA VAULT CRACK ────────────────────────────────────── */
+      #vault-crack {
+        position: fixed;
+        bottom: 60px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 200;
+        font-size: 9px;
+        letter-spacing: 4px;
+        color: #e08050;
+        background: rgba(8, 4, 18, 0.9);
+        border: 1px solid rgba(224, 128, 80, 0.4);
+        padding: 8px 18px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+      }
+      #vault-crack.vis {
+        opacity: 1;
+      }
     </style>
   </head>
   <body>
@@ -763,6 +890,19 @@
       <div id="chaos-box"></div>
       <button id="chaos-close" onclick="closeChaos()">CLOSE SIMULATION</button>
     </div>
+
+    <!-- Cinematic Intro -->
+    <div id="intro-overlay">
+      <div class="intro-line">INITIALISING CITY SYSTEMS</div>
+      <div class="intro-line">ADITYA'S WORLD</div>
+      <div class="intro-line">LOADING DISTRICTS · · ·</div>
+    </div>
+
+    <!-- SSO Flash -->
+    <div id="sso-flash"></div>
+
+    <!-- Vault crack warning -->
+    <div id="vault-crack">⚠ MIGRATION IN PROGRESS · STANDBY</div>
 
     <div id="contact-overlay">
       <div class="c-card">
@@ -1097,6 +1237,18 @@
         VISITOR_PATH === "engineer" ? "ENGINEER PATH" : "RECRUITER PATH";
       badge.className = `path-badge ${VISITOR_PATH}`;
 
+      // ── CINEMATIC INTRO ───────────────────────────────────────────
+      let introActive = true;
+      const introEl = document.getElementById("intro-overlay");
+      // Start from high aerial position, fly down
+      // We'll override camera start position after scene setup
+      let introPhase = {
+        phi: 0.2,
+        radius: 70,
+        targetPhi: 0.85,
+        targetRadius: 34,
+      };
+
       // ── THREE.JS ───────────────────────────────────────────────────
       const canvas = document.getElementById("c");
       const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -1120,6 +1272,14 @@
       );
       camera.position.set(0, 22, 24);
       camera.lookAt(0, 0, 0);
+
+      // Override sph for cinematic intro start
+      const sph = {
+        theta: 0.4,
+        phi: introPhase.phi,
+        radius: introPhase.radius,
+      };
+      const target = new THREE.Vector3(0, 0, 2);
 
       // ── LIGHTS ─────────────────────────────────────────────────────
       // Ambient
@@ -1640,6 +1800,7 @@
       });
 
       // ── CONNECTION LINES FROM AUTH TOWER ──────────────────────────
+      const authLineMats = []; // store for SSO flash effect
       DISTRICTS.forEach((d, i) => {
         if (i === 0) return;
         const start = new THREE.Vector3(0, 7.5, 0);
@@ -1662,6 +1823,7 @@
           transparent: true,
           opacity: 0.12,
         });
+        authLineMats.push(mat);
         scene.add(new THREE.Line(geo, mat));
       });
 
@@ -1680,11 +1842,82 @@
         scene.add(new THREE.Line(geo, mat));
       });
 
+      // ── DATA FLOW PARTICLES ───────────────────────────────────────
+      // Particles flowing from Auth Tower along bezier curves to each district
+      const flowConnections = [];
+      DISTRICTS.forEach((d, i) => {
+        if (i === 0) return;
+        const start = new THREE.Vector3(0, 7.5, 0);
+        const end = new THREE.Vector3(
+          d.pos[0],
+          BCONFIG[i].floors * 0.9 * 0.5,
+          d.pos[2],
+        );
+        const mid = start
+          .clone()
+          .lerp(end, 0.5)
+          .add(new THREE.Vector3(0, 2, 0));
+        const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+
+        const N = 10;
+        const positions = new Float32Array(N * 3);
+        const pGeo = new THREE.BufferGeometry();
+        pGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+
+        const distColor = new THREE.Color(BCONFIG[i].color);
+        const pMat = new THREE.PointsMaterial({
+          color: distColor,
+          size: 0.14,
+          transparent: true,
+          opacity: 0.85,
+          sizeAttenuation: true,
+          depthWrite: false,
+        });
+        const pts3 = new THREE.Points(pGeo, pMat);
+        scene.add(pts3);
+
+        // Stagger particle offsets evenly
+        const offsets = Array.from({ length: N }, (_, k) => k / N);
+        flowConnections.push({ curve, pts: pts3, geo: pGeo, offsets });
+      });
+
+      // ── AMBIENT CITY PARTICLES ────────────────────────────────────
+      // Tiny floating particles suggesting data activity across the city
+      const ambientCount = 180;
+      const ambPos = new Float32Array(ambientCount * 3);
+      const ambVel = new Float32Array(ambientCount * 3);
+      for (let i = 0; i < ambientCount; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const r = 2 + Math.random() * 18;
+        ambPos[i * 3] = Math.cos(angle) * r;
+        ambPos[i * 3 + 1] = 0.5 + Math.random() * 9;
+        ambPos[i * 3 + 2] = Math.sin(angle) * r;
+        ambVel[i * 3] = (Math.random() - 0.5) * 0.008;
+        ambVel[i * 3 + 1] = 0.003 + Math.random() * 0.006;
+        ambVel[i * 3 + 2] = (Math.random() - 0.5) * 0.008;
+      }
+      const ambGeo = new THREE.BufferGeometry();
+      ambGeo.setAttribute("position", new THREE.BufferAttribute(ambPos, 3));
+      const ambMat = new THREE.PointsMaterial({
+        color: 0xc8a84b,
+        size: 0.06,
+        transparent: true,
+        opacity: 0.35,
+        sizeAttenuation: true,
+        depthWrite: false,
+      });
+      scene.add(new THREE.Points(ambGeo, ambMat));
+
+      // ── BUILDING BODY REFS for hover/effect ───────────────────────
+      // clickables already populated; map districtIdx → mesh
+      const buildingBodies = {};
+      clickables.forEach((mesh) => {
+        buildingBodies[mesh.userData.districtIdx] = mesh;
+      });
+
       // ── CAMERA ORBIT ──────────────────────────────────────────────
       let isDrag = false,
         prevMouse = { x: 0, y: 0 };
-      const sph = { theta: 0.4, phi: 0.85, radius: 34 };
-      const target = new THREE.Vector3(0, 0, 2);
 
       function updateCam() {
         camera.position.set(
@@ -1770,6 +2003,7 @@
       });
 
       let hoveredIdx = -1;
+      let prevHoveredIdx = -1;
       function hoverCheck(e) {
         if (isDrag) return;
         mouse2.set(
@@ -1794,6 +2028,16 @@
           canvas.style.cursor = isDrag ? "grabbing" : "grab";
           hoveredIdx = -1;
         }
+        // Glow in/out on hover change
+        if (hoveredIdx !== prevHoveredIdx) {
+          if (prevHoveredIdx >= 0 && buildingBodies[prevHoveredIdx]) {
+            buildingBodies[prevHoveredIdx].material.emissiveIntensity = 0.2;
+          }
+          if (hoveredIdx >= 0 && buildingBodies[hoveredIdx]) {
+            buildingBodies[hoveredIdx].material.emissiveIntensity = 0.75;
+          }
+          prevHoveredIdx = hoveredIdx;
+        }
       }
 
       // ── OPEN DISTRICT ─────────────────────────────────────────────
@@ -1808,6 +2052,10 @@
           logEvt("district_entered", d.id);
         }
 
+        // ── DISTRICT SPECIAL EFFECTS ──────────────────────────────
+        if (d.id === "auth-tower") triggerSSOCascade();
+        if (d.id === "data-vaults") triggerVaultShake();
+
         const c = "#" + new THREE.Color(bc.color).getHexString();
         const mHTML = d.metrics
           .map(
@@ -1818,14 +2066,16 @@
         const tHTML = d.tech
           .map((t) => `<span class="tech-tag">${t}</span>`)
           .join("");
+        // Engineer path: tech depth auto-expanded
+        const engVisible = VISITOR_PATH === "engineer";
         const eng =
           VISITOR_PATH === "engineer"
             ? `
     <div class="eng-toggle" onclick="this.nextElementSibling.classList.toggle('vis');
       this.textContent=this.nextElementSibling.classList.contains('vis')?'▼ TECHNICAL DEPTH':'▶ TECHNICAL DEPTH'">
-      ▶ TECHNICAL DEPTH
+      ▼ TECHNICAL DEPTH
     </div>
-    <div class="eng-deep">${d.eng.replace(/\n/g, "<br>")}</div>
+    <div class="eng-deep ${engVisible ? "vis" : ""}">${d.eng.replace(/\n/g, "<br>")}</div>
   `
             : "";
 
@@ -1848,6 +2098,43 @@
 
         // Smooth zoom toward district
         animTarget(new THREE.Vector3(d.pos[0], 0, d.pos[2]), 18);
+      }
+
+      // ── SSO CASCADE EFFECT ────────────────────────────────────────
+      function triggerSSOCascade() {
+        // Flash all auth connection lines bright
+        authLineMats.forEach((mat) => {
+          mat.opacity = 0.9;
+        });
+        // Flash all buildings
+        Object.values(buildingBodies).forEach((mesh) => {
+          mesh.material.emissiveIntensity = 1.0;
+        });
+        // Flash screen overlay
+        const flash = document.getElementById("sso-flash");
+        flash.classList.add("vis");
+        // Fade back over 1.5s
+        setTimeout(() => {
+          flash.classList.remove("vis");
+          authLineMats.forEach((mat) => {
+            mat.opacity = 0.12;
+          });
+          Object.entries(buildingBodies).forEach(([i, mesh]) => {
+            mesh.material.emissiveIntensity = 0.2;
+          });
+        }, 1400);
+      }
+
+      // ── DATA VAULT SHAKE ─────────────────────────────────────────
+      function triggerVaultShake() {
+        const c = document.getElementById("c");
+        const crack = document.getElementById("vault-crack");
+        c.classList.add("shake");
+        crack.classList.add("vis");
+        setTimeout(() => {
+          c.classList.remove("shake");
+          setTimeout(() => crack.classList.remove("vis"), 1200);
+        }, 700);
       }
 
       function closePanel() {
@@ -2108,6 +2395,30 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
       });
 
+      // ── CINEMATIC INTRO TRIGGER ───────────────────────────────────
+      setTimeout(() => {
+        introEl.classList.add("fade");
+        // Fly camera down to normal position over 2.5s
+        const introStart = performance.now();
+        const introDur = 2500;
+        const startPhi = introPhase.phi;
+        const startR = introPhase.radius;
+        function introStep(now) {
+          const p = Math.min((now - introStart) / introDur, 1);
+          // Cubic ease out
+          const e = 1 - Math.pow(1 - p, 3);
+          sph.phi = startPhi + (0.85 - startPhi) * e;
+          sph.radius = startR + (34 - startR) * e;
+          updateCam();
+          if (p < 1) requestAnimationFrame(introStep);
+          else {
+            introEl.classList.add("gone");
+            introActive = false;
+          }
+        }
+        requestAnimationFrame(introStep);
+      }, 2000);
+
       // ── ANIMATION LOOP ────────────────────────────────────────────
       const clock = new THREE.Clock();
 
@@ -2117,7 +2428,7 @@
         // Auth Tower gold glow pulse
         authGlow.intensity = 2.5 + Math.sin(t * 1.2) * 0.8;
 
-        // Rotate Auth Tower rings
+        // Rotate Auth Tower rings + blink windows
         scene.traverse((obj) => {
           if (obj.userData.ring) {
             obj.rotation.z = obj.userData.phase + t * obj.userData.speed;
@@ -2138,8 +2449,47 @@
           }
         });
 
-        // Subtle camera auto-rotate when not interacting
-        if (!isDrag && !panelOpen) {
+        // ── DATA FLOW PARTICLES ─────────────────────────────────────
+        const flowSpeed = 0.18;
+        flowConnections.forEach((fc, ci) => {
+          fc.offsets = fc.offsets.map((o) => (o + flowSpeed * 0.016) % 1.0);
+          const pos = fc.geo.attributes.position.array;
+          fc.offsets.forEach((o, pi) => {
+            const pt = fc.curve.getPoint(o);
+            pos[pi * 3] = pt.x;
+            pos[pi * 3 + 1] = pt.y;
+            pos[pi * 3 + 2] = pt.z;
+          });
+          fc.geo.attributes.position.needsUpdate = true;
+          // Pulse opacity slightly
+          fc.pts.material.opacity = 0.6 + Math.sin(t * 2 + ci) * 0.25;
+        });
+
+        // ── AMBIENT PARTICLES ───────────────────────────────────────
+        const ap = ambGeo.attributes.position.array;
+        for (let i = 0; i < ambientCount; i++) {
+          ap[i * 3] += ambVel[i * 3];
+          ap[i * 3 + 1] += ambVel[i * 3 + 1];
+          ap[i * 3 + 2] += ambVel[i * 3 + 2];
+          // Reset if too high or drifted too far
+          if (
+            ap[i * 3 + 1] > 12 ||
+            Math.abs(ap[i * 3]) > 22 ||
+            Math.abs(ap[i * 3 + 2]) > 22
+          ) {
+            const angle = Math.random() * Math.PI * 2;
+            const r = 3 + Math.random() * 14;
+            ap[i * 3] = Math.cos(angle) * r;
+            ap[i * 3 + 1] = 0.3;
+            ap[i * 3 + 2] = Math.sin(angle) * r;
+          }
+        }
+        ambGeo.attributes.position.needsUpdate = true;
+        // Pulse ambient opacity
+        ambMat.opacity = 0.22 + Math.sin(t * 0.7) * 0.1;
+
+        // Subtle camera auto-rotate when not interacting & not in intro
+        if (!isDrag && !panelOpen && !introActive) {
           sph.theta += 0.0008;
           updateCam();
         }
