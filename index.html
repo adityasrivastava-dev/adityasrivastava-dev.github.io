@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-    <title>Aditya Srivastava — Portfolio</title>
+    <title>Aditya Srivastava — City Portfolio</title>
     <link
-      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;800;900&family=Barlow:wght@300;400;500&family=Share+Tech+Mono&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500&family=Share+Tech+Mono&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -16,34 +16,26 @@
         padding: 0;
         box-sizing: border-box;
       }
-
       :root {
         --gold: #f5c842;
-        --amber: #ff8c00;
         --arc: #00bfff;
-        --ice: #e0f7ff;
         --void: #06080e;
-        --dim: #0c1018;
         --ff: "Barlow Condensed", sans-serif;
         --fb: "Barlow", sans-serif;
         --fm: "Share Tech Mono", monospace;
       }
-
       html,
       body {
         width: 100%;
         height: 100%;
         background: var(--void);
         overflow: hidden;
-        font-family: var(--fb);
+        font-family: var(--ff);
       }
-
-      /* ── CURSOR ── */
-      *,
-      *::before,
-      *::after {
+      * {
         cursor: none !important;
       }
+
       #cur {
         position: fixed;
         z-index: 9999;
@@ -53,20 +45,18 @@
         background: #fff;
         border-radius: 50%;
         transform: translate(-50%, -50%);
-        transition:
-          width 0.2s,
-          height 0.2s,
-          background 0.2s,
-          opacity 0.2s;
         mix-blend-mode: difference;
+        transition:
+          width 0.15s,
+          height 0.15s;
       }
       #cur.big {
-        width: 48px;
-        height: 48px;
-        opacity: 0.15;
+        width: 42px;
+        height: 42px;
+        opacity: 0.1;
       }
 
-      /* ── LAYOUT: Two full panels side by side ── */
+      /* ── LAYOUT ── */
       #stage {
         width: 100%;
         height: 100%;
@@ -75,172 +65,220 @@
         position: relative;
       }
 
-      /* ── CENTER DIVIDER ── */
-      #divider {
+      /* Center divider */
+      #div-line {
         position: absolute;
         left: 50%;
         top: 0;
         bottom: 0;
         width: 1px;
+        transform: translateX(-50%);
+        z-index: 10;
         background: linear-gradient(
           180deg,
           transparent 0%,
-          rgba(255, 255, 255, 0.06) 20%,
-          rgba(255, 255, 255, 0.12) 50%,
-          rgba(255, 255, 255, 0.06) 80%,
+          rgba(255, 255, 255, 0.08) 20%,
+          rgba(255, 255, 255, 0.15) 50%,
+          rgba(255, 255, 255, 0.08) 80%,
           transparent 100%
         );
-        z-index: 10;
-        transform: translateX(-50%);
       }
-      #divider::before {
+      #div-line::before {
         content: "";
         position: absolute;
         left: 50%;
         top: 50%;
         transform: translate(-50%, -50%);
-        width: 7px;
-        height: 7px;
-        background: rgba(255, 255, 255, 0.2);
+        width: 9px;
+        height: 9px;
+        background: rgba(255, 255, 255, 0.18);
         border-radius: 50%;
-        box-shadow: 0 0 16px rgba(255, 255, 255, 0.15);
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.15);
       }
 
-      /* ── PANEL BASE ── */
+      /* ── PANELS ── */
       .panel {
         position: relative;
         overflow: hidden;
         display: flex;
         flex-direction: column;
         justify-content: flex-end;
-        padding: 0 0 64px 0;
-        transition: flex-grow 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-      .panel:hover {
-        z-index: 5;
+        padding: 0 0 72px 0;
       }
 
-      /* ── RECRUITER PANEL ── */
-      #rec-panel {
-        background: #07090f;
+      /* Panels hover scale content */
+      .panel:hover .panel-content {
+        transform: translateY(-6px);
+      }
+      .panel-content {
+        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
-      /* Dramatic background image layer */
-      #rec-panel::before {
+      /* ── BACKGROUND AMBIENCE ── */
+      /* Recruiter: warm gold city glow */
+      #rec {
+        background: linear-gradient(
+          160deg,
+          #080600 0%,
+          #0a0900 50%,
+          #060810 100%
+        );
+      }
+      #rec::before {
         content: "";
         position: absolute;
         inset: 0;
         background:
           radial-gradient(
-            ellipse 70% 60% at 40% 30%,
-            rgba(245, 200, 66, 0.07) 0%,
-            transparent 65%
+            ellipse 80% 70% at 25% 40%,
+            rgba(245, 200, 66, 0.09) 0%,
+            transparent 60%
           ),
           radial-gradient(
-            ellipse 50% 40% at 20% 80%,
-            rgba(255, 140, 0, 0.05) 0%,
+            ellipse 60% 50% at 70% 80%,
+            rgba(255, 140, 0, 0.06) 0%,
             transparent 55%
-          ),
-          linear-gradient(160deg, rgba(245, 200, 66, 0.04) 0%, transparent 50%);
+          );
         z-index: 0;
       }
-
-      /* Large number watermark */
-      #rec-panel::after {
-        content: "01";
-        position: absolute;
-        right: -20px;
-        bottom: -40px;
-        font-family: var(--ff);
-        font-size: 280px;
-        font-weight: 900;
-        line-height: 1;
-        color: rgba(245, 200, 66, 0.03);
-        letter-spacing: -10px;
-        z-index: 0;
-        user-select: none;
+      /* Engineer: cold blue tech glow */
+      #eng {
+        background: linear-gradient(
+          200deg,
+          #060810 0%,
+          #060912 50%,
+          #080600 100%
+        );
       }
-
-      /* ── ENGINEER PANEL ── */
-      #eng-panel {
-        background: #060810;
-        border-left: none;
-      }
-
-      #eng-panel::before {
+      #eng::before {
         content: "";
         position: absolute;
         inset: 0;
         background:
           radial-gradient(
-            ellipse 70% 60% at 60% 30%,
-            rgba(0, 191, 255, 0.07) 0%,
-            transparent 65%
+            ellipse 80% 70% at 75% 40%,
+            rgba(0, 191, 255, 0.09) 0%,
+            transparent 60%
           ),
           radial-gradient(
-            ellipse 50% 40% at 80% 80%,
-            rgba(0, 120, 200, 0.05) 0%,
+            ellipse 60% 50% at 30% 80%,
+            rgba(0, 100, 200, 0.06) 0%,
             transparent 55%
-          ),
-          linear-gradient(200deg, rgba(0, 191, 255, 0.04) 0%, transparent 50%);
+          );
         z-index: 0;
       }
 
-      #eng-panel::after {
-        content: "02";
-        position: absolute;
-        right: -20px;
-        bottom: -40px;
-        font-family: var(--ff);
-        font-size: 280px;
-        font-weight: 900;
-        line-height: 1;
-        color: rgba(0, 191, 255, 0.03);
-        letter-spacing: -10px;
-        z-index: 0;
-        user-select: none;
-      }
-
-      /* ── HOVER OVERLAY ── */
+      /* Hover overlay */
       .panel-overlay {
         position: absolute;
         inset: 0;
         opacity: 0;
-        transition: opacity 0.5s ease;
+        transition: opacity 0.5s;
         z-index: 1;
         pointer-events: none;
       }
-      #rec-panel:hover .panel-overlay {
+      #rec:hover .panel-overlay {
         opacity: 1;
         background: radial-gradient(
-          ellipse 80% 70% at 45% 60%,
-          rgba(245, 200, 66, 0.06) 0%,
+          ellipse 90% 80% at 40% 70%,
+          rgba(245, 200, 66, 0.07) 0%,
           transparent 70%
         );
       }
-      #eng-panel:hover .panel-overlay {
+      #eng:hover .panel-overlay {
         opacity: 1;
         background: radial-gradient(
-          ellipse 80% 70% at 55% 60%,
-          rgba(0, 191, 255, 0.06) 0%,
+          ellipse 90% 80% at 60% 70%,
+          rgba(0, 191, 255, 0.07) 0%,
           transparent 70%
         );
       }
 
-      /* ── PANEL CONTENT ── */
+      /* Big BG watermark number */
+      .bg-num {
+        position: absolute;
+        right: -16px;
+        bottom: -30px;
+        font-family: var(--ff);
+        font-size: 260px;
+        font-weight: 900;
+        line-height: 1;
+        letter-spacing: -10px;
+        z-index: 0;
+        user-select: none;
+        pointer-events: none;
+      }
+      #rec .bg-num {
+        color: rgba(245, 200, 66, 0.04);
+      }
+      #eng .bg-num {
+        color: rgba(0, 191, 255, 0.04);
+      }
+
+      /* Mini city illustration (CSS) */
+      .city-sketch {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 45%;
+        z-index: 1;
+        overflow: hidden;
+        pointer-events: none;
+      }
+      .city-sketch::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 60%;
+        background: linear-gradient(to bottom, transparent, var(--panel-bg));
+      }
+
+      /* Buildings silhouette */
+      .skyline {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        align-items: flex-end;
+        gap: 3px;
+        padding: 0 20px;
+      }
+      .bld {
+        flex-shrink: 0;
+        border-radius: 1px 1px 0 0;
+      }
+      .bld-win {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        align-content: flex-start;
+        padding: 3px;
+        gap: 2px;
+      }
+      .win {
+        width: 4px;
+        height: 5px;
+        border-radius: 1px;
+        opacity: 0.7;
+      }
+
+      /* ── CONTENT ── */
       .panel-content {
         position: relative;
         z-index: 2;
         padding: 0 64px;
       }
 
-      /* Category label */
       .cat-label {
         font-family: var(--fm);
         font-size: 10px;
         letter-spacing: 5px;
-        text-transform: uppercase;
-        margin-bottom: 28px;
+        margin-bottom: 26px;
         display: flex;
         align-items: center;
         gap: 12px;
@@ -250,64 +288,57 @@
         width: 24px;
         height: 1px;
       }
-      #rec-panel .cat-label {
+      #rec .cat-label {
         color: rgba(245, 200, 66, 0.5);
       }
-      #rec-panel .cat-label::before {
+      #rec .cat-label::before {
         background: rgba(245, 200, 66, 0.4);
       }
-      #eng-panel .cat-label {
+      #eng .cat-label {
         color: rgba(0, 191, 255, 0.5);
       }
-      #eng-panel .cat-label::before {
+      #eng .cat-label::before {
         background: rgba(0, 191, 255, 0.4);
       }
 
-      /* Big audience word */
       .audience {
         font-family: var(--ff);
-        font-size: clamp(68px, 9vw, 120px);
+        font-size: clamp(62px, 8.5vw, 115px);
         font-weight: 900;
-        line-height: 0.9;
+        line-height: 0.88;
         letter-spacing: -2px;
-        margin-bottom: 32px;
+        margin-bottom: 28px;
         display: block;
       }
-      #rec-panel .audience {
+      #rec .audience {
         color: var(--gold);
-        text-shadow:
-          0 0 60px rgba(245, 200, 66, 0.2),
-          0 0 120px rgba(245, 200, 66, 0.08);
+        text-shadow: 0 0 80px rgba(245, 200, 66, 0.22);
       }
-      #eng-panel .audience {
+      #eng .audience {
         color: var(--arc);
-        text-shadow:
-          0 0 60px rgba(0, 191, 255, 0.2),
-          0 0 120px rgba(0, 191, 255, 0.08);
+        text-shadow: 0 0 80px rgba(0, 191, 255, 0.22);
       }
 
-      /* Description */
-      .desc {
+      .tagline {
         font-family: var(--fb);
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 300;
-        line-height: 1.75;
-        max-width: 380px;
-        margin-bottom: 40px;
+        line-height: 1.7;
+        max-width: 360px;
+        margin-bottom: 36px;
       }
-      #rec-panel .desc {
-        color: rgba(245, 200, 66, 0.45);
+      #rec .tagline {
+        color: rgba(245, 200, 66, 0.42);
       }
-      #eng-panel .desc {
-        color: rgba(0, 191, 255, 0.45);
+      #eng .tagline {
+        color: rgba(0, 191, 255, 0.42);
       }
 
-      /* Feature list */
-      .features {
+      .feats {
         list-style: none;
-        margin-bottom: 48px;
+        margin-bottom: 44px;
       }
-      .features li {
+      .feats li {
         font-family: var(--fm);
         font-size: 11px;
         letter-spacing: 2px;
@@ -317,50 +348,47 @@
         align-items: center;
         gap: 14px;
       }
-      .features li::before {
+      .feats li::before {
         content: "";
         width: 4px;
         height: 4px;
         border-radius: 50%;
         flex-shrink: 0;
       }
-      #rec-panel .features li {
+      #rec .feats li {
         color: rgba(245, 200, 66, 0.38);
         border-color: rgba(245, 200, 66, 0.08);
       }
-      #rec-panel .features li::before {
+      #rec .feats li::before {
         background: rgba(245, 200, 66, 0.5);
       }
-      #eng-panel .features li {
+      #eng .feats li {
         color: rgba(0, 191, 255, 0.38);
         border-color: rgba(0, 191, 255, 0.08);
       }
-      #eng-panel .features li::before {
+      #eng .feats li::before {
         background: rgba(0, 191, 255, 0.5);
       }
 
-      /* CTA Button */
       .cta {
         display: inline-flex;
         align-items: center;
         gap: 16px;
-        border: none;
         background: none;
+        border: none;
         padding: 0;
-        transition: gap 0.3s ease;
+        transition: gap 0.3s;
       }
       .cta:hover {
         gap: 24px;
       }
-
-      .cta-text {
+      .cta-label {
         font-family: var(--ff);
         font-size: 18px;
         font-weight: 700;
         letter-spacing: 4px;
-        text-transform: uppercase;
       }
-      .cta-arrow {
+      .cta-circle {
         width: 48px;
         height: 48px;
         border-radius: 50%;
@@ -371,45 +399,67 @@
         font-size: 20px;
         flex-shrink: 0;
         transition:
-          transform 0.3s ease,
-          background 0.3s ease;
+          transform 0.3s,
+          background 0.3s;
       }
-      .cta:hover .cta-arrow {
+      .cta:hover .cta-circle {
         transform: translateX(4px);
       }
-
-      #rec-panel .cta-text {
+      #rec .cta-label {
         color: var(--gold);
       }
-      #rec-panel .cta-arrow {
+      #rec .cta-circle {
         border-color: rgba(245, 200, 66, 0.35);
         color: var(--gold);
         background: rgba(245, 200, 66, 0.04);
       }
-      #rec-panel .cta:hover .cta-arrow {
+      #rec .cta:hover .cta-circle {
         background: rgba(245, 200, 66, 0.1);
       }
-
-      #eng-panel .cta-text {
+      #eng .cta-label {
         color: var(--arc);
       }
-      #eng-panel .cta-arrow {
+      #eng .cta-circle {
         border-color: rgba(0, 191, 255, 0.35);
         color: var(--arc);
         background: rgba(0, 191, 255, 0.04);
       }
-      #eng-panel .cta:hover .cta-arrow {
+      #eng .cta:hover .cta-circle {
         background: rgba(0, 191, 255, 0.1);
       }
 
-      /* ── TOP HEADER ── */
+      /* ── SIDE LABELS ── */
+      .side-tag {
+        position: absolute;
+        top: 50%;
+        font-family: var(--ff);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 6px;
+        writing-mode: vertical-rl;
+        transform: translateY(-50%);
+        z-index: 3;
+        opacity: 0.1;
+        pointer-events: none;
+      }
+      #rec .side-tag {
+        right: 26px;
+        color: var(--gold);
+        transform: translateY(-50%) rotate(180deg);
+      }
+      #eng .side-tag {
+        left: 26px;
+        color: var(--arc);
+      }
+
+      /* ── TOP BAR ── */
       #top-bar {
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
         z-index: 100;
-        height: 64px;
+        height: 62px;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -422,26 +472,26 @@
       }
       .top-name {
         font-family: var(--ff);
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 700;
         letter-spacing: 6px;
-        color: rgba(255, 255, 255, 0.7);
+        color: rgba(255, 255, 255, 0.65);
       }
       .top-meta {
         font-family: var(--fm);
-        font-size: 9px;
+        font-size: 8px;
         letter-spacing: 3px;
-        color: rgba(255, 255, 255, 0.18);
+        color: rgba(255, 255, 255, 0.17);
       }
 
-      /* ── BOTTOM STATUS BAR ── */
-      #bottom-bar {
+      /* ── BOTTOM BAR ── */
+      #bot-bar {
         position: fixed;
         bottom: 0;
         left: 0;
         right: 0;
         z-index: 100;
-        height: 44px;
+        height: 42px;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -453,16 +503,16 @@
         );
         border-top: 1px solid rgba(255, 255, 255, 0.04);
       }
-      .status-item {
+      .bot-item {
         font-family: var(--fm);
-        font-size: 9px;
+        font-size: 8.5px;
         letter-spacing: 3px;
-        color: rgba(255, 255, 255, 0.15);
+        color: rgba(255, 255, 255, 0.14);
         display: flex;
         align-items: center;
         gap: 8px;
       }
-      .status-dot {
+      .bot-dot {
         width: 5px;
         height: 5px;
         border-radius: 50%;
@@ -480,32 +530,7 @@
         }
       }
 
-      /* ── VERTICAL LABEL on side of panel ── */
-      .side-label {
-        position: absolute;
-        top: 50%;
-        font-family: var(--ff);
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 6px;
-        writing-mode: vertical-rl;
-        text-orientation: mixed;
-        transform: translateY(-50%);
-        z-index: 3;
-        pointer-events: none;
-        opacity: 0.12;
-      }
-      #rec-panel .side-label {
-        right: 28px;
-        color: var(--gold);
-        transform: translateY(-50%) rotate(180deg);
-      }
-      #eng-panel .side-label {
-        left: 28px;
-        color: var(--arc);
-      }
-
-      /* ── FLASH TRANSITION ── */
+      /* ── FLASH ── */
       #flash {
         position: fixed;
         inset: 0;
@@ -513,17 +538,17 @@
         background: var(--void);
         opacity: 0;
         pointer-events: none;
-        transition: opacity 0.45s ease;
+        transition: opacity 0.42s ease;
       }
       #flash.out {
         opacity: 1;
         pointer-events: all;
       }
 
-      /* ── INTRO ANIMATION ── */
+      /* ── ANIM ── */
       .panel-content {
         opacity: 0;
-        transform: translateY(24px);
+        transform: translateY(28px);
         transition:
           opacity 0.8s ease,
           transform 0.8s ease;
@@ -532,46 +557,12 @@
         opacity: 1;
         transform: translateY(0);
       }
-
-      /* Responsive */
-      @media (max-width: 700px) {
-        #stage {
-          grid-template-columns: 1fr;
-          grid-template-rows: 1fr 1fr;
-        }
-        #divider {
-          left: 0;
-          right: 0;
-          top: 50%;
-          bottom: auto;
-          width: 100%;
-          height: 1px;
-          background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(255, 255, 255, 0.08),
-            transparent
-          );
-        }
-        .panel-content {
-          padding: 0 28px;
-        }
-        #top-bar,
-        #bottom-bar {
-          padding: 0 28px;
-        }
-        #rec-panel .side-label,
-        #eng-panel .side-label {
-          display: none;
-        }
-      }
     </style>
   </head>
   <body>
     <div id="cur"></div>
     <div id="flash"></div>
 
-    <!-- Top bar -->
     <header id="top-bar">
       <div class="top-name">ADITYA SRIVASTAVA</div>
       <div class="top-meta">
@@ -580,82 +571,76 @@
       </div>
     </header>
 
-    <!-- Main stage -->
     <div id="stage">
       <!-- RECRUITER PANEL -->
-      <div class="panel" id="rec-panel" onclick="go('recruiter')">
+      <div class="panel" id="rec" onclick="go('recruiter')">
         <div class="panel-overlay"></div>
-        <div class="side-label">BUSINESS &amp; IMPACT</div>
+        <div class="bg-num">01</div>
+        <div class="side-tag">BUSINESS &amp; IMPACT</div>
+
+        <!-- City skyline sketch -->
+        <div class="city-sketch" id="rec-city"></div>
 
         <div class="panel-content" id="rec-content">
           <div class="cat-label">FOR HIRING MANAGERS</div>
-
           <span class="audience">RECRUITER</span>
-
-          <p class="desc">
-            See the system map. Understand what was built, what problem it
-            solved, and how every project connects to the next.
+          <p class="tagline">
+            Drive through the city. Each building is a system Aditya built — see
+            the business problem, what he built, and how every project connects.
           </p>
-
-          <ul class="features">
-            <li>Business problem &amp; outcome for every system</li>
-            <li>How 10 systems connect and depend on each other</li>
-            <li>Scope, leadership, and measurable impact</li>
-            <li>4-year career story in one interactive stage</li>
+          <ul class="feats">
+            <li>12 buildings: 10 systems + 2 education milestones</li>
+            <li>Business problem &amp; measurable outcome per system</li>
+            <li>How every project connects to the next</li>
+            <li>4-year career story, spatially laid out</li>
           </ul>
-
           <button class="cta">
-            <span class="cta-text">Enter</span>
-            <span class="cta-arrow">→</span>
+            <span class="cta-label">Enter City</span>
+            <span class="cta-circle">→</span>
           </button>
         </div>
       </div>
 
-      <!-- CENTER DIVIDER -->
-      <div id="divider"></div>
+      <div id="div-line"></div>
 
       <!-- ENGINEER PANEL -->
-      <div class="panel" id="eng-panel" onclick="go('engineer')">
+      <div class="panel" id="eng" onclick="go('engineer')">
         <div class="panel-overlay"></div>
-        <div class="side-label">ARCHITECTURE &amp; DEPTH</div>
+        <div class="bg-num">02</div>
+        <div class="side-tag">ARCHITECTURE &amp; DEPTH</div>
+
+        <!-- City skyline sketch -->
+        <div class="city-sketch" id="eng-city"></div>
 
         <div class="panel-content" id="eng-content">
           <div class="cat-label">FOR ENGINEERS</div>
-
           <span class="audience">ENGINEER</span>
-
-          <p class="desc">
-            See the real problems. Every constraint faced, every approach
-            rejected, and exactly why each architecture decision was made.
+          <p class="tagline">
+            Enter each building and read the real problems: constraints faced,
+            approaches rejected, and why each architecture decision was made.
           </p>
-
-          <ul class="features">
-            <li>Root cause analysis for every system</li>
-            <li>Rejected approaches and the reasons why</li>
+          <ul class="feats">
+            <li>Root cause analysis — the actual problem, not the symptom</li>
+            <li>Every rejected approach, and exactly why it was wrong</li>
             <li>Architecture decisions with full technical reasoning</li>
-            <li>
-              Implementation details that only someone who built it would know
-            </li>
+            <li>Implementation details only someone who built it would know</li>
           </ul>
-
           <button class="cta">
-            <span class="cta-text">Enter</span>
-            <span class="cta-arrow">→</span>
+            <span class="cta-label">Enter City</span>
+            <span class="cta-circle">→</span>
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Bottom bar -->
-    <footer id="bottom-bar">
-      <div class="status-item">
-        <span class="status-dot"></span>
-        ALL SYSTEMS OPERATIONAL
+    <footer id="bot-bar">
+      <div class="bot-item">
+        <span class="bot-dot"></span>ALL SYSTEMS OPERATIONAL
       </div>
-      <div class="status-item">
+      <div class="bot-item">
         10 SYSTEMS &nbsp;·&nbsp; 4 YEARS &nbsp;·&nbsp; 0 BREACHES
       </div>
-      <div class="status-item">JAVA · SPRING BOOT · AWS · MYSQL</div>
+      <div class="bot-item">JAVA · SPRING BOOT · AWS · MYSQL</div>
     </footer>
 
     <script>
@@ -670,26 +655,126 @@
         p.addEventListener("mouseleave", () => cur.classList.remove("big"));
       });
 
-      // Animate panels in
+      // Draw mini city skylines using canvas
+      function drawSkyline(canvasId, palette, isWarm) {
+        const container = document.getElementById(canvasId);
+        if (!container) return;
+        const cv = document.createElement("canvas");
+        cv.style.cssText = "width:100%;height:100%;display:block;";
+        cv.width = 800;
+        cv.height = 260;
+        container.appendChild(cv);
+        const ctx = cv.getContext("2d");
+
+        // Sky gradient
+        const sky = ctx.createLinearGradient(0, 0, 0, 260);
+        if (isWarm) {
+          sky.addColorStop(0, "#060400");
+          sky.addColorStop(1, "#0a0800");
+        } else {
+          sky.addColorStop(0, "#060810");
+          sky.addColorStop(1, "#060912");
+        }
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, 800, 260);
+
+        // Stars
+        for (let i = 0; i < 120; i++) {
+          const x = Math.random() * 800,
+            y = Math.random() * 180;
+          ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.5 + 0.1})`;
+          ctx.beginPath();
+          ctx.arc(x, y, Math.random() * 1.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Buildings
+        const buildings = [
+          [20, 60, 40, 200],
+          [70, 80, 35, 180],
+          [115, 50, 55, 210],
+          [180, 70, 30, 190],
+          [220, 90, 45, 170],
+          [275, 40, 50, 220],
+          [335, 65, 35, 195],
+          [380, 55, 60, 205],
+          [450, 75, 40, 185],
+          [500, 50, 45, 210],
+          [555, 80, 35, 180],
+          [600, 60, 55, 200],
+          [665, 70, 40, 190],
+          [715, 45, 50, 215],
+          [775, 85, 25, 175],
+        ];
+        buildings.forEach(([bx, bh, bw, by]) => {
+          const col = isWarm
+            ? `rgba(${20 + Math.random() * 20},${15 + Math.random() * 15},0,1)`
+            : `rgba(0,${10 + Math.random() * 20},${20 + Math.random() * 30},1)`;
+          ctx.fillStyle = col;
+          ctx.fillRect(bx, by - bh, bw, bh);
+
+          // Windows
+          for (let wy = by - bh + 6; wy < by - 5; wy += 16) {
+            for (let wx = bx + 5; wx < bx + bw - 5; wx += 10) {
+              const lit = Math.random() > 0.35;
+              if (lit) {
+                ctx.fillStyle = isWarm
+                  ? `rgba(255,${200 + Math.random() * 55},${50 + Math.random() * 80},0.85)`
+                  : `rgba(${100 + Math.random() * 80},${180 + Math.random() * 75},255,0.85)`;
+                ctx.fillRect(wx, wy, 5, 7);
+              }
+            }
+          }
+        });
+
+        // Ground glow
+        const grd = ctx.createLinearGradient(0, 200, 0, 260);
+        grd.addColorStop(
+          0,
+          isWarm ? "rgba(245,200,66,0.08)" : "rgba(0,191,255,0.08)",
+        );
+        grd.addColorStop(1, "transparent");
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 200, 800, 60);
+
+        // Road
+        ctx.fillStyle = isWarm ? "rgba(30,25,10,0.8)" : "rgba(10,15,30,0.8)";
+        ctx.fillRect(0, 240, 800, 20);
+
+        // Road lines
+        for (let rx = 0; rx < 800; rx += 40) {
+          ctx.fillStyle = "rgba(255,200,0,0.3)";
+          ctx.fillRect(rx, 248, 20, 3);
+        }
+
+        // Fade bottom
+        const fade = ctx.createLinearGradient(0, 150, 0, 260);
+        fade.addColorStop(0, "transparent");
+        fade.addColorStop(1, isWarm ? "#0a0800" : "#060810");
+        ctx.fillStyle = fade;
+        ctx.fillRect(0, 0, 800, 260);
+      }
+
+      drawSkyline("rec-city", null, true);
+      drawSkyline("eng-city", null, false);
+
+      // Animate in
       window.addEventListener("load", () => {
         setTimeout(
           () => document.getElementById("rec-content").classList.add("show"),
-          200,
+          150,
         );
         setTimeout(
           () => document.getElementById("eng-content").classList.add("show"),
-          400,
+          350,
         );
       });
 
-      // Navigation with flash transition
       function go(path) {
         sessionStorage.setItem("vp", path);
-        const flash = document.getElementById("flash");
-        flash.classList.add("out");
-        setTimeout(() => {
-          window.location.href = path + ".html";
-        }, 460);
+        const f = document.getElementById("flash");
+        f.classList.add("out");
+        setTimeout(() => (window.location.href = "city.html"), 440);
       }
     </script>
   </body>
