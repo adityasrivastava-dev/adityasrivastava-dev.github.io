@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aditya Srivastava — Backend Architect</title>
+    <script src="config.js"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --gold: #c8a84b;
+        --gold-dim: #8a7030;
+        --bg: #06080f;
+        --text: #e8dcc8;
+        --text-dim: #6a7a9a;
+        --border: #1a2540;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Courier New", Courier, monospace;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+
+      /* Subtle background grid */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(200, 168, 75, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(200, 168, 75, 0.03) 1px, transparent 1px);
+        background-size: 60px 60px;
+        pointer-events: none;
+      }
+
+      .container {
+        text-align: center;
+        max-width: 640px;
+        padding: 0 32px;
+        position: relative;
+        z-index: 1;
+      }
+
+      /* Top tag */
+      .tag {
+        font-size: 10px;
+        letter-spacing: 5px;
+        color: var(--text-dim);
+        margin-bottom: 52px;
+        opacity: 0;
+        animation: rise 1s ease forwards 0.3s;
+      }
+
+      /* Name */
+      .name {
+        font-size: clamp(30px, 6vw, 52px);
+        font-weight: 700;
+        color: var(--gold);
+        letter-spacing: 3px;
+        line-height: 1.1;
+        margin-bottom: 12px;
+        opacity: 0;
+        animation: rise 1s ease forwards 0.7s;
+      }
+
+      /* Role */
+      .role {
+        font-size: 11px;
+        letter-spacing: 4px;
+        color: var(--text-dim);
+        margin-bottom: 56px;
+        opacity: 0;
+        animation: rise 1s ease forwards 1s;
+      }
+
+      /* Transmission text */
+      .transmission {
+        font-size: 15px;
+        line-height: 2;
+        color: #8a9bc0;
+        margin-bottom: 64px;
+        opacity: 0;
+        animation: rise 1s ease forwards 1.4s;
+      }
+
+      .transmission .highlight {
+        color: var(--gold);
+      }
+
+      /* Gate */
+      .gate-label {
+        font-size: 9px;
+        letter-spacing: 5px;
+        color: var(--text-dim);
+        margin-bottom: 20px;
+        opacity: 0;
+        animation: rise 1s ease forwards 2s;
+      }
+
+      .buttons {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+        flex-wrap: wrap;
+        opacity: 0;
+        animation: rise 1s ease forwards 2.2s;
+      }
+
+      .btn {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-dim);
+        font-family: "Courier New", monospace;
+        font-size: 10px;
+        letter-spacing: 3px;
+        padding: 18px 36px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        min-width: 220px;
+        position: relative;
+      }
+
+      .btn::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: var(--gold);
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+
+      .btn:hover {
+        border-color: var(--gold);
+        color: var(--gold);
+      }
+
+      .btn-primary:hover {
+        background: rgba(200, 168, 75, 0.05);
+        box-shadow: 0 0 30px rgba(200, 168, 75, 0.1);
+      }
+
+      /* Visitor count */
+      .visitor-badge {
+        position: fixed;
+        bottom: 28px;
+        right: 28px;
+        font-size: 9px;
+        letter-spacing: 3px;
+        color: var(--border);
+        transition: color 0.5s;
+      }
+
+      .visitor-badge.loaded {
+        color: var(--text-dim);
+      }
+
+      /* Divider line */
+      .divider {
+        width: 60px;
+        height: 1px;
+        background: var(--gold-dim);
+        margin: 0 auto 56px;
+        opacity: 0;
+        animation: rise 1s ease forwards 1.2s;
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Mobile */
+      @media (max-width: 480px) {
+        .buttons {
+          flex-direction: column;
+          align-items: center;
+        }
+        .btn {
+          min-width: 280px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="tag">RECEIVING TRANSMISSION · 2034 · NOIDA, INDIA</div>
+
+      <div class="name">Aditya Srivastava</div>
+      <div class="role">
+        BACKEND ARCHITECT · JAVA · SPRING BOOT · MYSQL · AWS
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="transmission">
+        I build systems that hold under
+        <span class="highlight">real-world pressure.</span><br />
+        Not systems that work in demos —<br />
+        systems that work at <span class="highlight">3am</span>, when the
+        network fails,<br />
+        when requirements change after the code is deployed.<br /><br />
+        Four years. Every system still running.
+      </div>
+
+      <div class="gate-label">CHOOSE HOW YOU WANT TO EXPLORE</div>
+
+      <div class="buttons">
+        <button class="btn btn-primary" onclick="enter('recruiter')">
+          I make hiring decisions
+        </button>
+        <button class="btn" onclick="enter('engineer')">
+          I evaluate engineers
+        </button>
+      </div>
+    </div>
+
+    <div class="visitor-badge" id="visitorBadge">VISITOR #--</div>
+
+    <script>
+      const SESSION_ID = crypto.randomUUID();
+      sessionStorage.setItem("sessionId", SESSION_ID);
+
+      // Log visit to backend
+      async function logVisit() {
+        try {
+          const res = await fetch(
+            `${CONFIG.API_URL}/api/${CONFIG.VERSION}/visitor/ping`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                sessionId: SESSION_ID,
+                page: "gate",
+                referrer: document.referrer || "direct",
+              }),
+            },
+          );
+          const json = await res.json();
+          if (json.data && json.data.visitorNumber) {
+            const badge = document.getElementById("visitorBadge");
+            badge.textContent = `VISITOR #${json.data.visitorNumber}`;
+            badge.classList.add("loaded");
+          }
+        } catch (e) {
+          // Backend not available — portfolio still works perfectly
+          console.log("Backend not reachable — running in offline mode");
+        }
+      }
+
+      // Log visitor path choice then redirect
+      function enter(path) {
+        sessionStorage.setItem("visitorPath", path);
+
+        // Log the choice to backend (fire and forget)
+        fetch(`${CONFIG.API_URL}/api/${CONFIG.VERSION}/visitor/event`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionId: SESSION_ID,
+            eventType: "path_chosen",
+            eventData: path,
+          }),
+        }).catch(() => {});
+
+        // Navigate to city
+        window.location.href = `city.html?path=${path}`;
+      }
+
+      // Capture JS errors silently
+      window.addEventListener("error", (e) => {
+        fetch(`${CONFIG.API_URL}/api/${CONFIG.VERSION}/visitor/error`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionId: SESSION_ID,
+            message: e.message,
+            fileName: e.filename,
+            lineNumber: e.lineno,
+            browser: navigator.userAgent,
+            page: "gate",
+          }),
+        }).catch(() => {});
+      });
+
+      // Update duration every 30 seconds
+      setInterval(() => {
+        const seconds = Math.round((Date.now() - pageLoadTime) / 1000);
+        fetch(
+          `${CONFIG.API_URL}/api/${CONFIG.VERSION}/visitor/session/${SESSION_ID}/duration`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ durationSeconds: seconds }),
+          },
+        ).catch(() => {});
+      }, 30000);
+
+      const pageLoadTime = Date.now();
+      logVisit();
+    </script>
+  </body>
+</html>

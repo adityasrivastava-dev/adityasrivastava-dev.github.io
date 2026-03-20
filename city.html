@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aditya's World</title>
+    <script src="config.js"></script>
+    <style>
+      body {
+        background: #06080f;
+        color: #e8dcc8;
+        font-family: "Courier New", monospace;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        margin: 0;
+      }
+      .msg {
+        text-align: center;
+        color: #6a7a9a;
+        font-size: 12px;
+        letter-spacing: 3px;
+      }
+      .msg span {
+        color: #c8a84b;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="msg">
+      THE CITY IS BEING BUILT<br /><br />
+      <span id="path-display"></span>
+    </div>
+    <script>
+      const path =
+        new URLSearchParams(window.location.search).get("path") || "recruiter";
+      document.getElementById("path-display").textContent =
+        `PATH: ${path.toUpperCase()} · COMING SOON`;
+    </script>
+  </body>
+</html>
