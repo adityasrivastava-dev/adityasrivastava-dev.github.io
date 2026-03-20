@@ -14,40 +14,22 @@
         padding: 0;
         box-sizing: border-box;
       }
-      :root {
-        --gold: #c8a84b;
-        --gold-dim: #6a5520;
-        --gold-glow: rgba(200, 168, 75, 0.15);
-        --bg: #06080f;
-        --bg2: #0a0e18;
-        --card: #0d1120;
-        --text: #e8dcc8;
-        --text-dim: #6a7a9a;
-        --text-mid: #9aabcc;
-        --border: #1a2540;
-        --green-text: #5aaa7a;
-        --red-text: #cc6a6a;
-        --blue-text: #6aaacc;
-      }
       html,
       body {
         width: 100%;
         height: 100%;
         overflow: hidden;
-        background: var(--bg);
-      }
-      body {
+        background: #0a0612;
         font-family: "Courier New", monospace;
-        color: var(--text);
+        color: #e8dcc8;
       }
 
-      /* CANVAS */
-      #canvas {
+      canvas {
         position: fixed;
         inset: 0;
         cursor: grab;
       }
-      #canvas:active {
+      canvas:active {
         cursor: grabbing;
       }
 
@@ -58,25 +40,26 @@
         left: 0;
         right: 0;
         z-index: 100;
-        background: rgba(6, 8, 15, 0.9);
-        backdrop-filter: blur(12px);
-        border-bottom: 1px solid var(--border);
-        height: 52px;
+        background: rgba(8, 4, 18, 0.88);
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid rgba(200, 140, 255, 0.15);
+        height: 50px;
         padding: 0 24px;
         display: flex;
         align-items: center;
         justify-content: space-between;
       }
       .h-name {
-        font-size: 11px;
+        font-size: 12px;
         letter-spacing: 3px;
-        color: var(--gold);
-        font-weight: 700;
+        background: linear-gradient(90deg, #c8a84b, #e8d080);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
       }
       .h-right {
         display: flex;
         align-items: center;
-        gap: 20px;
+        gap: 18px;
       }
       .path-badge {
         font-size: 9px;
@@ -85,86 +68,105 @@
         border: 1px solid;
       }
       .path-badge.recruiter {
-        color: var(--gold);
-        border-color: var(--gold-dim);
+        color: #c8a84b;
+        border-color: rgba(200, 168, 75, 0.4);
       }
       .path-badge.engineer {
-        color: var(--blue-text);
-        border-color: #1a4a6a;
+        color: #7ad4ff;
+        border-color: rgba(122, 212, 255, 0.4);
       }
       .h-btn {
         font-size: 9px;
         letter-spacing: 2px;
-        color: var(--text-dim);
+        color: #7a8aaa;
         cursor: pointer;
         text-decoration: none;
-        transition: color 0.2s;
         background: none;
         border: none;
         font-family: inherit;
+        transition: color 0.2s;
+        padding: 0;
       }
       .h-btn:hover {
-        color: var(--gold);
+        color: #c8a84b;
       }
 
       /* BRAHMASTRA */
       #brahmastra {
         position: fixed;
-        top: 52px;
+        top: 50px;
         left: 0;
         right: 0;
         z-index: 90;
-        background: rgba(6, 8, 15, 0.85);
-        border-bottom: 1px solid var(--border);
-        padding: 7px 24px;
+        background: rgba(8, 4, 18, 0.82);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid rgba(200, 140, 255, 0.1);
+        padding: 6px 24px;
         display: flex;
         align-items: center;
         gap: 14px;
         font-size: 9px;
         letter-spacing: 3px;
-        color: var(--text-dim);
+        color: #5a6a8a;
       }
       .frags {
         display: flex;
-        gap: 7px;
+        gap: 6px;
       }
       .frag {
-        width: 22px;
+        width: 24px;
         height: 3px;
-        background: var(--border);
-        transition:
-          background 0.5s,
-          box-shadow 0.5s;
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 2px;
+        transition: all 0.6s;
       }
       .frag.on {
-        background: var(--gold);
-        box-shadow: 0 0 8px var(--gold);
+        background: #c8a84b;
+        box-shadow:
+          0 0 10px #c8a84b,
+          0 0 20px rgba(200, 168, 75, 0.4);
       }
 
-      /* CONTROLS HINT */
-      #controls-hint {
+      /* TOOLTIP */
+      #tooltip {
         position: fixed;
-        bottom: 24px;
-        left: 24px;
         z-index: 90;
-        font-size: 9px;
-        letter-spacing: 2px;
-        color: var(--text-dim);
-        line-height: 2;
         pointer-events: none;
+        background: rgba(8, 4, 18, 0.9);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(200, 168, 75, 0.3);
+        padding: 10px 16px;
+        transform: translate(-50%, -120%);
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      #tooltip.vis {
+        opacity: 1;
+      }
+      .tt-name {
+        font-size: 11px;
+        letter-spacing: 2px;
+        color: #e8dcc8;
+        margin-bottom: 3px;
+      }
+      .tt-tag {
+        font-size: 8px;
+        letter-spacing: 2px;
+        color: #7a8aaa;
       }
 
-      /* DISTRICT PANEL */
+      /* PANEL */
       #panel {
         position: fixed;
         top: 0;
         right: -520px;
         bottom: 0;
         z-index: 150;
-        width: 500px;
+        width: 480px;
         max-width: 100vw;
-        background: rgba(6, 8, 15, 0.97);
-        border-left: 1px solid var(--border);
+        background: rgba(8, 4, 18, 0.97);
+        border-left: 1px solid rgba(200, 140, 255, 0.15);
+        backdrop-filter: blur(20px);
         overflow-y: auto;
         transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         display: flex;
@@ -173,56 +175,57 @@
       #panel.open {
         right: 0;
       }
-      #panel-close {
+      #panel-head {
         position: sticky;
         top: 0;
         z-index: 10;
-        background: rgba(6, 8, 15, 0.95);
-        border-bottom: 1px solid var(--border);
+        background: rgba(8, 4, 18, 0.95);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         padding: 14px 20px;
         display: flex;
         align-items: center;
         justify-content: space-between;
         cursor: pointer;
       }
-      #panel-close-label {
+      #panel-head:hover #ph-x {
+        color: #c8a84b;
+      }
+      #ph-label {
         font-size: 9px;
         letter-spacing: 3px;
-        color: var(--text-dim);
+        color: #5a6a8a;
       }
-      #panel-close-x {
+      #ph-x {
         font-size: 16px;
-        color: var(--text-dim);
+        color: #5a6a8a;
         transition: color 0.2s;
       }
-      #panel-close:hover #panel-close-x {
-        color: var(--gold);
-      }
-      #panel-content {
-        padding: 24px;
-        flex: 1;
+      #panel-body {
+        padding: 28px 24px 40px;
       }
 
-      /* Panel internals */
       .p-num {
         font-size: 9px;
         letter-spacing: 4px;
-        color: var(--gold);
-        opacity: 0.6;
+        background: linear-gradient(90deg, #c8a84b, transparent);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         margin-bottom: 6px;
       }
       .p-name {
-        font-size: 20px;
-        color: var(--text);
+        font-size: 22px;
         letter-spacing: 1px;
-        margin-bottom: 4px;
+        color: #f0e8d8;
         font-weight: 700;
+        margin-bottom: 4px;
+        line-height: 1.2;
       }
       .p-tag {
-        font-size: 9px;
+        font-size: 8px;
         letter-spacing: 3px;
-        color: var(--text-dim);
-        margin-bottom: 20px;
+        color: #5a6a8a;
+        margin-bottom: 22px;
+        line-height: 1.6;
       }
       .p-status {
         display: inline-flex;
@@ -232,175 +235,208 @@
         letter-spacing: 3px;
         padding: 4px 12px;
         border: 1px solid;
-        margin-bottom: 24px;
+        margin-bottom: 26px;
+        border-radius: 2px;
       }
       .p-status.op {
-        color: var(--green-text);
-        border-color: #2a6a3a;
+        color: #5aaa7a;
+        border-color: rgba(90, 170, 122, 0.3);
+        background: rgba(90, 170, 122, 0.05);
       }
       .p-status.ac {
-        color: var(--blue-text);
-        border-color: #1a3a6a;
+        color: #7ad4ff;
+        border-color: rgba(122, 212, 255, 0.3);
+        background: rgba(122, 212, 255, 0.05);
       }
-      .status-dot {
+      .sdot {
         width: 5px;
         height: 5px;
         border-radius: 50%;
         background: currentColor;
         animation: pulse 2s infinite;
       }
+
       .metrics {
         display: flex;
-        gap: 20px;
-        flex-wrap: wrap;
-        padding: 16px;
-        background: var(--bg2);
-        border: 1px solid var(--border);
-        margin-bottom: 24px;
+        gap: 0;
+        margin-bottom: 28px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        overflow: hidden;
       }
-      .metric-v {
-        font-size: 22px;
-        color: var(--gold);
+      .metric {
+        flex: 1;
+        padding: 14px 16px;
+        text-align: center;
+        border-right: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .metric:last-child {
+        border-right: none;
+      }
+      .mv {
+        font-size: 20px;
         font-weight: 700;
         display: block;
+        margin-bottom: 4px;
+        background: linear-gradient(180deg, #e8d080, #c8a84b);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
       }
-      .metric-l {
-        font-size: 8px;
+      .ml {
+        font-size: 7px;
         letter-spacing: 3px;
-        color: var(--text-dim);
+        color: #4a5a7a;
       }
-      .section-label {
+
+      .slabel {
         font-size: 8px;
         letter-spacing: 4px;
-        color: var(--gold);
-        margin-bottom: 8px;
+        color: #c8a84b;
+        margin-bottom: 10px;
+        margin-top: 20px;
       }
       .story {
         font-size: 13px;
-        line-height: 1.9;
-        color: var(--text-mid);
-        margin-bottom: 20px;
+        line-height: 2;
+        color: #8a9bbb;
       }
       .story .em {
-        color: var(--gold);
+        color: #c8a84b;
+        font-style: normal;
       }
+      .story br {
+        display: block;
+        content: "";
+      }
+
       .eng-toggle {
-        font-size: 9px;
-        letter-spacing: 3px;
-        color: var(--text-dim);
-        cursor: pointer;
-        padding: 10px 0;
-        border-top: 1px solid var(--border);
         display: flex;
         align-items: center;
         gap: 8px;
+        margin-top: 20px;
+        font-size: 9px;
+        letter-spacing: 3px;
+        color: #4a5a7a;
+        cursor: pointer;
+        padding: 10px 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
         transition: color 0.2s;
         user-select: none;
-        margin-bottom: 0;
       }
       .eng-toggle:hover {
-        color: var(--blue-text);
+        color: #7ad4ff;
       }
       .eng-deep {
         display: none;
         margin-top: 12px;
-        padding: 14px;
-        background: rgba(26, 58, 106, 0.1);
-        border: 1px solid #1a3a6a;
+        padding: 16px;
+        background: rgba(122, 212, 255, 0.04);
+        border: 1px solid rgba(122, 212, 255, 0.15);
+        border-radius: 2px;
         font-size: 12px;
         line-height: 1.9;
-        color: var(--text-mid);
+        color: #7a9aaa;
       }
       .eng-deep.vis {
         display: block;
       }
       .eng-deep code {
-        color: var(--blue-text);
+        color: #7ad4ff;
         font-size: 11px;
+        font-family: "Courier New", monospace;
       }
+
       .tech-tags {
         display: flex;
         flex-wrap: wrap;
-        gap: 7px;
-        margin-top: 16px;
+        gap: 6px;
+        margin-top: 18px;
       }
       .tech-tag {
         font-size: 8px;
         letter-spacing: 2px;
-        color: var(--text-dim);
-        border: 1px solid var(--border);
+        color: #4a5a7a;
+        border: 1px solid rgba(255, 255, 255, 0.07);
         padding: 3px 9px;
+        border-radius: 2px;
       }
-      .record-status {
-        margin-top: 20px;
+
+      .rec-status {
+        margin-top: 24px;
         padding: 10px 14px;
-        background: rgba(42, 106, 58, 0.08);
-        border: 1px solid #2a6a3a;
+        background: rgba(90, 170, 122, 0.05);
+        border: 1px solid rgba(90, 170, 122, 0.2);
+        border-radius: 2px;
         display: flex;
         align-items: center;
         gap: 10px;
         font-size: 8px;
         letter-spacing: 3px;
-        color: var(--green-text);
+        color: #5aaa7a;
       }
 
       /* ORACLE */
       #oracle-btn {
         position: fixed;
-        bottom: 24px;
-        right: 24px;
+        bottom: 28px;
+        right: 28px;
         z-index: 200;
-        width: 46px;
-        height: 46px;
-        border: 1px solid var(--gold-dim);
-        background: var(--bg);
-        color: var(--gold);
-        font-size: 18px;
+        width: 48px;
+        height: 48px;
+        background: rgba(8, 4, 18, 0.9);
+        border: 1px solid rgba(200, 168, 75, 0.4);
+        color: #c8a84b;
+        font-size: 20px;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
         transition: all 0.3s;
         font-family: serif;
+        border-radius: 50%;
+        box-shadow: 0 0 20px rgba(200, 168, 75, 0.1);
       }
       #oracle-btn:hover {
-        background: var(--gold-glow);
-        border-color: var(--gold);
-        box-shadow: 0 0 20px rgba(200, 168, 75, 0.2);
+        background: rgba(200, 168, 75, 0.1);
+        border-color: #c8a84b;
+        box-shadow: 0 0 30px rgba(200, 168, 75, 0.3);
+        transform: scale(1.05);
       }
       #oracle-panel {
         position: fixed;
-        bottom: 82px;
-        right: 24px;
+        bottom: 90px;
+        right: 28px;
         z-index: 200;
         width: 320px;
-        background: var(--bg2);
-        border: 1px solid var(--gold-dim);
+        background: rgba(8, 4, 18, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(200, 168, 75, 0.3);
+        border-radius: 4px;
         display: none;
         flex-direction: column;
         max-height: 420px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
       }
       #oracle-panel.vis {
         display: flex;
       }
-      .o-header {
-        padding: 11px 14px;
-        border-bottom: 1px solid var(--border);
+      .o-head {
+        padding: 12px 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         font-size: 9px;
         letter-spacing: 3px;
-        color: var(--gold);
+        color: #c8a84b;
         display: flex;
         justify-content: space-between;
         align-items: center;
       }
-      .o-close {
+      .o-x {
         cursor: pointer;
-        color: var(--text-dim);
+        color: #5a6a8a;
         font-size: 14px;
         transition: color 0.2s;
       }
-      .o-close:hover {
-        color: var(--gold);
+      .o-x:hover {
+        color: #c8a84b;
       }
       #oracle-msgs {
         flex: 1;
@@ -414,40 +450,43 @@
       }
       .o-msg {
         padding: 9px 13px;
-        border: 1px solid var(--border);
+        border-radius: 3px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
       }
       .o-msg.user {
         align-self: flex-end;
-        color: var(--text-dim);
+        color: #5a6a8a;
         font-size: 11px;
         max-width: 80%;
+        background: rgba(255, 255, 255, 0.03);
       }
       .o-msg.bot {
-        color: var(--text-mid);
-        border-color: var(--gold-dim);
+        color: #8a9bbb;
+        border-color: rgba(200, 168, 75, 0.15);
+        background: rgba(200, 168, 75, 0.03);
       }
       .o-row {
         display: flex;
-        border-top: 1px solid var(--border);
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
       }
       #oracle-input {
         flex: 1;
         background: transparent;
         border: none;
-        color: var(--text);
+        color: #e8dcc8;
         font-family: "Courier New", monospace;
         font-size: 11px;
         padding: 11px 14px;
         outline: none;
       }
       #oracle-input::placeholder {
-        color: var(--text-dim);
+        color: #3a4a6a;
       }
       #oracle-send {
         background: transparent;
         border: none;
-        border-left: 1px solid var(--border);
-        color: var(--gold);
+        border-left: 1px solid rgba(255, 255, 255, 0.06);
+        color: #c8a84b;
         font-family: "Courier New", monospace;
         font-size: 9px;
         letter-spacing: 2px;
@@ -456,7 +495,7 @@
         transition: background 0.2s;
       }
       #oracle-send:hover {
-        background: var(--gold-glow);
+        background: rgba(200, 168, 75, 0.08);
       }
 
       /* CHAOS */
@@ -464,7 +503,8 @@
         position: fixed;
         inset: 0;
         z-index: 300;
-        background: rgba(6, 8, 15, 0.96);
+        background: rgba(4, 2, 10, 0.96);
+        backdrop-filter: blur(20px);
         display: none;
         flex-direction: column;
         align-items: center;
@@ -477,38 +517,47 @@
       #chaos-box {
         width: 100%;
         max-width: 640px;
-        border: 1px solid #6a2a2a;
-        background: var(--bg2);
+        border: 1px solid rgba(200, 60, 60, 0.3);
+        background: rgba(10, 4, 18, 0.9);
         padding: 24px;
         font-size: 12px;
         line-height: 2;
-        max-height: 70vh;
+        max-height: 60vh;
         overflow-y: auto;
+        border-radius: 4px;
       }
-      .c-line {
+      .c-fail {
         color: #cc6a6a;
       }
       .c-ok {
-        color: var(--green-text);
+        color: #5aaa7a;
       }
       .c-dim {
-        color: var(--text-dim);
+        color: #3a4a6a;
+      }
+      #chaos-result {
+        margin-top: 20px;
+        padding: 20px;
+        border: 1px solid rgba(90, 170, 122, 0.2);
+        background: rgba(90, 170, 122, 0.04);
+        border-radius: 4px;
       }
       #chaos-close {
         margin-top: 20px;
         font-size: 9px;
         letter-spacing: 3px;
-        color: var(--text-dim);
+        color: #5a6a8a;
         cursor: pointer;
         padding: 10px 24px;
-        border: 1px solid var(--border);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         background: none;
         font-family: "Courier New", monospace;
         transition: all 0.2s;
+        border-radius: 2px;
       }
       #chaos-close:hover {
-        color: var(--gold);
-        border-color: var(--gold-dim);
+        color: #c8a84b;
+        border-color: rgba(200, 168, 75, 0.3);
       }
 
       /* CONTACT */
@@ -516,7 +565,8 @@
         position: fixed;
         inset: 0;
         z-index: 300;
-        background: rgba(6, 8, 15, 0.96);
+        background: rgba(4, 2, 10, 0.95);
+        backdrop-filter: blur(20px);
         display: none;
         align-items: center;
         justify-content: center;
@@ -524,71 +574,91 @@
       #contact-overlay.vis {
         display: flex;
       }
-      .contact-card {
+      .c-card {
         text-align: center;
-        border: 1px solid var(--gold-dim);
-        padding: 48px 64px;
-        background: var(--card);
+        padding: 52px 68px;
         position: relative;
+        border: 1px solid rgba(200, 168, 75, 0.3);
+        background: rgba(10, 6, 20, 0.9);
+        box-shadow:
+          0 0 80px rgba(200, 168, 75, 0.08),
+          inset 0 0 80px rgba(200, 168, 75, 0.02);
       }
       .c-unlock {
         font-size: 9px;
         letter-spacing: 4px;
-        color: var(--gold);
+        color: #c8a84b;
         margin-bottom: 28px;
+        opacity: 0.7;
       }
       .c-name {
-        font-size: 22px;
-        color: var(--gold);
+        font-size: 26px;
         letter-spacing: 3px;
-        margin-bottom: 6px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        background: linear-gradient(135deg, #e8d080, #c8a84b);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
       }
       .c-role {
         font-size: 9px;
         letter-spacing: 4px;
-        color: var(--text-dim);
-        margin-bottom: 32px;
+        color: #4a5a7a;
+        margin-bottom: 36px;
       }
       .c-links {
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        gap: 16px;
         align-items: center;
       }
       .c-link {
         font-size: 11px;
         letter-spacing: 2px;
-        color: var(--text-mid);
+        color: #8a9bbb;
         text-decoration: none;
         display: flex;
         align-items: center;
-        gap: 14px;
+        gap: 16px;
         transition: color 0.2s;
       }
       .c-link:hover {
-        color: var(--gold);
+        color: #c8a84b;
       }
       .c-ll {
         font-size: 8px;
         letter-spacing: 3px;
-        color: var(--text-dim);
+        color: #3a4a6a;
         width: 60px;
         text-align: right;
       }
-      .contact-close {
+      .c-close {
         position: absolute;
-        top: 14px;
-        right: 14px;
+        top: 16px;
+        right: 16px;
         cursor: pointer;
-        color: var(--text-dim);
+        color: #3a4a6a;
         font-size: 18px;
         transition: color 0.2s;
         background: none;
         border: none;
         font-family: inherit;
       }
-      .contact-close:hover {
-        color: var(--gold);
+      .c-close:hover {
+        color: #c8a84b;
+      }
+
+      /* CONTROLS */
+      #controls {
+        position: fixed;
+        bottom: 28px;
+        left: 28px;
+        z-index: 90;
+        font-size: 8px;
+        letter-spacing: 2px;
+        color: #3a4a6a;
+        line-height: 2;
+        pointer-events: none;
       }
 
       @keyframes pulse {
@@ -597,90 +667,86 @@
           opacity: 1;
         }
         50% {
-          opacity: 0.4;
+          opacity: 0.3;
         }
       }
       ::-webkit-scrollbar {
         width: 3px;
       }
       ::-webkit-scrollbar-track {
-        background: var(--bg);
+        background: rgba(0, 0, 0, 0.3);
       }
       ::-webkit-scrollbar-thumb {
-        background: var(--border);
+        background: rgba(200, 168, 75, 0.2);
       }
 
       @media (max-width: 600px) {
         #panel {
           width: 100vw;
         }
-        .contact-card {
+        .c-card {
           padding: 32px 24px;
         }
         #oracle-panel {
-          width: calc(100vw - 32px);
-          right: 16px;
+          width: calc(100vw - 40px);
+          right: 20px;
         }
-        #controls-hint {
+        #controls {
           display: none;
         }
       }
     </style>
   </head>
   <body>
-    <!-- HEADER -->
     <header>
       <div class="h-name">ADITYA SRIVASTAVA</div>
       <div class="h-right">
         <div class="path-badge" id="pathBadge">LOADING</div>
-        <button class="h-btn" onclick="showChaos()">CHAOS</button>
+        <button class="h-btn" onclick="showChaos()">⚡ CHAOS</button>
         <a class="h-btn" href="index.html">← GATE</a>
       </div>
     </header>
 
-    <!-- BRAHMASTRA -->
     <div id="brahmastra">
       BRAHMASTRA
       <div class="frags" id="frags">
-        <div class="frag" data-i="0"></div>
-        <div class="frag" data-i="1"></div>
-        <div class="frag" data-i="2"></div>
-        <div class="frag" data-i="3"></div>
-        <div class="frag" data-i="4"></div>
+        <div class="frag"></div>
+        <div class="frag"></div>
+        <div class="frag"></div>
+        <div class="frag"></div>
+        <div class="frag"></div>
       </div>
-      <span id="frag-label">0 / 5</span>
+      <span id="frag-label">0 / 5 EXPLORED</span>
     </div>
 
-    <!-- 3D CANVAS -->
-    <canvas id="canvas"></canvas>
-
-    <!-- CONTROLS HINT -->
-    <div id="controls-hint">
-      DRAG → ORBIT &nbsp; SCROLL → ZOOM<br />
-      CLICK BUILDING → EXPLORE
+    <canvas id="c"></canvas>
+    <div id="controls">
+      DRAG → ORBIT &nbsp; SCROLL → ZOOM &nbsp; CLICK → EXPLORE
     </div>
 
-    <!-- DISTRICT PANEL -->
+    <div id="tooltip">
+      <div class="tt-name" id="tt-name"></div>
+      <div class="tt-tag" id="tt-tag"></div>
+    </div>
+
     <div id="panel">
-      <div id="panel-close" onclick="closePanel()">
-        <span id="panel-close-label">CLOSE LOG</span>
-        <span id="panel-close-x">✕</span>
+      <div id="panel-head" onclick="closePanel()">
+        <span id="ph-label">CLOSE LOG</span>
+        <span id="ph-x">✕</span>
       </div>
-      <div id="panel-content"></div>
+      <div id="panel-body"></div>
     </div>
 
-    <!-- ORACLE -->
     <button id="oracle-btn" onclick="toggleOracle()" title="Ask the Oracle">
       ॐ
     </button>
     <div id="oracle-panel">
-      <div class="o-header">
-        THE ORACLE <span class="o-close" onclick="toggleOracle()">✕</span>
+      <div class="o-head">
+        THE ORACLE <span class="o-x" onclick="toggleOracle()">✕</span>
       </div>
       <div id="oracle-msgs">
         <div class="o-msg bot">
-          I know one person well. Ask me anything about Aditya — his systems,
-          his decisions, his approach.
+          I know one person well. Ask me anything about Aditya.
         </div>
       </div>
       <div class="o-row">
@@ -693,16 +759,14 @@
       </div>
     </div>
 
-    <!-- CHAOS OVERLAY -->
     <div id="chaos-overlay">
       <div id="chaos-box"></div>
       <button id="chaos-close" onclick="closeChaos()">CLOSE SIMULATION</button>
     </div>
 
-    <!-- CONTACT OVERLAY -->
     <div id="contact-overlay">
-      <div class="contact-card">
-        <button class="contact-close" onclick="closeContact()">✕</button>
+      <div class="c-card">
+        <button class="c-close" onclick="closeContact()">✕</button>
         <div class="c-unlock">⚔ BRAHMASTRA ASSEMBLED · CONTACT UNLOCKED</div>
         <div class="c-name">ADITYA SRIVASTAVA</div>
         <div class="c-role">
@@ -712,7 +776,7 @@
           <a
             class="c-link"
             href="mailto:asaditya1826@gmail.com"
-            onclick="logEvent('contact_clicked', 'email')"
+            onclick="logEvt('contact_clicked', 'email')"
           >
             <span class="c-ll">EMAIL</span>asaditya1826@gmail.com
           </a>
@@ -725,7 +789,7 @@
           </a>
           <a
             class="c-link"
-            href="https://www.linkedin.com/in/aditya-srivastava-43b686226"
+            href="https://linkedin.com/in/aditya-srivastava"
             target="_blank"
           >
             <span class="c-ll">LINKEDIN</span>aditya-srivastava
@@ -735,7 +799,7 @@
     </div>
 
     <script>
-      // ── DATA ──────────────────────────────────────────────────────
+      // ── DISTRICT DATA ─────────────────────────────────────────────
       const DISTRICTS = [
         {
           id: "auth-tower",
@@ -743,18 +807,15 @@
           name: "The Auth Tower",
           tag: "SSO PLATFORM · JWT · SESSION MANAGEMENT",
           status: "OPERATIONAL",
-          statusType: "op",
+          st: "op",
           pos: [0, 0, 0],
-          size: [3, 9, 3],
-          color: 0xc8a84b,
-          emissive: 0x3a2a00,
           metrics: [
             { v: "10+", l: "APPLICATIONS" },
             { v: "10K+", l: "SESSIONS" },
             { v: "0", l: "BREACHES" },
           ],
-          story: `Every application in the company had its own login. Employees had separate passwords for each one. When someone left, someone had to manually disable their account in every system.\n\n<span class="em">Aditya built one central identity system for everything.</span>\n\nOne login works across every application. One logout disconnects everywhere. When someone joins the company, one action gives them access to everything they need. When someone leaves, one action removes all their access instantly.\n\nThe system tracks which device each person is logged in on. It handles tens of thousands of sessions. It has never been breached.`,
-          eng: `Custom SSO — built without Spring Security defaults, because multi-application trust boundary management required domain-level redirect validation that standard implementations don't handle.\n\n<code>JWT</code> with custom claims. Refresh token rotation. <code>SSO_SESSION</code> cookie + separate refresh with sliding expiry. Device fingerprinting in session record.\n\n<code>SLO</code> propagation via callback to all registered applications. Domain-mapped redirect validation prevents open redirects.\n\n<code>RBAC</code>: application-level roles evaluated per-app context — not globally. Prevents role explosion.\n\n<code>Key decision:</code> Custom auth layer — Spring Security's built-in CSRF and session management conflicted with the cross-application cookie architecture.`,
+          story: `Every application in the company had its own login. Employees had separate passwords for each one. When someone left, someone had to manually disable their account in every system.\n\n<span class="em">Aditya built one central identity system for everything.</span>\n\nOne login works across every application. One logout disconnects everywhere. When someone leaves the company, one action removes all their access instantly.\n\nThe system tracks which device each person is logged in on. It handles tens of thousands of sessions. It has never been breached.`,
+          eng: `Custom SSO — built without Spring Security defaults, because multi-application trust boundary management required domain-level redirect validation that standard implementations don't handle.\n\n<code>JWT</code> with custom claims. Refresh token rotation. <code>SSO_SESSION</code> cookie + separate refresh with sliding expiry. Device fingerprinting in session record.\n\n<code>SLO</code> propagation via callback to all registered applications.\n\n<code>RBAC:</code> application-level roles evaluated per-app context — not globally.\n\n<code>Key decision:</code> Custom auth layer — Spring Security's built-in CSRF and session management conflicted with the cross-application cookie architecture.`,
           tech: [
             "Java 17",
             "Spring Boot",
@@ -768,20 +829,17 @@
           id: "the-bridge",
           num: "05",
           name: "The Bridge",
-          tag: "JAVA 1.7 · IBM MQ · MYSQL 8 · HYBRID",
+          tag: "JAVA 1.7 · IBM MQ · MYSQL 8 · HYBRID ARCHITECTURE",
           status: "OPERATIONAL",
-          statusType: "op",
-          pos: [-6, 0, -5],
-          size: [2.5, 5, 2.5],
-          color: 0x7a6aaa,
-          emissive: 0x1a1035,
+          st: "op",
+          pos: [-7, 0, -6],
           metrics: [
             { v: "0", l: "REWRITES" },
             { v: "3", l: "CONSTRAINTS" },
             { v: "SOLO", l: "DESIGN" },
           ],
-          story: `Two systems that needed to work together but couldn't. One was old and expensive to change. The other was new and incompatible. Most engineers would have said the only solution was a full rewrite.\n\n<span class="em">Aditya designed a bridge.</span>\n\nA small new service that both systems could talk to, without either of them needing to change. The old system talks to the bridge the way it always has. The bridge talks to the new database using modern drivers. The old system never knew anything changed.\n\nA full rewrite would have cost months. The bridge cost a fraction of that. <span class="em">It is still running.</span>`,
-          eng: `Constraint: Java 1.7 IBM MQ client incompatible with MySQL 8 JDBC drivers. IBM MQ upgrade blocked by licensing cost.\n\n<code>Sole designer and implementer.</code>\n\nJava 1.8 bridge service handling all DB operations requiring MySQL 8 driver compatibility. Legacy Java 1.7 MQ system invokes via shell script with argument passing. MQ logic intact — it delegates DB calls to the bridge.\n\n<code>Key decisions:</code> Bridge is stateless → scalable without touching MQ. Argument passing is explicit and typed — not generic strings → debuggable and auditable.\n\n<code>The insight:</code> The constraint was driver compatibility. By isolating that concern in the bridge, the constraint was addressed without touching either side of it.`,
+          story: `Two systems that needed to work together but couldn't. One was old and expensive to change. The other was new and incompatible.\n\n<span class="em">Aditya designed a bridge.</span>\n\nA small new service that both systems could talk to, without either of them needing to change. The old system talks to the bridge the way it always has. The bridge talks to the new database using modern drivers.\n\nA full rewrite would have cost months. The bridge cost a fraction of that. <span class="em">It is still running.</span>`,
+          eng: `Constraint: Java 1.7 IBM MQ client incompatible with MySQL 8 JDBC drivers. IBM MQ upgrade blocked by licensing cost.\n\n<code>Sole designer and implementer.</code>\n\nJava 1.8 bridge service for all DB operations. Legacy Java 1.7 MQ invokes via shell script with argument passing. MQ logic intact — it delegates DB calls to the bridge.\n\n<code>Key decisions:</code> Bridge is stateless → scalable without touching MQ. Explicit typed arguments → debuggable and auditable.\n\n<code>The insight:</code> Isolate the constraint in the bridge — don't touch either side.`,
           tech: [
             "Java 1.7",
             "Java 1.8",
@@ -797,18 +855,15 @@
           name: "Cloud District",
           tag: "MULE ESB → AWS LAMBDA · 80+ APPLICATIONS",
           status: "OPERATIONAL",
-          statusType: "op",
-          pos: [6, 0, -5],
-          size: [2.5, 4, 2.5],
-          color: 0x4a9aaa,
-          emissive: 0x001a20,
+          st: "op",
+          pos: [7, 0, -6],
           metrics: [
             { v: "80+", l: "APPS MIGRATED" },
             { v: "1", l: "SPOF ELIMINATED" },
-            { v: "LED", l: "ARCHITECTURE" },
+            { v: "LED", l: "BY ADITYA" },
           ],
-          story: `80 separate business processes were all running through one central system. When that system had problems, every one of those 80 processes had problems simultaneously.\n\n<span class="em">Aditya led the migration away from it.</span>\n\nEvery process was moved to its own independent home. Now if one breaks, the other 79 keep running. He led this with one or two engineers assisting. The design decisions — which processes went where, how execution timing would be configured per client — were his.`,
-          eng: `Mule ESB replacement across 80+ integrations. Single point of failure for entire integration layer.\n\n<code>Migration strategy — led with 2 engineers:</code>\n\nAWS Lambda for event-triggered integrations. Standalone Java JARs with cron-based execution for batch processes. Not a blanket Lambda migration — each service evaluated against its execution pattern.\n\n<code>script.sh execution layer:</code> abstraction between scheduling infrastructure and Java execution units. Handles client-specific timing configuration and environment parameter injection.\n\n<code>Architectural principle:</code> no integration service should be a single point of failure for other services.`,
+          story: `80 separate business processes were all running through one central system. When that system had problems, every one of those 80 processes had problems simultaneously.\n\n<span class="em">Aditya led the migration away from it.</span>\n\nEvery process was moved to its own independent home. Now if one breaks, the other 79 keep running. The design decisions — which processes went where, how execution timing would be configured per client — were his.`,
+          eng: `Mule ESB replacement across 80+ integrations. Single point of failure for entire integration layer.\n\nAWS Lambda for event-triggered integrations. Standalone Java JARs for batch/cron processes.\n\n<code>script.sh execution layer:</code> abstraction between scheduling infrastructure and Java execution units. Handles client-specific timing configuration and environment parameter injection.\n\n<code>Principle:</code> no integration service should be a single point of failure for other services.`,
           tech: [
             "AWS Lambda",
             "Java",
@@ -824,18 +879,15 @@
           name: "The Data Vaults",
           tag: "MYSQL 5.X → 8.X · THREE MIGRATIONS · ZERO DOWNTIME",
           status: "OPERATIONAL",
-          statusType: "op",
-          pos: [-6, 0, 4],
-          size: [3, 3, 3],
-          color: 0xaa8a3a,
-          emissive: 0x201200,
+          st: "op",
+          pos: [-7, 0, 4],
           metrics: [
             { v: "3", l: "MIGRATIONS" },
             { v: "0", l: "DATA LOST" },
             { v: "0", l: "CRITICAL DOWNTIME" },
           ],
-          story: `AWS announced it was shutting down support for the database version the entire platform ran on. The foundation under the building was being removed.\n\n<span class="em">Aditya led the migration — not once, but three times across two years.</span>\n\nMoving the database through successive versions while the platform continued serving live clients. Every migration planned before it started. Every rollback ready before the cutover began.\n\nThree migrations. Hundreds of dependent components. Zero data lost. The clients never knew it was happening.`,
-          eng: `AWS deprecated MySQL 5.x. Migration path: 5.x → 8.0 → 8.4. Each step introduced breaking changes.\n\n<code>MySQL 8 STRICT mode:</code> legacy queries refactored — required understanding business logic, not just syntax.\n\n<code>Driver compatibility:</code> MySQL 8 JDBC driver changes broke Hibernate configuration patterns. Upgraded connection pool config across all persistence layers.\n\n<code>80+ dependent services</code> validated for compatibility before each cutover.\n\n<code>Execution:</code> shadow validation phase. Rollback checkpoints at each stage. Production cutover windows under 10 minutes each.\n\n<code>Coordination challenge:</code> this migration ran in parallel with the Mule ESB migration simultaneously.`,
+          story: `AWS announced it was shutting down support for the database version the entire platform ran on. The foundation under the building was being removed.\n\n<span class="em">Aditya led the migration — not once, but three times across two years.</span>\n\nThree migrations. Hundreds of dependent components. Zero data lost. The clients never knew it was happening.`,
+          eng: `MySQL 5.x → 8.0 → 8.4. Each step introduced breaking changes.\n\n<code>STRICT mode:</code> legacy queries refactored — required understanding business logic, not just syntax.\n\n<code>Driver compatibility:</code> MySQL 8 JDBC driver changes broke Hibernate configuration patterns. Upgraded connection pool config across all persistence layers.\n\n<code>80+ dependent services</code> validated for compatibility before each cutover.\n\nShadow validation phase. Rollback checkpoints at each stage. Production cutover windows under 10 minutes each.`,
           tech: [
             "MySQL 5.x",
             "MySQL 8.x",
@@ -849,20 +901,17 @@
           id: "ledgerflow",
           num: "08",
           name: "LedgerFlow",
-          tag: "FINANCIAL DISTRICT · PO · INVOICING · DISTRIBUTED CONSISTENCY",
+          tag: "FINANCIAL DISTRICT · PO · INVOICING · CONSISTENCY",
           status: "ACTIVE",
-          statusType: "ac",
-          pos: [6, 0, 4],
-          size: [2.5, 6, 2.5],
-          color: 0x4aaa7a,
-          emissive: 0x002015,
+          st: "ac",
+          pos: [7, 0, 4],
           metrics: [
             { v: "IDEM", l: "POTENT APIS" },
             { v: "0", l: "2PC USED" },
             { v: "STATE", l: "MACHINES" },
           ],
-          story: `Financial records cannot be wrong, cannot be duplicated, cannot be lost. LedgerFlow handles the complete lifecycle — purchase orders, approvals, invoicing, payment tracking.\n\nThe hardest part was not the features. It was the architecture underneath.\n\n<span class="em">What happens if a message gets lost? What if it arrives twice?</span>\n\nAditya designed the connection so it does not matter. Messages can be safely resent. Duplicate arrivals produce no effect. The financial record is always correct regardless of what the network does.\n\n<span class="em">The difference between a system that works in a demo and one that works at 3am.</span>`,
-          eng: `Core challenge: data consistency across loosely coupled systems without distributed transactions.\n\n<code>2-phase commit rejected</code> — availability risk, locks resources across service boundaries.\n\n<code>Three principles:</code>\n\n1. Clear data ownership — ATS owns shipment state. LedgerFlow owns financial state. No cross-service writes.\n\n2. Idempotent APIs — every state-changing operation accepts an idempotency key. Duplicates return original response without re-executing.\n\n3. State-based transitions — DRAFT → PENDING_APPROVAL → APPROVED → INVOICED → PAID. Invalid transitions return typed error. Transition validity matrix — not conditional logic.\n\n<code>Same pattern used by Stripe for payment idempotency.</code>`,
+          story: `Financial records cannot be wrong, cannot be duplicated, cannot be lost. LedgerFlow handles the complete lifecycle — purchase orders, approvals, invoicing, payment tracking.\n\n<span class="em">What happens if a message gets lost? What if it arrives twice?</span>\n\nAditya designed the connection so it does not matter. Messages can be safely resent. Duplicate arrivals produce no effect. The financial record is always correct regardless of what the network does.\n\n<span class="em">The difference between a system that works in a demo and one that works at 3am.</span>`,
+          eng: `Core challenge: data consistency across loosely coupled systems without distributed transactions.\n\n<code>2-phase commit rejected</code> — availability risk, locks resources across service boundaries.\n\n<code>Three principles:</code>\n\n1. Clear data ownership — no cross-service writes.\n2. Idempotent APIs — every state-changing operation accepts an idempotency key.\n3. State-based transitions — DRAFT → PENDING → APPROVED → INVOICED → PAID. Transition validity matrix — not conditional logic.\n\n<code>Same pattern used by Stripe for payment idempotency.</code>`,
           tech: [
             "Java 17",
             "Spring Boot",
@@ -878,18 +927,15 @@
           name: "Architecture Quarter",
           tag: "ATS · OPERATIONS APP · GREENFIELD SYSTEMS",
           status: "OPERATIONAL",
-          statusType: "op",
-          pos: [-3, 0, 7],
-          size: [4, 5.5, 2],
-          color: 0x6a8aaa,
-          emissive: 0x051525,
+          st: "op",
+          pos: [-3, 0, 8],
           metrics: [
             { v: "2", l: "SYSTEMS BUILT" },
             { v: "LEAD", l: "ARCHITECT" },
             { v: "∞", l: "EXTENSIBLE" },
           ],
-          story: `High-value art assets — paintings worth significant money — moving between cities. No tracking system. No visibility.\n\n<span class="em">Aditya designed the system from scratch.</span>\n\nEvery asset tracked from pick-up to delivery. Every state transition validated. Every crew member and truck visible in real time.\n\nAnd then separately: a completely different system for operations teams on the ground — the crews and drivers doing the physical work. Real-time status updates. Service checkpoints. Live coordination.\n\nTwo greenfield systems. Both designed from scratch. Both in production. Both still running.`,
-          eng: `Two greenfield backend systems led end-to-end.\n\n<code>ATS:</code> State machine for asset movement via transition validity matrix — not conditional logic in service methods. Invalid transitions return typed error with current state and valid next states — self-documenting API.\n\nAPI design: contract-first. Response structures agreed with frontend before implementation. Versioning from day one.\n\n<code>Operations App:</code> Field operatives use app in low-connectivity environments. API accounts for optimistic local state with server reconciliation on reconnect.\n\n<code>Both systems:</code> database schema optimised for query patterns, modular controller → service → repository separation.`,
+          story: `High-value art assets — paintings worth significant money — moving between cities. No tracking system. No visibility.\n\n<span class="em">Aditya designed the system from scratch.</span>\n\nEvery asset tracked from pick-up to delivery. Every state transition validated. Every crew member and truck visible in real time.\n\nTwo greenfield systems. Both designed from scratch. Both in production. Both still running.`,
+          eng: `Two greenfield backend systems led end-to-end.\n\n<code>ATS:</code> State machine via transition validity matrix — not conditional logic. Invalid transitions return typed error with current state and valid next states — self-documenting API.\n\nAPI design: contract-first. Versioning from day one.\n\n<code>Operations App:</code> Accounts for optimistic local state with server reconciliation on reconnect — field operatives in low-connectivity environments.`,
           tech: [
             "Java 17",
             "Spring Boot",
@@ -905,18 +951,15 @@
           name: "Survey Bridge",
           tag: "END-TO-END INTEGRATION · PIPELINE DESIGN",
           status: "OPERATIONAL",
-          statusType: "op",
-          pos: [3, 0, 7],
-          size: [4, 4, 2],
-          color: 0xaa6a9a,
-          emissive: 0x200015,
+          st: "op",
+          pos: [3, 0, 8],
           metrics: [
             { v: "100%", l: "AUTOMATED" },
             { v: "0", l: "MANUAL STEPS" },
             { v: "∞", l: "CONSISTENT" },
           ],
-          story: `Survey data and the core operations system were not connected. Someone had to manually transfer the information. Every day. For every survey.\n\nEvery time a human moved that data, there was a chance of error. Wrong items. Wrong addresses. Wrong orders.\n\n<span class="em">Aditya designed a pipeline that connected the two systems completely.</span>\n\nThe survey is now scheduled directly from the customer file. The team completes it on a mobile app. The moment they submit, every item, every shipment, every packaging instruction flows automatically into the service order. Nothing carried by hand. Nothing retyped.`,
-          eng: `Disconnected data flow between survey module and core operational system.\n\n<code>Pipeline:</code> survey scheduling from Customer File → survey execution via mobile app (stateful with sync reliability under variable connectivity) → automatic item and shipment creation → packaging workflow with validation → direct mapping to Service Orders via deterministic transformation.\n\n<code>Key challenge:</code> reliable state management for a mobile-initiated workflow that handles partial connectivity gracefully and produces deterministic output that downstream systems can depend on.\n\nEliminated manual reconciliation entirely.`,
+          story: `Survey data and the core operations system were not connected. Someone had to manually transfer the information. Every day. For every survey.\n\nEvery time a human moved that data, there was a chance of error.\n\n<span class="em">Aditya designed a pipeline that connected the two systems completely.</span>\n\nNothing carried by hand. Nothing retyped. Nothing misread.`,
+          eng: `Pipeline: survey scheduling from Customer File → mobile app execution (stateful, handles partial connectivity) → automatic item and shipment creation → deterministic mapping to Service Orders.\n\n<code>Key challenge:</code> reliable state management for a mobile-initiated workflow that produces deterministic output downstream systems can depend on.\n\nEliminated manual reconciliation entirely.`,
           tech: [
             "Java",
             "Spring Boot",
@@ -929,21 +972,18 @@
         {
           id: "monolith-quarter",
           num: "01",
-          name: "The Monolith Quarter",
+          name: "Monolith Quarter",
           tag: "REDSKY · STRUTS2 · SPRING 3 · HIBERNATE 5 · ORIGIN",
           status: "OPERATIONAL",
-          statusType: "op",
-          pos: [0, 0, 10],
-          size: [5, 2.5, 4],
-          color: 0x8a8a8a,
-          emissive: 0x101010,
+          st: "op",
+          pos: [0, 0, 12],
           metrics: [
             { v: "2022", l: "WHERE IT BEGAN" },
             { v: "WEEKS", l: "TO FIRST FIX" },
             { v: "∞", l: "STILL RUNNING" },
           ],
-          story: `January 2022. Aditya joined a system called RedSky — a massive, interconnected platform handling the complete lifecycle of corporate relocations.\n\nA system so tightly woven together that most new engineers needed months to understand it well enough to safely change anything.\n\n<span class="em">He was delivering production fixes within weeks.</span>\n\nFor the first eight months, Aditya learned how a customer file becomes a survey, how a survey becomes a shipment, how a shipment becomes a service order, how a service order generates work tickets that go to crews on the ground.\n\n<span class="em">This is where he started. And what he carried forward — an understanding that systems exist to serve people.</span>`,
-          eng: `Stack: Struts 2, Spring 3, Hibernate 5, MySQL 5.x.\n\nHighly coupled monolithic architecture. Domain model: Customer File → Survey → Shipment → Service Order → Work Ticket. Complex relational dependencies and RBAC across the entire lifecycle.\n\n<code>The challenge:</code> changes in one module have non-obvious effects on others. Production risk real — live enterprise clients with active relocations.\n\n<code>Contributions:</code> production bug fixes with minimal regression risk. Relocation Dashboard — cross-module data aggregation surfacing service order status to non-engineer stakeholders.\n\n<code>Lesson carried forward:</code> understand how data moves through a system end-to-end before writing a single line of change.`,
+          story: `January 2022. Aditya joined RedSky — a massive, interconnected platform handling the complete lifecycle of corporate relocations.\n\nA system so tightly coupled that most new engineers needed months to understand it safely.\n\n<span class="em">He was delivering production fixes within weeks.</span>\n\n<span class="em">This is where he started. And what he carried forward — an understanding that systems exist to serve people.</span>`,
+          eng: `Stack: Struts 2, Spring 3, Hibernate 5, MySQL 5.x.\n\nHighly coupled monolithic architecture. Domain model: Customer File → Survey → Shipment → Service Order → Work Ticket.\n\n<code>The challenge:</code> changes in one module have non-obvious effects on others. Production risk real — live enterprise clients.\n\n<code>Lesson:</code> Understand how data moves through a system end-to-end before writing a single line of change.`,
           tech: [
             "Struts 2",
             "Spring 3",
@@ -955,427 +995,897 @@
         },
       ];
 
-      // ── STATE ─────────────────────────────────────────────────────
+      // Building visual configs — each district gets a unique visual style
+      const BCONFIG = [
+        // Auth Tower — tall gold tower
+        {
+          type: "tower",
+          floors: 8,
+          color: 0xc8a84b,
+          trim: 0xffe080,
+          accent: 0xff9900,
+          roofType: "pyramid",
+          lights: 5,
+        },
+        // The Bridge — medium industrial
+        {
+          type: "block",
+          floors: 5,
+          color: 0x9a8acc,
+          trim: 0xc0b0ff,
+          accent: 0x7060aa,
+          roofType: "flat",
+          lights: 3,
+        },
+        // Cloud District — sleek modern glass
+        {
+          type: "slim",
+          floors: 6,
+          color: 0x60c0e0,
+          trim: 0xa0e8ff,
+          accent: 0x2080a0,
+          roofType: "antenna",
+          lights: 4,
+        },
+        // Data Vaults — squat fortress
+        {
+          type: "wide",
+          floors: 3,
+          color: 0xe0a840,
+          trim: 0xffd080,
+          accent: 0xa07020,
+          roofType: "stepped",
+          lights: 3,
+        },
+        // LedgerFlow — tall green finance
+        {
+          type: "tower",
+          floors: 7,
+          color: 0x50d090,
+          trim: 0x90ffcc,
+          accent: 0x208050,
+          roofType: "flat",
+          lights: 4,
+        },
+        // Architecture Quarter — complex wide
+        {
+          type: "complex",
+          floors: 5,
+          color: 0x80a0cc,
+          trim: 0xb0d0ff,
+          accent: 0x3060a0,
+          roofType: "pyramid",
+          lights: 4,
+        },
+        // Survey Bridge — medium colorful
+        {
+          type: "block",
+          floors: 4,
+          color: 0xd080c0,
+          trim: 0xff90e0,
+          accent: 0x904080,
+          roofType: "flat",
+          lights: 3,
+        },
+        // Monolith — large old building
+        {
+          type: "monolith",
+          floors: 2,
+          color: 0x909090,
+          trim: 0xb0b0b0,
+          accent: 0x505050,
+          roofType: "flat",
+          lights: 2,
+        },
+      ];
+
+      // ── STATE ──────────────────────────────────────────────────────
       const SESSION_ID =
         sessionStorage.getItem("sessionId") || crypto.randomUUID();
       const VISITOR_PATH =
         new URLSearchParams(window.location.search).get("path") ||
         sessionStorage.getItem("visitorPath") ||
         "recruiter";
-      let visited = new Set(JSON.parse(localStorage.getItem("vd") || "[]"));
-      let activeBuilding = null;
+      let visited = new Set(JSON.parse(localStorage.getItem("vd2") || "[]"));
       let oracleOpen = false;
       let chaosPlayed = false;
+      let panelOpen = false;
 
-      // ── SETUP PATH BADGE ─────────────────────────────────────────
+      // Path badge
       const badge = document.getElementById("pathBadge");
-      if (VISITOR_PATH === "engineer") {
-        badge.textContent = "ENGINEER PATH";
-        badge.className = "path-badge engineer";
-      } else {
-        badge.textContent = "RECRUITER PATH";
-        badge.className = "path-badge recruiter";
-      }
+      badge.textContent =
+        VISITOR_PATH === "engineer" ? "ENGINEER PATH" : "RECRUITER PATH";
+      badge.className = `path-badge ${VISITOR_PATH}`;
 
-      // ── THREE.JS SETUP ────────────────────────────────────────────
-      const canvas = document.getElementById("canvas");
-      const renderer = new THREE.WebGLRenderer({
-        canvas,
-        antialias: true,
-        alpha: false,
-      });
+      // ── THREE.JS ───────────────────────────────────────────────────
+      const canvas = document.getElementById("c");
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-      renderer.setClearColor(0x06080f);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.2;
+      renderer.setClearColor(0x0a0614);
 
       const scene = new THREE.Scene();
-      scene.fog = new THREE.Fog(0x06080f, 40, 90);
+      scene.fog = new THREE.FogExp2(0x0a0614, 0.018);
+      scene.background = new THREE.Color(0x0a0614);
 
-      // Camera — angled for isometric feel
       const camera = new THREE.PerspectiveCamera(
-        45,
+        50,
         window.innerWidth / window.innerHeight,
         0.1,
         200,
       );
-      camera.position.set(0, 28, 28);
+      camera.position.set(0, 22, 24);
       camera.lookAt(0, 0, 0);
 
-      // ── LIGHTING ──────────────────────────────────────────────────
-      const ambientLight = new THREE.AmbientLight(0x1a2040, 0.8);
-      scene.add(ambientLight);
+      // ── LIGHTS ─────────────────────────────────────────────────────
+      // Ambient
+      scene.add(new THREE.AmbientLight(0x1a1030, 1.2));
 
-      const dirLight = new THREE.DirectionalLight(0xfff8e0, 0.6);
-      dirLight.position.set(10, 20, 10);
-      dirLight.castShadow = true;
-      dirLight.shadow.mapSize.width = 2048;
-      dirLight.shadow.mapSize.height = 2048;
-      scene.add(dirLight);
+      // Main directional — warm
+      const sun = new THREE.DirectionalLight(0xfff0cc, 0.8);
+      sun.position.set(15, 25, 10);
+      sun.castShadow = true;
+      sun.shadow.mapSize.width = 2048;
+      sun.shadow.mapSize.height = 2048;
+      sun.shadow.camera.near = 0.5;
+      sun.shadow.camera.far = 100;
+      sun.shadow.camera.left = -30;
+      sun.shadow.camera.right = 30;
+      sun.shadow.camera.top = 30;
+      sun.shadow.camera.bottom = -30;
+      sun.shadow.bias = -0.001;
+      scene.add(sun);
 
-      // Gold rim light from the Auth Tower center
-      const goldLight = new THREE.PointLight(0xc8a84b, 1.5, 25);
-      goldLight.position.set(0, 12, 0);
-      scene.add(goldLight);
+      // Cool fill from opposite side
+      const fill = new THREE.DirectionalLight(0x304060, 0.4);
+      fill.position.set(-10, 10, -10);
+      scene.add(fill);
 
-      // ── GROUND ────────────────────────────────────────────────────
-      const groundGeo = new THREE.PlaneGeometry(80, 80, 40, 40);
+      // Auth Tower gold glow — center
+      const authGlow = new THREE.PointLight(0xc8a84b, 3, 18);
+      authGlow.position.set(0, 10, 0);
+      scene.add(authGlow);
+
+      // Colored district point lights
+      const districtLights = [
+        { pos: [-7, 3, -6], color: 0xaa90ff, intensity: 2, dist: 12 },
+        { pos: [7, 3, -6], color: 0x60d8ff, intensity: 2, dist: 12 },
+        { pos: [-7, 3, 4], color: 0xffcc50, intensity: 2, dist: 12 },
+        { pos: [7, 3, 4], color: 0x50ffaa, intensity: 2, dist: 12 },
+      ];
+      districtLights.forEach((dl) => {
+        const pl = new THREE.PointLight(dl.color, dl.intensity, dl.dist);
+        pl.position.set(...dl.pos);
+        scene.add(pl);
+      });
+
+      // ── GROUND ─────────────────────────────────────────────────────
+      // Base ground
+      const groundGeo = new THREE.CircleGeometry(50, 64);
       const groundMat = new THREE.MeshStandardMaterial({
-        color: 0x08101a,
+        color: 0x0d0820,
         roughness: 0.95,
-        metalness: 0.1,
-        wireframe: false,
+        metalness: 0.0,
       });
       const ground = new THREE.Mesh(groundGeo, groundMat);
       ground.rotation.x = -Math.PI / 2;
       ground.receiveShadow = true;
       scene.add(ground);
 
-      // Grid lines on ground
-      const gridHelper = new THREE.GridHelper(80, 40, 0x1a2540, 0x0d1520);
-      gridHelper.position.y = 0.01;
-      scene.add(gridHelper);
+      // Hex grid pattern on ground using lines
+      function makeHexGrid(radius, count, color) {
+        const mat = new THREE.LineBasicMaterial({
+          color,
+          transparent: true,
+          opacity: 0.15,
+        });
+        const size = radius / count;
+        for (let i = -count; i <= count; i++) {
+          for (let j = -count; j <= count; j++) {
+            const x = i * size * 1.732;
+            const z = j * size * 2 + (i % 2) * size;
+            if (x * x + z * z < radius * radius) {
+              const pts = [];
+              for (let k = 0; k <= 6; k++) {
+                const a = (k * Math.PI) / 3;
+                pts.push(
+                  new THREE.Vector3(
+                    x + Math.cos(a) * size * 0.9,
+                    0.02,
+                    z + Math.sin(a) * size * 0.9,
+                  ),
+                );
+              }
+              const geo = new THREE.BufferGeometry().setFromPoints(pts);
+              scene.add(new THREE.Line(geo, mat));
+            }
+          }
+        }
+      }
+      makeHexGrid(30, 8, 0xc8a84b);
 
-      // ── BUILDINGS ─────────────────────────────────────────────────
-      const buildingMeshes = [];
+      // Ground color zones under each district
+      DISTRICTS.forEach((d, i) => {
+        const bc = BCONFIG[i];
+        const zoneGeo = new THREE.CircleGeometry(3.5, 16);
+        const zoneMat = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(bc.color).multiplyScalar(0.15),
+          roughness: 1,
+          metalness: 0,
+        });
+        const zone = new THREE.Mesh(zoneGeo, zoneMat);
+        zone.rotation.x = -Math.PI / 2;
+        zone.position.set(d.pos[0], 0.01, d.pos[2]);
+        scene.add(zone);
+      });
+
+      // ── HELPER FUNCTIONS ────────────────────────────────────────────
+      function makeMaterial(color, emissive, intensity = 0.3, roughness = 0.6) {
+        return new THREE.MeshStandardMaterial({
+          color,
+          emissive,
+          emissiveIntensity: intensity,
+          roughness,
+          metalness: 0.2,
+        });
+      }
+
+      function addWindows(group, bx, by, bz, color, count) {
+        const wMat = new THREE.MeshStandardMaterial({
+          color: color,
+          emissive: color,
+          emissiveIntensity: 2.0,
+          roughness: 0.1,
+          metalness: 0.5,
+        });
+        for (let i = 0; i < count; i++) {
+          const wg = new THREE.BoxGeometry(0.12, 0.18, 0.04);
+          const w = new THREE.Mesh(wg, wMat);
+          const face = Math.floor(Math.random() * 4);
+          const angle = (face * Math.PI) / 2;
+          const side = face < 2 ? bx : bz;
+          w.position.set(
+            face < 2
+              ? (face === 0 ? 1 : -1) * (side / 2 + 0.03)
+              : (Math.random() - 0.5) * (bx * 0.8),
+            0.3 + Math.random() * (by - 0.6),
+            face >= 2
+              ? (face === 2 ? 1 : -1) * (side / 2 + 0.03)
+              : (Math.random() - 0.5) * (bz * 0.8),
+          );
+          // randomly dim some windows
+          if (Math.random() < 0.3) w.material = w.material.clone();
+          group.add(w);
+        }
+      }
+
+      function makeTree(x, z, height, color) {
+        const group = new THREE.Group();
+        // Trunk
+        const tg = new THREE.CylinderGeometry(0.08, 0.12, height * 0.4, 6);
+        const tm = new THREE.MeshStandardMaterial({
+          color: 0x4a3020,
+          roughness: 0.9,
+        });
+        const trunk = new THREE.Mesh(tg, tm);
+        trunk.position.y = height * 0.2;
+        trunk.castShadow = true;
+        group.add(trunk);
+        // Canopy layers (low-poly cones)
+        const layers = 3;
+        for (let i = 0; i < layers; i++) {
+          const r = 0.7 - i * 0.18;
+          const h = height * 0.5;
+          const cg = new THREE.ConeGeometry(r, h, 6);
+          const cm = new THREE.MeshStandardMaterial({
+            color: new THREE.Color(color),
+            emissive: new THREE.Color(color).multiplyScalar(0.1),
+            roughness: 0.8,
+          });
+          const cone = new THREE.Mesh(cg, cm);
+          cone.position.y = height * 0.4 + i * (h * 0.45);
+          cone.castShadow = true;
+          group.add(cone);
+        }
+        group.position.set(x, 0, z);
+        return group;
+      }
+
+      function makeRock(x, z, scale) {
+        const rg = new THREE.DodecahedronGeometry(scale, 0);
+        // Randomize vertices for natural look
+        const pos = rg.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+          pos.setXYZ(
+            i,
+            pos.getX(i) * (0.8 + Math.random() * 0.4),
+            pos.getY(i) * (0.8 + Math.random() * 0.4),
+            pos.getZ(i) * (0.8 + Math.random() * 0.4),
+          );
+        }
+        rg.computeVertexNormals();
+        const rm = new THREE.MeshStandardMaterial({
+          color: 0x506070,
+          roughness: 0.9,
+          metalness: 0.1,
+        });
+        const rock = new THREE.Mesh(rg, rm);
+        rock.position.set(x, scale * 0.4, z);
+        rock.rotation.y = Math.random() * Math.PI * 2;
+        rock.castShadow = true;
+        return rock;
+      }
+
+      function makeLamp(x, z) {
+        const group = new THREE.Group();
+        const postG = new THREE.CylinderGeometry(0.04, 0.06, 1.8, 8);
+        const postM = new THREE.MeshStandardMaterial({
+          color: 0x303040,
+          roughness: 0.7,
+        });
+        group.add(new THREE.Mesh(postG, postM)).position.y = 0.9;
+        // lamp head
+        const headG = new THREE.SphereGeometry(0.15, 8, 6);
+        const headM = new THREE.MeshStandardMaterial({
+          color: 0xffffcc,
+          emissive: 0xffffaa,
+          emissiveIntensity: 2,
+        });
+        const head = new THREE.Mesh(headG, headM);
+        head.position.y = 1.85;
+        group.add(head);
+        // point light
+        const pl = new THREE.PointLight(0xffffaa, 0.8, 6);
+        pl.position.y = 1.85;
+        group.add(pl);
+        group.position.set(x, 0, z);
+        return group;
+      }
+
+      // ── BUILD BUILDINGS ────────────────────────────────────────────
+      const clickables = [];
 
       DISTRICTS.forEach((d, idx) => {
+        const bc = BCONFIG[idx];
         const group = new THREE.Group();
-        const [px, py, pz] = d.pos;
-        const [sw, sh, sd] = d.size;
+        const [px, , pz] = d.pos;
 
-        // Main building body
-        const geo = new THREE.BoxGeometry(sw, sh, sd);
-        const mat = new THREE.MeshStandardMaterial({
-          color: d.color,
-          emissive: d.emissive,
-          roughness: 0.7,
-          metalness: 0.3,
-        });
-        const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.y = sh / 2;
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-        mesh.userData = { districtIdx: idx, type: "building" };
-        group.add(mesh);
+        const mainColor = new THREE.Color(bc.color);
+        const trimColor = new THREE.Color(bc.trim);
+        const darkColor = mainColor.clone().multiplyScalar(0.4);
 
-        // Glowing windows — small bright boxes on the building faces
-        const windowCount = Math.floor(sh * 1.5);
-        for (let w = 0; w < windowCount; w++) {
-          const wGeo = new THREE.BoxGeometry(0.15, 0.25, 0.05);
-          const wMat = new THREE.MeshStandardMaterial({
-            color: d.color,
-            emissive: d.color,
-            emissiveIntensity: Math.random() > 0.3 ? 1.5 : 0.2,
+        // ── BUILDING BODY by type ──────────────────────────────────
+        const floorH = 0.9;
+        const bw =
+          bc.type === "wide" || bc.type === "monolith"
+            ? 3.5
+            : bc.type === "complex"
+              ? 3.0
+              : bc.type === "slim"
+                ? 1.4
+                : 2.0;
+        const bd =
+          bc.type === "wide" || bc.type === "monolith"
+            ? 3.0
+            : bc.type === "complex"
+              ? 3.0
+              : 1.8;
+        const bh = bc.floors * floorH;
+
+        // Main body
+        const bodyGeo = new THREE.BoxGeometry(bw, bh, bd);
+        const bodyMat = makeMaterial(mainColor, darkColor, 0.2);
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = bh / 2;
+        body.castShadow = true;
+        body.receiveShadow = true;
+        body.userData = { districtIdx: idx };
+        group.add(body);
+        clickables.push(body);
+
+        // ── FLOOR LINES ──────────────────────────────────────────────
+        for (let f = 1; f < bc.floors; f++) {
+          const lineGeo = new THREE.BoxGeometry(bw + 0.02, 0.05, bd + 0.02);
+          const lineMat = new THREE.MeshStandardMaterial({
+            color: trimColor.clone().multiplyScalar(0.3),
           });
-          const win = new THREE.Mesh(wGeo, wMat);
-          // Place on front face
-          const side = Math.random() > 0.5 ? 1 : -1;
-          win.position.set(
-            (Math.random() - 0.5) * (sw * 0.7),
-            0.5 + Math.random() * (sh - 1),
-            side * (sd / 2 + 0.03),
-          );
-          group.add(win);
+          const line = new THREE.Mesh(lineGeo, lineMat);
+          line.position.y = f * floorH;
+          group.add(line);
         }
 
-        // Roof antenna for Auth Tower
-        if (d.id === "auth-tower") {
-          const antGeo = new THREE.CylinderGeometry(0.05, 0.05, 3, 8);
-          const antMat = new THREE.MeshStandardMaterial({
-            color: 0xc8a84b,
-            emissive: 0xc8a84b,
+        // ── COMPLEX BUILDING — extra wing ───────────────────────────
+        if (bc.type === "complex") {
+          const wingGeo = new THREE.BoxGeometry(1.2, bh * 0.6, bd);
+          const wing = new THREE.Mesh(wingGeo, bodyMat.clone());
+          wing.position.set(bw / 2 + 0.6, bh * 0.3, 0);
+          wing.castShadow = true;
+          wing.userData = { districtIdx: idx };
+          group.add(wing);
+          clickables.push(wing);
+        }
+
+        // ── MONOLITH — extra wide wings ─────────────────────────────
+        if (bc.type === "monolith") {
+          [-1, 1].forEach((side) => {
+            const wg = new THREE.BoxGeometry(1.2, bh * 0.8, bd * 0.8);
+            const w = new THREE.Mesh(wg, bodyMat.clone());
+            w.position.set(side * (bw / 2 + 0.6), bh * 0.4, 0);
+            w.castShadow = true;
+            w.userData = { districtIdx: idx };
+            group.add(w);
+            clickables.push(w);
+          });
+        }
+
+        // ── ROOF ─────────────────────────────────────────────────────
+        const roofMat = makeMaterial(
+          trimColor.clone().multiplyScalar(0.6),
+          darkColor,
+          0.3,
+        );
+        if (bc.roofType === "pyramid") {
+          const rg = new THREE.ConeGeometry(
+            Math.max(bw, bd) * 0.7,
+            bh * 0.2,
+            4,
+          );
+          const roof = new THREE.Mesh(rg, roofMat);
+          roof.position.y = bh + bh * 0.1;
+          roof.rotation.y = Math.PI / 4;
+          group.add(roof);
+        } else if (bc.roofType === "stepped") {
+          [0.8, 0.6].forEach((scale, i) => {
+            const sg = new THREE.BoxGeometry(
+              bw * scale,
+              floorH * 0.4,
+              bd * scale,
+            );
+            const s = new THREE.Mesh(sg, roofMat);
+            s.position.y = bh + i * floorH * 0.4 + floorH * 0.2;
+            group.add(s);
+          });
+        } else if (bc.roofType === "antenna") {
+          const ag = new THREE.CylinderGeometry(0.04, 0.04, bh * 0.25, 8);
+          const am = new THREE.MeshStandardMaterial({
+            color: trimColor,
+            emissive: trimColor,
             emissiveIntensity: 1,
           });
-          const ant = new THREE.Mesh(antGeo, antMat);
-          ant.position.y = sh + 1.5;
+          const ant = new THREE.Mesh(ag, am);
+          ant.position.y = bh + bh * 0.12;
           group.add(ant);
-
-          // Connection lines to other buildings
-          DISTRICTS.forEach((other, oi) => {
-            if (oi === 0) return;
-            const points = [
-              new THREE.Vector3(px, sh * 0.7, pz),
-              new THREE.Vector3(
-                other.pos[0],
-                other.size[1] * 0.5,
-                other.pos[2],
-              ),
-            ];
-            const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
-            const lineMat = new THREE.LineBasicMaterial({
-              color: 0xc8a84b,
-              transparent: true,
-              opacity: 0.15,
-            });
-            scene.add(new THREE.Line(lineGeo, lineMat));
-          });
+          // Blinking light
+          const blinkG = new THREE.SphereGeometry(0.08, 8, 6);
+          const blinkM = am.clone();
+          const blink = new THREE.Mesh(blinkG, blinkM);
+          blink.position.y = bh + bh * 0.25;
+          blink.userData = { blink: true, phase: Math.random() * Math.PI * 2 };
+          group.add(blink);
         }
 
-        // Building label (sprite)
-        group.position.set(px, 0, pz);
-        group.userData = { districtIdx: idx, id: d.id };
-        scene.add(group);
+        // Auth Tower special — tall spire
+        if (d.id === "auth-tower") {
+          const spireG = new THREE.CylinderGeometry(0.05, 0.2, bh * 0.4, 8);
+          const spireMat = new THREE.MeshStandardMaterial({
+            color: 0xffe080,
+            emissive: 0xc8a84b,
+            emissiveIntensity: 1.5,
+          });
+          const spire = new THREE.Mesh(spireG, spireMat);
+          spire.position.y = bh + bh * 0.2;
+          group.add(spire);
 
-        buildingMeshes.push({ group, mesh, district: d });
+          // Gold orb at top
+          const orbG = new THREE.SphereGeometry(0.25, 16, 12);
+          const orbM = new THREE.MeshStandardMaterial({
+            color: 0xffe080,
+            emissive: 0xc8a84b,
+            emissiveIntensity: 3,
+            roughness: 0.1,
+          });
+          const orb = new THREE.Mesh(orbG, orbM);
+          orb.position.y = bh + bh * 0.4 + 0.25;
+          group.add(orb);
+
+          // Connection rings
+          for (let r = 0; r < 3; r++) {
+            const ringG = new THREE.TorusGeometry(0.5 + r * 0.3, 0.02, 8, 32);
+            const ringM = new THREE.MeshStandardMaterial({
+              color: 0xc8a84b,
+              emissive: 0xc8a84b,
+              emissiveIntensity: 0.5,
+              transparent: true,
+              opacity: 0.4 - r * 0.1,
+            });
+            const ring = new THREE.Mesh(ringG, ringM);
+            ring.position.y = bh + bh * 0.25;
+            ring.rotation.x = Math.PI / 2;
+            ring.userData = {
+              ring: true,
+              speed: 0.3 + r * 0.2,
+              phase: (r * Math.PI) / 3,
+            };
+            group.add(ring);
+          }
+        }
+
+        // ── WINDOWS ─────────────────────────────────────────────────
+        addWindows(group, bw, bh, bd, bc.trim, bc.lights * 6);
+
+        // ── BASE PLATFORM ────────────────────────────────────────────
+        const baseGeo = new THREE.BoxGeometry(bw + 0.6, 0.2, bd + 0.6);
+        const baseMat = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(bc.color).multiplyScalar(0.5),
+          roughness: 0.8,
+        });
+        const base = new THREE.Mesh(baseGeo, baseMat);
+        base.position.y = 0.1;
+        base.receiveShadow = true;
+        group.add(base);
+
+        // ── DISTRICT SIGN ────────────────────────────────────────────
+        // (simple glowing platform sign — using a flat box with emissive)
+        const signGeo = new THREE.BoxGeometry(bw * 0.7, 0.06, 0.3);
+        const signMat = new THREE.MeshStandardMaterial({
+          color: bc.trim,
+          emissive: bc.trim,
+          emissiveIntensity: 1.5,
+        });
+        const sign = new THREE.Mesh(signGeo, signMat);
+        sign.position.set(0, 0.22, bd / 2 + 0.4);
+        group.add(sign);
+
+        group.position.set(px, 0, pz);
+        group.userData = { districtIdx: idx };
+        scene.add(group);
       });
 
-      // ── CAMERA CONTROLS ───────────────────────────────────────────
-      let isDragging = false;
-      let prevMouse = { x: 0, y: 0 };
-      let spherical = {
-        theta: 0.3, // horizontal angle
-        phi: 0.9, // vertical angle (0=top, PI=bottom)
-        radius: 38, // distance
-      };
+      // ── TREES ─────────────────────────────────────────────────────
+      const treeColors = [0x2a7a40, 0x3a8a50, 0x20a050, 0x4a9060, 0x1a6030];
+      const treePositions = [
+        [-12, -10],
+        [-14, -4],
+        [-12, 2],
+        [-14, 8],
+        [-10, 14],
+        [12, -10],
+        [14, -4],
+        [12, 2],
+        [14, 8],
+        [10, 14],
+        [-5, 16],
+        [0, 17],
+        [5, 16],
+        [8, 12],
+        [-8, 12],
+        [-16, 0],
+        [16, 0],
+        [-10, -14],
+        [10, -14],
+        [-4, -14],
+        [4, -14],
+        [0, -15],
+        [-3, 3],
+        [3, 3],
+        [-3, -3],
+        [3, -3],
+        [-10, 0],
+        [10, 0],
+      ];
+      treePositions.forEach(([x, z]) => {
+        if (
+          DISTRICTS.some((d) => {
+            const dx = d.pos[0] - x,
+              dz = d.pos[2] - z;
+            return Math.sqrt(dx * dx + dz * dz) < 4;
+          })
+        )
+          return;
+        const h = 1.5 + Math.random() * 1.5;
+        const col = treeColors[Math.floor(Math.random() * treeColors.length)];
+        scene.add(makeTree(x, z, h, col));
+      });
+
+      // ── ROCKS ─────────────────────────────────────────────────────
+      [
+        [-11, -7],
+        [11, -7],
+        [-9, 10],
+        [9, 10],
+        [-5, 14],
+        [5, 14],
+        [-13, 4],
+        [13, 4],
+        [-7, -12],
+        [7, -12],
+      ].forEach(([x, z]) => {
+        if (Math.random() > 0.5) {
+          scene.add(
+            makeRock(
+              x + Math.random() - 0.5,
+              z + Math.random() - 0.5,
+              0.2 + Math.random() * 0.3,
+            ),
+          );
+        }
+      });
+
+      // ── LAMP POSTS ────────────────────────────────────────────────
+      [
+        [-3, -3],
+        [3, -3],
+        [-3, 5],
+        [3, 5],
+        [-3, -9],
+        [3, -9],
+        [-5, 1],
+        [5, 1],
+        [-5, 10],
+        [5, 10],
+      ].forEach(([x, z]) => {
+        if (
+          DISTRICTS.some((d) => {
+            const dx = d.pos[0] - x,
+              dz = d.pos[2] - z;
+            return Math.sqrt(dx * dx + dz * dz) < 3.5;
+          })
+        )
+          return;
+        scene.add(makeLamp(x, z));
+      });
+
+      // ── CONNECTION LINES FROM AUTH TOWER ──────────────────────────
+      DISTRICTS.forEach((d, i) => {
+        if (i === 0) return;
+        const start = new THREE.Vector3(0, 7.5, 0);
+        const end = new THREE.Vector3(
+          d.pos[0],
+          BCONFIG[i].floors * 0.9 * 0.5,
+          d.pos[2],
+        );
+        const mid = start
+          .clone()
+          .lerp(end, 0.5)
+          .add(new THREE.Vector3(0, 2, 0));
+
+        // Bezier curve connection
+        const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+        const points = curve.getPoints(20);
+        const geo = new THREE.BufferGeometry().setFromPoints(points);
+        const mat = new THREE.LineBasicMaterial({
+          color: 0xc8a84b,
+          transparent: true,
+          opacity: 0.12,
+        });
+        scene.add(new THREE.Line(geo, mat));
+      });
+
+      // ── PATH WALKWAYS ─────────────────────────────────────────────
+      DISTRICTS.forEach((d, i) => {
+        if (i === 0) return;
+        const from = new THREE.Vector3(0, 0.03, 0);
+        const to = new THREE.Vector3(d.pos[0], 0.03, d.pos[2]);
+        const pts = [from, to];
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        const mat = new THREE.LineBasicMaterial({
+          color: new THREE.Color(BCONFIG[i].color).multiplyScalar(0.3),
+          transparent: true,
+          opacity: 0.4,
+        });
+        scene.add(new THREE.Line(geo, mat));
+      });
+
+      // ── CAMERA ORBIT ──────────────────────────────────────────────
+      let isDrag = false,
+        prevMouse = { x: 0, y: 0 };
+      const sph = { theta: 0.4, phi: 0.85, radius: 34 };
       const target = new THREE.Vector3(0, 0, 2);
 
-      function updateCamera() {
-        camera.position.x =
-          target.x +
-          spherical.radius *
-            Math.sin(spherical.phi) *
-            Math.sin(spherical.theta);
-        camera.position.y =
-          target.y + spherical.radius * Math.cos(spherical.phi);
-        camera.position.z =
-          target.z +
-          spherical.radius *
-            Math.sin(spherical.phi) *
-            Math.cos(spherical.theta);
+      function updateCam() {
+        camera.position.set(
+          target.x + sph.radius * Math.sin(sph.phi) * Math.sin(sph.theta),
+          target.y + sph.radius * Math.cos(sph.phi),
+          target.z + sph.radius * Math.sin(sph.phi) * Math.cos(sph.theta),
+        );
         camera.lookAt(target);
       }
-      updateCamera();
+      updateCam();
 
       canvas.addEventListener("mousedown", (e) => {
-        isDragging = true;
+        isDrag = true;
         prevMouse = { x: e.clientX, y: e.clientY };
       });
-
       canvas.addEventListener("mousemove", (e) => {
-        if (!isDragging) return;
-        const dx = (e.clientX - prevMouse.x) * 0.008;
-        const dy = (e.clientY - prevMouse.y) * 0.008;
-        spherical.theta -= dx;
-        spherical.phi = Math.max(0.2, Math.min(1.4, spherical.phi + dy));
-        prevMouse = { x: e.clientX, y: e.clientY };
-        updateCamera();
+        if (isDrag) {
+          sph.theta -= (e.clientX - prevMouse.x) * 0.007;
+          sph.phi = Math.max(
+            0.25,
+            Math.min(1.35, sph.phi + (e.clientY - prevMouse.y) * 0.007),
+          );
+          prevMouse = { x: e.clientX, y: e.clientY };
+          updateCam();
+        }
+        // Hover tooltip
+        hoverCheck(e);
       });
-
-      canvas.addEventListener("mouseup", () => {
-        isDragging = false;
-      });
-      canvas.addEventListener("mouseleave", () => {
-        isDragging = false;
-      });
-
+      canvas.addEventListener("mouseup", () => (isDrag = false));
+      canvas.addEventListener("mouseleave", () => (isDrag = false));
       canvas.addEventListener(
         "wheel",
         (e) => {
-          spherical.radius = Math.max(
-            10,
-            Math.min(70, spherical.radius + e.deltaY * 0.05),
-          );
-          updateCamera();
+          sph.radius = Math.max(8, Math.min(65, sph.radius + e.deltaY * 0.04));
+          updateCam();
           e.preventDefault();
         },
         { passive: false },
       );
 
-      // Touch controls
-      let prevTouch = null;
+      let touch0 = null;
       canvas.addEventListener("touchstart", (e) => {
-        prevTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        touch0 = { x: e.touches[0].clientX, y: e.touches[0].clientY };
       });
       canvas.addEventListener(
         "touchmove",
         (e) => {
-          if (!prevTouch) return;
-          const dx = (e.touches[0].clientX - prevTouch.x) * 0.01;
-          const dy = (e.touches[0].clientY - prevTouch.y) * 0.01;
-          spherical.theta -= dx;
-          spherical.phi = Math.max(0.2, Math.min(1.4, spherical.phi + dy));
-          prevTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-          updateCamera();
+          if (!touch0) return;
+          sph.theta -= (e.touches[0].clientX - touch0.x) * 0.009;
+          sph.phi = Math.max(
+            0.25,
+            Math.min(1.35, sph.phi + (e.touches[0].clientY - touch0.y) * 0.009),
+          );
+          touch0 = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+          updateCam();
           e.preventDefault();
         },
         { passive: false },
       );
-      canvas.addEventListener("touchend", () => {
-        prevTouch = null;
-      });
+      canvas.addEventListener("touchend", () => (touch0 = null));
 
       // ── RAYCASTING ────────────────────────────────────────────────
       const raycaster = new THREE.Raycaster();
-      const mouse2D = new THREE.Vector2();
-      let mouseDownPos = { x: 0, y: 0 };
+      const mouse2 = new THREE.Vector2();
+      let downPos = { x: 0, y: 0 };
 
       canvas.addEventListener("mousedown", (e) => {
-        mouseDownPos = { x: e.clientX, y: e.clientY };
+        downPos = { x: e.clientX, y: e.clientY };
       });
-
       canvas.addEventListener("click", (e) => {
-        // Only register click if mouse didn't move much (not a drag)
-        const dx = Math.abs(e.clientX - mouseDownPos.x);
-        const dy = Math.abs(e.clientY - mouseDownPos.y);
-        if (dx > 5 || dy > 5) return;
-
-        mouse2D.x = (e.clientX / window.innerWidth) * 2 - 1;
-        mouse2D.y = -(e.clientY / window.innerHeight) * 2 + 1;
-        raycaster.setFromCamera(mouse2D, camera);
-
-        const allMeshes = buildingMeshes.map((b) => b.mesh);
-        const intersects = raycaster.intersectObjects(allMeshes);
-        if (intersects.length > 0) {
-          const idx = intersects[0].object.userData.districtIdx;
-          openDistrict(idx);
-        }
+        if (
+          Math.abs(e.clientX - downPos.x) > 6 ||
+          Math.abs(e.clientY - downPos.y) > 6
+        )
+          return;
+        mouse2.set(
+          (e.clientX / window.innerWidth) * 2 - 1,
+          -(e.clientY / window.innerHeight) * 2 + 1,
+        );
+        raycaster.setFromCamera(mouse2, camera);
+        const hits = raycaster.intersectObjects(clickables);
+        if (hits.length) openDistrict(hits[0].object.userData.districtIdx);
       });
 
-      // Hover effect
       let hoveredIdx = -1;
-      canvas.addEventListener("mousemove", (e) => {
-        if (isDragging) return;
-        mouse2D.x = (e.clientX / window.innerWidth) * 2 - 1;
-        mouse2D.y = -(e.clientY / window.innerHeight) * 2 + 1;
-        raycaster.setFromCamera(mouse2D, camera);
-        const allMeshes = buildingMeshes.map((b) => b.mesh);
-        const intersects = raycaster.intersectObjects(allMeshes);
-
-        if (intersects.length > 0) {
-          const idx = intersects[0].object.userData.districtIdx;
-          if (idx !== hoveredIdx) {
-            if (hoveredIdx >= 0) resetHover(hoveredIdx);
-            hoveredIdx = idx;
-            setHover(idx);
-          }
+      function hoverCheck(e) {
+        if (isDrag) return;
+        mouse2.set(
+          (e.clientX / window.innerWidth) * 2 - 1,
+          -(e.clientY / window.innerHeight) * 2 + 1,
+        );
+        raycaster.setFromCamera(mouse2, camera);
+        const hits = raycaster.intersectObjects(clickables);
+        const tooltip = document.getElementById("tooltip");
+        if (hits.length) {
+          const idx = hits[0].object.userData.districtIdx;
+          const d = DISTRICTS[idx];
+          document.getElementById("tt-name").textContent = d.name;
+          document.getElementById("tt-tag").textContent = d.tag.split(" · ")[0];
+          tooltip.style.left = e.clientX + "px";
+          tooltip.style.top = e.clientY + "px";
+          tooltip.classList.add("vis");
           canvas.style.cursor = "pointer";
+          hoveredIdx = idx;
         } else {
-          if (hoveredIdx >= 0) resetHover(hoveredIdx);
+          tooltip.classList.remove("vis");
+          canvas.style.cursor = isDrag ? "grabbing" : "grab";
           hoveredIdx = -1;
-          canvas.style.cursor = isDragging ? "grabbing" : "grab";
         }
-      });
-
-      function setHover(idx) {
-        const { mesh, district } = buildingMeshes[idx];
-        mesh.material.emissiveIntensity = 0.6;
-        mesh.scale.y = 1.05;
       }
 
-      function resetHover(idx) {
-        const { mesh } = buildingMeshes[idx];
-        mesh.material.emissiveIntensity = 0;
-        mesh.scale.y = 1;
-      }
-
-      // ── DISTRICT PANEL ────────────────────────────────────────────
+      // ── OPEN DISTRICT ─────────────────────────────────────────────
       function openDistrict(idx) {
         const d = DISTRICTS[idx];
-        activeBuilding = idx;
+        const bc = BCONFIG[idx];
 
-        // Mark visited
         if (!visited.has(d.id)) {
           visited.add(d.id);
-          localStorage.setItem("vd", JSON.stringify([...visited]));
+          localStorage.setItem("vd2", JSON.stringify([...visited]));
           updateBrahmastra();
-          logEvent("district_entered", d.id);
+          logEvt("district_entered", d.id);
         }
 
-        // Build panel content
-        const metricsHTML = d.metrics
+        const c = "#" + new THREE.Color(bc.color).getHexString();
+        const mHTML = d.metrics
           .map(
             (m) =>
-              `<div class="metric"><span class="metric-v">${m.v}</span><span class="metric-l">${m.l}</span></div>`,
+              `<div class="metric"><span class="mv">${m.v}</span><span class="ml">${m.l}</span></div>`,
           )
           .join("");
-
-        const techHTML = d.tech
+        const tHTML = d.tech
           .map((t) => `<span class="tech-tag">${t}</span>`)
           .join("");
-
-        const engSection =
+        const eng =
           VISITOR_PATH === "engineer"
             ? `
-        <div class="eng-toggle" onclick="toggleEng(this)">▶ TECHNICAL DEPTH</div>
-        <div class="eng-deep">${d.eng.replace(/\n/g, "<br>")}</div>
-    `
+    <div class="eng-toggle" onclick="this.nextElementSibling.classList.toggle('vis');
+      this.textContent=this.nextElementSibling.classList.contains('vis')?'▼ TECHNICAL DEPTH':'▶ TECHNICAL DEPTH'">
+      ▶ TECHNICAL DEPTH
+    </div>
+    <div class="eng-deep">${d.eng.replace(/\n/g, "<br>")}</div>
+  `
             : "";
 
-        document.getElementById("panel-content").innerHTML = `
-        <div class="p-num">DISTRICT ${d.num}</div>
-        <div class="p-name">${d.name}</div>
-        <div class="p-tag">${d.tag}</div>
-        <div class="p-status ${d.statusType}">
-            <span class="status-dot"></span>${d.status}
-        </div>
-        <div class="metrics">${metricsHTML}</div>
-        <div class="section-label">MISSION LOG</div>
-        <div class="story">${d.story.replace(/\n/g, "<br>")}</div>
-        <div class="tech-tags">${techHTML}</div>
-        ${engSection}
-        <div class="record-status">
-            <span class="status-dot"></span>
-            SYSTEM INTEGRITY 99.7% · LAST VERIFIED 2034 · OPERATIONAL
-        </div>
-    `;
-
+        document.getElementById("panel-body").innerHTML = `
+    <div class="p-num" style="color:${c}">DISTRICT ${d.num}</div>
+    <div class="p-name">${d.name}</div>
+    <div class="p-tag">${d.tag}</div>
+    <div class="p-status ${d.st}"><span class="sdot"></span>${d.status}</div>
+    <div class="metrics">${mHTML}</div>
+    <div class="slabel">MISSION LOG</div>
+    <div class="story">${d.story.replace(/\n/g, "<br>")}</div>
+    <div class="tech-tags">${tHTML}</div>
+    ${eng}
+    <div class="rec-status"><span class="sdot"></span>
+      SYSTEM INTEGRITY 99.7% · LAST VERIFIED 2034 · OPERATIONAL
+    </div>
+  `;
         document.getElementById("panel").classList.add("open");
+        panelOpen = true;
 
-        // Zoom camera toward the building
-        const dist = DISTRICTS[idx];
-        const newTarget = new THREE.Vector3(dist.pos[0], 0, dist.pos[2]);
-        animateCameraTarget(newTarget, 22);
+        // Smooth zoom toward district
+        animTarget(new THREE.Vector3(d.pos[0], 0, d.pos[2]), 18);
       }
 
       function closePanel() {
         document.getElementById("panel").classList.remove("open");
-        animateCameraTarget(new THREE.Vector3(0, 0, 2), 38);
-        activeBuilding = null;
+        panelOpen = false;
+        animTarget(new THREE.Vector3(0, 0, 2), 34);
       }
 
-      function toggleEng(el) {
-        const deep = el.nextElementSibling;
-        deep.classList.toggle("vis");
-        el.textContent = deep.classList.contains("vis")
-          ? "▼ TECHNICAL DEPTH"
-          : "▶ TECHNICAL DEPTH";
-      }
-
-      // Smooth camera target animation
-      let camTargetAnim = null;
-      function animateCameraTarget(newTarget, newRadius) {
-        const startTarget = target.clone();
-        const startRadius = spherical.radius;
-        const startTime = performance.now();
-        const duration = 800;
-
-        if (camTargetAnim) cancelAnimationFrame(camTargetAnim);
-
+      let camAnim = null;
+      function animTarget(newT, newR) {
+        const st = target.clone(),
+          sr = sph.radius,
+          t0 = performance.now(),
+          dur = 700;
+        if (camAnim) cancelAnimationFrame(camAnim);
         function step(now) {
-          const t = Math.min((now - startTime) / duration, 1);
-          const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-          target.lerpVectors(startTarget, newTarget, ease);
-          spherical.radius = startRadius + (newRadius - startRadius) * ease;
-          updateCamera();
-          if (t < 1) camTargetAnim = requestAnimationFrame(step);
+          const p = Math.min((now - t0) / dur, 1);
+          const e = p < 0.5 ? 2 * p * p : -1 + (4 - 2 * p) * p;
+          target.lerpVectors(st, newT, e);
+          sph.radius = sr + (newR - sr) * e;
+          updateCam();
+          if (p < 1) camAnim = requestAnimationFrame(step);
         }
-        camTargetAnim = requestAnimationFrame(step);
+        camAnim = requestAnimationFrame(step);
       }
 
       // ── BRAHMASTRA ────────────────────────────────────────────────
       function updateBrahmastra() {
-        const count = Math.min(visited.size, 5);
-        document.querySelectorAll(".frag").forEach((f, i) => {
-          f.classList.toggle("on", i < count);
-        });
-        document.getElementById("frag-label").textContent = `${count} / 5`;
+        const n = Math.min(visited.size, 5);
+        document
+          .querySelectorAll(".frag")
+          .forEach((f, i) => f.classList.toggle("on", i < n));
+        document.getElementById("frag-label").textContent = `${n} / 5 EXPLORED`;
         if (visited.size >= 5) {
           setTimeout(() => {
             document.getElementById("contact-overlay").classList.add("vis");
-            logEvent("brahmastra_assembled", "all_five_districts");
-          }, 500);
+            logEvt("brahmastra_assembled", "all_five_districts");
+          }, 600);
         }
       }
       updateBrahmastra();
@@ -1389,108 +1899,113 @@
         document.getElementById("chaos-overlay").classList.add("vis");
         if (chaosPlayed) return;
         chaosPlayed = true;
-        logEvent("chaos_triggered", "simulation_started");
-
+        logEvt("chaos_triggered", "simulation_started");
         const box = document.getElementById("chaos-box");
         box.innerHTML = "";
-
         const recruiterLines = [
-          {
-            t: "[ 00:02 ] Removing Aditya's systems from the network...",
-            c: "c-dim",
-          },
+          { t: "[ 00:02 ] Removing Aditya's systems...", c: "c-dim" },
           {
             t: "[ 00:05 ] AUTH: Ten platforms no longer recognise their users.",
-            c: "c-line",
+            c: "c-fail",
           },
           {
-            t: "[ 00:08 ] AUTH: Support tickets — 847 and rising.",
-            c: "c-line",
+            t: "[ 00:08 ] AUTH: Support tickets — 847 and rising fast.",
+            c: "c-fail",
           },
           {
             t: "[ 00:12 ] INTEGRATION: All 80 services attempting to reconnect.",
-            c: "c-line",
+            c: "c-fail",
           },
           {
-            t: "[ 00:15 ] INTEGRATION: Order processing stopped. Shipments frozen.",
-            c: "c-line",
+            t: "[ 00:16 ] INTEGRATION: Order processing stopped. Shipments frozen.",
+            c: "c-fail",
           },
           {
-            t: "[ 00:19 ] DATA: Database migration rollback triggered.",
-            c: "c-line",
+            t: "[ 00:20 ] DATA: Database migration rolling back.",
+            c: "c-fail",
           },
-          { t: "[ 00:23 ] FINANCE: Financial records diverging.", c: "c-line" },
           {
-            t: "[ 00:27 ] ASSETS: Art tracking system — state unknown.",
-            c: "c-line",
+            t: "[ 00:24 ] FINANCE: Financial records diverging. Workflows stalled.",
+            c: "c-fail",
+          },
+          {
+            t: "[ 00:28 ] ASSETS: Art tracking system — state unknown.",
+            c: "c-fail",
           },
           { t: "[ 00:30 ] Simulation complete.", c: "c-dim" },
-          { t: "", c: "c-dim" },
-          { t: "SYSTEMS MAINTAINED BY ADITYA SRIVASTAVA:", c: "c-ok" },
-          { t: "Auth Tower ·········· OPERATIONAL", c: "c-ok" },
-          { t: "Integration Mesh ···· OPERATIONAL", c: "c-ok" },
-          { t: "Data Vaults ········· OPERATIONAL", c: "c-ok" },
-          { t: "Cloud District ······ OPERATIONAL", c: "c-ok" },
-          { t: "LedgerFlow ·········· OPERATIONAL", c: "c-ok" },
-          { t: "Everything outside his systems: see above.", c: "c-line" },
         ];
-
         const engineerLines = [
           { t: "[ 00:02 ] Simulation initialising...", c: "c-dim" },
           {
-            t: "[ 00:05 ] SSO: 401 cascade — JWT validation failure. No session store.",
-            c: "c-line",
+            t: "[ 00:05 ] SSO: 401 cascade — JWT validation failure. No session store accessible.",
+            c: "c-fail",
           },
           {
             t: "[ 00:08 ] SSO: Refresh token rotation blocked. 10K+ sessions invalidated.",
-            c: "c-line",
+            c: "c-fail",
           },
           {
-            t: "[ 00:12 ] INTEGRATION: script.sh returning non-zero exit codes.",
-            c: "c-line",
+            t: "[ 00:12 ] INTEGRATION: script.sh returning non-zero exit codes. Lambda timeout.",
+            c: "c-fail",
           },
           {
-            t: "[ 00:15 ] INTEGRATION: Lambda cold starts timing out. No circuit breaker.",
-            c: "c-line",
+            t: "[ 00:16 ] INTEGRATION: No fallback circuit breaker. All 80 services down.",
+            c: "c-fail",
           },
           {
-            t: "[ 00:19 ] DB: MySQL 8 driver incompatibility — connection pool exhausted.",
-            c: "c-line",
+            t: "[ 00:20 ] DB: MySQL 8 driver incompatibility — connection pool exhausted.",
+            c: "c-fail",
           },
           {
-            t: "[ 00:23 ] FINANCE: Idempotency keys absent. Duplicate invoices possible.",
-            c: "c-line",
+            t: "[ 00:24 ] FINANCE: Idempotency keys absent. Duplicate invoices possible.",
+            c: "c-fail",
           },
           {
-            t: "[ 00:27 ] ATS: State machine bypassed. Asset state corrupted.",
-            c: "c-line",
+            t: "[ 00:28 ] ATS: State machine bypassed by direct DB update. Asset state corrupted.",
+            c: "c-fail",
           },
           { t: "[ 00:30 ] Simulation complete.", c: "c-dim" },
-          { t: "", c: "c-dim" },
-          { t: "SYSTEMS MAINTAINED BY ADITYA SRIVASTAVA:", c: "c-ok" },
-          { t: "Auth Tower ·········· OPERATIONAL", c: "c-ok" },
-          { t: "Integration Mesh ···· OPERATIONAL", c: "c-ok" },
-          { t: "Data Vaults ········· OPERATIONAL", c: "c-ok" },
-          { t: "Cloud District ······ OPERATIONAL", c: "c-ok" },
-          { t: "LedgerFlow ·········· OPERATIONAL", c: "c-ok" },
-          { t: "Everything outside his systems: see above.", c: "c-line" },
         ];
-
         const lines =
           VISITOR_PATH === "engineer" ? engineerLines : recruiterLines;
         let i = 0;
         const iv = setInterval(() => {
           if (i >= lines.length) {
             clearInterval(iv);
+            showChaosResult();
             return;
           }
-          const div = document.createElement("div");
-          div.className = lines[i].c;
-          div.textContent = lines[i].t;
-          box.appendChild(div);
+          const el = document.createElement("div");
+          el.className = lines[i].c;
+          el.textContent = lines[i].t;
+          box.appendChild(el);
           box.scrollTop = box.scrollHeight;
           i++;
-        }, 350);
+        }, 380);
+      }
+
+      function showChaosResult() {
+        const box = document.getElementById("chaos-box");
+        const r = document.createElement("div");
+        r.id = "chaos-result";
+        r.innerHTML = `
+    <div style="color:#5aaa7a;font-size:11px;letter-spacing:2px;margin-bottom:14px">
+      SYSTEMS MAINTAINED BY ADITYA SRIVASTAVA
+    </div>
+    <div style="color:#5aaa7a;font-size:11px;line-height:2.2">
+      Auth Tower ············ OPERATIONAL<br>
+      Integration Mesh ······ OPERATIONAL<br>
+      Data Vaults ··········· OPERATIONAL<br>
+      Cloud District ········ OPERATIONAL<br>
+      LedgerFlow ············ OPERATIONAL<br>
+      ATS + Operations ······ OPERATIONAL
+    </div>
+    <div style="color:#cc6a6a;margin-top:14px;font-size:11px">
+      Everything outside his systems: see above.
+    </div>
+  `;
+        box.appendChild(r);
+        box.scrollTop = box.scrollHeight;
       }
 
       function closeChaos() {
@@ -1507,12 +2022,12 @@
       }
 
       async function sendOracle() {
-        const input = document.getElementById("oracle-input");
-        const q = input.value.trim();
+        const inp = document.getElementById("oracle-input");
+        const q = inp.value.trim();
         if (!q) return;
-        input.value = "";
+        inp.value = "";
         addMsg(q, "user");
-        const thinking = addMsg("...", "bot");
+        const t = addMsg("...", "bot");
         try {
           const res = await fetch(
             `${CONFIG.API_URL}/api/${CONFIG.VERSION}/oracle/ask`,
@@ -1526,28 +2041,26 @@
               }),
             },
           );
-          const json = await res.json();
-          thinking.textContent =
-            json.data?.answer || "The Oracle is momentarily silent.";
+          const j = await res.json();
+          t.textContent = j.data?.answer || "The Oracle is momentarily silent.";
         } catch (e) {
-          thinking.textContent =
-            "The Oracle requires a live backend connection.";
+          t.textContent = "The Oracle requires a live backend connection.";
         }
-        logEvent("oracle_asked", q.substring(0, 100));
+        logEvt("oracle_asked", q.substring(0, 100));
       }
 
       function addMsg(text, role) {
-        const msgs = document.getElementById("oracle-msgs");
-        const div = document.createElement("div");
-        div.className = `o-msg ${role}`;
-        div.textContent = text;
-        msgs.appendChild(div);
-        msgs.scrollTop = msgs.scrollHeight;
-        return div;
+        const m = document.getElementById("oracle-msgs");
+        const d = document.createElement("div");
+        d.className = `o-msg ${role}`;
+        d.textContent = text;
+        m.appendChild(d);
+        m.scrollTop = m.scrollHeight;
+        return d;
       }
 
       // ── BACKEND ───────────────────────────────────────────────────
-      function logEvent(type, data) {
+      function logEvt(type, data) {
         fetch(`${CONFIG.API_URL}/api/${CONFIG.VERSION}/visitor/event`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1569,12 +2082,12 @@
             fileName: e.filename,
             lineNumber: e.lineno,
             browser: navigator.userAgent,
-            page: "city-3d",
+            page: "city-3d-v2",
           }),
         }).catch(() => {});
       });
 
-      const pageLoadTime = Date.now();
+      const t0 = Date.now();
       setInterval(() => {
         fetch(
           `${CONFIG.API_URL}/api/${CONFIG.VERSION}/visitor/session/${SESSION_ID}/duration`,
@@ -1582,7 +2095,7 @@
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              durationSeconds: Math.round((Date.now() - pageLoadTime) / 1000),
+              durationSeconds: Math.round((Date.now() - t0) / 1000),
             }),
           },
         ).catch(() => {});
@@ -1596,24 +2109,43 @@
       });
 
       // ── ANIMATION LOOP ────────────────────────────────────────────
-      let clock = new THREE.Clock();
+      const clock = new THREE.Clock();
 
-      function animate() {
-        requestAnimationFrame(animate);
+      renderer.setAnimationLoop(() => {
         const t = clock.getElapsedTime();
 
-        // Pulse the gold light (Auth Tower glow)
-        goldLight.intensity = 1.2 + Math.sin(t * 1.5) * 0.3;
+        // Auth Tower gold glow pulse
+        authGlow.intensity = 2.5 + Math.sin(t * 1.2) * 0.8;
 
-        // Subtle building float animation
-        buildingMeshes.forEach(({ group, district }, i) => {
-          const offset = i * 0.7;
-          group.position.y = Math.sin(t * 0.5 + offset) * 0.05;
+        // Rotate Auth Tower rings
+        scene.traverse((obj) => {
+          if (obj.userData.ring) {
+            obj.rotation.z = obj.userData.phase + t * obj.userData.speed;
+          }
+          if (obj.userData.blink) {
+            obj.material.emissiveIntensity =
+              1 + Math.sin(t * 3 + obj.userData.phase) * 0.8;
+          }
         });
 
+        // Gentle building float
+        scene.children.forEach((obj) => {
+          if (obj.userData.districtIdx !== undefined && obj.isGroup) {
+            const i = obj.userData.districtIdx;
+            if (i !== undefined) {
+              obj.position.y = Math.sin(t * 0.4 + i * 0.8) * 0.04;
+            }
+          }
+        });
+
+        // Subtle camera auto-rotate when not interacting
+        if (!isDrag && !panelOpen) {
+          sph.theta += 0.0008;
+          updateCam();
+        }
+
         renderer.render(scene, camera);
-      }
-      animate();
+      });
     </script>
   </body>
 </html>
