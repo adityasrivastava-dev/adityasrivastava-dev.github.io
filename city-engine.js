@@ -1,38 +1,121 @@
-// ── CITY ENGINE v5 ────────────────────────────────────────────────────────────
-// Bruno Simon inspired: low-poly cohesive palette, proper car, tight physics,
-// weather system (sun/rain/night/fog/snow), checkpoint markers, city layout
+// ── CITY ENGINE v6 — CINEMATIC GAME EXPERIENCE ────────────────────────────────
+// Full CameraDirector state machine, BuildingEntity system, VFX identity layer,
+// Energy streams, divine beams, panel emergence, interaction feedback
 
 window.CityEngine = (function () {
   // ── STATE ────────────────────────────────────────────────────────────────
   let scene, camera, renderer, clock;
   let animId;
 
-  // ── NEW STATE for 8 priorities ────────────────────────────────────────────
-  let cameraFlyTarget = null; // P1: camera fly-in on entry
-  let cameraFlyPhase = 0; // 0=normal, 1=flying-in, 2=panel-open
-  let districtAudio = {}; // P6: per-district audio nodes
-  let diyaFlames = []; // P5+P7: animated diya flame meshes
-  let diyaLights = []; // P7: cached diya PointLights (position + ref)
-  let birdGroup = null; // P5: bird flock group
-  let fullMapOpen = false; // P8: full map overlay flag
-  let starField = null; // Night sky stars
-  let archGlows = []; // Archway interior glow lights
+  // ── PERFORMANCE FLAG ──────────────────────────────────────────────────────
+  const IS_MOBILE =
+    /Mobi|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
+
+  // ── PLAYER PRESENCE ───────────────────────────────────────────────────────
+  let playerGroundRing = null; // ground indicator under car
+  let playerShadowDisc = null; // soft shadow under car
+  let motionTrail = []; // speed trail particles
+  let speedLinesGroup = null; // screen-edge speed lines
+  let prevCarAngle = 0;
+  let steerFeedback = 0; // camera tilt on steering
+
+  // ── NARRATIVE DIRECTOR ────────────────────────────────────────────────────
+  const NARRATIVE = {
+    phase: "DORMANT", // DORMANT | GUIDED | FREE
+    step: 0,
+    timer: 0,
+    yatraPath: null, // CatmullRomCurve3 pilgrimage path mesh
+    yatraVisible: false,
+    guideArrow: null, // floating arrow pointing to first temple
+    guideLabel: null, // "DRIVE TO SURYA DWARA" sprite
+    firstVisitDone: false,
+  };
+
+  // ── SPATIAL AUDIO (per-building positional sound) ─────────────────────────
+  let spatialAudio = {}; // buildingId → { osc, gain, filter, panner }
+  let ambientLayers = {}; // wind | bells | drone
+  let cinematicAudio = {}; // intro | transition | focus
+  let lastHoverBuildingId = null;
+  let activeSoundCount = 0;
+  const MAX_SOUNDS = IS_MOBILE ? 4 : 8;
+
+  // ── CINEMATIC MOMENTS ─────────────────────────────────────────────────────
+  let bloomOverlay = null; // CSS element for bloom flash
+  let cinematicActive = false;
+
+  // ── CAMERA DIRECTOR — state machine ──────────────────────────────────────
+  const CAM = {
+    state: "STATIC", // STATIC until user clicks — camera holds at loading position
+    introT: 0,
+    introDone: false,
+    transT: 0,
+    transDur: 1.4,
+    fromPos: new THREE.Vector3(),
+    fromLook: new THREE.Vector3(),
+    toPos: new THREE.Vector3(),
+    toLook: new THREE.Vector3(),
+    focusBuilding: null,
+    breathT: 0,
+    shakeAmt: 0,
+    locked: false,
+    _flashed: false,
+  };
+
+  // ── BUILDING ENTITY SYSTEM ────────────────────────────────────────────────
+  let buildingEntities = [];
+  let selectedEntity = null;
+
+  // ── VFX POOLS ─────────────────────────────────────────────────────────────
+  let energyStreams = []; // animated data-flow lines between buildings
+  let divineBeams = []; // night spotlights from gopuram tops
+  let burstPool = []; // reusable energy burst spheres
+  let buildingVfx = {}; // per-building-id VFX mesh groups
+  let pranaParticles = null; // central-island aura particles
+
+  // ── P1 (legacy) — kept for compatibility ─────────────────────────────────
+  let cameraFlyTarget = null;
+  let cameraFlyPhase = 0;
+
+  // ── OTHER STATE ───────────────────────────────────────────────────────────
+  let districtAudio = {};
+  let diyaFlames = [];
+  let diyaLights = [];
+  let birdGroup = null;
+  let fullMapOpen = false;
+  let starField = null;
+  let archGlows = [];
+  let infoBoardSprites = [];
 
   // Car
   let carGroup, carBodyMesh;
-  let wheelGroups = []; // 4 wheel groups — we spin the group
+  let wheelGroups = [];
   let carX = 0,
     carZ = 6;
-  let carAngle = 0;
-  let carSpeed = 0;
-  let keys = {};
-  let crashCooldown = 0;
-  let prevSpeed = 0;
+  let gameStarted = false; // blocks all HUD/proximity/narrative before user clicks
+  let carAngle = 0,
+    carSpeed = 0;
+  // Smooth steering — steering angle lerps toward input, never snaps
+  let steerAngle = 0; // current smooth steering value (-1 to +1)
+  let carBodyRoll = 0; // smooth body roll for visual tilt
+  let suspensionY = 0; // smooth suspension bounce
+  let carKeys = {}; // local alias for readability
+  let keys = {},
+    crashCooldown = 0,
+    prevSpeed = 0;
 
   // Lights
   let sunLight, fillLight, ambLight, hemiLight;
   let carHL, carHR, carTL, carTR;
   let waveLines = [];
+
+  // ── LIVING WORLD STATE ────────────────────────────────────────────────────
+  let roadEnergyParticles = null; // energy flow along roads
+  let divineParticles = null; // floating dust/divine motes
+  let groundShimmers = []; // shimmer discs near temples
+  let windTime = 0; // global wind phase
+  let lightBreathT = 0; // slow world breathing light cycle
+  let templeEmissives = []; // { mat, building } — glow-edge materials
+  let waveFlowOffset = 0; // road energy wave position
   let isNight = false; // ← DAY is default, like Bruno Simon
 
   // Weather
@@ -58,11 +141,11 @@ window.CityEngine = (function () {
     musicStarted = false;
 
   // Physics — scalar, no drift
-  const ACCEL = 0.024; // faster acceleration for bigger world
-  const BRAKE = 0.03;
-  const DECEL = 0.008;
-  const MAX_SPD = 0.38; // higher top speed
-  const TURN = 0.044; // slightly more responsive steering
+  const ACCEL = 0.022; // stronger acceleration so speed difference is felt
+  const BRAKE = 0.038; // firmer brakes
+  const DECEL = 0.012; // faster natural deceleration — car feels heavier
+  const MAX_SPD = 0.48; // higher top speed so player actually FEELS fast
+  const TURN = 0.038; // same steering — already good
   const PROX = 30; // large world — show notification from further away
   const CAR_HW = 0.85;
   const CAR_HD = 1.3;
@@ -128,6 +211,1741 @@ window.CityEngine = (function () {
   let worldLabels = []; // THREE.Sprite billboard array
   let zoneAmbients = []; // per-zone colored point lights
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // BUILDING ENTITY — state machine per building
+  // States: DORMANT → AMBIENT → HOVER → ACTIVE → SELECTED
+  // ─────────────────────────────────────────────────────────────────────────
+  class BuildingEntity {
+    constructor(building, meshGroup, bodyMat) {
+      this.b = building;
+      this.group = meshGroup;
+      this.mat = bodyMat;
+      this.state = "DORMANT";
+      this.vfxI = 0; // VFX intensity 0→1
+      this.rippleT = 0;
+      this.forceDim = false;
+      this.gc = parseInt((building.glowColor || "#00ddff").slice(1), 16);
+      this.ripple = this._mkRipple();
+      this.selRing = this._mkSelRing();
+    }
+
+    _mkRipple() {
+      const m = new THREE.Mesh(
+        new THREE.RingGeometry(0.5, 0.7, 20),
+        new THREE.MeshBasicMaterial({
+          color: this.gc,
+          transparent: true,
+          opacity: 0,
+          side: THREE.DoubleSide,
+        }),
+      );
+      m.rotation.x = -Math.PI / 2;
+      m.position.y = 0.18;
+      this.group.add(m);
+      return m;
+    }
+
+    _mkSelRing() {
+      const r = new THREE.Mesh(
+        new THREE.TorusGeometry((this.b.size?.[0] || 8) * 0.65, 0.18, 4, 28),
+        new THREE.MeshBasicMaterial({
+          color: 0xffcc44,
+          transparent: true,
+          opacity: 0,
+        }),
+      );
+      r.position.y = (this.b.height || 10) * 0.28;
+      r.userData.isSelRing = true;
+      this.group.add(r);
+      return r;
+    }
+
+    update(t, dt, dist) {
+      // ── State transition ────────────────────────────────────────────────
+      if (dist > 65) this.state = "DORMANT";
+      else if (dist > 32) this.state = "AMBIENT";
+      else if (dist > 16) this.state = "HOVER";
+      else if (this !== selectedEntity) this.state = "ACTIVE";
+
+      // ── Target VFX intensity ────────────────────────────────────────────
+      const tgt = this.forceDim
+        ? 0.12
+        : { DORMANT: 0, AMBIENT: 0.3, HOVER: 0.68, ACTIVE: 1.0, SELECTED: 1.0 }[
+            this.state
+          ] || 0;
+      this.vfxI += (tgt - this.vfxI) * 0.07;
+
+      // ── Scale pulse ──────────────────────────────────────────────────────
+      const amps = {
+        DORMANT: 0,
+        AMBIENT: 0.002,
+        HOVER: 0.006,
+        ACTIVE: 0.011,
+        SELECTED: 0.008,
+      };
+      const freqs = {
+        DORMANT: 0.3,
+        AMBIENT: 0.3,
+        HOVER: 0.65,
+        ACTIVE: 1.1,
+        SELECTED: 0.85,
+      };
+      const pulse =
+        1 +
+        Math.sin(t * (freqs[this.state] || 0.3) * Math.PI * 2) *
+          (amps[this.state] || 0);
+      this.group.scale.setScalar(pulse);
+
+      // ── Ripple ring (ACTIVE / SELECTED) ─────────────────────────────────
+      if (this.state === "ACTIVE" || this.state === "SELECTED") {
+        this.rippleT = (this.rippleT + dt * 0.38) % 3.0;
+        const rt = (this.rippleT % 3.0) / 3.0;
+        this.ripple.scale.setScalar(1 + rt * 5.5);
+        this.ripple.material.opacity = (1 - rt) * 0.55 * this.vfxI;
+      } else {
+        this.ripple.material.opacity = 0;
+      }
+
+      // ── Selection ring ───────────────────────────────────────────────────
+      if (this.state === "SELECTED") {
+        this.selRing.material.opacity = 0.65 + Math.sin(t * 2.2) * 0.18;
+        this.selRing.rotation.z = t * 1.3;
+      } else {
+        this.selRing.material.opacity +=
+          (0 - this.selRing.material.opacity) * 0.1;
+      }
+    }
+
+    select() {
+      this.state = "SELECTED";
+      // All other buildings dim
+      buildingEntities.forEach((e) => {
+        if (e !== this) e.forceDim = true;
+      });
+      // Energy burst from building
+      spawnEnergyBurst(
+        this.b.pos[0],
+        this.b.height * 0.6,
+        this.b.pos[1],
+        this.gc,
+      );
+    }
+
+    deselect() {
+      this.state = "HOVER";
+      buildingEntities.forEach((e) => {
+        e.forceDim = false;
+      });
+    }
+  }
+
+  // ── CAMERA DIRECTOR ───────────────────────────────────────────────────────
+  function updateCameraDirector(t, dt) {
+    const sinA = Math.sin(carAngle),
+      cosA = Math.cos(carAngle);
+
+    // ── STATIC — pre-click loading state. Camera holds at nice overview angle ──
+    if (CAM.state === "STATIC") {
+      // Gentle slow pan showing the world before user clicks
+      const panAngle = t * 0.06;
+      camera.position.set(Math.sin(panAngle) * 55, 38, Math.cos(panAngle) * 55);
+      camera.lookAt(0, 2, 0); // always look at city center
+      return;
+    }
+
+    if (CAM.state === "INTRO") {
+      CAM.introT = Math.min(1, CAM.introT + dt / 6.5);
+      const e =
+        CAM.introT < 0.5
+          ? 4 * CAM.introT * CAM.introT * CAM.introT
+          : 1 - Math.pow(-2 * CAM.introT + 2, 3) / 2;
+
+      const startPos = new THREE.Vector3(12, 285, 95);
+      const endPos = new THREE.Vector3(carX - sinA * 22, 16, carZ - cosA * 22);
+      const startLook = new THREE.Vector3(0, 0, 0);
+      const endLook = new THREE.Vector3(carX + sinA * 4, 1.5, carZ + cosA * 4);
+
+      camera.position.lerpVectors(startPos, endPos, e);
+      const lk = new THREE.Vector3().lerpVectors(startLook, endLook, e);
+      camera.lookAt(lk);
+
+      // City-reveal flash at 38% descent
+      if (CAM.introT > 0.38 && CAM.introT < 0.42 && !CAM._flashed) {
+        CAM._flashed = true;
+        triggerCityRevealCinematic();
+        zoneAmbients.forEach((l) => {
+          const ni = l.userData.nightI || 0.35;
+          l.intensity = ni * 4;
+        });
+        setTimeout(
+          () =>
+            zoneAmbients.forEach((l) => {
+              l.intensity = isNight
+                ? (l.userData.nightI || 0.35) * 3.2
+                : (l.userData.nightI || 0.35) * 0.2;
+            }),
+          500,
+        );
+      }
+
+      if (CAM.introT >= 1) {
+        CAM.state = "FOLLOW";
+        CAM.introDone = true;
+        // Start guided narrative 1.5s after landing
+        setTimeout(() => startNarrativeGuide(), 1500);
+      }
+      return; // skip other camera logic during intro
+    }
+
+    if (CAM.state === "FOCUS_TRANSITION") {
+      CAM.transT += dt / CAM.transDur;
+      const t2 = Math.min(1, CAM.transT);
+      const e = t2 < 0.5 ? 2 * t2 * t2 : 1 - Math.pow(-2 * t2 + 2, 2) / 2;
+      camera.position.lerpVectors(CAM.fromPos, CAM.toPos, e);
+      const lk = new THREE.Vector3().lerpVectors(CAM.fromLook, CAM.toLook, e);
+      camera.lookAt(lk);
+      if (t2 >= 1) {
+        CAM.state = "FOCUS";
+        setTimeout(() => {
+          const b = CAM.focusBuilding;
+          if (b) {
+            window.CityUI?.openBuilding(b);
+            spawnConfetti(
+              carX,
+              carZ,
+              parseInt((b.glowColor || "#ffcc44").slice(1), 16),
+            );
+          }
+        }, 600);
+      }
+      return;
+    }
+
+    if (CAM.state === "FOCUS" || CAM.locked) {
+      // Hold cinematic POV — subtle breathing only
+      const breath = Math.sin(t * 0.4 * Math.PI * 2) * 0.08;
+      camera.position.y += breath * dt * 6;
+      return;
+    }
+
+    if (CAM.state === "RETURN_TRANSITION") {
+      CAM.transT += dt / 1.0;
+      const e = Math.min(1, CAM.transT);
+      const ease = e < 0.5 ? 2 * e * e : 1 - Math.pow(-2 * e + 2, 2) / 2;
+      const followPos = new THREE.Vector3(
+        carX - sinA * 22,
+        16,
+        carZ - cosA * 22,
+      );
+      camera.position.lerpVectors(CAM.fromPos, followPos, ease);
+      const lk = new THREE.Vector3().lerpVectors(
+        CAM.fromLook,
+        new THREE.Vector3(carX + sinA * 4, 1.5, carZ + cosA * 4),
+        ease,
+      );
+      camera.lookAt(lk);
+      if (e >= 1) CAM.state = "FOLLOW";
+      return;
+    }
+
+    // ── FOLLOW — normal driving camera with breathing + speed perception ──────
+    const speedRatio = Math.abs(carSpeed) / MAX_SPD;
+
+    // Camera pulls back at high speed — more world visible = feels faster
+    const camDist = 22 + speedRatio * 8; // 22 at rest → 30 at top speed
+    const camH = 16 + speedRatio * 3; // rises slightly at speed
+
+    // FOV widens with speed — single most effective speed perception trick
+    const targetFOV = 58 + speedRatio * 18; // 58° rest → 76° at top speed
+    camera.fov += (targetFOV - camera.fov) * 0.06;
+    camera.updateProjectionMatrix();
+
+    const tx = carX - sinA * camDist;
+    const tz = carZ - cosA * camDist;
+
+    // Camera lag: faster lerp when accelerating, slower when coasting
+    // This creates the "pushed back into seat" / "thrown forward" sensation
+    const accelDelta = Math.abs(carSpeed) - Math.abs(prevSpeed);
+    const camLag = accelDelta > 0 ? 0.05 : 0.11; // slow to follow acceleration, fast to return
+
+    camera.position.x += (tx - camera.position.x) * camLag;
+    camera.position.y += (camH - camera.position.y) * camLag;
+    camera.position.z += (tz - camera.position.z) * camLag;
+
+    // Breath — scales down at speed (driver is alert, less idle sway)
+    const breathScale = Math.max(0, 1 - speedRatio * 1.4);
+    const breath = Math.sin(t * 0.4 * Math.PI * 2) * 0.18 * breathScale;
+    camera.position.y += breath;
+
+    // Micro-shake at high speed — road vibration feel
+    // Only when actually moving fast (not just turning)
+    if (speedRatio > 0.55) {
+      const shakeMag = (speedRatio - 0.55) * 0.055;
+      camera.position.x += (Math.random() - 0.5) * shakeMag;
+      camera.position.y += (Math.random() - 0.5) * shakeMag * 0.5;
+    }
+
+    // Look further ahead at speed — the world opens up
+    const lookAhead = 4 + speedRatio * 8;
+    camera.lookAt(carX + sinA * lookAhead, 1.5, carZ + cosA * lookAhead);
+
+    // Camera tilt on turns (enhanced from playerPresence steerFeedback)
+    if (CAM.state === "FOLLOW") {
+      camera.rotation.z = steerFeedback * -0.06 * (1 + speedRatio * 0.5);
+    }
+
+    // Screen shake decay
+    if (CAM.shakeAmt > 0) {
+      camera.position.x += (Math.random() - 0.5) * CAM.shakeAmt;
+      camera.position.y += (Math.random() - 0.5) * CAM.shakeAmt * 0.4;
+      CAM.shakeAmt = Math.max(0, CAM.shakeAmt - dt * 3);
+    }
+  }
+
+  function focusCameraOnBuilding(b) {
+    CAM.focusBuilding = b;
+    CAM.fromPos.copy(camera.position);
+    CAM.fromLook.set(
+      carX + Math.sin(carAngle) * 4,
+      1.5,
+      carZ + Math.cos(carAngle) * 4,
+    );
+
+    // Camera angle: approach from where the player is, not from the building center
+    const ang = Math.atan2(b.pos[0] - carX, b.pos[1] - carZ);
+
+    // BUG FIX: was 13 units — too close, camera ended up inside info board sprites
+    // Now 22 units back, higher angle, looks at upper 70% of building
+    // This keeps the full gopuram silhouette in frame and avoids sprite plane
+    CAM.toPos.set(
+      b.pos[0] - Math.sin(ang) * 22,
+      12 + (b.height || 12) * 0.22,
+      b.pos[1] - Math.cos(ang) * 22,
+    );
+    // Look at 70% height — shows full architecture, no sprite overlap
+    CAM.toLook.set(b.pos[0], (b.height || 12) * 0.7, b.pos[1]);
+
+    CAM.transT = 0;
+    CAM.transDur = 1.4;
+    CAM.state = "FOCUS_TRANSITION";
+    CAM.locked = false;
+  }
+
+  function returnCamera() {
+    CAM.fromPos.copy(camera.position);
+    CAM.fromLook.copy(CAM.toLook);
+    CAM.transT = 0;
+    CAM.state = "RETURN_TRANSITION";
+    CAM.locked = false;
+  }
+
+  // ── ENERGY BURST — selection acknowledgement flash ────────────────────────
+  function spawnEnergyBurst(wx, wy, wz, color) {
+    const mat = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: 0.85,
+      wireframe: false,
+    });
+    const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 6), mat);
+    mesh.position.set(wx, wy, wz);
+    mesh.userData.burstT = 0;
+    mesh.userData.burstDur = 0.85;
+    scene.add(mesh);
+    burstPool.push(mesh);
+  }
+
+  // ── VFX: ENERGY STREAMS between connected buildings ───────────────────────
+  function buildEnergyStreams() {
+    if (IS_MOBILE) return; // skip on mobile
+    const byId = {};
+    window.CITY_DATA.buildings.forEach((b) => {
+      byId[b.id] = b;
+    });
+
+    window.CITY_DATA.buildings.forEach((b) => {
+      if (!b.connects) return;
+      b.connects.forEach((conn) => {
+        // match "to" name to a building id
+        const target = window.CITY_DATA.buildings.find(
+          (t) =>
+            conn.to &&
+            conn.to
+              .toLowerCase()
+              .includes(t.name.toLowerCase().split(" ")[0].toLowerCase()),
+        );
+        if (!target || target.id === b.id) return;
+
+        const src = new THREE.Vector3(b.pos[0], 2.5, b.pos[1]);
+        const dst = new THREE.Vector3(target.pos[0], 2.5, target.pos[1]);
+        const mid = src.clone().lerp(dst, 0.5);
+        mid.y = 7 + Math.random() * 5;
+
+        const curve = new THREE.QuadraticBezierCurve3(src, mid, dst);
+        const pts = curve.getPoints(50);
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        const mat = new THREE.LineBasicMaterial({
+          color: parseInt((b.glowColor || "#00ddff").slice(1), 16),
+          transparent: true,
+          opacity: 0,
+        });
+        const line = new THREE.Line(geo, mat);
+        line.userData.isEnergyStream = true;
+        line.userData.srcId = b.id;
+        line.userData.dstId = target.id;
+        line.userData.animOff = Math.random() * 50;
+        scene.add(line);
+        energyStreams.push(line);
+      });
+    });
+  }
+
+  // ── VFX: PER-BUILDING IDENTITY ────────────────────────────────────────────
+  function addBuildingVfxIdentity(b, group) {
+    const gc = parseInt((b.glowColor || "#00ddff").slice(1), 16);
+    const h = b.height || 12;
+    const vfx = new THREE.Group();
+    group.add(vfx);
+    buildingVfx[b.id] = vfx;
+
+    if (b.id === "surya-dwara") {
+      // ── SOLAR RAY CROWN ─────────────────────────────────────────────────
+      for (let i = 0; i < 8; i++) {
+        const ang = (i / 8) * Math.PI * 2;
+        const ray = new THREE.Mesh(
+          new THREE.BoxGeometry(0.06, 0.06, 3.2 + Math.random()),
+          new THREE.MeshBasicMaterial({
+            color: 0xffee44,
+            transparent: true,
+            opacity: 0,
+          }),
+        );
+        ray.position.set(Math.cos(ang) * 1.5, h + 2.8, Math.sin(ang) * 1.5);
+        ray.rotation.y = ang;
+        ray.rotation.z = Math.PI / 2;
+        ray.userData.isSolarRay = true;
+        ray.userData.phase = i * 0.42;
+        vfx.add(ray);
+      }
+      // Add rotating crown group marker
+      vfx.userData.isSolarCrown = true;
+    }
+
+    if (b.id === "vishwakarma-shala") {
+      // ── FORGE SPARKS ────────────────────────────────────────────────────
+      const N = IS_MOBILE ? 20 : 45;
+      const pos = new Float32Array(N * 3),
+        vel = new Float32Array(N * 3);
+      for (let i = 0; i < N; i++) {
+        pos[i * 3] = Math.random() - 0.5;
+        pos[i * 3 + 1] = h + 1 + Math.random() * 2;
+        pos[i * 3 + 2] = Math.random() - 0.5;
+        vel[i * 3] = (Math.random() - 0.5) * 0.04;
+        vel[i * 3 + 1] = 0.04 + Math.random() * 0.06;
+        vel[i * 3 + 2] = (Math.random() - 0.5) * 0.04;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+      const pts = new THREE.Points(
+        geo,
+        new THREE.PointsMaterial({
+          color: 0xffaa22,
+          size: 0.14,
+          transparent: true,
+          opacity: 0,
+        }),
+      );
+      pts.userData.isSparks = true;
+      pts.userData.vel = vel;
+      pts.userData.baseH = h + 1;
+      vfx.add(pts);
+    }
+
+    if (b.id === "brahma-kund") {
+      // ── FLOATING KNOWLEDGE ORBS ─────────────────────────────────────────
+      for (let i = 0; i < 5; i++) {
+        const orb = new THREE.Mesh(
+          new THREE.SphereGeometry(0.32, 7, 5),
+          new THREE.MeshBasicMaterial({
+            color: 0xffdd88,
+            transparent: true,
+            opacity: 0,
+          }),
+        );
+        orb.userData.orbI = i;
+        orb.userData.orbR = 2.2 + i * 0.4;
+        orb.userData.orbH = h * 0.55 + i * 0.6;
+        vfx.add(orb);
+      }
+    }
+
+    if (b.id === "vayu-rath") {
+      // ── WIND TRAIL RINGS ─────────────────────────────────────────────────
+      for (let i = 0; i < 3; i++) {
+        const ring = new THREE.Mesh(
+          new THREE.TorusGeometry(1.8 + i * 0.5, 0.06, 4, 24),
+          new THREE.MeshBasicMaterial({
+            color: 0x44ddff,
+            transparent: true,
+            opacity: 0,
+          }),
+        );
+        ring.position.y = h * 0.35 + i * 1.2;
+        ring.userData.windRing = true;
+        ring.userData.phase = i * 1.1;
+        vfx.add(ring);
+      }
+    }
+
+    if (b.id === "akasha-mandapa") {
+      // ── CLOUD WISPS ──────────────────────────────────────────────────────
+      for (let i = 0; i < (IS_MOBILE ? 2 : 4); i++) {
+        const wisp = new THREE.Mesh(
+          new THREE.SphereGeometry(1.8 + Math.random(), 6, 4),
+          new THREE.MeshBasicMaterial({
+            color: 0xddeeff,
+            transparent: true,
+            opacity: 0,
+          }),
+        );
+        wisp.scale.set(2.2, 0.28, 0.9);
+        wisp.position.set(
+          (Math.random() - 0.5) * 4,
+          h * 0.6 + i * 1.8 + 12,
+          (Math.random() - 0.5) * 4,
+        );
+        wisp.userData.wisp = true;
+        wisp.userData.phase = i * 1.6;
+        wisp.userData.baseX = wisp.position.x;
+        vfx.add(wisp);
+      }
+    }
+
+    if (b.id === "lakshmi-prasad") {
+      // ── GOLD COIN FALL ───────────────────────────────────────────────────
+      const N = IS_MOBILE ? 8 : 18;
+      for (let i = 0; i < N; i++) {
+        const coin = new THREE.Mesh(
+          new THREE.OctahedronGeometry(0.18, 0),
+          new THREE.MeshBasicMaterial({
+            color: 0xffcc00,
+            transparent: true,
+            opacity: 0,
+          }),
+        );
+        coin.position.set(
+          (Math.random() - 0.5) * 3,
+          h + 1 + Math.random() * 4,
+          (Math.random() - 0.5) * 3,
+        );
+        coin.userData.coinDrop = true;
+        coin.userData.speed = 0.02 + Math.random() * 0.03;
+        coin.userData.baseH = h + 1 + Math.random() * 4;
+        vfx.add(coin);
+      }
+    }
+
+    if (b.id === "saraswati-vihar" || b.id === "gurukul-ashram") {
+      // ── KNOWLEDGE GLYPH ORBITS ───────────────────────────────────────────
+      for (let i = 0; i < (IS_MOBILE ? 3 : 6); i++) {
+        const glyph = new THREE.Mesh(
+          new THREE.TetrahedronGeometry(0.22, 0),
+          new THREE.MeshBasicMaterial({
+            color: b.id === "saraswati-vihar" ? 0xaa88ff : 0x44eeaa,
+            transparent: true,
+            opacity: 0,
+          }),
+        );
+        glyph.userData.glyphOrbit = true;
+        glyph.userData.i = i;
+        glyph.userData.r = 2.5 + i * 0.3;
+        vfx.add(glyph);
+      }
+    }
+
+    // ── DIVINE BEAM (night-only spotlight from gopuram top) ─────────────────
+    if (b.templeType === "gopuram" && !IS_MOBILE) {
+      const spot = new THREE.SpotLight(gc, 0, 200, Math.PI / 24, 0.85, 1.2);
+      spot.position.set(b.pos[0], h + 4, b.pos[1]);
+      spot.target.position.set(b.pos[0], h + 120, b.pos[1]);
+      spot.castShadow = false;
+      spot.userData.isDivineBeam = true;
+      scene.add(spot);
+      scene.add(spot.target);
+      divineBeams.push(spot);
+    }
+  }
+
+  // ── VFX: CENTRAL ISLAND PRANA AURA ───────────────────────────────────────
+  function buildPranaAura() {
+    const N = IS_MOBILE ? 80 : 200;
+    const pos = new Float32Array(N * 3),
+      vel = new Float32Array(N * 3);
+    for (let i = 0; i < N; i++) {
+      const r = 6 + Math.random() * 4,
+        a = Math.random() * Math.PI * 2;
+      pos[i * 3] = Math.cos(a) * r;
+      pos[i * 3 + 1] = Math.random() * 8;
+      pos[i * 3 + 2] = Math.sin(a) * r;
+      vel[i * 3] = (Math.random() - 0.5) * 0.006;
+      vel[i * 3 + 1] = 0.008 + Math.random() * 0.01;
+      vel[i * 3 + 2] = (Math.random() - 0.5) * 0.006;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    pranaParticles = new THREE.Points(
+      geo,
+      new THREE.PointsMaterial({
+        color: 0xddaaff,
+        size: 0.18,
+        transparent: true,
+        opacity: 0.65,
+        sizeAttenuation: true,
+      }),
+    );
+    pranaParticles.userData.isPrana = true;
+    pranaParticles.userData.vel = vel;
+    scene.add(pranaParticles);
+
+    // Three pulsing rings around the island
+    [4.5, 6.2, 8.0].forEach((r, i) => {
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(r, 0.055, 4, 32),
+        new THREE.MeshBasicMaterial({
+          color: [0xffcc44, 0xddaaff, 0x00ddff][i],
+          transparent: true,
+          opacity: 0.45 - i * 0.08,
+        }),
+      );
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = 0.35;
+      ring.userData.isPranaRing = true;
+      ring.userData.phase = i * 1.2;
+      ring.userData.baseR = r;
+      scene.add(ring);
+    });
+  }
+
+  // ── VFX: INIT ─────────────────────────────────────────────────────────────
+  function initBuildingEntities() {
+    buildingMeshes.forEach(({ group, building, bodyMat }) => {
+      const ent = new BuildingEntity(building, group, bodyMat);
+      buildingEntities.push(ent);
+      // Add unique VFX identity per building
+      addBuildingVfxIdentity(building, group);
+    });
+    buildEnergyStreams();
+  }
+
+  // ── PHILOSOPHY STONE — personal identity marker near central island ─────────
+  function buildPhilosophyStone() {
+    const W = 560,
+      H = 200;
+    const can = document.createElement("canvas");
+    can.width = W;
+    can.height = H;
+    const ctx = can.getContext("2d");
+
+    // Stone texture background
+    const grd = ctx.createLinearGradient(0, 0, 0, H);
+    grd.addColorStop(0, "rgba(28,14,6,0.97)");
+    grd.addColorStop(1, "rgba(12,6,2,0.99)");
+    ctx.fillStyle = grd;
+    if (ctx.roundRect) ctx.roundRect(4, 4, W - 8, H - 8, 8);
+    else ctx.rect(4, 4, W - 8, H - 8);
+    ctx.fill();
+
+    // Gold border with glow
+    ctx.strokeStyle = "#cc9944";
+    ctx.lineWidth = 2;
+    ctx.shadowColor = "#ffcc44";
+    ctx.shadowBlur = 12;
+    if (ctx.roundRect) ctx.roundRect(4, 4, W - 8, H - 8, 8);
+    else ctx.rect(4, 4, W - 8, H - 8);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Top ornament line
+    ctx.fillStyle = "#cc9944";
+    ctx.fillRect(W / 2 - 50, 12, 100, 2);
+
+    // Quote — the most important line
+    ctx.fillStyle = "#fff8ee";
+    ctx.font = "italic bold 18px Georgia, serif";
+    ctx.textAlign = "center";
+    ctx.shadowColor = "rgba(255,200,80,0.4)";
+    ctx.shadowBlur = 6;
+    ctx.fillText('"I build systems that work at 3am —', W / 2, 58);
+    ctx.fillText('not systems that work in demos."', W / 2, 82);
+    ctx.shadowBlur = 0;
+
+    // Attribution
+    ctx.fillStyle = "#cc9944";
+    ctx.font = "bold 13px 'Share Tech Mono', monospace";
+    ctx.letterSpacing = "3px";
+    ctx.fillText("— ADITYA SRIVASTAVA  ·  BACKEND ARCHITECT", W / 2, 115);
+
+    // Role tags
+    ctx.fillStyle = "rgba(255,204,68,0.4)";
+    ctx.font = "10px 'Share Tech Mono', monospace";
+    ctx.fillText("TRILASOFT SOLUTIONS · 4 YEARS · NOIDA, INDIA", W / 2, 138);
+
+    // Bottom ornament
+    ctx.fillStyle = "#cc994488";
+    ctx.fillRect(W / 2 - 80, H - 18, 160, 1);
+
+    // Small initials medallion — gold circle with "AS"
+    ctx.beginPath();
+    ctx.arc(W / 2, H - 32, 12, 0, Math.PI * 2);
+    ctx.fillStyle = "#cc9944";
+    ctx.fill();
+    ctx.fillStyle = "#1a0a02";
+    ctx.font = "bold 11px 'Barlow Condensed', sans-serif";
+    ctx.fillText("AS", W / 2, H - 28);
+
+    const tex = new THREE.CanvasTexture(can);
+    const mat = new THREE.SpriteMaterial({
+      map: tex,
+      transparent: true,
+      opacity: 0,
+      depthTest: false,
+    });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(14, 5.0, 1);
+    sprite.position.set(3, 2.8, 20); // just east of central island, near spawn
+    scene.add(sprite);
+
+    // Physical stone base beneath the quote
+    const baseMat = new THREE.MeshToonMaterial({
+      color: 0xcc9944,
+      gradientMap: window._toonGrad,
+    });
+    const base = new THREE.Mesh(new THREE.BoxGeometry(12, 0.32, 4.5), baseMat);
+    base.position.set(3, 0.16, 20);
+    scene.add(base);
+
+    // Two torch posts flanking the stone
+    const poleMat = new THREE.MeshToonMaterial({
+      color: 0x997744,
+      gradientMap: window._toonGrad,
+    });
+    [-5.5, 5.5].forEach((ox) => {
+      const pole = new THREE.Mesh(
+        new THREE.BoxGeometry(0.18, 2.8, 0.18),
+        poleMat,
+      );
+      pole.position.set(3 + ox, 1.4, 20);
+      scene.add(pole);
+      // Flame on torch
+      const flame = new THREE.Mesh(
+        new THREE.ConeGeometry(0.14, 0.45, 5),
+        new THREE.MeshBasicMaterial({
+          color: 0xff8822,
+          transparent: true,
+          opacity: 0.88,
+        }),
+      );
+      flame.position.set(3 + ox, 3.0, 20);
+      flame.userData.isDiyaFlame = true;
+      flame.userData.phase = ox * 0.5;
+      scene.add(flame);
+      diyaFlames.push(flame);
+      // Light
+      const li = new THREE.PointLight(0xff9933, 0.8, 8);
+      li.position.set(3 + ox, 3.2, 20);
+      const wx = 3 + ox;
+      li.userData.isDiyaLight = true;
+      li.userData.phase = ox * 0.5;
+      diyaLights.push({ light: li, wx, wz: 20, phase: ox * 0.5 });
+      scene.add(li);
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 1. PLAYER PRESENCE — ground indicator + motion feedback
+  // ═══════════════════════════════════════════════════════════════════════════
+  function buildPlayerPresence() {
+    // Ground ring — pulsing circle under car showing "you are here"
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0xffcc44,
+      transparent: true,
+      opacity: 0.55,
+      side: THREE.DoubleSide,
+    });
+    playerGroundRing = new THREE.Mesh(
+      new THREE.RingGeometry(1.0, 1.3, 20),
+      ringMat,
+    );
+    playerGroundRing.rotation.x = -Math.PI / 2;
+    playerGroundRing.position.y = 0.08;
+    scene.add(playerGroundRing);
+
+    // Speed trail particle pool — small gold dots left behind when moving fast
+    const trailGeo = new THREE.BufferGeometry();
+    const trailPos = new Float32Array(60 * 3);
+    trailGeo.setAttribute("position", new THREE.BufferAttribute(trailPos, 3));
+    const trailMesh = new THREE.Points(
+      trailGeo,
+      new THREE.PointsMaterial({
+        color: 0xffaa44,
+        size: 0.22,
+        transparent: true,
+        opacity: 0.0,
+        sizeAttenuation: true,
+      }),
+    );
+    trailMesh.userData.isSpeedTrail = true;
+    trailMesh.userData.positions = trailPos;
+    trailMesh.userData.ages = new Float32Array(60).fill(0);
+    trailMesh.userData.head = 0;
+    scene.add(trailMesh);
+    motionTrail = [trailMesh];
+  }
+
+  function updatePlayerPresence(now, dt) {
+    if (!playerGroundRing) return;
+
+    // Ground ring follows car, pulses scale
+    playerGroundRing.position.set(carX, 0.08, carZ);
+    const pulse = 1 + Math.sin(now * 3.5) * 0.07;
+    playerGroundRing.scale.setScalar(pulse);
+    // Ring fades when stopped, visible when moving
+    const targetOp = Math.min(0.55, Math.abs(carSpeed) * 3.5 + 0.15);
+    playerGroundRing.material.opacity +=
+      (targetOp - playerGroundRing.material.opacity) * 0.1;
+
+    // Speed trail: add new point every few frames when moving
+    motionTrail.forEach((trail) => {
+      const pos = trail.userData.positions;
+      const ages = trail.userData.ages;
+      const N = ages.length;
+      if (Math.abs(carSpeed) > 0.08) {
+        const h = trail.userData.head;
+        pos[h * 3] = carX + (Math.random() - 0.5) * 0.5;
+        pos[h * 3 + 1] = 0.18;
+        pos[h * 3 + 2] = carZ + (Math.random() - 0.5) * 0.5;
+        ages[h] = 1.0;
+        trail.userData.head = (h + 1) % N;
+      }
+      // Age all trail points
+      let anyAlive = false;
+      for (let i = 0; i < N; i++) {
+        if (ages[i] > 0) {
+          ages[i] = Math.max(0, ages[i] - dt * 1.8);
+          anyAlive = true;
+        }
+      }
+      trail.geometry.attributes.position.needsUpdate = true;
+      trail.material.opacity = anyAlive ? Math.abs(carSpeed) * 0.8 : 0;
+    });
+
+    // Camera tilt on steering for embodied feel
+    const sinA = Math.sin(carAngle),
+      cosA = Math.cos(carAngle);
+    const angleDiff = carAngle - prevCarAngle;
+    prevCarAngle = carAngle;
+    steerFeedback += (angleDiff * 18 - steerFeedback) * 0.12;
+    steerFeedback *= 0.92;
+    if (CAM.state === "FOLLOW") camera.rotation.z = steerFeedback * -0.04;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 2. NARRATIVE DIRECTOR — guided first-time experience
+  // ═══════════════════════════════════════════════════════════════════════════
+  function startNarrativeGuide() {
+    if (NARRATIVE.phase !== "DORMANT") return;
+    NARRATIVE.phase = "GUIDED";
+    NARRATIVE.step = 0;
+    NARRATIVE.timer = 0;
+
+    // Build the golden Yatra path connecting all 12 temples in career order
+    buildYatraPath();
+
+    // Show guide arrow pointing to Surya Dwara
+    buildGuideArrow();
+
+    // Show first guide label
+    showGuideLabel("◈  DRIVE NORTH TO SURYA DWARA  ◈");
+  }
+
+  function buildYatraPath() {
+    const order = [
+      "gurukul-ashram",
+      "saraswati-vihar",
+      "pura-stambha",
+      "vayu-rath",
+      "jyotish-vedha",
+      "brahma-kund",
+      "akasha-mandapa",
+      "setu-nagara",
+      "lakshmi-prasad",
+      "maya-sabha",
+      "vishwakarma-shala",
+      "surya-dwara",
+    ];
+    const pts = [];
+    order.forEach((id) => {
+      const b = window.CITY_DATA.buildings.find((b) => b.id === id);
+      if (b) pts.push(new THREE.Vector3(b.pos[0], 0.25, b.pos[1]));
+    });
+    if (pts.length < 2) return;
+
+    const curve = new THREE.CatmullRomCurve3(pts, false, "centripetal");
+    const tubeGeo = new THREE.TubeGeometry(curve, 120, 0.12, 4, false);
+    const tubeMat = new THREE.MeshBasicMaterial({
+      color: 0xffcc44,
+      transparent: true,
+      opacity: 0.0,
+    });
+    NARRATIVE.yatraPath = new THREE.Mesh(tubeGeo, tubeMat);
+    NARRATIVE.yatraPath.userData.isYatra = true;
+    scene.add(NARRATIVE.yatraPath);
+  }
+
+  function buildGuideArrow() {
+    const surya = window.CITY_DATA.buildings.find(
+      (b) => b.id === "surya-dwara",
+    );
+    if (!surya) return;
+
+    const arrow = new THREE.Mesh(
+      new THREE.ConeGeometry(0.55, 1.4, 4),
+      new THREE.MeshBasicMaterial({
+        color: 0xffcc44,
+        transparent: true,
+        opacity: 0,
+      }),
+    );
+    arrow.position.set(surya.pos[0], surya.height + 5, surya.pos[1]);
+    arrow.rotation.z = Math.PI; // point downward
+    arrow.userData.isGuideArrow = true;
+    NARRATIVE.guideArrow = arrow;
+    scene.add(arrow);
+  }
+
+  function showGuideLabel(text) {
+    if (NARRATIVE.guideLabel) {
+      scene.remove(NARRATIVE.guideLabel);
+    }
+    const W = 480,
+      H = 68;
+    const can = document.createElement("canvas");
+    can.width = W;
+    can.height = H;
+    const ctx = can.getContext("2d");
+    ctx.fillStyle = "rgba(10,5,1,0.88)";
+    if (ctx.roundRect) ctx.roundRect(4, 4, W - 8, H - 8, 8);
+    else ctx.rect(4, 4, W - 8, H - 8);
+    ctx.fill();
+    ctx.strokeStyle = "#ffcc44aa";
+    ctx.lineWidth = 2;
+    if (ctx.roundRect) ctx.roundRect(4, 4, W - 8, H - 8, 8);
+    else ctx.rect(4, 4, W - 8, H - 8);
+    ctx.stroke();
+    ctx.fillStyle = "#ffcc44";
+    ctx.font = "bold 18px 'Share Tech Mono', monospace";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, W / 2, H / 2);
+    const tex = new THREE.CanvasTexture(can);
+    const sp = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: tex,
+        transparent: true,
+        opacity: 0,
+        depthTest: false,
+      }),
+    );
+    sp.scale.set(12, 1.7, 1);
+    sp.position.set(carX, 6.5, carZ + 5);
+    sp.userData.isGuideLabel = true;
+    NARRATIVE.guideLabel = sp;
+    scene.add(sp);
+    // Fade in
+    let t2 = 0;
+    const iv = setInterval(() => {
+      t2 += 0.04;
+      sp.material.opacity = Math.min(0.95, t2);
+      if (t2 >= 0.95) clearInterval(iv);
+    }, 30);
+  }
+
+  function hideGuideLabel(cb) {
+    if (!NARRATIVE.guideLabel) {
+      if (cb) cb();
+      return;
+    }
+    const sp = NARRATIVE.guideLabel;
+    let t2 = sp.material.opacity;
+    const iv = setInterval(() => {
+      t2 -= 0.05;
+      sp.material.opacity = Math.max(0, t2);
+      if (t2 <= 0) {
+        clearInterval(iv);
+        scene.remove(sp);
+        NARRATIVE.guideLabel = null;
+        if (cb) cb();
+      }
+    }, 30);
+  }
+
+  function updateNarrative(now, dt) {
+    if (NARRATIVE.phase !== "GUIDED") return;
+    NARRATIVE.timer += dt;
+
+    // Guide arrow floats above Surya Dwara
+    if (NARRATIVE.guideArrow) {
+      NARRATIVE.guideArrow.position.y =
+        (window.CITY_DATA.buildings.find((b) => b.id === "surya-dwara")
+          ?.height || 18) +
+        4 +
+        Math.sin(now * 2.5) * 0.4;
+      NARRATIVE.guideArrow.rotation.y = now * 1.2;
+    }
+
+    // Yatra path fades in slowly
+    if (NARRATIVE.yatraPath) {
+      const targetOp = NARRATIVE.yatraVisible ? 0.55 : 0;
+      NARRATIVE.yatraPath.material.opacity +=
+        (targetOp - NARRATIVE.yatraPath.material.opacity) * 0.04;
+      // Animate path shimmer via drawRange
+      const total = NARRATIVE.yatraPath.geometry.attributes.position.count;
+      // No drawRange on TubeGeometry easily — just let it be fully visible with opacity
+    }
+
+    // Guide label follows car height, stays ahead of player
+    if (NARRATIVE.guideLabel) {
+      NARRATIVE.guideLabel.position.set(carX, 6.5, carZ + 4);
+    }
+
+    // Check if player reached Surya Dwara for the first time
+    const surya = window.CITY_DATA.buildings.find(
+      (b) => b.id === "surya-dwara",
+    );
+    if (surya && !NARRATIVE.firstVisitDone) {
+      const dist = Math.hypot(carX - surya.pos[0], carZ - surya.pos[1]);
+      if (dist < 25) {
+        NARRATIVE.firstVisitDone = true;
+        // Remove guide — player found the first temple
+        hideGuideLabel(() => showGuideLabel("◈  PRESS  E  TO ENTER  ◈"));
+        setTimeout(() => {
+          hideGuideLabel();
+          if (NARRATIVE.guideArrow) {
+            scene.remove(NARRATIVE.guideArrow);
+            NARRATIVE.guideArrow = null;
+          }
+          // Show Yatra path briefly then transition to FREE
+          NARRATIVE.yatraVisible = true;
+          showGuideLabel("◈  YATRA PATH REVEALED — EXPLORE FREELY  ◈");
+          setTimeout(() => {
+            hideGuideLabel();
+            NARRATIVE.yatraVisible = false;
+            NARRATIVE.phase = "FREE";
+          }, 5000);
+        }, 4000);
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 3. SPATIAL AUDIO — per-building positional sound + ambient layers
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Audio identity per building — frequencies and oscillator types
+  const BUILDING_AUDIO_PROFILES = {
+    "surya-dwara": { freq: 528, type: "sine", char: "bell", gain: 0.06 },
+    "vishwakarma-shala": {
+      freq: 220,
+      type: "sawtooth",
+      char: "forge",
+      gain: 0.05,
+    },
+    "brahma-kund": { freq: 110, type: "sine", char: "drone", gain: 0.07 },
+    "vayu-rath": { freq: 396, type: "triangle", char: "wind", gain: 0.055 },
+    "lakshmi-prasad": { freq: 639, type: "sine", char: "chime", gain: 0.06 },
+    "akasha-mandapa": { freq: 285, type: "sine", char: "space", gain: 0.05 },
+    "setu-nagara": { freq: 174, type: "triangle", char: "deep", gain: 0.055 },
+    "pura-stambha": { freq: 147, type: "sine", char: "ancient", gain: 0.05 },
+    "maya-sabha": { freq: 432, type: "triangle", char: "mystic", gain: 0.055 },
+    "jyotish-vedha": { freq: 741, type: "sine", char: "crystal", gain: 0.05 },
+    "saraswati-vihar": {
+      freq: 852,
+      type: "triangle",
+      char: "veena",
+      gain: 0.06,
+    },
+    "gurukul-ashram": { freq: 963, type: "sine", char: "chant", gain: 0.055 },
+  };
+
+  function initSpatialAudio() {
+    if (!audioCtx || IS_MOBILE) return;
+    buildAmbientLayers();
+    buildBuildingAudio();
+  }
+
+  function buildAmbientLayers() {
+    // ── WIND LAYER — filtered white noise ────────────────────────────────
+    try {
+      const bufSize = audioCtx.sampleRate * 3;
+      const noiseBuf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+      const nd = noiseBuf.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) nd[i] = Math.random() * 2 - 1;
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = noiseBuf;
+      noise.loop = true;
+      const windFilt = audioCtx.createBiquadFilter();
+      windFilt.type = "bandpass";
+      windFilt.frequency.value = 350;
+      windFilt.Q.value = 0.4;
+      const windGain = audioCtx.createGain();
+      windGain.gain.value = 0.018;
+      noise.connect(windFilt);
+      windFilt.connect(windGain);
+      windGain.connect(audioCtx.destination);
+      noise.start();
+      ambientLayers.wind = { node: noise, gain: windGain };
+      // Slow LFO on wind
+      const lfo = audioCtx.createOscillator();
+      lfo.frequency.value = 0.08;
+      const lfoG = audioCtx.createGain();
+      lfoG.gain.value = 0.008;
+      lfo.connect(lfoG);
+      lfoG.connect(windGain.gain);
+      lfo.start();
+    } catch (e) {}
+
+    // ── TEMPLE BELL — random interval chimes ─────────────────────────────
+    function schedBell() {
+      if (!audioCtx) return;
+      const t = audioCtx.currentTime;
+      const freq = [528, 396, 639, 741][Math.floor(Math.random() * 4)];
+      const o = audioCtx.createOscillator();
+      o.type = "sine";
+      o.frequency.value = freq;
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0.0, t);
+      g.gain.linearRampToValueAtTime(0.035, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 3.5);
+      o.connect(g);
+      g.connect(audioCtx.destination);
+      o.start(t);
+      o.stop(t + 3.8);
+      setTimeout(schedBell, 4000 + Math.random() * 8000);
+    }
+    setTimeout(schedBell, 3000);
+
+    // ── SPIRITUAL DRONE — deep layered om-like tone ───────────────────────
+    try {
+      const droneFreqs = [55, 110, 165];
+      droneFreqs.forEach((f, i) => {
+        const o = audioCtx.createOscillator();
+        o.type = "sine";
+        o.frequency.value = f + (Math.random() - 0.5) * 0.8;
+        const g = audioCtx.createGain();
+        g.gain.value = 0.022 - i * 0.005;
+        const lfo2 = audioCtx.createOscillator();
+        lfo2.frequency.value = 0.05 + i * 0.02;
+        const lg = audioCtx.createGain();
+        lg.gain.value = 0.005;
+        lfo2.connect(lg);
+        lg.connect(g.gain);
+        lfo2.start();
+        o.connect(g);
+        g.connect(audioCtx.destination);
+        o.start();
+        ambientLayers[`drone_${i}`] = { osc: o, gain: g };
+      });
+    } catch (e) {}
+  }
+
+  function buildBuildingAudio() {
+    window.CITY_DATA.buildings.forEach((b) => {
+      const prof = BUILDING_AUDIO_PROFILES[b.id];
+      if (!prof) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const harm = audioCtx.createOscillator(); // harmonic
+        const gain = audioCtx.createGain();
+        const filt = audioCtx.createBiquadFilter();
+
+        osc.type = prof.type;
+        osc.frequency.value = prof.freq;
+        harm.type = "sine";
+        harm.frequency.value = prof.freq * 2.01;
+        filt.type = "bandpass";
+        filt.frequency.value = prof.freq * 3;
+        filt.Q.value = 6;
+        gain.gain.value = 0; // starts silent
+
+        // LFO for organic movement
+        const lfo = audioCtx.createOscillator();
+        lfo.frequency.value = 0.12 + Math.random() * 0.08;
+        const lg = audioCtx.createGain();
+        lg.gain.value = 0.003;
+        lfo.connect(lg);
+        lg.connect(gain.gain);
+        lfo.start();
+
+        const harmGain = audioCtx.createGain();
+        harmGain.gain.value = 0.3;
+        harm.connect(harmGain);
+        harmGain.connect(filt);
+        osc.connect(filt);
+        filt.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        harm.start();
+
+        spatialAudio[b.id] = {
+          osc,
+          harm,
+          gain,
+          filt,
+          bx: b.pos[0],
+          bz: b.pos[1],
+          baseGain: prof.gain,
+          profile: prof,
+        };
+      } catch (e) {}
+    });
+  }
+
+  function updateSpatialAudio() {
+    if (!audioCtx || IS_MOBILE) return;
+    Object.entries(spatialAudio).forEach(([id, s]) => {
+      const dist = Math.hypot(carX - s.bx, carZ - s.bz);
+      const maxDist = 45;
+      const targetG =
+        dist < maxDist
+          ? s.baseGain * Math.pow(Math.max(0, 1 - dist / maxDist), 1.6)
+          : 0;
+      const cur = s.gain.gain.value;
+      s.gain.gain.value += (targetG - cur) * 0.04;
+    });
+  }
+
+  function playBuildingHover(buildingId) {
+    if (!audioCtx || buildingId === lastHoverBuildingId) return;
+    lastHoverBuildingId = buildingId;
+    try {
+      const t = audioCtx.currentTime;
+      const prof = BUILDING_AUDIO_PROFILES[buildingId] || { freq: 528 };
+      const o = audioCtx.createOscillator();
+      o.type = "sine";
+      o.frequency.value = prof.freq * 1.5;
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.04, t + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+      o.connect(g);
+      g.connect(audioCtx.destination);
+      o.start(t);
+      o.stop(t + 0.55);
+    } catch (e) {}
+  }
+
+  function playBuildingSelect(buildingId) {
+    if (!audioCtx) return;
+    try {
+      const t = audioCtx.currentTime;
+      const prof = BUILDING_AUDIO_PROFILES[buildingId] || { freq: 396 };
+
+      // Low-frequency impact
+      const sub = audioCtx.createOscillator();
+      sub.type = "sine";
+      sub.frequency.value = 60;
+      const subG = audioCtx.createGain();
+      subG.gain.setValueAtTime(0.15, t);
+      subG.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+      sub.connect(subG);
+      subG.connect(audioCtx.destination);
+      sub.start(t);
+      sub.stop(t + 0.65);
+
+      // High shimmer — building's sacred frequency
+      const hi = audioCtx.createOscillator();
+      hi.type = "sine";
+      hi.frequency.value = prof.freq;
+      const hiG = audioCtx.createGain();
+      hiG.gain.setValueAtTime(0, t + 0.05);
+      hiG.gain.linearRampToValueAtTime(0.08, t + 0.12);
+      hiG.gain.exponentialRampToValueAtTime(0.001, t + 2.2);
+      hi.connect(hiG);
+      hiG.connect(audioCtx.destination);
+      hi.start(t + 0.05);
+      hi.stop(t + 2.5);
+
+      // Third overtone shimmer
+      const ov = audioCtx.createOscillator();
+      ov.type = "triangle";
+      ov.frequency.value = prof.freq * 3;
+      const ovG = audioCtx.createGain();
+      ovG.gain.setValueAtTime(0, t + 0.08);
+      ovG.gain.linearRampToValueAtTime(0.04, t + 0.16);
+      ovG.gain.exponentialRampToValueAtTime(0.001, t + 1.5);
+      ov.connect(ovG);
+      ovG.connect(audioCtx.destination);
+      ov.start(t + 0.08);
+      ov.stop(t + 1.6);
+    } catch (e) {}
+  }
+
+  function playTransitionWhoosh() {
+    if (!audioCtx) return;
+    try {
+      const t = audioCtx.currentTime;
+      const buf = audioCtx.createBuffer(
+        1,
+        audioCtx.sampleRate * 0.6,
+        audioCtx.sampleRate,
+      );
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++)
+        d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 0.8);
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      const filt = audioCtx.createBiquadFilter();
+      filt.type = "bandpass";
+      filt.frequency.setValueAtTime(800, t);
+      filt.frequency.exponentialRampToValueAtTime(200, t + 0.5);
+      filt.Q.value = 2;
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0.12, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+      src.connect(filt);
+      filt.connect(g);
+      g.connect(audioCtx.destination);
+      src.start(t);
+    } catch (e) {}
+  }
+
+  function playCinematicSwell(duration) {
+    if (!audioCtx) return;
+    try {
+      const t = audioCtx.currentTime;
+      // Rising chord swell — 3 layered tones
+      [
+        [110, 0.0],
+        [220, 0.15],
+        [330, 0.3],
+        [440, 0.5],
+      ].forEach(([freq, delay]) => {
+        const o = audioCtx.createOscillator();
+        o.type = "sine";
+        o.frequency.value = freq;
+        const g = audioCtx.createGain();
+        g.gain.setValueAtTime(0, t + delay);
+        g.gain.linearRampToValueAtTime(0.055, t + delay + 1.2);
+        g.gain.linearRampToValueAtTime(0.0, t + duration);
+        o.connect(g);
+        g.connect(audioCtx.destination);
+        o.start(t + delay);
+        o.stop(t + duration + 0.1);
+      });
+    } catch (e) {}
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 4. CINEMATIC MOMENTS — bloom flash, energy surge, focus delay
+  // ═══════════════════════════════════════════════════════════════════════════
+  function triggerCityRevealCinematic() {
+    // Bloom flash via DOM overlay
+    const bloom =
+      document.getElementById("city-bloom") ||
+      (() => {
+        const d = document.createElement("div");
+        d.id = "city-bloom";
+        d.style.cssText =
+          "position:fixed;inset:0;z-index:9999;pointer-events:none;background:rgba(255,220,120,0);transition:background 0.3s ease";
+        document.body.appendChild(d);
+        return d;
+      })();
+    bloom.style.background = "rgba(255,220,120,0.65)";
+    setTimeout(() => {
+      bloom.style.background = "rgba(255,220,120,0)";
+    }, 350);
+
+    // Camera shake
+    CAM.shakeAmt = 0.6;
+
+    // Audio swell
+    playCinematicSwell(5.0);
+  }
+
+  function triggerBuildingSelectCinematic(building) {
+    // Micro-delay before UI: energy surge first, then panel
+    const gc = parseInt((building.glowColor || "#ffcc44").slice(1), 16);
+    spawnEnergyBurst(
+      building.pos[0],
+      building.height * 0.5,
+      building.pos[1],
+      gc,
+    );
+
+    // Brief bloom tinted with building color
+    const bloom =
+      document.getElementById("city-bloom") || document.createElement("div");
+    if (!bloom.id) {
+      bloom.id = "city-bloom";
+      bloom.style.cssText =
+        "position:fixed;inset:0;z-index:9999;pointer-events:none;transition:background 0.2s ease";
+      document.body.appendChild(bloom);
+    }
+    const r = (gc >> 16) & 0xff,
+      g2 = (gc >> 8) & 0xff,
+      b2 = gc & 0xff;
+    bloom.style.background = `rgba(${r},${g2},${b2},0.35)`;
+    setTimeout(() => {
+      bloom.style.background = "rgba(0,0,0,0)";
+    }, 280);
+    CAM.shakeAmt = 0.3;
+    playBuildingSelect(building.id);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // LIVING WORLD — environmental life, atmosphere, and micro-animations
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // 1. WIND SWAY — trees already have shake, add continuous ambient sway
+  function addWindSway() {
+    // Assign each tree a unique wind phase so they don't all sway identically
+    trees.forEach((tr, i) => {
+      tr.windPhase = (i * 2.39996) % (Math.PI * 2); // golden-angle spread
+      tr.windAmpX = 0.018 + Math.random() * 0.012;
+      tr.windAmpZ = 0.012 + Math.random() * 0.008;
+      tr.windFreq = 0.38 + Math.random() * 0.18;
+    });
+  }
+
+  function updateWindSway(now) {
+    // Global wind direction slowly rotates — world breathes
+    const windDir = Math.sin(now * 0.04) * 0.3; // very slow wind direction change
+    trees.forEach((tr) => {
+      if (!tr.leaf || tr.shakeT > 0) return; // skip if being shaken
+      const phase = now * tr.windFreq + tr.windPhase;
+      tr.leaf.rotation.x = Math.sin(phase) * tr.windAmpX + windDir * 0.01;
+      tr.leaf.rotation.z = Math.sin(phase * 0.73 + 1) * tr.windAmpZ;
+      // Slight vertical bob
+      tr.leaf.position.y =
+        tr.leaf.userData.baseY !== undefined
+          ? tr.leaf.userData.baseY + Math.sin(phase * 0.5) * 0.04
+          : tr.leaf.position.y;
+    });
+  }
+
+  // 2. PRAYER FLAGS WAVE — animate existing flags with cloth simulation
+  let flagMeshes = []; // populated during buildPrayerFlags
+
+  function updateFlagWave(now) {
+    flagMeshes.forEach((f) => {
+      if (!f.userData.isFlagCloth) return;
+      const phase = now * f.userData.waveFreq + f.userData.wavePhase;
+      f.rotation.z = Math.sin(phase) * f.userData.waveAmpZ;
+      f.rotation.x = Math.sin(phase * 0.6 + 1) * f.userData.waveAmpX;
+      // Scale ripple — cloth stretches slightly
+      f.scale.x = 1 + Math.sin(phase * 1.3) * 0.04;
+    });
+  }
+
+  // 3. ROAD ENERGY FLOW — moving light particles along the main roads
+  function buildRoadEnergyFlow() {
+    if (IS_MOBILE) return;
+    const N = 120;
+    const pos = new Float32Array(N * 3);
+    const col = new Float32Array(N * 3);
+
+    // Seed particles along key road paths
+    const roadPaths = [
+      // N-S spine
+      ...Array.from({ length: 40 }, (_, i) => [0, 0.28, -70 + i * 3.3]),
+      // E-W main boulevard
+      ...Array.from({ length: 40 }, (_, i) => [-65 + i * 3.3, 0.28, 0]),
+      // Hero zone approach
+      ...Array.from({ length: 40 }, (_, i) => [-65 + i * 3.3, 0.28, -14]),
+    ];
+
+    for (let i = 0; i < N; i++) {
+      const seed = roadPaths[i % roadPaths.length];
+      pos[i * 3] = seed[0] + (Math.random() - 0.5) * 2;
+      pos[i * 3 + 1] = seed[1];
+      pos[i * 3 + 2] = seed[2];
+      // Gold-to-cyan gradient
+      const t = Math.random();
+      col[i * 3] = 0.8 + t * 0.2;
+      col[i * 3 + 1] = 0.7 + t * 0.15;
+      col[i * 3 + 2] = t * 0.6;
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+    roadEnergyParticles = new THREE.Points(
+      geo,
+      new THREE.PointsMaterial({
+        size: 0.28,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.55,
+        sizeAttenuation: true,
+      }),
+    );
+    roadEnergyParticles.userData.isRoadEnergy = true;
+    roadEnergyParticles.userData.speeds = new Float32Array(N).map(
+      () => 0.06 + Math.random() * 0.08,
+    );
+    roadEnergyParticles.userData.roadPaths = roadPaths;
+    roadEnergyParticles.userData.pathIdx = new Float32Array(N).map(
+      (_, i) => i % roadPaths.length,
+    );
+    roadEnergyParticles.userData.t = new Float32Array(N).map(() =>
+      Math.random(),
+    );
+    scene.add(roadEnergyParticles);
+  }
+
+  function updateRoadEnergyFlow(dt) {
+    if (!roadEnergyParticles) return;
+    const pos = roadEnergyParticles.geometry.attributes.position.array;
+    const ud = roadEnergyParticles.userData;
+    const paths = ud.roadPaths;
+    const N = ud.speeds.length;
+
+    for (let i = 0; i < N; i++) {
+      ud.t[i] += ud.speeds[i] * dt;
+      if (ud.t[i] > 1) {
+        ud.t[i] = 0;
+        // Pick new road path segment
+        ud.pathIdx[i] = Math.floor(Math.random() * paths.length);
+      }
+      const src = paths[ud.pathIdx[i]];
+      const dst = paths[(ud.pathIdx[i] + 1) % paths.length];
+      const t = ud.t[i];
+      pos[i * 3] = src[0] + (dst[0] - src[0]) * t + Math.sin(t * 4 + i) * 0.3;
+      pos[i * 3 + 1] = 0.28 + Math.sin(t * 6 + i * 0.5) * 0.08;
+      pos[i * 3 + 2] = src[2] + (dst[2] - src[2]) * t;
+    }
+    roadEnergyParticles.geometry.attributes.position.needsUpdate = true;
+    // Pulse opacity with world breath
+    roadEnergyParticles.material.opacity =
+      0.38 + Math.sin(windTime * 1.2) * 0.12;
+  }
+
+  // 4. DIVINE DUST PARTICLES — floating motes throughout the world
+  function buildDivineParticles() {
+    const N = IS_MOBILE ? 120 : 300;
+    const pos = new Float32Array(N * 3);
+    const col = new Float32Array(N * 3);
+    const vel = new Float32Array(N * 3);
+
+    for (let i = 0; i < N; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * 160;
+      pos[i * 3 + 1] = Math.random() * 14;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 160;
+      vel[i * 3] = (Math.random() - 0.5) * 0.003;
+      vel[i * 3 + 1] = 0.002 + Math.random() * 0.004;
+      vel[i * 3 + 2] = (Math.random() - 0.5) * 0.003;
+      // Warm gold / soft white / pale cyan
+      const t = Math.random();
+      if (t < 0.4) {
+        col[i * 3] = 1;
+        col[i * 3 + 1] = 0.92;
+        col[i * 3 + 2] = 0.6;
+      } // gold
+      else if (t < 0.7) {
+        col[i * 3] = 1;
+        col[i * 3 + 1] = 1;
+        col[i * 3 + 2] = 1;
+      } // white
+      else {
+        col[i * 3] = 0.55;
+        col[i * 3 + 1] = 0.88;
+        col[i * 3 + 2] = 1;
+      } // cyan
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+    divineParticles = new THREE.Points(
+      geo,
+      new THREE.PointsMaterial({
+        size: 0.12,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.45,
+        sizeAttenuation: true,
+      }),
+    );
+    divineParticles.userData.isDivine = true;
+    divineParticles.userData.vel = vel;
+    scene.add(divineParticles);
+  }
+
+  function updateDivineParticles(now, dt) {
+    if (!divineParticles) return;
+    const pos = divineParticles.geometry.attributes.position.array;
+    const vel = divineParticles.userData.vel;
+    const N = pos.length / 3;
+    for (let i = 0; i < N; i++) {
+      // Drift upward + gentle horizontal wander
+      pos[i * 3] += vel[i * 3] + Math.sin(now * 0.3 + i * 0.4) * 0.002;
+      pos[i * 3 + 1] += vel[i * 3 + 1];
+      pos[i * 3 + 2] += vel[i * 3 + 2] + Math.cos(now * 0.25 + i * 0.3) * 0.002;
+      // Reset at top, respawn anywhere
+      if (
+        pos[i * 3 + 1] > 16 ||
+        Math.abs(pos[i * 3]) > 85 ||
+        Math.abs(pos[i * 3 + 2]) > 85
+      ) {
+        pos[i * 3] = (Math.random() - 0.5) * 160;
+        pos[i * 3 + 1] = 0;
+        pos[i * 3 + 2] = (Math.random() - 0.5) * 160;
+      }
+    }
+    divineParticles.geometry.attributes.position.needsUpdate = true;
+    // Gentle opacity breathing
+    divineParticles.material.opacity = 0.3 + Math.sin(now * 0.5) * 0.12;
+  }
+
+  // 5. GROUND SHIMMER — subtle glowing disc near each temple
+  function buildGroundShimmers() {
+    window.CITY_DATA.buildings.forEach((b) => {
+      const gc = parseInt((b.glowColor || "#ffcc44").slice(1), 16);
+      const r = Math.max(b.size?.[0] || 8, b.size?.[1] || 8) * 0.9;
+      const mat = new THREE.MeshBasicMaterial({
+        color: gc,
+        transparent: true,
+        opacity: 0,
+        side: THREE.DoubleSide,
+      });
+      const disc = new THREE.Mesh(new THREE.CircleGeometry(r, 20), mat);
+      disc.rotation.x = -Math.PI / 2;
+      disc.position.set(b.pos[0], 0.06, b.pos[1]);
+      disc.userData.isGroundShimmer = true;
+      disc.userData.buildingId = b.id;
+      disc.userData.baseRadius = r;
+      scene.add(disc);
+      groundShimmers.push({ mesh: disc, building: b });
+    });
+  }
+
+  function updateGroundShimmers(now) {
+    groundShimmers.forEach(({ mesh, building }) => {
+      const ent = buildingEntities.find((e) => e.b.id === building.id);
+      const vi = ent ? ent.vfxI : 0;
+      // Shimmer pulses with entity VFX intensity + slow sine
+      const pulse =
+        vi * (0.08 + Math.sin(now * 1.4 + building.pos[0] * 0.2) * 0.04);
+      mesh.material.opacity += (pulse - mesh.material.opacity) * 0.06;
+      // Slight scale breathe
+      const s = 1 + Math.sin(now * 0.9 + building.pos[1] * 0.15) * 0.04 * vi;
+      mesh.scale.setScalar(s);
+    });
+  }
+
+  // 6. CINEMATIC LIGHTING — time-based world breathing
+  function updateWorldBreathing(now, dt) {
+    lightBreathT += dt * 0.08; // very slow — full cycle ≈ 78 seconds
+
+    if (!sunLight || !ambLight || !hemiLight) return;
+
+    // Sun color breathes between golden and slightly cooler
+    const breathSin = Math.sin(lightBreathT * Math.PI * 2);
+    const sunR = 1.0 + breathSin * 0.04;
+    const sunG = 0.87 + breathSin * 0.03;
+    const sunB = 0.53 - breathSin * 0.03;
+    sunLight.color.setRGB(
+      Math.min(1, sunLight.color.r * 0.95 + sunR * 0.05),
+      Math.min(1, sunLight.color.g * 0.95 + sunG * 0.05),
+      Math.min(1, sunLight.color.b * 0.95 + sunB * 0.05),
+    );
+
+    // Ambient intensity breathes ±8%
+    const baseAmbI = isNight ? 0.15 : 0.65;
+    ambLight.intensity = baseAmbI * (1 + breathSin * 0.08);
+
+    // Hemisphere sky color shifts slightly — world "alive" feel
+    if (!isNight) {
+      const skyR = 1.0 + breathSin * 0.03;
+      const skyG = 0.91 + breathSin * 0.02;
+      const skyB = 0.67 - breathSin * 0.05;
+      hemiLight.color.setRGB(skyR * 0.98, skyG * 0.98, skyB * 0.98);
+    }
+
+    // Fog density breathes very subtly — depth varies
+    if (scene.fog) {
+      const baseFogD = isNight ? 0.004 : 0.0012;
+      scene.fog.density = baseFogD * (1 + breathSin * 0.15);
+    }
+  }
+
+  // 7. EMISSIVE TEMPLE ACCENTS — warm glow on building edges at night
+  function addTempleEmissiveAccents() {
+    buildingMeshes.forEach(({ group, building }) => {
+      const gc = parseInt((building.glowColor || "#ffcc44").slice(1), 16);
+      // Place a very thin glowing ring at each tier of the temple platform
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: gc,
+        transparent: true,
+        opacity: isNight ? 0.35 : 0.08,
+      });
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry((building.size?.[0] || 8) * 0.55, 0.06, 4, 24),
+        ringMat,
+      );
+      ring.rotation.x = Math.PI / 2;
+      ring.position.set(building.pos[0], 1.4, building.pos[1]);
+      ring.userData.isEmissiveAccent = true;
+      ring.userData.buildingId = building.id;
+      scene.add(ring);
+      templeEmissives.push({ ring, building, mat: ringMat });
+    });
+  }
+
+  function updateEmissiveAccents(now) {
+    templeEmissives.forEach(({ ring, building, mat }) => {
+      const ent = buildingEntities.find((e) => e.b.id === building.id);
+      const vi = ent ? ent.vfxI : 0;
+      const baseOp = isNight ? 0.35 : 0.06;
+      const pulse =
+        baseOp + vi * 0.28 + Math.sin(now * 1.8 + building.pos[0] * 0.3) * 0.05;
+      mat.opacity += (pulse - mat.opacity) * 0.06;
+      // Slow rotation — energy ring orbits the building base
+      ring.rotation.z = now * 0.12;
+    });
+  }
+
+  // 8. ROAD SHIMMER LINES — subtle moving light on road surface
+  function buildRoadShimmerLines() {
+    if (IS_MOBILE) return;
+    // 6 long thin planes along main roads that pulse opacity
+    const shimMat = new THREE.MeshBasicMaterial({
+      color: 0xffdd88,
+      transparent: true,
+      opacity: 0.0,
+      side: THREE.DoubleSide,
+    });
+    const roads = [
+      { x: 0, z: 0, len: 180, rot: 0 }, // N-S spine
+      { x: 0, z: -14, len: 180, rot: 0 }, // hero avenue
+      { x: 0, z: 0, len: 180, rot: Math.PI / 2 }, // E-W boulevard
+      { x: 0, z: 24, len: 180, rot: Math.PI / 2 }, // mid cross
+    ];
+    roads.forEach((r, i) => {
+      const mesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.45, r.len),
+        shimMat.clone(),
+      );
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.rotation.z = r.rot;
+      mesh.position.set(r.x, 0.14, r.z);
+      mesh.userData.isRoadShimmer = true;
+      mesh.userData.phase = i * 1.57;
+      scene.add(mesh);
+      waveLines.push(mesh); // reuse existing waveLines array for animate
+    });
+  }
+
   // ── INIT ──────────────────────────────────────────────────────────────────
   function progress(pct, msg) {
     if (typeof window.onCityProgress === "function")
@@ -165,39 +1983,47 @@ window.CityEngine = (function () {
         applyWeather("day");
         buildGround();
         buildCar();
+        buildPlayerPresence();
         progress(15, "LOADING WORLD…");
       },
       () => {
         buildRoads();
         buildCenterpiece();
         build3DName();
+        buildPhilosophyStone();
         progress(28, "TEMPLE CITY RISING…");
       },
       () => {
         buildAllBuildings();
-        progress(48, "12 TEMPLES BUILT");
+        initBuildingEntities();
+        progress(48, "12 TEMPLES AWAKENED");
       },
       () => {
         buildTrees();
         buildGrassPatches();
         buildLamps();
+        addWindSway();
         progress(60, "DISTRICT FLORA");
       },
       () => {
         buildStambha();
         buildFormalGardens();
         buildBirdFlock();
+        buildDivineParticles();
+        buildRoadEnergyFlow();
         progress(70, "SACRED DETAILS");
       },
       () => {
         buildCheckpoints();
         buildAtmosphere();
         buildWaveLines();
+        buildRoadShimmerLines();
         buildPrayerFlags();
         buildSignPosts();
         buildGatewayArches();
         buildShortcutSign();
-        progress(82, "ATMOSPHERE");
+        buildPranaAura();
+        progress(82, "SACRED ENERGY FLOWS");
       },
       () => {
         buildWorldLabels();
@@ -206,13 +2032,18 @@ window.CityEngine = (function () {
         buildCareerTimeline();
         buildNightSky();
         addNightGroundDetails();
+        buildGroundShimmers();
+        addTempleEmissiveAccents();
         progress(95, "ORACLES AWAKENING");
       },
       () => {
         setupControls();
         window.addEventListener("resize", onResize);
         setTimeout(() => checkProximity(), 300);
-        setTimeout(() => initDistrictAudio(), 2000);
+        setTimeout(() => {
+          initDistrictAudio();
+          initSpatialAudio();
+        }, 2000);
         animate();
         progress(100, "CITY LIVE — CLICK TO START");
       },
@@ -280,6 +2111,22 @@ window.CityEngine = (function () {
   }
 
   function initMatcaps() {
+    // ── 3-STEP TOON GRADIENT MAP (critical for MeshToonMaterial in r128) ─────
+    // Without gradientMap, MeshToonMaterial = MeshLambertMaterial (smooth shading)
+    // With it, you get hard cel-shaded steps like the Firefly reference
+    const gc = document.createElement("canvas");
+    gc.width = 4;
+    gc.height = 1;
+    const gx = gc.getContext("2d");
+    ["#110800", "#664422", "#ddaa66", "#fff8ee"].forEach((c, i) => {
+      gx.fillStyle = c;
+      gx.fillRect(i, 0, 1, 1);
+    });
+    const toonGrad = new THREE.CanvasTexture(gc);
+    toonGrad.magFilter = THREE.NearestFilter;
+    toonGrad.minFilter = THREE.NearestFilter;
+    window._toonGrad = toonGrad; // shared across all MeshToonMaterial calls
+
     matcaps.warm = createMatcap("#ffeecc", "#ddaa66", "#774422"); // warm sandstone
     matcaps.cool = createMatcap("#ddeeff", "#6699cc", "#224466"); // cool marble
     matcaps.stone = createMatcap("#ffffff", "#f5e0c0", "#cc9966"); // WHITE MARBLE — like Akshardham
@@ -452,7 +2299,6 @@ window.CityEngine = (function () {
   // ── P2: IN-WORLD INFORMATION BOARDS ──────────────────────────────────────
   // 3D billboard boards inside each temple compound showing system info
   // Only visible when within 20 units — give context before entering
-  let infoBoardSprites = [];
 
   function buildInfoBoards() {
     window.CITY_DATA.buildings.forEach((b) => {
@@ -1138,12 +2984,6 @@ window.CityEngine = (function () {
   // Types: gopuram | mandapa | shikhara | stupa
   // Each creates authentic Hindu temple low-poly geometry
 
-  function pc(c) {
-    if (typeof c === "string" && c.startsWith("#"))
-      return parseInt(c.slice(1), 16);
-    return typeof c === "number" ? c : 0x334455;
-  }
-
   function buildBuilding(b) {
     const g = new THREE.Group();
     g.position.set(b.pos[0], 0, b.pos[1]);
@@ -1177,7 +3017,10 @@ window.CityEngine = (function () {
     const mMid = new THREE.MeshToonMaterial({ color: sMid });
     const mDark = new THREE.MeshToonMaterial({ color: sDark });
     const mGlow = new THREE.MeshBasicMaterial({ color: gc });
-    const mGoldMat = new THREE.MeshToonMaterial({ color: 0xffcc44 });
+    const mGoldMat = new THREE.MeshToonMaterial({
+      color: 0xffcc44,
+      gradientMap: window._toonGrad,
+    });
 
     const type = b.templeType || "shikhara";
 
@@ -1628,6 +3471,13 @@ window.CityEngine = (function () {
         );
         flag.position.set(fx, fy, fz);
         flag.rotation.y = Math.atan2(x2 - x1, z2 - z1);
+        // ── REGISTER for wave animation ─────────────────────────────────
+        flag.userData.isFlagCloth = true;
+        flag.userData.waveFreq = 1.8 + Math.random() * 0.8;
+        flag.userData.wavePhase = i * 0.62 + t * Math.PI * 2;
+        flag.userData.waveAmpZ = 0.12 + Math.random() * 0.08;
+        flag.userData.waveAmpX = 0.05 + Math.random() * 0.04;
+        flagMeshes.push(flag);
         scene.add(flag);
       }
       const dx = x2 - x1,
@@ -1661,7 +3511,10 @@ window.CityEngine = (function () {
 
   // ── DIRECTIONAL SIGN POSTS — wooden signs near spawn pointing to districts ─
   function buildSignPosts() {
-    const woodMat = new THREE.MeshToonMaterial({ color: 0xcc8844 });
+    const woodMat = new THREE.MeshToonMaterial({
+      color: 0xcc8844,
+      gradientMap: window._toonGrad,
+    });
     const textMats = {
       "#00c8ff": new THREE.MeshBasicMaterial({ color: 0x00ccff }),
       "#7dff4f": new THREE.MeshBasicMaterial({ color: 0x77ff44 }),
@@ -1760,7 +3613,10 @@ window.CityEngine = (function () {
 
   // ── VIJAY STAMBHA — Tall stone victory pillar (right side, Firefly video) ─
   function buildStambha() {
-    const stoneMat = new THREE.MeshToonMaterial({ color: 0xeeddcc });
+    const stoneMat = new THREE.MeshToonMaterial({
+      color: 0xeeddcc,
+      gradientMap: window._toonGrad,
+    });
     const goldMat = new THREE.MeshMatcapMaterial({
       color: 0xffcc44,
       matcap: matcaps.gold,
@@ -1940,7 +3796,10 @@ window.CityEngine = (function () {
         // Small central fountain bowl
         const bowl = new THREE.Mesh(
           new THREE.CylinderGeometry(0.9, 1.1, 0.4, 12),
-          new THREE.MeshToonMaterial({ color: 0xeeddcc }),
+          new THREE.MeshToonMaterial({
+            color: 0xeeddcc,
+            gradientMap: window._toonGrad,
+          }),
         );
         bowl.position.set(x, 0.2, z);
         scene.add(bowl);
@@ -1985,8 +3844,14 @@ window.CityEngine = (function () {
   // ── P3: DISTRICT GATEWAY ARCHES ───────────────────────────────────────────
   // Grand entrance arches across roads marking district transitions
   function buildGatewayArches() {
-    const archMat = new THREE.MeshToonMaterial({ color: 0xf0d8a0 });
-    const goldMat = new THREE.MeshToonMaterial({ color: 0xffcc44 });
+    const archMat = new THREE.MeshToonMaterial({
+      color: 0xf0d8a0,
+      gradientMap: window._toonGrad,
+    });
+    const goldMat = new THREE.MeshToonMaterial({
+      color: 0xffcc44,
+      gradientMap: window._toonGrad,
+    });
     const textData = [
       { x: 0, z: -4, ry: 0, label: "◈  HERO DISTRICT", col: 0x00ddff },
       { x: 0, z: -36, ry: 0, label: "◈  MODERNIZATION ZONE", col: 0xffcc44 },
@@ -2181,6 +4046,7 @@ window.CityEngine = (function () {
   }
 
   function updateDistrictAudio() {
+    if (!gameStarted) return;
     Object.values(districtAudio).forEach((d) => {
       const dist = Math.hypot(carX - d.x, carZ - d.z);
       d.targetVol = Math.max(0, Math.min(0.06, ((55 - dist) / 55) * 0.06));
@@ -2245,7 +4111,7 @@ window.CityEngine = (function () {
       new THREE.SpriteMaterial({
         map: tex,
         transparent: true,
-        opacity: 0.96,
+        opacity: 0,
         depthTest: false,
       }),
     );
@@ -2381,7 +4247,10 @@ window.CityEngine = (function () {
     scene.add(ptLight(0xddaaff, 2.0, 14, [0, 1.0, 0]));
 
     // Wooden bench
-    const woodMat = new THREE.MeshToonMaterial({ color: 0xcc8844 });
+    const woodMat = new THREE.MeshToonMaterial({
+      color: 0xcc8844,
+      gradientMap: window._toonGrad,
+    });
     const legMat = new THREE.MeshMatcapMaterial({
       color: 0x7755aa,
       matcap: matcaps.purple,
@@ -2470,7 +4339,10 @@ window.CityEngine = (function () {
     });
 
     // Decorative stones
-    const stoneMat = new THREE.MeshToonMaterial({ color: 0xbbaa99 });
+    const stoneMat = new THREE.MeshToonMaterial({
+      color: 0xbbaa99,
+      gradientMap: window._toonGrad,
+    });
     [
       [2.5, 1.5],
       [-2.0, 2.8],
@@ -2714,6 +4586,8 @@ window.CityEngine = (function () {
       }
 
       scene.add(tg);
+      // Store leaf baseY for wind sway to bob around correct rest position
+      leafMesh.userData.baseY = leafMesh.position.y;
       trees.push({
         group: tg,
         leaf: leafMesh,
@@ -2839,7 +4713,15 @@ window.CityEngine = (function () {
       scene.add(cap);
 
       // Point light — warm and localised like Bruno Simon
-      scene.add(ptLight(0xffeeaa, isNight ? 2.8 : 0, 14, [x, 5.12, z + 0.78]));
+      const lampLt = ptLight(0xffeeaa, isNight ? 2.8 : 0, 14, [
+        x,
+        5.12,
+        z + 0.78,
+      ]);
+      lampLt.userData.isLampLight = true;
+      lampLt.userData.flickPhase = Math.random() * Math.PI * 2;
+      lampLt.userData.baseNightI = 2.8;
+      scene.add(lampLt);
     });
   }
 
@@ -3131,9 +5013,18 @@ window.CityEngine = (function () {
       const g = new THREE.Group();
       g.position.set(b.roadPos[0], 0, b.roadPos[1]);
 
-      const stoneMat = new THREE.MeshToonMaterial({ color: 0xddc99a });
-      const claymMat = new THREE.MeshToonMaterial({ color: 0xcc7744 });
-      const goldMat = new THREE.MeshToonMaterial({ color: 0xffcc44 });
+      const stoneMat = new THREE.MeshToonMaterial({
+        color: 0xddc99a,
+        gradientMap: window._toonGrad,
+      });
+      const claymMat = new THREE.MeshToonMaterial({
+        color: 0xcc7744,
+        gradientMap: window._toonGrad,
+      });
+      const goldMat = new THREE.MeshToonMaterial({
+        color: 0xffcc44,
+        gradientMap: window._toonGrad,
+      });
 
       // ── DIYA GROUP (3 diyas arranged in a triangle) ──────────────────
       const diyaPositions = [
@@ -4130,66 +6021,82 @@ window.CityEngine = (function () {
 
   // ── CAR PHYSICS (scalar — zero drift) ────────────────────────────────────
   function updateCar() {
-    // ── TOUCH JOYSTICK INPUT — merged with keyboard ───────────────────────
     const tj = window._touchJoy || { ax: 0, ay: 0 };
+
+    // ── RAW INPUT ──────────────────────────────────────────────────────────
     const fwd = keys["ArrowUp"] || keys["KeyW"] || tj.ay < -0.25;
     const bwd = keys["ArrowDown"] || keys["KeyS"] || tj.ay > 0.25;
     const lft = keys["ArrowLeft"] || keys["KeyA"] || tj.ax < -0.25;
     const rgt = keys["ArrowRight"] || keys["KeyD"] || tj.ax > 0.25;
     const brk = keys["Space"];
 
-    // Touch analog — partial throttle when stick partially pushed
-    const fwdStr = tj.ay < 0 ? Math.min(1, -tj.ay / 0.6) : fwd ? 1 : 0;
-    // FIX: left arrow = positive carAngle change = turn left. lft→+1, rgt→-1
-    const steerStr = Math.abs(tj.ax) > 0.15 ? -tj.ax : lft ? 1 : rgt ? -1 : 0;
+    // Analog throttle / steer (touch has proportional input, keys are binary)
+    const throttleIn = tj.ay < 0 ? Math.min(1, -tj.ay / 0.6) : fwd ? 1 : 0;
+    const reverseIn = tj.ay > 0 ? Math.min(1, tj.ay / 0.6) : bwd ? 1 : 0;
+    const steerIn = Math.abs(tj.ax) > 0.15 ? -tj.ax : lft ? 1 : rgt ? -1 : 0;
 
-    // ── WEATHER GRIP PHYSICS ─────────────────────────────────────────────
-    // Rain/snow = real slip — grip < 1 makes car slide past intended direction
-    const gripAccel = ACCEL * weatherGrip;
-    const gripDecel = DECEL * (0.6 + weatherGrip * 0.4);
-    const gripTurn = TURN * (0.5 + weatherGrip * 0.5);
-    const maxSpd = MAX_SPD * (0.7 + weatherGrip * 0.3);
+    // ── WEATHER GRIP ──────────────────────────────────────────────────────
+    const grip = weatherGrip;
+    const maxSpd = MAX_SPD * (0.7 + grip * 0.3);
+    const accel = ACCEL * grip;
+    const decel = DECEL * (0.5 + grip * 0.5);
+    const brkForce = BRAKE;
 
-    // Acceleration
-    if (fwd || fwdStr > 0)
-      carSpeed = Math.min(carSpeed + gripAccel * fwdStr, maxSpd);
-    else if (bwd)
-      carSpeed = Math.max(
-        carSpeed - BRAKE * 0.65 * weatherGrip,
-        -maxSpd * 0.45,
-      );
-    else {
-      carSpeed += carSpeed > 0 ? -gripDecel : carSpeed < 0 ? gripDecel : 0;
+    // ── SMOOTH STEERING — steerAngle lerps toward input, speed-dependent ──
+    // At low speed: responsive. At high speed: reduced to prevent snap turns.
+    const speedRatio = Math.min(1, Math.abs(carSpeed) / (maxSpd * 0.65));
+    const steerSensitiv = TURN * (1.0 - speedRatio * 0.35); // reduces at speed
+    const steerTarget =
+      steerIn * steerSensitiv * (Math.abs(carSpeed) > 0.005 ? 1 : 0);
+    // Lerp: fast response when applying, slower when releasing (natural feel)
+    const steerLerp = steerIn !== 0 ? 0.18 : 0.12;
+    steerAngle += (steerTarget - steerAngle) * steerLerp;
+
+    // ── SMOOTH ACCELERATION — acceleration curve: slow start, faster mid-range ──
+    if (throttleIn > 0) {
+      // Acceleration curve: starts slow (feels like real car), peaks in mid-range
+      // Uses cubic ease: slow 0→0.3, fast 0.3→0.7, strong 0.7→1.0
+      const speedT = Math.abs(carSpeed) / maxSpd;
+      const accelCurve =
+        speedT < 0.3
+          ? accel * 0.6 // low speed: gentle pull-away
+          : speedT < 0.7
+            ? accel * 1.2 // mid speed: strongest torque band
+            : accel * 0.7; // high speed: tailing off (realistic)
+      carSpeed = Math.min(carSpeed + accelCurve * throttleIn, maxSpd);
+    } else if (reverseIn > 0) {
+      // Reverse: limited to 45% of max speed
+      carSpeed = Math.max(carSpeed - brkForce * 0.65 * grip, -maxSpd * 0.45);
+    } else if (brk) {
+      // Space bar handbrake — firm, immediate
+      carSpeed *= 1.0 - brkForce * 1.8;
       if (Math.abs(carSpeed) < 0.002) carSpeed = 0;
-    }
-    if (brk) {
-      carSpeed *= 0.88;
-      if (Math.abs(carSpeed) < 0.002) carSpeed = 0;
-    }
-
-    // Steering — scaled by grip (low grip = heavy understeer)
-    if (Math.abs(carSpeed) > 0.005) {
-      const dir = carSpeed > 0 ? 1 : -1;
-      const sf = Math.min(Math.abs(carSpeed) / (MAX_SPD * 0.5), 1.0);
-      carAngle += steerStr * gripTurn * sf * dir;
+    } else {
+      // Natural coast-down friction — exponential falloff feels realistic
+      carSpeed *= 1.0 - decel;
+      if (Math.abs(carSpeed) < 0.0015) carSpeed = 0;
     }
 
-    // ── SLIDE DRIFT on low grip ───────────────────────────────────────────
-    // Car drifts outward on corners — steerStr positive = left = drift right
-    const slip = 1 - weatherGrip;
+    // ── HEADING UPDATE — apply smooth steer to angle ───────────────────────
+    const dir = carSpeed >= 0 ? 1 : -1;
+    carAngle += steerAngle * dir;
+
+    // ── POSITION UPDATE — velocity-based movement ─────────────────────────
     const sinA = Math.sin(carAngle),
       cosA = Math.cos(carAngle);
-    // Lateral = perpendicular to forward direction
-    const latX = cosA; // +cosA = rightward lateral
-    const latZ = -sinA;
+    const slip = 1 - grip;
+
+    // Forward velocity + lateral slip on wet surfaces
+    const latX = cosA,
+      latZ = -sinA;
     const nx =
       carX +
       sinA * carSpeed +
-      latX * -steerStr * slip * Math.abs(carSpeed) * 0.3;
+      latX * -steerAngle * slip * Math.abs(carSpeed) * 0.25;
     const nz =
       carZ +
       cosA * carSpeed +
-      latZ * -steerStr * slip * Math.abs(carSpeed) * 0.3;
+      latZ * -steerAngle * slip * Math.abs(carSpeed) * 0.25;
 
     if (!collides(nx, nz)) {
       carX = nx;
@@ -4202,40 +6109,40 @@ window.CityEngine = (function () {
         shakeNearbyTrees(carX, carZ, 6);
         crashCooldown = 45;
       }
-      carSpeed *= -0.3;
+      carSpeed *= -0.25; // softer bounce-back than before
     }
     if (crashCooldown > 0) crashCooldown--;
     carX = Math.max(-95, Math.min(95, carX));
     carZ = Math.max(-88, Math.min(65, carZ));
 
+    // ── CAR VISUALS — smooth body roll + suspension ────────────────────────
     carGroup.position.set(carX, 0, carZ);
     carGroup.rotation.y = carAngle;
 
-    const spin = Math.abs(carSpeed) * 2.2 * (carSpeed >= 0 ? 1 : -1);
+    // Body roll — lerps smoothly toward steer+speed product, never snaps
+    const targetRoll = steerAngle * carSpeed * (0.09 + slip * 0.07);
+    carBodyRoll += (targetRoll - carBodyRoll) * 0.1;
+    carGroup.rotation.z = -carBodyRoll;
+
+    // Suspension bounce — smooth sine based on speed, NOT on Date.now() raw
+    // Date.now() caused jitter when tab was throttled. Use carSpeed as frequency.
+    const bounceFreq = 12 + Math.abs(carSpeed) * 40;
+    const bounceAmp = Math.abs(carSpeed) * 0.018;
+    const rawBounce =
+      Math.abs(Math.sin(Date.now() * 0.001 * bounceFreq)) * bounceAmp;
+    suspensionY += (rawBounce - suspensionY) * 0.22; // smooth the bounce
+    carGroup.position.y = suspensionY;
+
+    // Wheel spin — proportional to speed
+    const spin = Math.abs(carSpeed) * 2.4 * (carSpeed >= 0 ? 1 : -1);
     wheelGroups.forEach((sg) => {
       sg.rotation.x += spin;
     });
 
-    // Body roll — exaggerated on slippery surfaces
-    const steerVal = steerStr;
-    carGroup.rotation.z +=
-      (steerVal * carSpeed * (0.07 + slip * 0.08) - carGroup.rotation.z) * 0.12;
-
-    // Bounce
-    carGroup.position.y = Math.abs(
-      Math.sin(Date.now() * 0.016) * carSpeed * 0.015,
-    );
-
-    // Camera — only follow car when NOT in fly-in mode
-    if (cameraFlyPhase === 0) {
-      const camDist = 22,
-        camH = 16;
-      const tx = carX - sinA * camDist;
-      const tz = carZ - cosA * camDist;
-      camera.position.x += (tx - camera.position.x) * 0.08;
-      camera.position.y += (camH - camera.position.y) * 0.05;
-      camera.position.z += (tz - camera.position.z) * 0.08;
-      camera.lookAt(carX + sinA * 4, 1.5, carZ + cosA * 4);
+    // Camera shake (from CAM director)
+    if (CAM.shakeAmt > 0) {
+      camera.position.x += (Math.random() - 0.5) * CAM.shakeAmt;
+      camera.position.y += (Math.random() - 0.5) * CAM.shakeAmt * 0.4;
     }
 
     if (prevSpeed > 0.09 && carSpeed < 0.03) playBrake();
@@ -4247,18 +6154,13 @@ window.CityEngine = (function () {
   }
 
   function shakeCam() {
-    let n = 0;
-    const iv = setInterval(() => {
-      camera.position.x += (Math.random() - 0.5) * 0.4;
-      camera.position.y += (Math.random() - 0.5) * 0.2;
-      if (++n > 10) clearInterval(iv);
-    }, 26);
+    CAM.shakeAmt = 0.45;
   }
 
   // ── PROXIMITY ─────────────────────────────────────────────────────────────
   function checkProximity() {
-    let closest = null,
-      closestDist = PROX;
+    if (!gameStarted) return; // no notifications before user starts
+    closestDist = PROX;
     window.CITY_DATA.buildings.forEach((b) => {
       const rx = b.roadPos ? b.roadPos[0] : b.pos[0];
       const rz = b.roadPos ? b.roadPos[1] : b.pos[1];
@@ -4279,8 +6181,11 @@ window.CityEngine = (function () {
   }
 
   function highlightBuilding(id, on) {
+    // With BuildingEntity system, highlight is handled by entity state
+    // This function now just handles blob shadow + safe color tint
     buildingMeshes.forEach((bm) => {
       if (bm.building.id !== id) return;
+      if (!bm.bodyMat || !bm.bodyMat.color) return; // guard for ToonMaterial
       const baseHex =
         bm.bodyMat.userData.baseColor || bm.bodyMat.color.getHex();
       if (!bm.bodyMat.userData.baseColor)
@@ -4290,9 +6195,9 @@ window.CityEngine = (function () {
         const baseC = new THREE.Color(baseHex);
         const glowC = new THREE.Color(gc);
         bm.bodyMat.color.setRGB(
-          Math.min(1, baseC.r + glowC.r * 0.22),
-          Math.min(1, baseC.g + glowC.g * 0.22),
-          Math.min(1, baseC.b + glowC.b * 0.22),
+          Math.min(1, baseC.r + glowC.r * 0.18),
+          Math.min(1, baseC.g + glowC.g * 0.18),
+          Math.min(1, baseC.b + glowC.b * 0.18),
         );
         const bs = blobShadows.find((s) => s.building.id === id);
         if (bs) bs.mesh.material.opacity = 0.85;
@@ -4306,29 +6211,18 @@ window.CityEngine = (function () {
 
   function enterNearestBuilding() {
     if (!proximityBuilding) return;
-
-    // ── P1: CAMERA FLY-IN ─────────────────────────────────────────────────
-    // Camera slowly pushes forward toward the temple entrance before opening panel
     const b = proximityBuilding;
-    const tx = b.pos[0],
-      tz = b.pos[1];
-    cameraFlyTarget = {
-      bx: tx,
-      bz: tz,
-      startX: camera.position.x,
-      startY: camera.position.y,
-      startZ: camera.position.z,
-      progress: 0,
-      building: b,
-    };
-    cameraFlyPhase = 1; // start flying
-
-    // Panel opens after fly-in completes (0.9s)
-    setTimeout(() => {
-      window.CityUI?.openBuilding(b);
-      spawnConfetti(carX, carZ, pc(b.glowColor));
-      cameraFlyPhase = 2;
-    }, 900);
+    // Cinematic moment: bloom + energy burst + select audio
+    triggerBuildingSelectCinematic(b);
+    // Entity select — dims all others, spawns burst
+    const ent = buildingEntities.find((e) => e.b.id === b.id);
+    if (ent) {
+      selectedEntity = ent;
+      ent.select();
+    }
+    // CameraDirector cinematic focus with transition whoosh
+    playTransitionWhoosh();
+    focusCameraOnBuilding(b);
   }
 
   function spawnConfetti(cx, cz, color) {
@@ -4388,278 +6282,465 @@ window.CityEngine = (function () {
   // ── ANIMATE ───────────────────────────────────────────────────────────────
   function animate() {
     animId = requestAnimationFrame(animate);
-    const t = clock.getElapsedTime();
+
+    // ── TIMING — getDelta MUST come first, getElapsedTime internally calls it ──
+    // If you call getElapsedTime() first, getDelta() returns ~0 → dt=0 → camera frozen
+    const dt = Math.min(clock.getDelta(), 0.05);
+    const now = clock.elapsedTime; // read already-updated elapsed after getDelta
 
     updateCar();
     updateWeatherParticles();
-    updateTrees(t);
+    updateTrees(now);
     updateDistrictAudio();
+    updatePlayerPresence(now, dt);
+    updateNarrative(now, dt);
+    updateSpatialAudio();
 
-    // ── P1: CAMERA FLY-IN ────────────────────────────────────────────────────
-    if (cameraFlyPhase === 1 && cameraFlyTarget) {
-      cameraFlyTarget.progress = Math.min(1, cameraFlyTarget.progress + 0.022);
-      const p = cameraFlyTarget.progress;
-      const ease = p * p * (3 - 2 * p); // smoothstep
-      const { startX, startY, startZ, bx, bz } = cameraFlyTarget;
-      const targetX = bx - Math.sin(carAngle) * 8;
-      const targetZ = bz - Math.cos(carAngle) * 8;
-      const targetY = 10;
-      camera.position.x = startX + (targetX - startX) * ease;
-      camera.position.y = startY + (targetY - startY) * ease;
-      camera.position.z = startZ + (targetZ - startZ) * ease;
-      camera.lookAt(bx, 4, bz);
-      if (p >= 1) cameraFlyPhase = 2;
+    // ── HOVER AUDIO — play ping when entering HOVER state ────────────────────
+    const hoverEnt = buildingEntities.find(
+      (e) => e.state === "HOVER" || e.state === "ACTIVE",
+    );
+    if (hoverEnt && hoverEnt.b.id !== lastHoverBuildingId) {
+      playBuildingHover(hoverEnt.b.id);
+    } else if (!hoverEnt) {
+      lastHoverBuildingId = null;
     }
 
-    // ── P5: BIRDS FLOCKING (circle over hero zone) ────────────────────────
-    if (birdGroup) {
-      birdGroup.children.forEach((bird) => {
-        const r = bird.userData.orbitR;
-        const h = bird.userData.orbitH;
-        const sp = bird.userData.orbitSpeed;
-        const ph = bird.userData.orbitPhase;
-        const fp = bird.userData.flapPhase;
-        bird.position.set(
-          Math.cos(t * sp + ph) * r,
-          h + Math.sin(t * 1.4 + fp) * 1.5,
-          Math.sin(t * sp + ph) * r,
-        );
-        bird.rotation.y = -(t * sp + ph) - Math.PI / 2;
-        // Wing flap
-        bird.children.forEach((c) => {
-          if (c.userData.isWing) {
-            c.rotation.z =
-              c.userData.side * (0.22 + Math.sin(t * 5.5 + fp) * 0.38);
-          }
-        });
+    // ── CAMERA DIRECTOR ──────────────────────────────────────────────────────
+    updateCameraDirector(now, dt);
+
+    // ── BUILDING ENTITIES — only update after game starts ────────────────────
+    if (gameStarted) {
+      buildingEntities.forEach((ent) => {
+        const dist = Math.hypot(carX - ent.b.pos[0], carZ - ent.b.pos[1]);
+        ent.update(now, dt, dist);
       });
     }
 
-    // ── P5+P7: DIYA FLAMES flicker + night glow ───────────────────────────
-    diyaFlames.forEach((f) => {
-      if (!f.material) return;
-      const flicker =
-        Math.sin(t * 8.5 + f.userData.phase) * 0.08 + Math.random() * 0.04;
-      f.scale.set(1 + flicker, 1 + flicker * 0.5, 1 + flicker);
-      f.rotation.y = Math.sin(t * 3.2 + f.userData.phase) * 0.18;
-      f.material.opacity = 0.82 + flicker;
-    });
-    // ── P7: DIYA LIGHTS — fast cached array, no traverse ─────────────────────
-    diyaLights.forEach((d) => {
-      const dist = Math.hypot(carX - d.wx, carZ - d.wz);
-      const flicker = 0.8 + Math.sin(t * 7.8 + d.phase) * 0.2;
-      d.light.intensity = isNight
-        ? Math.max(0, Math.min(1, (25 - dist) / 25)) * 2.4 * flicker
-        : Math.max(0, Math.min(1, (14 - dist) / 14)) * 0.65 * flicker;
-    });
-
-    // ── WAVE LINE ANIMATION ─────────────────────────────────────────────
-    waveLines.forEach((wl) => {
-      const pulse = Math.sin(t * 1.4 + wl.userData.wavePhase) * 0.5 + 0.5;
-      wl.material.opacity = 0.1 + pulse * 0.35;
-      // Subtle scale on width
-      const scl = 1 + pulse * 0.08;
-      wl.scale.set(scl, 1, scl);
-    });
-
-    // ── CENTERPIECE RINGS ───────────────────────────────────────────────
-    scene.children.forEach((c) => {
-      if (c.userData.isRing) c.rotation.z = t * c.userData.rotSpeed;
-    });
-
-    // ── BUILDING HERO RINGS + ORBS ──────────────────────────────────────
-    buildingMeshes.forEach(({ group }) => {
-      group.children.forEach((c) => {
-        if (c.userData.heroRing)
-          c.rotation.z = t * (0.45 + c.userData.ri * 0.22);
-        if (c.userData.isOrb) {
-          c.rotation.y = t * 0.9;
-          // Bloom simulation: pulse emissiveIntensity on orb's parent building
-          const pulse = Math.sin(t * 2.2) * 0.5 + 0.5;
-          if (c.material) c.material.opacity = 0.8 + pulse * 0.2;
-        }
-      });
-    });
-
-    // ── CHECKPOINT ANIMATIONS ───────────────────────────────────────────
-    checkpointGroups.forEach(({ group, building, diamond, pRing }) => {
-      const rx = building.roadPos ? building.roadPos[0] : building.pos[0];
-      const rz = building.roadPos ? building.roadPos[1] : building.pos[1];
-      const dist = Math.hypot(carX - rx, carZ - rz);
-      // Bruno Simon: marker fades in at distance, brightens on close approach
-      const farAlpha = Math.max(0, Math.min(1, (dist - 2) / 14));
-      const nearPulse = dist < 10 ? Math.sin(t * 3.5) * 0.3 + 0.9 : 1.0;
-
-      group.traverse((c) => {
-        if (
-          c.isMesh &&
-          c.material &&
-          c.material.transparent &&
-          c.material.opacity >= 0
-        ) {
-          if (!c.userData._mbo) c.userData._mbo = c.material.opacity;
-          c.material.opacity = c.userData._mbo * farAlpha * nearPulse;
-        }
-      });
-
-      if (diamond) {
-        const bh = group.userData.beamH || 10;
-        // Float & spin
-        diamond.position.y =
-          bh + 0.6 + Math.sin(t * 2.1 + diamond.userData.floatPhase) * 0.52;
-        diamond.rotation.y = t * 1.8;
-        if (pRing) pRing.position.y = diamond.position.y;
-        // Squish scale pulse
-        const sq = 1 + Math.sin(t * 2.8) * 0.12;
-        diamond.scale.set(sq, 1 / sq, sq);
-      }
-      if (pRing) {
-        const s = 1 + Math.sin(t * 2.4 + building.pos[0]) * 0.18;
-        pRing.scale.set(s, s, 1);
-      }
-      group.children.forEach((c) => {
-        if (c.userData.cpRing) {
-          const rs = 1 + Math.sin(t * 2.2 + c.userData.phase) * 0.16;
-          c.scale.set(rs, 1, rs);
-        }
-      });
-    });
-
-    // ── BLOSSOM PETAL DRIFT ──────────────────────────────────────────────────
-    scene.children.forEach((c) => {
-      if (!c.userData.isPetals) return;
-      const pos = c.geometry.attributes.position.array;
-      const vel = c.userData.vel;
-      const cnt = pos.length / 3;
-      for (let i = 0; i < cnt; i++) {
-        pos[i * 3] += vel[i * 3];
-        pos[i * 3 + 1] += vel[i * 3 + 1];
-        pos[i * 3 + 2] += vel[i * 3 + 2];
-        // Add gentle sine sway
-        pos[i * 3] += Math.sin(t * 0.7 + i * 0.4) * 0.003;
-        // Reset petals that fall below ground
-        if (pos[i * 3 + 1] < 0) {
-          pos[i * 3] = (Math.random() - 0.5) * 90;
-          pos[i * 3 + 1] = 16 + Math.random() * 4;
-          pos[i * 3 + 2] = (Math.random() - 0.5) * 90;
-        }
-      }
-      c.geometry.attributes.position.needsUpdate = true;
-    });
-    scene.children.forEach((c) => {
-      if (c.userData.isTimelineGem) {
-        c.position.y =
-          c.userData.baseY + Math.sin(t * 1.8 + c.userData.phase) * 0.22;
-        c.rotation.y = t * 1.2;
-      }
-      if (c.userData.isFloatArrow) {
-        c.position.y = c.userData.baseY + Math.sin(t * 2.2) * 0.28;
-      }
-      // Vijay Stambha chakra spins
-      if (c.userData.isChakra) c.rotation.z = t * 0.45;
-    });
-    worldLabels.forEach((sprite) => {
-      const b = sprite.userData.building;
-      const rx = b.roadPos ? b.roadPos[0] : b.pos[0];
-      const rz = b.roadPos ? b.roadPos[1] : b.pos[1];
-      const dist = Math.hypot(carX - rx, carZ - rz);
-      const target = dist < 28 && dist > 4 ? Math.min(1, (28 - dist) / 14) : 0;
-      sprite.material.opacity += (target - sprite.material.opacity) * 0.08;
-      sprite.position.y =
-        sprite.userData.baseY + Math.sin(t * 1.3 + b.pos[0] * 0.4) * 0.18;
-    });
-
-    // ── P2: IN-WORLD INFO BOARDS fade ────────────────────────────────────────
-    infoBoardSprites.forEach((sprite) => {
-      const b = sprite.userData.building;
-      const dist = Math.hypot(carX - b.pos[0], carZ - b.pos[1]);
-      const target = dist < 22 && dist > 5 ? Math.min(1, (22 - dist) / 10) : 0;
-      sprite.material.opacity += (target - sprite.material.opacity) * 0.07;
-      sprite.position.y =
-        sprite.userData.baseY + Math.sin(t * 0.9 + b.pos[0] * 0.3) * 0.12;
-    });
-
-    // ── CONFETTI UPDATE ──────────────────────────────────────────────────────
-    if (confettiPieces.length > 0) {
-      confettiPieces = confettiPieces.filter((c) => {
-        c.userData.vy -= 0.008; // gravity
-        c.position.x += c.userData.vx;
-        c.position.y += c.userData.vy;
-        c.position.z += c.userData.vz;
-        c.rotation.x += 0.18;
-        c.rotation.y += 0.12;
-        c.userData.life -= 0.025;
-        c.material.opacity = c.userData.life * 0.92;
-        if (c.userData.life <= 0) {
-          scene.remove(c);
+    // ── ALL VFX + LIVING WORLD — only after game starts ──────────────────────
+    if (gameStarted) {
+      // ── LIVING WORLD UPDATES ──────────────────────────────────────────────────
+      windTime += dt;
+      updateWindSway(now);
+      updateFlagWave(now);
+      updateRoadEnergyFlow(dt);
+      updateDivineParticles(now, dt);
+      updateGroundShimmers(now);
+      burstPool = burstPool.filter((m) => {
+        m.userData.burstT += dt / (m.userData.burstDur || 0.85);
+        const p = Math.min(1, m.userData.burstT);
+        m.scale.setScalar(0.5 + p * 6.5);
+        m.material.opacity = (1 - p) * 0.8;
+        if (p >= 1) {
+          scene.remove(m);
           return false;
         }
         return true;
       });
-    }
 
-    // ── PROXIMITY GLOW PULSE on highlighted building ─────────────────────────
-    if (isNight) {
-      buildingMeshes.forEach(({ bodyMat, building }) => {
-        const baseHex = bodyMat.userData.baseColor;
-        if (!baseHex) return;
-        const gc = pc(building.glowColor);
-        const glowC = new THREE.Color(gc);
-        const baseC = new THREE.Color(baseHex);
-        const curr = bodyMat.color;
-        // Only pulse if currently highlighted (colour differs from base)
-        if (
-          Math.abs(curr.r - baseC.r) > 0.015 ||
-          Math.abs(curr.g - baseC.g) > 0.015
-        ) {
-          const p = Math.sin(t * 2.4) * 0.02;
-          bodyMat.color.setRGB(
-            Math.min(1, curr.r + p),
-            Math.min(1, curr.g + p * (glowC.g + 0.1)),
-            Math.min(1, curr.b + p * (glowC.b + 0.1)),
+      // ── ENERGY STREAMS — animated drawRange flow ──────────────────────────────
+      energyStreams.forEach((stream) => {
+        const src = window.CITY_DATA.buildings.find(
+          (b) => b.id === stream.userData.srcId,
+        );
+        const dst = window.CITY_DATA.buildings.find(
+          (b) => b.id === stream.userData.dstId,
+        );
+        const srcDist = src
+          ? Math.hypot(carX - src.pos[0], carZ - src.pos[1])
+          : 999;
+        const dstDist = dst
+          ? Math.hypot(carX - dst.pos[0], carZ - dst.pos[1])
+          : 999;
+        const nearDist = Math.min(srcDist, dstDist);
+        const targetOp =
+          nearDist < 40 ? Math.min(0.55, (40 - nearDist) / 18) : 0;
+        stream.material.opacity += (targetOp - stream.material.opacity) * 0.04;
+        if (stream.material.opacity > 0.04) {
+          const total = stream.geometry.attributes.position.count;
+          const segLen = 14;
+          const offset = Math.floor(
+            (now * 9 + stream.userData.animOff) % total,
           );
+          stream.geometry.setDrawRange(offset, segLen);
         }
       });
-    }
 
-    // ── HELP SIGN — fades out once player drives away from spawn ─────────────
-    scene.children.forEach((c) => {
-      if (c.userData.isHelpSign && c.material) {
-        const distFromSpawn = Math.hypot(carX, carZ - 40);
-        if (distFromSpawn > 5) {
-          c.material.opacity = Math.max(0, c.material.opacity - 0.012);
+      // ── PER-BUILDING VFX IDENTITY ─────────────────────────────────────────────
+      Object.entries(buildingVfx).forEach(([id, vfx]) => {
+        const ent = buildingEntities.find((e) => e.b.id === id);
+        const vi = ent ? ent.vfxI : 0;
+
+        // Solar crown — rotate + ray pulse
+        if (vfx.userData.isSolarCrown) {
+          vfx.rotation.y = now * 0.16;
+          vfx.children.forEach((c) => {
+            if (c.userData.isSolarRay) {
+              const p = 0.72 + Math.sin(now * 1.9 + c.userData.phase) * 0.22;
+              c.scale.setScalar(p * vi);
+              c.material.opacity =
+                0.55 * vi + Math.sin(now * 2.8 + c.userData.phase) * 0.18 * vi;
+            }
+          });
         }
-      }
-    });
 
-    // ── NIGHT SKY STARS + ARCHWAY GLOW + GROUND RINGS ────────────────────────
-    if (starField) {
-      const targetOp = isNight ? 0.92 : 0;
-      starField.material.opacity +=
-        (targetOp - starField.material.opacity) * 0.04;
-      // Slow rotation of the star dome
-      starField.rotation.y = t * 0.0008;
-    }
-    archGlows.forEach((g) => {
-      const targetI = isNight ? 3.5 : 0;
-      g.intensity += (targetI - g.intensity) * 0.04;
-    });
-    // Zone ambients — 3× brighter at night (district glow on ground)
-    zoneAmbients.forEach((l) => {
-      const baseI = l.userData.nightI || 0.35;
-      const targetI = isNight ? baseI * 3.2 : baseI * 0.2;
-      l.intensity += (targetI - l.intensity) * 0.03;
-    });
-    // Temple base glow rings fade in at night
-    scene.children.forEach((c) => {
-      if (c.userData.isNightRing) {
-        const targetOp = isNight
-          ? 0.55 + Math.sin(t * 2.1 + c.position.x * 0.3) * 0.12
-          : 0;
-        if (c.material)
-          c.material.opacity += (targetOp - c.material.opacity) * 0.04;
+        // Forge sparks — shoot up and reset
+        vfx.children.forEach((c) => {
+          if (c.userData.isSparks) {
+            const pos = c.geometry.attributes.position.array;
+            const vel = c.userData.vel;
+            const N = pos.length / 3;
+            const baseH = c.userData.baseH || 10;
+            for (let i = 0; i < N; i++) {
+              pos[i * 3] += vel[i * 3];
+              pos[i * 3 + 1] += vel[i * 3 + 1];
+              pos[i * 3 + 2] += vel[i * 3 + 2];
+              vel[i * 3 + 1] -= 0.003; // gravity
+              if (pos[i * 3 + 1] > baseH + 6 || pos[i * 3 + 1] < baseH - 1) {
+                pos[i * 3] = Math.random() - 0.5;
+                pos[i * 3 + 1] = baseH;
+                pos[i * 3 + 2] = Math.random() - 0.5;
+                vel[i * 3] = (Math.random() - 0.5) * 0.04;
+                vel[i * 3 + 1] = 0.04 + Math.random() * 0.06;
+                vel[i * 3 + 2] = (Math.random() - 0.5) * 0.04;
+              }
+            }
+            c.geometry.attributes.position.needsUpdate = true;
+            c.material.opacity = 0.75 * vi;
+          }
+
+          // Knowledge orbs — orbit at different speeds
+          if (c.userData.orbI !== undefined) {
+            const i = c.userData.orbI,
+              r = c.userData.orbR,
+              bh = c.userData.orbH;
+            const a = now * (0.45 + i * 0.12) + i * 1.1;
+            c.position.set(
+              Math.cos(a) * r,
+              bh + Math.sin(now * 0.8 + i) * 0.6,
+              Math.sin(a) * r,
+            );
+            c.material.opacity = 0.55 * vi + Math.sin(now * 1.5 + i) * 0.15;
+          }
+
+          // Wind trail rings — wobble + orbit
+          if (c.userData.windRing) {
+            c.rotation.y = now * (0.55 + c.userData.phase * 0.12);
+            c.rotation.x = Math.sin(now * 0.7 + c.userData.phase) * 0.35;
+            c.material.opacity = (0.35 - c.userData.phase * 0.08) * vi;
+          }
+
+          // Cloud wisps — drift horizontally
+          if (c.userData.wisp) {
+            c.position.x =
+              c.userData.baseX + Math.sin(now * 0.18 + c.userData.phase) * 4.5;
+            c.material.opacity = 0.22 * vi;
+          }
+
+          // Gold coin drop
+          if (c.userData.coinDrop) {
+            c.position.y -= c.userData.speed;
+            c.rotation.x += 0.06;
+            c.rotation.z += 0.04;
+            if (c.position.y < 0.5) {
+              c.position.y = c.userData.baseH;
+            }
+            c.material.opacity = 0.75 * vi;
+          }
+
+          // Glyph orbits (education)
+          if (c.userData.glyphOrbit) {
+            const ang = now * (0.4 + c.userData.i * 0.15) + c.userData.i * 1.05;
+            c.position.set(
+              Math.cos(ang) * c.userData.r,
+              8 + Math.sin(ang * 0.6) * 1.5,
+              Math.sin(ang) * c.userData.r,
+            );
+            c.rotation.y = ang * 1.3;
+            c.material.opacity = 0.6 * vi;
+          }
+        });
+      });
+
+      // ── DIVINE BEAMS (night-only gopuram spotlights) ───────────────────────────
+      divineBeams.forEach((s) => {
+        const target = isNight ? 3.0 : 0;
+        s.intensity += (target - s.intensity) * 0.035;
+      });
+
+      // ── PRANA AURA — central island particle drift ────────────────────────────
+      if (pranaParticles) {
+        const pos = pranaParticles.geometry.attributes.position.array;
+        const vel = pranaParticles.userData.vel;
+        const N = pos.length / 3;
+        for (let i = 0; i < N; i++) {
+          pos[i * 3] += vel[i * 3] + Math.sin(now * 0.5 + i * 0.3) * 0.003;
+          pos[i * 3 + 1] += vel[i * 3 + 1];
+          pos[i * 3 + 2] +=
+            vel[i * 3 + 2] + Math.cos(now * 0.4 + i * 0.3) * 0.003;
+          if (pos[i * 3 + 1] > 9) {
+            const r = 6 + Math.random() * 4,
+              a = Math.random() * Math.PI * 2;
+            pos[i * 3] = Math.cos(a) * r;
+            pos[i * 3 + 1] = 0;
+            pos[i * 3 + 2] = Math.sin(a) * r;
+          }
+        }
+        pranaParticles.geometry.attributes.position.needsUpdate = true;
       }
-    });
+      // Prana rings pulse scale + rotate
+      scene.children.forEach((c) => {
+        if (c.userData.isPranaRing) {
+          const pulse = 1 + Math.sin(now * 1.2 + c.userData.phase) * 0.04;
+          c.scale.setScalar(pulse);
+          c.rotation.z = now * (0.12 + c.userData.phase * 0.05);
+          c.material.opacity =
+            0.38 + Math.sin(now * 1.8 + c.userData.phase) * 0.1;
+        }
+      });
+
+      // ── HELP SIGN — fades out once player drives away from spawn ─────────────
+      scene.children.forEach((c) => {
+        if (c.userData.isHelpSign && c.material) {
+          const d = Math.hypot(carX, carZ - 40);
+          if (d > 5)
+            c.material.opacity = Math.max(0, c.material.opacity - 0.012);
+        }
+      });
+
+      // ── BIRDS ─────────────────────────────────────────────────────────────────
+      if (birdGroup && !IS_MOBILE) {
+        birdGroup.children.forEach((bird) => {
+          const r = bird.userData.orbitR,
+            h = bird.userData.orbitH;
+          const sp = bird.userData.orbitSpeed,
+            ph = bird.userData.orbitPhase,
+            fp = bird.userData.flapPhase;
+          bird.position.set(
+            Math.cos(now * sp + ph) * r,
+            h + Math.sin(now * 1.4 + fp) * 1.5,
+            Math.sin(now * sp + ph) * r,
+          );
+          bird.rotation.y = -(now * sp + ph) - Math.PI / 2;
+          bird.children.forEach((c) => {
+            if (c.userData.isWing)
+              c.rotation.z =
+                c.userData.side * (0.22 + Math.sin(now * 5.5 + fp) * 0.38);
+          });
+        });
+      }
+
+      // ── DIYA FLAMES + LIGHTS ──────────────────────────────────────────────────
+      diyaFlames.forEach((f) => {
+        if (!f.material) return;
+        const fl =
+          Math.sin(now * 8.5 + f.userData.phase) * 0.08 + Math.random() * 0.04;
+        f.scale.set(1 + fl, 1 + fl * 0.5, 1 + fl);
+        f.rotation.y = Math.sin(now * 3.2 + f.userData.phase) * 0.18;
+        f.material.opacity = 0.82 + fl;
+      });
+      diyaLights.forEach((d) => {
+        const dist = Math.hypot(carX - d.wx, carZ - d.wz);
+        const fl = 0.8 + Math.sin(now * 7.8 + d.phase) * 0.2;
+        d.light.intensity = isNight
+          ? Math.max(0, Math.min(1, (25 - dist) / 25)) * 2.4 * fl
+          : Math.max(0, Math.min(1, (14 - dist) / 14)) * 0.65 * fl;
+      });
+
+      // ── WAVE LINES + ROAD SHIMMER ─────────────────────────────────────────────
+      waveLines.forEach((wl) => {
+        if (wl.userData.isRoadShimmer) {
+          const sweep = (now * 0.22 + (wl.userData.phase || 0)) % (Math.PI * 2);
+          wl.material.opacity = 0.04 + Math.sin(sweep) * 0.03;
+        } else {
+          const pulse =
+            Math.sin(now * 1.4 + (wl.userData.wavePhase || 0)) * 0.5 + 0.5;
+          wl.material.opacity = 0.1 + pulse * 0.35;
+          const scl = 1 + pulse * 0.08;
+          wl.scale.set(scl, 1, scl);
+        }
+      });
+
+      // ── CENTERPIECE + HERO RINGS ──────────────────────────────────────────────
+      scene.children.forEach((c) => {
+        if (c.userData.isRing) c.rotation.z = now * c.userData.rotSpeed;
+      });
+      buildingMeshes.forEach(({ group }) => {
+        group.children.forEach((c) => {
+          if (c.userData.heroRing)
+            c.rotation.z = now * (0.45 + c.userData.ri * 0.22);
+          if (c.userData.isOrb) {
+            c.rotation.y = now * 0.9;
+            if (c.material)
+              c.material.opacity = 0.8 + Math.sin(now * 2.2) * 0.5 * 0.2;
+          }
+        });
+      });
+
+      // ── CHECKPOINT DIYA ANIMATIONS ────────────────────────────────────────────
+      checkpointGroups.forEach(({ group, building, diamond, pRing }) => {
+        const rx = building.roadPos ? building.roadPos[0] : building.pos[0];
+        const rz = building.roadPos ? building.roadPos[1] : building.pos[1];
+        const dist = Math.hypot(carX - rx, carZ - rz);
+        const farAlpha = Math.max(0, Math.min(1, (dist - 2) / 14));
+        const nearPulse = dist < 10 ? Math.sin(now * 3.5) * 0.3 + 0.9 : 1.0;
+        group.traverse((c) => {
+          if (
+            c.isMesh &&
+            c.material &&
+            c.material.transparent &&
+            c.material.opacity >= 0
+          ) {
+            if (!c.userData._mbo) c.userData._mbo = c.material.opacity;
+            c.material.opacity = c.userData._mbo * farAlpha * nearPulse;
+          }
+        });
+        if (pRing) {
+          const s = 1 + Math.sin(now * 2.2 + building.pos[0]) * 0.16;
+          pRing.scale.set(s, 1, s);
+        }
+      });
+
+      // ── BLOSSOM PETALS ────────────────────────────────────────────────────────
+      scene.children.forEach((c) => {
+        if (!c.userData.isPetals) return;
+        const pos = c.geometry.attributes.position.array,
+          vel = c.userData.vel,
+          cnt = pos.length / 3;
+        for (let i = 0; i < cnt; i++) {
+          pos[i * 3] += vel[i * 3];
+          pos[i * 3 + 1] += vel[i * 3 + 1];
+          pos[i * 3 + 2] += vel[i * 3 + 2];
+          pos[i * 3] += Math.sin(now * 0.7 + i * 0.4) * 0.003;
+          if (pos[i * 3 + 1] < 0) {
+            pos[i * 3] = (Math.random() - 0.5) * 90;
+            pos[i * 3 + 1] = 16 + Math.random() * 4;
+            pos[i * 3 + 2] = (Math.random() - 0.5) * 90;
+          }
+        }
+        c.geometry.attributes.position.needsUpdate = true;
+      });
+
+      // ── TIMELINE GEMS + FLOAT ARROW + CHAKRA ─────────────────────────────────
+      scene.children.forEach((c) => {
+        if (c.userData.isTimelineGem) {
+          c.position.y =
+            c.userData.baseY + Math.sin(now * 1.8 + c.userData.phase) * 0.22;
+          c.rotation.y = now * 1.2;
+        }
+        if (c.userData.isFloatArrow)
+          c.position.y = c.userData.baseY + Math.sin(now * 2.2) * 0.28;
+        if (c.userData.isChakra) c.rotation.z = now * 0.45;
+      });
+
+      // ── WORLD LABELS + INFO BOARDS — INSTANT hide during focus ───────────────
+      // BUG FIX: slow fade (0.1/frame) left sprites at 0.6 opacity when camera arrived
+      // at close range — canvas text filled the entire screen. Now instant-zero on focus.
+      const inFocus = CAM.state === "FOCUS" || CAM.state === "FOCUS_TRANSITION";
+      const spriteLerpFactor = inFocus ? 0.35 : 0.08; // fast hide, slow show
+
+      worldLabels.forEach((sprite) => {
+        const b = sprite.userData.building;
+        const rx = b.roadPos ? b.roadPos[0] : b.pos[0];
+        const rz = b.roadPos ? b.roadPos[1] : b.pos[1];
+        const dist = Math.hypot(carX - rx, carZ - rz);
+        const target = inFocus
+          ? 0
+          : dist < 28 && dist > 4
+            ? Math.min(1, (28 - dist) / 14)
+            : 0;
+        sprite.material.opacity +=
+          (target - sprite.material.opacity) * spriteLerpFactor;
+        if (!inFocus)
+          sprite.position.y =
+            sprite.userData.baseY + Math.sin(now * 1.3 + b.pos[0] * 0.4) * 0.18;
+      });
+      infoBoardSprites.forEach((sprite) => {
+        const b = sprite.userData.building;
+        const dist = Math.hypot(carX - b.pos[0], carZ - b.pos[1]);
+        const target = inFocus
+          ? 0
+          : dist < 22 && dist > 5
+            ? Math.min(1, (22 - dist) / 10)
+            : 0;
+        sprite.material.opacity +=
+          (target - sprite.material.opacity) * spriteLerpFactor;
+        if (!inFocus)
+          sprite.position.y =
+            sprite.userData.baseY + Math.sin(now * 0.9 + b.pos[0] * 0.3) * 0.12;
+      });
+
+      // ── CONFETTI ──────────────────────────────────────────────────────────────
+      if (confettiPieces.length > 0) {
+        confettiPieces = confettiPieces.filter((c) => {
+          c.userData.vy -= 0.008;
+          c.position.x += c.userData.vx;
+          c.position.y += c.userData.vy;
+          c.position.z += c.userData.vz;
+          c.rotation.x += 0.18;
+          c.rotation.y += 0.12;
+          c.userData.life -= 0.025;
+          c.material.opacity = c.userData.life * 0.92;
+          if (c.userData.life <= 0) {
+            scene.remove(c);
+            return false;
+          }
+          return true;
+        });
+      }
+
+      // ── PROXIMITY GLOW PULSE ──────────────────────────────────────────────────
+      if (isNight) {
+        buildingMeshes.forEach(({ bodyMat, building }) => {
+          const baseHex = bodyMat.userData.baseColor;
+          if (!baseHex) return;
+          const gc = pc(building.glowColor),
+            glowC = new THREE.Color(gc),
+            baseC = new THREE.Color(baseHex),
+            curr = bodyMat.color;
+          if (
+            Math.abs(curr.r - baseC.r) > 0.015 ||
+            Math.abs(curr.g - baseC.g) > 0.015
+          ) {
+            const p = Math.sin(now * 2.4) * 0.02;
+            bodyMat.color.setRGB(
+              Math.min(1, curr.r + p),
+              Math.min(1, curr.g + p * (glowC.g + 0.1)),
+              Math.min(1, curr.b + p * (glowC.b + 0.1)),
+            );
+          }
+        });
+      }
+
+      // ── NIGHT SKY + ARCH GLOWS + ZONE AMBIENTS + GROUND RINGS ────────────────
+      if (starField) {
+        const targetOp = isNight ? 0.92 : 0;
+        starField.material.opacity +=
+          (targetOp - starField.material.opacity) * 0.04;
+        starField.rotation.y = now * 0.0008;
+      }
+      archGlows.forEach((g) => {
+        const ti = isNight ? 3.5 : 0;
+        g.intensity += (ti - g.intensity) * 0.04;
+      });
+      zoneAmbients.forEach((l) => {
+        const baseI = l.userData.nightI || 0.35;
+        const ti = isNight ? baseI * 3.2 : baseI * 0.2;
+        l.intensity += (ti - l.intensity) * 0.03;
+      });
+      scene.children.forEach((c) => {
+        if (c.userData.isNightRing) {
+          const to = isNight
+            ? 0.55 + Math.sin(now * 2.1 + c.position.x * 0.3) * 0.12
+            : 0;
+          if (c.material)
+            c.material.opacity += (to - c.material.opacity) * 0.04;
+        }
+      });
+
+      // ── SELECTION RINGS on entities ───────────────────────────────────────────
+      // (handled inside BuildingEntity.update — no extra code needed)
+    } // end if (gameStarted)
 
     renderer.render(scene, camera);
   }
@@ -4682,10 +6763,76 @@ window.CityEngine = (function () {
     cycleWeather,
     setMusicVolume,
     initAudio,
+
+    triggerIntro() {
+      gameStarted = true; // unlock proximity, audio, narrative
+      camera.position.set(12, 285, 95);
+      camera.lookAt(0, 0, 0);
+      CAM.state = "INTRO";
+      CAM.introT = 0;
+      CAM._flashed = false;
+      // Resume AudioContext on first user gesture
+      if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+      // Kick spatial audio if not yet started
+      if (!IS_MOBILE && Object.keys(spatialAudio).length === 0) {
+        setTimeout(() => initSpatialAudio(), 900);
+      }
+      // Fade in philosophy stone and shortcut sign now that game has started
+      setTimeout(() => {
+        scene.children.forEach((c) => {
+          if (c.isSprite && c.material && c.material.depthTest === false) {
+            if (
+              c.userData.isHelpSign ||
+              (c.position &&
+                Math.abs(c.position.x - 3) < 1 &&
+                Math.abs(c.position.z - 20) < 2)
+            ) {
+              // Animate opacity in
+              let op = 0;
+              const iv = setInterval(() => {
+                op += 0.04;
+                c.material.opacity = Math.min(
+                  c.userData.isHelpSign ? 0.96 : 0.94,
+                  op,
+                );
+                if (op >= 0.96) clearInterval(iv);
+              }, 30);
+            }
+          }
+        });
+      }, 2000); // delay so intro cinematic plays first
+    },
+
     resetCamera() {
+      if (selectedEntity) {
+        selectedEntity.deselect();
+        selectedEntity = null;
+      }
+      returnCamera();
       cameraFlyPhase = 0;
       cameraFlyTarget = null;
     },
+
+    // Yatra path toggle — M key shows/hides the golden pilgrimage route
+    toggleYatraPath() {
+      if (!NARRATIVE.yatraPath && NARRATIVE.phase === "FREE") {
+        buildYatraPath();
+      }
+      NARRATIVE.yatraVisible = !NARRATIVE.yatraVisible;
+    },
+
+    // Skip guided narrative, go straight to free roam
+    skipGuide() {
+      if (NARRATIVE.phase === "GUIDED") {
+        hideGuideLabel();
+        if (NARRATIVE.guideArrow) {
+          scene.remove(NARRATIVE.guideArrow);
+          NARRATIVE.guideArrow = null;
+        }
+        NARRATIVE.phase = "FREE";
+      }
+    },
+
     get isNight() {
       return isNight;
     },
@@ -4709,6 +6856,12 @@ window.CityEngine = (function () {
     },
     get carAngle() {
       return carAngle;
+    },
+    get camState() {
+      return CAM.state;
+    },
+    get narrativePhase() {
+      return NARRATIVE.phase;
     },
   };
 })();

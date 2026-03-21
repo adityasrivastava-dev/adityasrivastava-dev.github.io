@@ -260,14 +260,14 @@
       }
       #prox {
         position: fixed;
-        bottom: 28px;
+        bottom: 110px;
         left: 50%;
         z-index: 9000;
         transform: translateX(-50%) translateY(50px);
         background: rgba(10, 5, 0, 0.92);
-        border: 2px solid rgba(255, 255, 255, 0.22);
-        border-radius: 6px;
-        padding: 14px 26px;
+        border: 1px solid rgba(var(--nc-rgb, 0, 200, 255), 0.28);
+        border-radius: 4px;
+        padding: 12px 22px;
         display: flex;
         align-items: center;
         gap: 18px;
@@ -306,16 +306,20 @@
       }
       .px-btn {
         font-family: var(--ff);
-        font-size: 14px;
-        font-weight: 700;
-        letter-spacing: 3px;
-        padding: 10px 20px;
-        border: 2px solid #fff;
-        background: rgba(255, 255, 255, 0.15);
-        color: #fff;
-        border-radius: 3px;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 6px;
+        padding: 11px 20px;
+        border: 1px solid rgba(0, 200, 255, 0.6);
+        background: rgba(0, 0, 0, 0);
+        color: #00c8ff;
+        border-radius: 2px;
         flex-shrink: 0;
-        transition: background 0.18s;
+        transition: all 0.18s;
+        text-shadow: 0 0 8px rgba(0, 200, 255, 0.5);
+        box-shadow:
+          0 0 14px rgba(0, 200, 255, 0.12),
+          inset 0 0 6px rgba(0, 200, 255, 0.04);
       }
       .px-btn:hover {
         background: rgba(255, 255, 255, 0.3);
@@ -1239,11 +1243,175 @@
       ::-webkit-scrollbar {
         width: 4px;
       }
+      .panel-section-h {
+        font-family: var(--fm);
+        letter-spacing: 4px;
+        font-size: 9px;
+        color: var(--nc);
+        text-shadow:
+          0 0 8px var(--nc),
+          0 1px 0 rgba(0, 0, 0, 0.8);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        padding-bottom: 5px;
+        margin: 18px 0 8px;
+      }
+      /* Entrance animation keyframe */
+      @keyframes panelRise {
+        from {
+          transform: translateY(18px) rotateY(-4deg);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0) rotateY(0deg);
+          opacity: 1;
+        }
+      }
+      #side-panel.open .sp-body {
+        animation: panelRise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
       ::-webkit-scrollbar-track {
         background: rgba(255, 255, 255, 0.02);
       }
       ::-webkit-scrollbar-thumb {
         background: rgba(255, 255, 255, 0.12);
+      }
+      /* ── GAME HUD — speed + gear indicator ── */
+      #game-hud {
+        position: fixed;
+        bottom: 22px;
+        right: 20px;
+        z-index: 450;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 5px;
+        mix-blend-mode: normal;
+        opacity: 0.92;
+      }
+      #spd-ring {
+        width: 68px;
+        height: 68px;
+        position: relative;
+      }
+      #spd-ring svg {
+        width: 68px;
+        height: 68px;
+        transform: rotate(-135deg);
+      }
+      #spd-ring .track {
+        fill: none;
+        stroke: rgba(255, 255, 255, 0.08);
+        stroke-width: 5;
+      }
+      #spd-ring .fill {
+        fill: none;
+        stroke: #ffcc44;
+        stroke-width: 5;
+        stroke-linecap: round;
+        stroke-dasharray: 170;
+        stroke-dashoffset: 170;
+        transition:
+          stroke-dashoffset 0.1s ease,
+          stroke 0.15s ease,
+          filter 0.2s ease;
+        filter: drop-shadow(0 0 3px currentColor);
+      }
+      #spd-num {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--ff);
+        font-weight: 900;
+        font-size: 18px;
+        color: #fff;
+        line-height: 1;
+        letter-spacing: -1px;
+      }
+      #spd-num span {
+        font-size: 7px;
+        font-family: var(--fm);
+        letter-spacing: 3px;
+        color: rgba(255, 200, 80, 0.55);
+        margin-top: 2px;
+      }
+      #gear-badge {
+        font-family: var(--fm);
+        font-size: 8px;
+        letter-spacing: 4px;
+        color: rgba(255, 200, 80, 0.4);
+        text-align: right;
+      }
+      #weather-badge {
+        font-family: var(--fm);
+        font-size: 8px;
+        letter-spacing: 3px;
+        color: rgba(255, 255, 255, 0.25);
+        text-align: right;
+      }
+      @media (max-width: 640px) {
+        #game-hud {
+          bottom: 80px;
+          right: 12px;
+        }
+        #spd-ring {
+          width: 52px;
+          height: 52px;
+        }
+        #spd-ring svg {
+          width: 52px;
+          height: 52px;
+        }
+        #spd-num {
+          font-size: 14px;
+        }
+      }
+      /* ── CINEMATIC BLOOM OVERLAY ── */
+      #city-bloom {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        pointer-events: none;
+        background: rgba(255, 220, 120, 0);
+        transition: background 0.35s ease;
+      }
+      /* Speed vignette — radial darkening at screen edges at high speed */
+      #speed-vignette {
+        position: fixed;
+        inset: 0;
+        z-index: 15;
+        pointer-events: none;
+        background: radial-gradient(
+          ellipse 70% 65% at 50% 50%,
+          transparent 0%,
+          transparent 40%,
+          rgba(0, 0, 0, 0) 100%
+        );
+        transition: background 0.15s ease;
+      }
+      /* Motion blur hint via CSS blur on canvas only */
+      #city-canvas {
+        will-change: transform;
+      }
+      /* ── NARRATIVE GUIDE LABEL smooth transitions ── */
+      #guide-bar {
+        position: fixed;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 600;
+        pointer-events: none;
+        font-family: var(--fm);
+        font-size: 11px;
+        letter-spacing: 5px;
+        color: #ffcc44;
+        text-shadow: 0 0 12px #ffcc44aa;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+        text-align: center;
       }
       #fullmap {
         position: fixed;
@@ -1354,7 +1522,22 @@
     <div id="pp-glow"></div>
     <div id="vig"></div>
     <div id="cur"></div>
+    <div id="city-bloom"></div>
+    <div id="speed-vignette"></div>
+    <div id="guide-bar"></div>
     <canvas id="city-canvas"></canvas>
+    <!-- ── GAME HUD ── -->
+    <div id="game-hud">
+      <div id="weather-badge">DAY</div>
+      <div id="gear-badge">GEAR: D</div>
+      <div id="spd-ring">
+        <svg viewBox="0 0 68 68">
+          <circle class="track" cx="34" cy="34" r="27" />
+          <circle class="fill" id="spd-arc" cx="34" cy="34" r="27" />
+        </svg>
+        <div id="spd-num">0<span>KM/H</span></div>
+      </div>
+    </div>
     <header id="hud-tr">
       <span id="mode-chip" class="recruiter">--</span>
       <button class="hb" id="weather-btn" onclick="doWeather()" title="Weather">
@@ -1372,6 +1555,21 @@
         CONTACT
       </button>
       <button class="hb" onclick="location.href = 'index.html'">← EXIT</button>
+      <button
+        class="hb"
+        id="skip-guide-btn"
+        style="
+          display: none;
+          border-color: rgba(255, 204, 68, 0.4);
+          color: #ffcc44;
+        "
+        onclick="
+          if (typeof CityEngine !== 'undefined') CityEngine.skipGuide();
+          this.style.display = 'none';
+        "
+      >
+        SKIP GUIDE
+      </button>
     </header>
     <div id="weather-toast"></div>
     <div id="minimap">
@@ -1382,7 +1580,10 @@
     <div id="ctrl-hint">
       <span class="ck">W/S</span> DRIVE &nbsp;<span class="ck">A/D</span> STEER
       &nbsp;<span class="ck">E</span> ENTER &nbsp;<span class="ck">T</span>
-      WEATHER &nbsp;<span class="ck">M</span> MAP
+      WEATHER &nbsp;<span class="ck">M</span> MAP &nbsp;<span class="ck"
+        >Y</span
+      >
+      YATRA
     </div>
     <div id="grip-hud">
       <span id="grip-icon">🌧️</span><span id="grip-label">GRIP</span>
@@ -1549,6 +1750,31 @@
       };
       function hideStart() {
         startScreen.classList.add("gone");
+        if (typeof CityEngine !== "undefined") {
+          CityEngine.initAudio();
+          CityEngine.triggerIntro();
+          // Show skip guide button during narrative phase
+          setTimeout(() => {
+            const sb = document.getElementById("skip-guide-btn");
+            if (
+              sb &&
+              typeof CityEngine !== "undefined" &&
+              CityEngine.narrativePhase === "GUIDED"
+            )
+              sb.style.display = "";
+            // Hide after narrative ends
+            const iv = setInterval(() => {
+              if (
+                typeof CityEngine !== "undefined" &&
+                CityEngine.narrativePhase !== "GUIDED" &&
+                sb
+              ) {
+                sb.style.display = "none";
+                clearInterval(iv);
+              }
+            }, 1000);
+          }, 8000);
+        }
       }
       startScreen.addEventListener("click", hideStart);
       startScreen.addEventListener("touchend", hideStart);
@@ -1635,10 +1861,17 @@
         );
       }
       function closeSP() {
-        document.getElementById("side-panel").classList.remove("open");
-        document.body.classList.remove("panel-open");
-        if (typeof CityEngine !== "undefined" && CityEngine.resetCamera)
-          CityEngine.resetCamera();
+        const panel = document.getElementById("side-panel");
+        panel.style.transform = "translateX(110%) rotateY(-8deg)";
+        panel.style.opacity = "0";
+        setTimeout(() => {
+          panel.classList.remove("open");
+          panel.style.transform = "";
+          panel.style.opacity = "";
+          document.body.classList.remove("panel-open");
+          if (typeof CityEngine !== "undefined" && CityEngine.resetCamera)
+            CityEngine.resetCamera();
+        }, 500);
       }
       function eduPanel(b, col) {
         return `<div class="p-badge" style="color:${col};border-color:${col}44;background:${col}0d">🎓 EDUCATION · ${b.year}</div><div class="p-line" style="background:linear-gradient(90deg,${col},transparent)"></div><div class="p-name">${b.name}</div><div class="p-sub">${b.subtitle}</div><div class="p-stat op"><div class="sdot"></div>COMPLETED</div><div class="mets">${b.metrics.map((m) => `<div class="met"><span class="mv" style="color:${col}">${m.v}</span><div class="ml">${m.l}</div></div>`).join("")}</div><div class="sl" style="color:${col}">ACADEMIC JOURNEY</div><div class="story">${b.story.replace(/\n/g, "<br>").replace(/<em>(.*?)<\/em>/g, `<em style="color:${col};font-style:normal;font-weight:600">$1</em>`)}</div><div class="out-box" style="border-color:${col}44"><div class="out-l">OUTCOME</div><div class="out-t">${b.outcome}</div></div><div class="ttags">${b.tech.map((t) => `<span class="ttag" style="border-color:${col}22;color:${col}88;background:${col}08">${t}</span>`).join("")}</div>`;
@@ -1782,7 +2015,11 @@
         if (e.code === "KeyE" && typeof CityEngine !== "undefined")
           CityEngine.enterNearestBuilding();
         if (e.key === "j" || e.key === "J") openJourney();
-        if (e.key === "m" || e.key === "M") toggleFullMap();
+        if (e.key === "m" || e.key === "M") {
+          if (e.shiftKey) {
+            if (typeof CityEngine !== "undefined") CityEngine.toggleYatraPath();
+          } else toggleFullMap();
+        }
         if (e.key === "Escape") {
           closeSP();
           closeFullMap();
@@ -2040,13 +2277,59 @@ Mode: ${MODE}. Answer 2-4 sentences. Speak with wisdom about both the temple myt
           document.getElementById("fullmap").appendChild(vc);
       }
 
+      // ── GAME HUD UPDATE ─────────────────────────────────────────────────────
+      function updateGameHUD(spd, weather) {
+        const arc = document.getElementById("spd-arc");
+        const num = document.getElementById("spd-num");
+        const gear = document.getElementById("gear-badge");
+        const wb = document.getElementById("weather-badge");
+        const vig = document.getElementById("speed-vignette");
+        if (!arc || !num) return;
+        // Speed: map raw 0-0.48 to display 0-180 km/h
+        const kmh = Math.round(Math.abs(spd) * 375);
+        const pct = Math.min(1, Math.abs(spd) / 0.48);
+        // SVG arc: dashoffset 170 = empty, 0 = full
+        arc.style.strokeDashoffset = 170 - pct * 170;
+        // Color: green → gold → orange-red
+        arc.style.stroke =
+          pct < 0.4
+            ? "#44ee88"
+            : pct < 0.75
+              ? "#ffcc44"
+              : pct < 0.9
+                ? "#ff9944"
+                : "#ff3333";
+        // Speed ring pulses size at high speed
+        const ring = document.getElementById("spd-ring");
+        if (ring)
+          ring.style.transform =
+            pct > 0.7 ? `scale(${1 + pct * 0.06})` : "scale(1)";
+        num.childNodes[0].textContent = kmh;
+        gear.textContent =
+          "GEAR: " + (spd < -0.01 ? "R" : spd < 0.001 ? "N" : "D");
+        if (wb && weather) wb.textContent = weather.toUpperCase();
+        // Speed vignette — darkens edges at high speed (motion tunnel effect)
+        if (vig) {
+          const vigOpacity = Math.max(0, pct - 0.45) * 0.55;
+          vig.style.background = `radial-gradient(ellipse 65% 60% at 50% 50%,transparent 0%,transparent 35%,rgba(0,0,0,${vigOpacity.toFixed(3)}) 100%)`;
+        }
+      }
+
       window.CityUI = {
         openBuilding,
         showNotification,
         hideNotification,
-        updateHUD,
+        updateHUD(spd) {
+          updateHUD(spd);
+          updateGameHUD(
+            spd,
+            typeof CityEngine !== "undefined" ? CityEngine.currentWeather : "",
+          );
+        },
         updateMinimap,
-        onWeatherChange,
+        onWeatherChange(w) {
+          updateGameHUD(0, w);
+        },
       };
     </script>
     <!-- ── P8: FULL MAP ── -->
