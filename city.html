@@ -88,8 +88,8 @@
         z-index: 3;
         pointer-events: none;
         background: radial-gradient(
-          ellipse 78% 68% at 50% 52%,
-          rgba(255, 165, 80, 0.055) 0%,
+          ellipse 80% 70% at 72% 50%,
+          rgba(255, 200, 80, 0.07) 0%,
           transparent 68%
         );
         mix-blend-mode: screen;
@@ -1245,6 +1245,89 @@
       ::-webkit-scrollbar-thumb {
         background: rgba(255, 255, 255, 0.12);
       }
+      #fullmap {
+        position: fixed;
+        inset: 0;
+        z-index: 850;
+        background: rgba(6, 3, 1, 0.97);
+        backdrop-filter: blur(18px);
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        padding-top: 40px;
+      }
+      #fullmap.open {
+        display: flex;
+      }
+      #fullmap-title {
+        font-family: var(--ff);
+        font-size: clamp(22px, 4vw, 40px);
+        font-weight: 900;
+        letter-spacing: 6px;
+        color: #fff;
+        margin-bottom: 6px;
+        text-align: center;
+      }
+      #fullmap-sub {
+        font-family: var(--fm);
+        font-size: 8px;
+        letter-spacing: 5px;
+        color: rgba(255, 200, 100, 0.4);
+        margin-bottom: 24px;
+        text-align: center;
+      }
+      #fullmap-canvas {
+        border: 1px solid rgba(255, 200, 100, 0.15);
+        border-radius: 4px;
+        display: block;
+        max-width: 90vw;
+        max-height: 62vh;
+      }
+      #fullmap-legend {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-top: 12px;
+      }
+      .fm-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-family: var(--fm);
+        font-size: 8px;
+        letter-spacing: 2px;
+        color: rgba(255, 255, 255, 0.5);
+      }
+      .fm-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      #fullmap-close {
+        position: absolute;
+        top: 14px;
+        right: 22px;
+        background: none;
+        border: none;
+        font-family: var(--fm);
+        font-size: 8.5px;
+        letter-spacing: 3px;
+        color: rgba(255, 255, 255, 0.35);
+        transition: color 0.15s;
+      }
+      #fullmap-close:hover {
+        color: #fff;
+      }
+      #fullmap-vc {
+        font-family: var(--fm);
+        font-size: 8px;
+        letter-spacing: 4px;
+        color: rgba(255, 200, 100, 0.5);
+        margin-top: 6px;
+      }
     </style>
   </head>
   <body>
@@ -1274,6 +1357,9 @@
       </button>
       <button class="hb" id="mute-btn" onclick="doMute()">🔊</button>
       <button class="hb" onclick="openJourney()">📖 JOURNEY</button>
+      <button class="hb" onclick="toggleFullMap()" title="Full Map [M]">
+        🗺 MAP
+      </button>
       <button
         class="hb"
         onclick="document.getElementById('contact').classList.add('vis')"
@@ -1291,7 +1377,7 @@
     <div id="ctrl-hint">
       <span class="ck">W/S</span> DRIVE &nbsp;<span class="ck">A/D</span> STEER
       &nbsp;<span class="ck">E</span> ENTER &nbsp;<span class="ck">T</span>
-      WEATHER
+      WEATHER &nbsp;<span class="ck">M</span> MAP
     </div>
     <div id="grip-hud">
       <span id="grip-icon">🌧️</span><span id="grip-label">GRIP</span>
@@ -1387,6 +1473,18 @@
         </div>
       </div>
     </div>
+    <!-- ── P8: FULL MAP OVERLAY ── -->
+    <div id="fullmap">
+      <button id="fullmap-close" onclick="closeFullMap()">× CLOSE MAP</button>
+      <div id="fullmap-title">TEMPLE CITY MAP</div>
+      <div id="fullmap-sub">
+        ADITYA SRIVASTAVA · BACKEND ARCHITECT · 12 SYSTEMS
+      </div>
+      <canvas id="fullmap-canvas" width="900" height="540"></canvas>
+      <div id="fullmap-vc"></div>
+      <div id="fullmap-legend"></div>
+    </div>
+
     <div id="joy-zone">
       <div id="joy-outer"><div id="joy-inner"></div></div>
     </div>
@@ -1444,8 +1542,13 @@
         window.CITY_DATA.buildings.forEach((b) => {
           const mx = (b.pos[0] / 100 + 0.5) * W,
             mz = (b.pos[1] / 100 + 0.5) * H;
-          mmCtx.fillStyle = (b.glowColor || "#888") + "99";
-          mmCtx.fillRect(mx - 2, mz - 2, 5, 5);
+          mmCtx.fillStyle = (b.glowColor || "#888") + "cc";
+          mmCtx.fillRect(mx - 3, mz - 3, 6, 6);
+          // Building name dot glow
+          mmCtx.fillStyle = (b.glowColor || "#888") + "44";
+          mmCtx.beginPath();
+          mmCtx.arc(mx, mz, 5, 0, Math.PI * 2);
+          mmCtx.fill();
         });
         const cmx = (cx / 100 + 0.5) * W,
           cmz = (cz / 100 + 0.5) * H;
@@ -1512,6 +1615,8 @@
       function closeSP() {
         document.getElementById("side-panel").classList.remove("open");
         document.body.classList.remove("panel-open");
+        if (typeof CityEngine !== "undefined" && CityEngine.resetCamera)
+          CityEngine.resetCamera();
       }
       function eduPanel(b, col) {
         return `<div class="p-badge" style="color:${col};border-color:${col}44;background:${col}0d">🎓 EDUCATION · ${b.year}</div><div class="p-line" style="background:linear-gradient(90deg,${col},transparent)"></div><div class="p-name">${b.name}</div><div class="p-sub">${b.subtitle}</div><div class="p-stat op"><div class="sdot"></div>COMPLETED</div><div class="mets">${b.metrics.map((m) => `<div class="met"><span class="mv" style="color:${col}">${m.v}</span><div class="ml">${m.l}</div></div>`).join("")}</div><div class="sl" style="color:${col}">ACADEMIC JOURNEY</div><div class="story">${b.story.replace(/\n/g, "<br>").replace(/<em>(.*?)<\/em>/g, `<em style="color:${col};font-style:normal;font-weight:600">$1</em>`)}</div><div class="out-box" style="border-color:${col}44"><div class="out-l">OUTCOME</div><div class="out-t">${b.outcome}</div></div><div class="ttags">${b.tech.map((t) => `<span class="ttag" style="border-color:${col}22;color:${col}88;background:${col}08">${t}</span>`).join("")}</div>`;
@@ -1655,7 +1760,11 @@
         if (e.code === "KeyE" && typeof CityEngine !== "undefined")
           CityEngine.enterNearestBuilding();
         if (e.key === "j" || e.key === "J") openJourney();
-        if (e.key === "Escape") closeSP();
+        if (e.key === "m" || e.key === "M") toggleFullMap();
+        if (e.key === "Escape") {
+          closeSP();
+          closeFullMap();
+        }
         if (e.code === "KeyT") doWeather();
       });
       const oH = [];
@@ -1699,6 +1808,192 @@
         }
         msgs.scrollTop = msgs.scrollHeight;
       }
+      // ── P8: FULL MAP ─────────────────────────────────────────────────────────
+      const _visitedBuildings = new Set();
+      function toggleFullMap() {
+        const fm = document.getElementById("fullmap");
+        if (fm.classList.contains("open")) {
+          closeFullMap();
+        } else {
+          openFullMap();
+        }
+      }
+      function openFullMap() {
+        const fm = document.getElementById("fullmap");
+        fm.classList.add("open");
+        drawFullMap();
+        // Live refresh while map is open (tracks car movement)
+        window._mapInterval = setInterval(() => {
+          if (fm.classList.contains("open")) drawFullMap();
+        }, 200);
+      }
+      function closeFullMap() {
+        document.getElementById("fullmap").classList.remove("open");
+        if (window._mapInterval) {
+          clearInterval(window._mapInterval);
+          window._mapInterval = null;
+        }
+      }
+
+      function drawFullMap() {
+        const fmc = document.getElementById("fullmap-canvas");
+        const ctx = fmc.getContext("2d");
+        const W = 900,
+          H = 560;
+        ctx.clearRect(0, 0, W, H);
+        // Background
+        ctx.fillStyle = "rgba(12,6,2,1)";
+        ctx.fillRect(0, 0, W, H);
+        // Grid lines
+        ctx.strokeStyle = "rgba(255,200,100,.06)";
+        ctx.lineWidth = 1;
+        for (let x = 0; x < W; x += 50) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, H);
+          ctx.stroke();
+        }
+        for (let y = 0; y < H; y += 50) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(W, y);
+          ctx.stroke();
+        }
+
+        // World to map: world is -95..95 X, -88..65 Z
+        const wx1 = -95,
+          wx2 = 95,
+          wz1 = -88,
+          wz2 = 65;
+        function wm(wx, wz) {
+          return [
+            ((wx - wx1) / (wx2 - wx1)) * W * 0.9 + W * 0.05,
+            ((wz - wz1) / (wz2 - wz1)) * H * 0.9 + H * 0.05,
+          ];
+        }
+
+        // Roads
+        const roads = [
+          [-90, 0, 90, 0],
+          [-90, -14, 90, -14],
+          [-90, 42, 90, 42],
+          [-45, -62, 45, -62],
+          [0, -80, 0, 65],
+          [-45, -14, -45, 42],
+          [45, -14, 45, 42],
+          [-58, -14, -58, 42],
+          [58, -14, 58, 42],
+          [-90, 24, 90, 24],
+          [-90, -38, 90, -38],
+        ];
+        ctx.strokeStyle = "rgba(170,90,50,.6)";
+        ctx.lineWidth = 3;
+        roads.forEach(([x1, z1, x2, z2]) => {
+          const [mx1, my1] = wm(x1, z1),
+            [mx2, my2] = wm(x2, z2);
+          ctx.beginPath();
+          ctx.moveTo(mx1, my1);
+          ctx.lineTo(mx2, my2);
+          ctx.stroke();
+        });
+
+        // Water channels
+        ctx.strokeStyle = "rgba(50,140,200,.8)";
+        ctx.lineWidth = 4;
+        [
+          [-3, -70, -3, 60],
+          [3, -70, 3, 60],
+        ].forEach(([x1, z1, x2, z2]) => {
+          const [mx1, my1] = wm(x1, z1),
+            [mx2, my2] = wm(x2, z2);
+          ctx.beginPath();
+          ctx.moveTo(mx1, my1);
+          ctx.lineTo(mx2, my2);
+          ctx.stroke();
+        });
+
+        // Buildings
+        const blds = window.CITY_DATA ? window.CITY_DATA.buildings : [];
+        const legend = document.getElementById("fullmap-legend");
+        legend.innerHTML = "";
+        blds.forEach((b, i) => {
+          const [mx, my] = wm(b.pos[0], b.pos[1]);
+          const gc = b.glowColor || "#888";
+          const visited = document
+            .getElementById("dot-" + b.id)
+            ?.classList.contains("visited");
+          // Outer glow ring
+          ctx.shadowColor = gc;
+          ctx.shadowBlur = visited ? 18 : 6;
+          ctx.fillStyle = gc + (visited ? "ff" : "66");
+          ctx.beginPath();
+          ctx.arc(mx, my, visited ? 9 : 6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+          // Inner dot
+          ctx.fillStyle = visited ? "#fff" : gc;
+          ctx.beginPath();
+          ctx.arc(mx, my, visited ? 5 : 3, 0, Math.PI * 2);
+          ctx.fill();
+          // Name label
+          ctx.fillStyle = visited ? "#ffffff" : "rgba(255,255,255,0.55)";
+          ctx.font =
+            (visited ? "bold " : "") + "10px 'Share Tech Mono',monospace";
+          ctx.fillText(b.name, mx + 11, my + 4);
+          // Legend item
+          const li = document.createElement("div");
+          li.className = "fm-item";
+          li.innerHTML = `<span class="fm-dot" style="background:${gc}"></span>${b.name}`;
+          legend.appendChild(li);
+        });
+
+        // Car position — use real carX/carZ from engine
+        if (typeof CityEngine !== "undefined" && CityEngine.carX != null) {
+          const cx = CityEngine.carX,
+            cz = CityEngine.carZ;
+          const ang = CityEngine.carAngle || 0;
+          const [cmx, cmy] = wm(cx, cz);
+          // Draw car as arrow
+          ctx.save();
+          ctx.translate(cmx, cmy);
+          ctx.rotate(ang);
+          ctx.fillStyle = "#ff3300";
+          ctx.shadowColor = "#ff6600";
+          ctx.shadowBlur = 14;
+          ctx.beginPath();
+          ctx.moveTo(0, -9);
+          ctx.lineTo(6, 6);
+          ctx.lineTo(-6, 6);
+          ctx.closePath();
+          ctx.fill();
+          ctx.shadowBlur = 0;
+          ctx.restore();
+          ctx.fillStyle = "#fff";
+          ctx.font = "bold 9px 'Share Tech Mono',monospace";
+          ctx.textAlign = "center";
+          ctx.fillText("YOU", cmx, cmy + 18);
+          ctx.textAlign = "left";
+        }
+
+        // Compass
+        const [ncx, ncy] = wm(0, -80);
+        ctx.fillStyle = "rgba(255,200,100,.6)";
+        ctx.font = "bold 13px 'Barlow Condensed',sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("N", W * 0.05 + 10, H * 0.05 + 14);
+        ctx.textAlign = "left";
+
+        // Visited count
+        const visited = document.querySelectorAll(".mm-dot.visited").length;
+        const vc =
+          document.getElementById("fullmap-vc") ||
+          document.createElement("div");
+        vc.id = "fullmap-vc";
+        vc.textContent = visited + " / " + blds.length + " TEMPLES VISITED";
+        if (!document.getElementById("fullmap-vc"))
+          document.getElementById("fullmap").appendChild(vc);
+      }
+
       window.CityUI = {
         openBuilding,
         showNotification,
@@ -1708,6 +2003,18 @@
         onWeatherChange,
       };
     </script>
+    <!-- ── P8: FULL MAP ── -->
+    <div id="fullmap">
+      <button id="fullmap-close" onclick="closeFullMap()">× CLOSE MAP</button>
+      <div id="fullmap-title">TEMPLE CITY MAP</div>
+      <div id="fullmap-sub">
+        ADITYA SRIVASTAVA · BACKEND ARCHITECT · 12 SYSTEMS
+      </div>
+      <canvas id="fullmap-canvas" width="900" height="560"></canvas>
+      <div id="fullmap-visited-count"></div>
+      <div id="fullmap-legend"></div>
+    </div>
+
     <script src="city-engine.js"></script>
     <script>
       "use strict";
@@ -1731,18 +2038,18 @@
       });
       const ppGlow = document.getElementById("pp-glow");
       const ZONE_COLORS = {
-        "auth-tower": "rgba(0,200,255,0.07)",
-        "api-forge": "rgba(125,255,79,0.065)",
-        "cloud-district": "rgba(0,200,255,0.06)",
-        "the-bridge": "rgba(77,212,255,0.06)",
-        "data-vaults": "rgba(255,204,68,0.065)",
-        ledgerflow: "rgba(255,107,0,0.065)",
-        monolith: "rgba(255,107,0,0.06)",
-        "arch-quarter": "rgba(192,132,252,0.065)",
-        "survey-bridge": "rgba(77,212,255,0.06)",
-        movepulse: "rgba(255,153,80,0.065)",
-        "univ-allahabad": "rgba(167,139,250,0.07)",
-        "mpg-college": "rgba(52,211,153,0.065)",
+        "surya-dwara": "rgba(0,200,255,0.08)",
+        "vishwakarma-shala": "rgba(125,255,79,0.07)",
+        "akasha-mandapa": "rgba(0,180,255,0.065)",
+        "setu-nagara": "rgba(77,255,79,0.065)",
+        "brahma-kund": "rgba(255,204,68,0.075)",
+        "lakshmi-prasad": "rgba(255,107,0,0.075)",
+        "pura-stambha": "rgba(255,120,60,0.065)",
+        "maya-sabha": "rgba(192,132,252,0.07)",
+        "jyotish-vedha": "rgba(77,212,255,0.065)",
+        "vayu-rath": "rgba(255,153,80,0.07)",
+        "saraswati-vihar": "rgba(167,139,250,0.075)",
+        "gurukul-ashram": "rgba(52,211,153,0.07)",
       };
       let lastGlowId = null;
       function updateGlowOverlay() {
@@ -1754,8 +2061,8 @@
         if (newId !== lastGlowId) {
           lastGlowId = newId;
           const col = pb
-            ? ZONE_COLORS[pb.id] || "rgba(255,160,80,0.05)"
-            : "rgba(255,160,80,0.05)";
+            ? ZONE_COLORS[pb.id] || "rgba(255,200,80,0.06)"
+            : "rgba(255,200,80,0.06)";
           ppGlow.style.background = `radial-gradient(ellipse 78% 68% at 50% 52%,${col} 0%,transparent 68%)`;
         }
         requestAnimationFrame(updateGlowOverlay);

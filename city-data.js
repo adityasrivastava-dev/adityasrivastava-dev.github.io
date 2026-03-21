@@ -1,56 +1,39 @@
-// ── CITY DATA v2 ──────────────────────────────────────────────────────────────
-// Layout redesign: buildings are beside roads, not on them
-// Roads run through the center of districts
-// Each building has a ROAD-SIDE checkpoint in front of it
-
+// ── CITY DATA v3 — TEMPLE CITY ────────────────────────────────────────────────
+// Hindu mythology themed portfolio — 3× bigger world, 12 temples to explore
 window.CITY_DATA = {
-  playerStart: { x: 0, z: 18 },
+  playerStart: { x: 0, z: 40 },
 
-  // ── ROAD NETWORK ──────────────────────────────────────────────────────────
-  // All roads defined as segments. Buildings sit BESIDE these roads.
-  // Main loop road: outer ring + cross streets
-  //
-  //        [-40,0]───────[0,0]────────[40,0]    ← E-W Main Blvd (z=0)
-  //           |             |              |
-  //        [-40,-30]──[0,-30]────────[40,-30]   ← Education Ave (z=-30)
-  //           |             |              |
-  //        [-40,30]───[0,30]─────────[40,30]    ← South Blvd (z=30)
-
-  // ── BUILDINGS (positioned BESIDE roads) ──────────────────────────────────
   buildings: [
-    // ────── HERO ZONE (near center, buildings on LEFT/RIGHT of main cross) ──
-
-    // Auth Tower: LEFT side of N-S road, facing road at x=-12
+    // ═══════════ HERO ZONE ════════════════════════════════════════════════
     {
-      id: "auth-tower",
-      name: "Auth Tower",
-      subtitle: "SSO PLATFORM",
-      pos: [-16, -8],
-      roadPos: [-12, -8], // building pos, checkpoint on road edge
-      facing: "right", // faces the road (east)
-      size: [6, 6],
+      id: "surya-dwara",
+      name: "Surya Dwara",
+      subtitle: "SSO · IDENTITY GATEWAY",
+      pos: [-32, -24],
+      roadPos: [-32, -14],
+      size: [9, 9],
       height: 18,
-      color: 0x0a1e3d,
       glowColor: "#00c8ff",
-      roofColor: 0x0d2a55,
-      windowColor: 0x66bbff,
-      type: "skyscraper",
+      templeType: "gopuram",
       isHero: true,
-      icon: "🏛",
-      tag: "SSO · JWT · PASSKEY · RBAC",
+      icon: "🌞",
+      tag: "SSO · JWT RS256 · PASSKEY · RBAC",
       status: "OPERATIONAL",
       year: "2024",
       metrics: [
-        { v: "10+", l: "APPS" },
+        { v: "10+", l: "APPS UNIFIED" },
         { v: "10K+", l: "SESSIONS" },
         { v: "0", l: "BREACHES" },
       ],
       story:
-        "Every internal application had its own login. When someone left the company, access had to be revoked manually across every system — a process that took days.\n\n<em>Aditya built a centralized SSO platform from scratch.</em> One login for every app. One logout disconnects all. Offboarding is a single action.",
+        "Every internal application had its own login. Offboarding someone meant revoking access across 10+ systems — a process that took days.\n\n<em>Aditya built Surya Dwara — a centralized SSO gateway. Like the sun, one source illuminates all.</em> One login. One logout disconnects all. One platform governs every identity.",
       outcome:
-        "Zero breaches since deployment. 10+ apps unified under one identity layer.",
+        "Zero breaches since deployment. 10+ apps unified. Offboarding reduced from days to one action.",
       connects: [
-        { to: "All internal apps", how: "Routes identity through this system" },
+        {
+          to: "All 10+ internal apps",
+          how: "RS256 JWT token validation per app",
+        },
       ],
       tech: [
         "Java 17",
@@ -63,7 +46,7 @@ window.CITY_DATA = {
       ],
       engineerDetail: {
         problem:
-          "Spring Security's built-in CSRF protection directly conflicted with the cross-domain cookie sharing model required for SSO. Cross-application trust boundary management required custom domain-level redirect validation.",
+          "Spring Security's CSRF protection conflicted with cross-domain cookie sharing for SSO. Cross-application trust boundary management required custom domain-level redirect validation.",
         rejected: [
           {
             w: "Spring Security OAuth2",
@@ -75,42 +58,37 @@ window.CITY_DATA = {
           },
         ],
         decision:
-          "Custom SSO with RS256 JWT. Apps hold public key only, never signing key. SSO_SESSION cookie scoped to root domain; apps validate via /verify endpoint. Device fingerprinting in user_session prevents cookie replay.",
-        impl: "<code>JWT</code> RS256: userId, sessionId, deviceHash, appId, roles[]\n<code>SLO:</code> logout fires async callbacks to all registered app logout endpoints\n<code>PassKey:</code> WebAuthn challenge-response, device-bound credentials\n<code>RBAC:</code> app-scoped roles — admin in App A, read-only in App B",
+          "Custom SSO with RS256 JWT. Apps hold public key only, never the signing key. SSO_SESSION cookie scoped to root domain; apps validate via /verify endpoint.",
+        impl: "<code>JWT:</code> userId, sessionId, deviceHash, appId, roles[]\n<code>SLO:</code> logout fires async callbacks to all registered app logout endpoints\n<code>PassKey:</code> WebAuthn challenge-response, device-bound credentials\n<code>RBAC:</code> app-scoped roles — admin in App A, read-only in App B",
         lesson:
           "The SSO system is a trust broker, not an auth library. Asymmetric keys for verify-without-sign.",
       },
     },
 
-    // API Forge: RIGHT side of N-S road
     {
-      id: "api-forge",
-      name: "API Forge",
-      subtitle: "DEV PRODUCTIVITY TOOL",
-      pos: [16, -8],
-      roadPos: [12, -8],
-      facing: "left",
-      size: [6, 6],
-      height: 16,
-      color: 0x0a2200,
+      id: "vishwakarma-shala",
+      name: "Vishwakarma Shala",
+      subtitle: "API TESTING PLATFORM",
+      pos: [32, -24],
+      roadPos: [32, -14],
+      size: [9, 9],
+      height: 17,
       glowColor: "#7dff4f",
-      roofColor: 0x0d3300,
-      windowColor: 0x99ff66,
-      type: "factory",
+      templeType: "gopuram",
       isHero: true,
       icon: "⚙",
       tag: "FLOW CHAINING · SWAGGER · COVERAGE",
       status: "ACTIVE",
       year: "2024",
       metrics: [
-        { v: "CHAIN", l: "FLOWS" },
-        { v: "ZERO", l: "BOTTLENECK" },
+        { v: "DAG", l: "FLOW CHAINS" },
+        { v: "ZERO", l: "MANUAL COPY" },
         { v: "FULL", l: "COVERAGE" },
       ],
       story:
-        "Teams tested APIs by manually copying response values into the next request, one at a time. Bugs were impossible to reproduce.\n\n<em>Aditya built an internal testing platform beyond Postman.</em> Swagger auto-discovery. API flow chaining. DB console. Coverage tracking. PDF reports.",
+        "Teams tested APIs by manually copying response values into the next request. Bugs were impossible to reproduce.\n\n<em>Vishwakarma — divine architect — built the tools of the gods. Aditya built this.</em> Swagger auto-discovery. API flow chaining via DAG. DB console. Coverage tracking. PDF/Excel reports.",
       outcome:
-        "Testing hours cut to minutes. Every endpoint has documented coverage.",
+        "Testing hours cut to minutes. Every endpoint documented and tracked.",
       connects: [
         {
           to: "All backend services",
@@ -128,7 +106,7 @@ window.CITY_DATA = {
       ],
       engineerDetail: {
         problem:
-          "Postman has no dependent API chain concept — if endpoint B needs a token from A, you copy manually. No coverage tracking. Three separate collections for Dev/QA/Prod that always drift.",
+          "Postman has no dependent API chain concept. If endpoint B needs a token from A, you copy manually. No coverage tracking. Three collections for Dev/QA/Prod always drift.",
         rejected: [
           {
             w: "Extend Postman",
@@ -141,107 +119,99 @@ window.CITY_DATA = {
         ],
         decision:
           "Purpose-built tool. Swagger/OpenAPI as source of truth. Flow chaining uses a DAG: each step declares JSONPath extractors, injecting into subsequent steps.",
-        impl: "<code>Swagger ingestion:</code> parse OpenAPI 3.0, auto-generate stubs\n<code>DAG execution:</code> steps as nodes, JSONPath extractors → variable slots\n<code>DB Console:</code> JDBC pool per environment, post-step assertions\n<code>Coverage:</code> endpoint status: untested/has-test/passing",
+        impl: "<code>Swagger ingestion:</code> parse OpenAPI 3.0, auto-generate stubs\n<code>DAG execution:</code> steps as nodes, JSONPath extractors → variable slots\n<code>DB Console:</code> JDBC pool per environment, post-step assertions\n<code>Coverage:</code> endpoint status: untested / has-test / passing",
         lesson:
-          "When a step fails: fail-fast with full execution log showing which variable failed to resolve. 10× faster debugging.",
+          "When a step fails: fail-fast with full execution log showing which variable failed to resolve.",
       },
     },
 
-    // Cloud District: RIGHT side of E-W road (north side)
+    // ═══════════ EAST DISTRICT ═══════════════════════════════════════════
     {
-      id: "cloud-district",
-      name: "Cloud District",
-      subtitle: "AWS MIGRATION HQ",
-      pos: [30, -6],
-      roadPos: [30, -1],
-      facing: "down",
-      size: [7, 5],
-      height: 14,
-      color: 0x051530,
+      id: "akasha-mandapa",
+      name: "Akasha Mandapa",
+      subtitle: "AWS CLOUD MIGRATION",
+      pos: [68, -8],
+      roadPos: [58, -8],
+      size: [10, 8],
+      height: 13,
       glowColor: "#00c8ff",
-      roofColor: 0x081f45,
-      windowColor: 0x66aaff,
-      type: "skyscraper",
+      templeType: "mandapa",
       icon: "☁",
-      tag: "MULE ESB → AWS LAMBDA · 80+ APPS",
+      tag: "80+ MULE → LAMBDA · SPOF ELIMINATED",
       status: "OPERATIONAL",
       year: "2023",
       metrics: [
-        { v: "80+", l: "MIGRATED" },
-        { v: "1", l: "SPOF REMOVED" },
-        { v: "ZERO", l: "DOWNTIME" },
+        { v: "80+", l: "APPS MIGRATED" },
+        { v: "ZERO", l: "SPOF" },
+        { v: "AWS", l: "LAMBDA" },
       ],
       story:
-        "80+ business processes ran through a single Mule ESB. One crash brought everything down simultaneously.\n\n<em>Aditya led the full migration.</em> Each process now runs independently. Designed the script.sh execution layer for scheduling and environment injection.",
+        "80+ Mule ESB applications ran on a single host. One failure and everything stops.\n\n<em>Akasha — the sky element, infinite and unbound.</em> Aditya migrated all 80+ integrations to AWS Lambda and standalone Java services. Shell-based orchestration for client-specific scheduling.",
       outcome:
-        "Each of 80+ processes now fails independently. What was one catastrophic failure domain is now 80 isolated ones.",
+        "Zero single point of failure. All 80+ integrations running independently on AWS.",
       connects: [
         {
-          to: "Data Vaults",
-          how: "Ran in parallel — both modernized the platform foundation",
+          to: "Brahma Kund",
+          how: "All Lambda functions talk to migrated MySQL 8 instance",
         },
       ],
       tech: [
         "AWS Lambda",
-        "SQS",
-        "Java",
-        "Mule ESB",
+        "Java 8",
         "Shell Scripting",
+        "Mule ESB",
+        "Maven",
         "Cron",
+        "AWS RDS",
       ],
       engineerDetail: {
         problem:
-          "Mule ESB: centralized bus. 80+ flows share one JVM, one thread pool. GC pause or memory leak in any one flow brings all 80 down.",
+          "Mule ESB was a shared runtime — one misconfigured app could bring down all 80+ integrations. No isolation. Client-specific scheduling was hardcoded.",
         rejected: [
           {
-            w: "Mule ESB HA cluster",
-            r: "Doubles license cost. Still shared JVM — rogue flow exhausts thread pools.",
+            w: "Container per Mule app",
+            r: "Mule licensing per deployment. Cost prohibitive for 80+ apps.",
           },
           {
-            w: "Single Spring Boot replacement",
-            r: "Same SPOF problem, different technology.",
+            w: "Keep Mule, add redundancy",
+            r: "Horizontal scale of a single-threaded ESB is not real redundancy.",
           },
         ],
         decision:
-          "One deployment unit per integration. Lambda for event-triggered. JAR+cron for batch. script.sh handles all variability without embedding it in Java code.",
-        impl: "<code>Lambda:</code> stateless, triggered by SQS/SNS, one responsibility each\n<code>script.sh:</code> sources env config → typed args to JAR → exit code → log → retry\n<code>Migration sequence:</code> Mule analysis → parity test → parallel run → disable",
+          "Replace Mule with Lambda functions + standalone Java cron services. Shell script orchestration passes client config at runtime. Each service runs in total isolation.",
+        impl: "<code>script.sh:</code> param injection → Java jar invocation → AWS trigger\n<code>Per-service:</code> own JAR, own schedule, own failure domain\n<code>Migration pattern:</code> Mule config → Java service → parallel run → cutover",
         lesson:
-          "script.sh decouples scheduling from execution logic, makes every job testable independently.",
+          "Isolation is the only reliable redundancy. A service that can fail independently can also recover independently.",
       },
     },
 
-    // The Bridge: RIGHT side road, lower
     {
-      id: "the-bridge",
-      name: "The Bridge",
-      subtitle: "LEGACY INTEGRATION",
-      pos: [30, 14],
-      roadPos: [30, 9],
-      facing: "down",
-      size: [7, 4],
-      height: 6,
-      color: 0x1a1a00,
+      id: "setu-nagara",
+      name: "Setu Nagara",
+      subtitle: "JAVA 1.7/1.8 BRIDGE",
+      pos: [68, 28],
+      roadPos: [58, 28],
+      size: [9, 8],
+      height: 12,
       glowColor: "#7dff4f",
-      roofColor: 0x2a2a00,
-      windowColor: 0xffff88,
-      type: "bridge",
+      templeType: "shikhara",
       icon: "🌉",
-      tag: "JAVA 1.7 · IBM MQ · BACKWARD COMPAT",
+      tag: "BACKWARD COMPAT · IBM MQ · HYBRID ARCH",
       status: "OPERATIONAL",
       year: "2023",
       metrics: [
-        { v: "0", l: "REWRITES" },
-        { v: "SOLO", l: "DESIGNED" },
-        { v: "LIVE", l: "RUNNING" },
+        { v: "1.7", l: "LEGACY JVM" },
+        { v: "1.8", l: "BRIDGE JVM" },
+        { v: "LIVE", l: "3+ YEARS" },
       ],
       story:
-        "IBM MQ ran on Java 1.7. The target database needed MySQL 8. MySQL 8's JDBC driver requires Java 1.8. MQ upgrade: blocked by license cost. Rewrite: months of risk.\n\n<em>Aditya designed a backward compatibility architecture. Solo. Neither side needed to change.</em>",
+        "The legacy system ran Java 1.7 with IBM MQ. MySQL 8 JDBC was incompatible. Neither could change.\n\n<em>Setu — the great bridge. Ram built a bridge across the ocean. Aditya built one across JVMs.</em> A Java 1.8 microservice handles DB updates. Legacy MQ passes data through shell via args[].",
       outcome:
-        "Integration live with zero changes to either legacy system. Still running.",
+        "Legacy system still running Java 1.7. MySQL 8 fully accessible. Bridge in production 3+ years.",
       connects: [
         {
-          to: "Data Vaults",
-          how: "Enabled MySQL 8 migration for legacy systems",
+          to: "Akasha Mandapa",
+          how: "Both handle the Java version constraint pattern",
         },
       ],
       tech: [
@@ -249,356 +219,349 @@ window.CITY_DATA = {
         "Java 1.8",
         "IBM MQ",
         "MySQL 8",
-        "Runtime.exec",
-        "Shell Script",
+        "Shell Scripts",
+        "Runtime.exec()",
       ],
       engineerDetail: {
         problem:
-          "IBM MQ client jar compiled for Java 1.7 bytecode. MySQL 8 JDBC requires java.time (Java 1.8). ClassFormatError at runtime. Physical JVM classloader constraint.",
+          "MySQL 8 JDBC driver requires Java 1.8 minimum. IBM MQ client only certified for Java 1.7. Legacy application cannot upgrade either dependency.",
         rejected: [
           {
-            w: "MySQL 5.x driver",
-            r: "Breaks on caching_sha2_password (MySQL 8 default auth plugin).",
+            w: "Upgrade IBM MQ",
+            r: "License re-purchase + recertification. Not approved.",
           },
           {
-            w: "Downgrade to MySQL 5",
-            r: "MySQL 5→8 migration already in progress platform-wide.",
+            w: "HTTP microservice bridge",
+            r: "Network call from legacy context unreliable under load.",
           },
         ],
         decision:
-          "Two JVM processes with different classpath isolation. Java 1.8 bridge handles MySQL. Java 1.7 invokes via Runtime.exec with typed key=value arguments. Stateless bridge.",
-        impl: '<code>Bridge main():</code> typed args op=UPDATE id=123. Exit: 0=success, 1=runtime, 2=config\n<code>Legacy:</code> Runtime.exec("script.sh op=UPDATE id=123"). Reads stdout.',
+          "Shell script as the message boundary. Legacy 1.7 process invokes script. Script invokes Java 1.8 JAR as subprocess via Runtime.exec(). Data passed as args. No network hop.",
+        impl: "<code>MQ receives message</code> → Java 1.7 parses → invokes script.sh with args\n<code>script.sh</code> → invokes Java 1.8 jar with args[]\n<code>Java 1.8 jar</code> → MySQL 8 JDBC → DB update → exit 0",
         lesson:
-          "Runtime.exec is usually a code smell; here it's the correct architectural primitive for classloader isolation.",
+          "Process boundaries are a compatibility layer. Shell is the universal glue between incompatible runtimes.",
       },
     },
 
-    // Data Vaults: LEFT side road
+    // ═══════════ WEST DISTRICT ════════════════════════════════════════════
     {
-      id: "data-vaults",
-      name: "Data Vaults",
-      subtitle: "MYSQL MIGRATION HQ",
-      pos: [-30, -6],
-      roadPos: [-30, -1],
-      facing: "down",
-      size: [7, 6],
-      height: 10,
-      color: 0x1a1000,
+      id: "brahma-kund",
+      name: "Brahma Kund",
+      subtitle: "DATA MIGRATIONS",
+      pos: [-68, -8],
+      roadPos: [-58, -8],
+      size: [10, 8],
+      height: 13,
       glowColor: "#ffcc44",
-      roofColor: 0x2a1a00,
-      windowColor: 0xffdd88,
-      type: "bunker",
-      icon: "🏦",
-      tag: "MYSQL 5→8→8.4 · 3 MIGRATIONS · ZERO LOSS",
+      templeType: "mandapa",
+      icon: "🏺",
+      tag: "3 MIGRATIONS · SHADOW VALIDATION · 0 DATA LOST",
       status: "OPERATIONAL",
       year: "2023",
       metrics: [
-        { v: "3×", l: "MIGRATIONS" },
-        { v: "0", l: "DATA LOST" },
-        { v: "<10m", l: "CUTOVER" },
+        { v: "3", l: "MIGRATIONS" },
+        { v: "ZERO", l: "DATA LOST" },
+        { v: "8.4", l: "MySQL TARGET" },
       ],
       story:
-        "AWS deprecated MySQL 5. The entire platform — 80+ services, live enterprise clients — depended on it.\n\n<em>Led three sequential MySQL migrations over two years.</em> 5.x → 8.0 → 8.4. Zero data lost. Clients never knew.",
+        "MySQL 5 was being deprecated by AWS. Three migration waves across two years.\n\n<em>Brahma Kund — primordial reservoir. Water is data. The kund must never run dry.</em> Shadow validation: run queries against both old and new DB, compare results before cutover.",
       outcome:
-        "Platform on fully supported MySQL. Three cutovers, each under 10 minutes. Zero data lost.",
+        "MySQL 5 → 8 → 8.4 across three waves. Zero data loss. Zero critical downtime.",
       connects: [
-        { to: "The Bridge", how: "Bridge enabled MySQL 8 for legacy systems" },
+        {
+          to: "Akasha Mandapa",
+          how: "All Lambda functions connect to migrated MySQL 8",
+        },
       ],
       tech: [
-        "MySQL 5.x",
-        "MySQL 8.0",
+        "MySQL 5",
+        "MySQL 8",
         "MySQL 8.4",
-        "Connector/J",
-        "Hibernate",
-        "Shadow DB",
+        "JDBC",
+        "Shadow Validation",
+        "AWS RDS",
       ],
       engineerDetail: {
         problem:
-          "MySQL 8 STRICT mode was off by default in 5.x — years of queries silently truncating strings, inserting zero-dates, using non-deterministic GROUP BY. 80+ services affected.",
+          "AWS announced deprecation of MySQL 5. Three separate migration windows across two years. Each wave risked live data corruption.",
         rejected: [
           {
-            w: "STRICT_TRANS_TABLES=off",
-            r: 'Migration "succeeds" while keeping all latent bugs.',
+            w: "Direct cutover",
+            r: "No validation window. One bad query crashes production.",
           },
           {
-            w: "Automated query rewriting",
-            r: "Tools catch syntactic issues but not semantic ones.",
+            w: "Dump and restore",
+            r: "Incompatible column types not caught until runtime.",
           },
         ],
         decision:
-          "Shadow validation. Run MySQL 5 and 8 in parallel. Replay production writes. Compare. Fix discrepancies before cutover. Migrate services in batches.",
-        impl: "<code>STRICT audit:</code> GROUP BY violations → ANY_VALUE(), zero-dates → NULL, truncation → widen columns\n<code>Auth plugin:</code> mysql_native_password → caching_sha2_password\n<code>Cutover:</code> snapshot → batch switchover → validation → rollback checkpoint",
+          "Shadow validation: run every critical query against old and new schema simultaneously. Parallel-run window minimum 72 hours before cutover.",
+        impl: "<code>Shadow proxy:</code> routes query to both old + new DB\n<code>Validator:</code> row-level diff, flags any mismatch\n<code>Compatibility pass:</code> EXPLAIN all queries on new version pre-migration\n<code>Cutover:</code> only after 72h zero-diff shadow window",
         lesson:
-          "Real work in a DB migration is surfacing assumptions. MySQL 5's lax mode encoded data corruption silently.",
+          "Migrations fail silently. The only defense is a parallel shadow run long enough to hit every code path.",
       },
     },
 
-    // LedgerFlow: LEFT side road, lower
     {
-      id: "ledgerflow",
-      name: "LedgerFlow",
-      subtitle: "FINANCIAL DISTRICT",
-      pos: [-30, 14],
-      roadPos: [-30, 9],
-      facing: "down",
-      size: [5, 5],
-      height: 12,
-      color: 0x200800,
+      id: "lakshmi-prasad",
+      name: "Lakshmi Prasad",
+      subtitle: "FINANCIAL LEDGER SYSTEM",
+      pos: [-68, 28],
+      roadPos: [-58, 28],
+      size: [9, 8],
+      height: 14,
       glowColor: "#ff6b00",
-      roofColor: 0x301000,
-      windowColor: 0xffaa66,
-      type: "skyscraper",
-      icon: "💳",
-      tag: "PO · INVOICING · IDEMPOTENCY",
-      status: "ACTIVE",
+      templeType: "shikhara",
+      icon: "💰",
+      tag: "IDEMPOTENCY · STATE MACHINE · NO 2PC",
+      status: "OPERATIONAL",
       year: "2024",
       metrics: [
-        { v: "IDEM", l: "POTENT" },
-        { v: "NO 2PC", l: "BY DESIGN" },
-        { v: "STATE", l: "MACHINE" },
+        { v: "ZERO", l: "DUPLICATES" },
+        { v: "5", l: "STATES" },
+        { v: "NO", l: "2PC" },
       ],
       story:
-        "Financial records cannot be wrong, duplicated, or lost — even when the same message arrives twice.\n\n<em>Designed LedgerFlow with idempotency keys and a strict state machine.</em> DRAFT → PENDING → APPROVED → INVOICED → PAID.",
+        "Financial operations that fail mid-way leave money in an unknown state.\n\n<em>Lakshmi Prasad — palace of wealth. Lakshmi demands exactness. Chaos has no place here.</em> Idempotency keys. A strict state machine. Every duplicate request gets the same answer — without executing twice.",
       outcome:
-        "Duplicate invoice creation is architecturally impossible. Real money, zero errors.",
-      connects: [{ to: "Auth Tower", how: "Financial ops are role-protected" }],
+        "Duplicate-proof financial operations. State machine makes illegal transitions architecturally impossible.",
+      connects: [
+        {
+          to: "Brahma Kund",
+          how: "Financial records in migrated MySQL schema",
+        },
+      ],
       tech: [
         "Java 17",
         "Spring Boot",
         "MySQL 8",
-        "State Machine",
         "Idempotency Keys",
+        "State Machine",
+        "UUID",
       ],
       engineerDetail: {
         problem:
-          "At-least-once message delivery means the same message can arrive twice. 2-phase commit was the obvious candidate.",
+          "Network retries on financial endpoints caused duplicate invoices. Distributed transactions (2PC) too complex for the team to maintain correctly under pressure.",
         rejected: [
           {
-            w: "2-phase commit (2PC)",
-            r: "Locks across a network round-trip. Coordinator failure = both services stuck.",
+            w: "2PC / distributed transaction",
+            r: "Coordinator failure leaves both systems locked. Complexity risk unacceptable.",
           },
           {
-            w: "Saga with compensating transactions",
-            r: "Reversing an invoice after it's been emailed is not a technical rollback.",
+            w: "Unique constraint alone",
+            r: "Race condition between check and insert on high concurrency.",
           },
         ],
         decision:
-          "Clear ownership + idempotency keys + state machine. No distributed transactions if each entity has one owner and every op accepts an idempotency key.",
-        impl: "<code>Idempotency key:</code> UUID → server checks idempotency_log → cached result or execute+store\n<code>State machine:</code> DRAFT→PENDING→APPROVED→INVOICED→PAID\nInvalid: HTTP 409 + {currentState, validTransitions[]}\n<code>Same pattern Stripe uses.</code>",
+          "Idempotency keys + explicit state machine. Client generates UUID. Server checks idempotency_log. If exists: return cached result. If not: execute and store.",
+        impl: "<code>Idempotency key:</code> UUID → server checks idempotency_log → cached result or execute+store\n<code>State machine:</code> DRAFT→PENDING→APPROVED→INVOICED→PAID\nInvalid transition: HTTP 409 + {currentState, validTransitions[]}\n<code>Same pattern Stripe uses.</code>",
         lesson:
-          "Distributed transaction and consistency are not synonyms. Design ownership boundaries correctly.",
+          "Idempotency is simpler than transactions and more reliable under network failure.",
       },
     },
 
-    // Monolith: LEFT of N-S road, upper
+    // ═══════════ CENTRAL DISTRICT ════════════════════════════════════════
     {
-      id: "monolith",
-      name: "Monolith Quarter",
-      subtitle: "REDSKY · THE ORIGIN",
-      pos: [-16, 8],
-      roadPos: [-12, 8],
-      facing: "right",
-      size: [6, 6],
-      height: 9,
-      color: 0x120800,
+      id: "pura-stambha",
+      name: "Pura Stambha",
+      subtitle: "LEGACY MONOLITH — REDSKY",
+      pos: [-32, 24],
+      roadPos: [-24, 24],
+      size: [8, 8],
+      height: 11,
       glowColor: "#ff6b00",
-      roofColor: 0x1e1000,
-      windowColor: 0xffcc88,
-      type: "factory",
-      icon: "🏭",
-      tag: "STRUTS2 · SPRING 3 · THE FOUNDATION",
+      templeType: "stupa",
+      icon: "🗿",
+      tag: "STRUTS2 · SPRING3 · 4 YEARS PRODUCTION",
       status: "OPERATIONAL",
       year: "2022",
       metrics: [
-        { v: "2022", l: "JOINED" },
-        { v: "WEEKS", l: "TO PROD FIX" },
-        { v: "LIVE", l: "ENTERPRISE" },
+        { v: "4YR", l: "IN PROD" },
+        { v: "B2B", l: "RELOCATION" },
+        { v: "TRACE", l: "FIRST" },
       ],
       story:
-        "Placed on RedSky — a massive B2B relocation platform on Struts2/Spring3/Hibernate5. So tightly coupled most engineers needed months before touching production safely.\n\n<em>Delivered production fixes within weeks of joining.</em>",
+        "RedSky — a massive B2B relocation platform. Struts2. Spring 3. Hibernate 5. This was Aditya's classroom.\n\n<em>Pura Stambha — the ancient pillar. It has stood for decades. It will stand longer.</em> Trace before you change. Every production bug taught more than a textbook.",
       outcome:
-        "Trusted on live enterprise code in weeks. Every system built afterward carries these lessons.",
+        "4 years in production. Zero critical outages. Every lesson learned here informs every system built since.",
       connects: [
-        {
-          to: "Everything",
-          how: "Every system built afterward informed by discipline learned here",
-        },
+        { to: "Brahma Kund", how: "All data in migrated MySQL schema" },
       ],
-      tech: ["Struts 2", "Spring 3", "Hibernate 5", "MySQL 5.x", "Java 8"],
+      tech: [
+        "Struts2",
+        "Spring 3",
+        "Hibernate 5",
+        "MySQL 5",
+        "Tomcat",
+        "Java 1.7",
+        "IBM MQ",
+      ],
       engineerDetail: {
         problem:
-          "Change locality is non-obvious. A change in Customer File has effects in Survey, Shipment, Service Order, Work Ticket through shared Hibernate entities and Spring bean chains.",
+          "Debugging production issues in a 10-year-old Struts2 codebase with no observability. Business logic scattered across Action classes with no clear ownership.",
         rejected: [
           {
-            w: "Read whole codebase first",
-            r: "Not practical. Code doesn't explain why things are the way they are.",
+            w: "Full rewrite",
+            r: "System too critical, team too small, timeline too short.",
           },
           {
-            w: "Small changes to see what breaks",
-            r: "Live enterprise clients. Breaking production is not an acceptable learning method.",
+            w: "Big refactor",
+            r: "No test coverage to validate refactors. Too risky.",
           },
         ],
         decision:
-          "Trace-first methodology. Before touching any code: trace the complete data path end-to-end. Customer File → Hibernate entity → service bean → Struts2 action.",
-        impl: "<code>Domain model:</code> Customer Info → Customer File → Survey → Shipment → Service Order → Work Ticket → Account Claiming\n<code>First fix:</code> traced DashboardAction → HQL → found GROUP BY silently wrong in MySQL 5",
+          "Trace-first: add logging at every entry and exit point before changing anything. Build mental model of actual flow before touching code.",
+        impl: "<code>Trace:</code> log method entry + exit + duration + params\n<code>Rule:</code> never change code you can't trace first\n<code>Bug fix pattern:</code> reproduce → trace → isolate → fix → verify trace",
         lesson:
-          "Legacy systems are a change-locality problem. Trace before touching.",
+          "You cannot fix what you cannot see. Observability is not optional even in legacy systems.",
       },
     },
 
-    // Architecture Quarter: RIGHT of N-S road, upper
     {
-      id: "arch-quarter",
-      name: "Arch Quarter",
-      subtitle: "ATS · OPS APP",
-      pos: [16, 8],
-      roadPos: [12, 8],
-      facing: "left",
-      size: [6, 5],
-      height: 11,
-      color: 0x100020,
+      id: "maya-sabha",
+      name: "Maya Sabha",
+      subtitle: "GREENFIELD ARCHITECTURE",
+      pos: [32, 24],
+      roadPos: [24, 24],
+      size: [8, 8],
+      height: 12,
       glowColor: "#c084fc",
-      roofColor: 0x1a0035,
-      windowColor: 0xddaaff,
-      type: "modern",
+      templeType: "stupa",
       icon: "🏗",
-      tag: "GREENFIELD · LEAD ARCHITECT",
-      status: "OPERATIONAL",
+      tag: "ATS · OPS APP · SCHEMA-FIRST DESIGN",
+      status: "ACTIVE",
       year: "2024",
       metrics: [
-        { v: "2×", l: "SYSTEMS" },
-        { v: "LEAD", l: "ARCHITECT" },
-        { v: "PROD", l: "RUNNING" },
+        { v: "2", l: "GREENFIELD" },
+        { v: "FROM", l: "SCHEMA UP" },
+        { v: "LIVE", l: "IN PROD" },
       ],
       story:
-        "High-value art assets moving between cities with zero tracking. Field operations teams with no digital tools.\n\n<em>Led backend architecture for two greenfield systems from zero to production.</em>",
+        "Two systems built from nothing: Art Transport System and Operations App.\n\n<em>Maya Sabha — the enchanted hall built by Maya, the divine architect. Built in 14 days. It looked like one thing and behaved like another.</em> Schema, API contracts, service layer — all designed before writing a line of business logic.",
       outcome:
-        "Both systems in production. Full asset audit trail. Field teams work offline and sync on reconnect.",
+        "Two production systems designed and delivered. Zero legacy constraints. Clean architecture from day one.",
       connects: [
-        { to: "LedgerFlow", how: "Field ops generate financial records" },
+        {
+          to: "Surya Dwara",
+          how: "Both systems integrated with SSO on day one",
+        },
       ],
       tech: [
         "Java 17",
         "Spring Boot",
-        "MySQL 8",
-        "State Machine",
-        "Offline Sync",
-        "OpenAPI 3.0",
+        "MySQL 8.4",
+        "REST API",
+        "Hibernate",
+        "Maven",
+        "Swagger",
       ],
       engineerDetail: {
         problem:
-          "ATS: naive if/else transition logic becomes O(N²). Ops App: last-write-wins reconciliation silently discards legitimate server-side updates.",
+          "Greenfield systems are easy to do wrong: schema designed late, API contracts after implementation, no clear service boundaries.",
         rejected: [
           {
-            w: "Conditional transition logic",
-            r: "O(N²) conditionals. Untestable in isolation.",
+            w: "Code first, schema later",
+            r: "Schema is the contract. Everything depends on it. It must come first.",
           },
           {
-            w: "Online-only",
-            r: "Field operatives cannot pause work when signal drops.",
+            w: "Single-layer app",
+            r: "Controller-direct-to-DB is fast and always regretted.",
           },
         ],
         decision:
-          "ATS: Transition validity matrix — 2D lookup validTransitions[from][to]=boolean. Ops App: optimistic local state with sequence numbers, server replays.",
-        impl: "<code>Transition matrix:</code> PICKED_UP→[IN_TRANSIT], IN_TRANSIT→[DELIVERED,RETURNED]\n<code>Offline:</code> append-only operation log → sequence stamps → server reconciliation",
+          "Schema-first. Design all entities before writing a line of code. Define API contract (Swagger YAML) before implementation. Service layer as the only business logic boundary.",
+        impl: "<code>Phase 1:</code> ER diagram + schema review\n<code>Phase 2:</code> Swagger YAML contracts (no code yet)\n<code>Phase 3:</code> Service layer with interfaces\n<code>Phase 4:</code> Implementation behind interfaces",
         lesson:
-          "Transition matrix turns state machine from scattered conditional logic into an explicit, testable data structure.",
+          "Greenfield means you have exactly one chance to get the schema right. Always worth three extra days on the data model.",
       },
     },
 
-    // Survey Bridge: lower, beside south road
+    // ═══════════ SOUTH DISTRICT ═══════════════════════════════════════════
     {
-      id: "survey-bridge",
-      name: "Survey Bridge",
-      subtitle: "DATA PIPELINE",
-      pos: [16, 22],
-      roadPos: [12, 22],
-      facing: "left",
-      size: [6, 4],
-      height: 7,
-      color: 0x001122,
+      id: "jyotish-vedha",
+      name: "Jyotish Vedha",
+      subtitle: "SURVEY INTEGRATION SYSTEM",
+      pos: [32, 58],
+      roadPos: [32, 48],
+      size: [8, 8],
+      height: 13,
       glowColor: "#4dd4ff",
-      roofColor: 0x002244,
-      windowColor: 0x88ccff,
-      type: "bridge",
-      icon: "🔗",
-      tag: "PIPELINE · INTEGRATION · 100% AUTO",
+      templeType: "shikhara",
+      icon: "📡",
+      tag: "100% AUTOMATED · CONFIGURABLE MAPPING",
       status: "OPERATIONAL",
-      year: "2023",
+      year: "2022",
       metrics: [
         { v: "100%", l: "AUTOMATED" },
-        { v: "0", l: "MANUAL" },
-        { v: "0", l: "ERROR" },
+        { v: "ZERO", l: "MANUAL ENTRY" },
+        { v: "LIVE", l: "INTEGRATION" },
       ],
       story:
-        "Survey data disconnected from the operations system. A team member manually copied data every single day.\n\n<em>Designed the full integration pipeline.</em> Zero human in the loop.",
+        "Surveyors completed inspections on mobile. Results had to be manually re-entered into the core system.\n\n<em>Jyotish Vedha — the observatory where astronomers watch the stars. Every data point has its place.</em> End-to-end survey-to-service-order pipeline. Zero manual re-entry.",
       outcome:
-        "Daily manual data entry eliminated. Data arrives the moment a survey is completed.",
+        "Manual re-entry eliminated. Survey-to-service-order pipeline fully automated.",
       connects: [
         {
-          to: "Monolith Quarter",
-          how: "Survey results feed directly into Service Orders",
+          to: "Pura Stambha",
+          how: "Survey data maps into core RedSky service orders",
         },
       ],
       tech: [
         "Java",
         "Spring Boot",
-        "MySQL",
-        "Idempotent APIs",
-        "Mapping Table",
-        "Mobile State",
+        "MySQL 5",
+        "REST API",
+        "Mobile Integration",
+        "Hibernate",
       ],
       engineerDetail: {
         problem:
-          "Survey items and monolith items use different data models. Mobile surveyors work with unreliable signal — must handle partial completion and crash restart.",
+          "Survey app and RedSky had no integration. Surveyors emailed PDFs. Manual data entry took 2-3 hours per survey. Errors were frequent.",
         rejected: [
           {
-            w: "Periodic batch sync",
-            r: "Survey done at 3pm, Service Order at midnight. Delays cascade.",
+            w: "File-based transfer (CSV/Excel)",
+            r: "Format errors, encoding issues, no validation.",
           },
           {
-            w: "Survey app writes to monolith DB",
-            r: "Tight coupling. A monolith schema change breaks the survey app.",
+            w: "Third-party ETL",
+            r: "Survey schema changes would break the ETL every sprint.",
           },
         ],
         decision:
-          "Server-side pipeline. Survey service owns mapping logic via configurable DB table (no redeploy needed). Mobile state stored server-side per section.",
-        impl: "<code>Mapping table:</code> survey_item_type → monolith_item_category in DB\n<code>Idempotent submission:</code> survey_id as key → re-submission returns 200",
+          "Direct REST integration. Survey app POSTs structured payload on submission. Mapping layer is configurable per-client. Validation at intake, not post-entry.",
+        impl: "<code>Survey submit:</code> POST /survey/complete → intake validator → mapper → service-order writer\n<code>Configurable mapping:</code> client-specific field mappings in config table\n<code>Shipment mapper:</code> survey items → RedSky shipment records + itemization",
         lesson:
-          "Configurable mapping table turned a deployment event into a configuration event.",
+          "Every manual data entry step is a bug waiting to happen. Automate the boundary, not just the process.",
       },
     },
 
-    // MovePulse: lower, beside south road
     {
-      id: "movepulse",
-      name: "MovePulse",
-      subtitle: "TRACKING STATION",
-      pos: [-16, 22],
-      roadPos: [-12, 22],
-      facing: "right",
-      size: [5, 5],
-      height: 8,
-      color: 0x1a0800,
+      id: "vayu-rath",
+      name: "Vayu Rath",
+      subtitle: "REAL-TIME B2B TRACKING",
+      pos: [-32, 58],
+      roadPos: [-32, 48],
+      size: [8, 8],
+      height: 12,
       glowColor: "#ff9950",
-      roofColor: 0x2a1000,
-      windowColor: 0xffcc88,
-      type: "antenna",
-      icon: "📡",
-      tag: "REAL-TIME · B2B · SQL PERF",
+      templeType: "shikhara",
+      icon: "⚡",
+      tag: "READ UNCOMMITTED · ZERO LOCK · REAL-TIME",
       status: "OPERATIONAL",
       year: "2022",
       metrics: [
-        { v: "RT", l: "REAL-TIME" },
-        { v: "OPT", l: "SQL PERF" },
-        { v: "B2B", l: "CLIENTS" },
+        { v: "REAL", l: "TIME" },
+        { v: "B2B", l: "CLIENT FACING" },
+        { v: "ZERO", l: "LOCKS" },
       ],
       story:
-        "Enterprise clients had zero visibility into their relocations.\n\n<em>Built the backend query layer for real-time tracking</em> — optimized SQL reads from a shared operational database without degrading write performance.",
-      outcome:
-        "Clients see live status at any time. Account manager call volume dropped.",
+        "B2B clients needed real-time visibility into relocation jobs. Every status check was slowing down writes.\n\n<em>Vayu Rath — the wind-chariot of Vayu. Nothing faster. Nothing waits for nothing.</em> The controversial choice: READ UNCOMMITTED for status reads. Stale by milliseconds. Never locking.",
+      outcome: "Real-time tracking with zero impact on write performance.",
       connects: [
-        { to: "Monolith Quarter", how: "Reads from core operational database" },
+        {
+          to: "Pura Stambha",
+          how: "Reads from core RedSky operational tables",
+        },
       ],
       tech: [
         "MySQL 5",
@@ -609,37 +572,33 @@ window.CITY_DATA = {
       ],
       engineerDetail: {
         problem:
-          "Tracking reads share the same MySQL instance as all operational writes. Table scans degrade write performance. No read replica available.",
+          "Tracking reads shared the same MySQL instance as all operational writes. Table scans degrading write performance. No read replica available.",
         rejected: [
           { w: "Read replica", r: "Infrastructure change not in scope." },
           {
             w: "Redis cache",
-            r: "Cache invalidation in high-write environment is complex. Stale status unacceptable.",
+            r: "Cache invalidation in high-write environment is complex.",
           },
         ],
         decision:
-          "Write zero-contention queries: index-covered reads, minimal columns, bounded pagination. Goal: tracking reads invisible to the write path.",
-        impl: '<code>EXPLAIN ANALYZE:</code> target "Using index". Never "Using filesort".\n<code>READ UNCOMMITTED</code> for status reads — stale by milliseconds acceptable, locks are not.',
+          "Zero-contention queries: index-covered reads, minimal columns, bounded pagination. READ UNCOMMITTED for status reads.",
+        impl: "<code>EXPLAIN ANALYZE:</code> target 'Using index'. Never 'Using filesort'.\n<code>READ UNCOMMITTED</code> for status reads — stale by milliseconds acceptable, locks are not.\n<code>Column selection:</code> only status, timestamp, job_id — never SELECT *",
         lesson:
-          "READ UNCOMMITTED is a tool, not a smell. Correct tradeoff for status fields.",
+          "READ UNCOMMITTED is a tool, not a smell. Correct tradeoff for status fields where millisecond staleness is acceptable.",
       },
     },
 
-    // University of Allahabad: education district (south)
+    // ═══════════ EDUCATION DISTRICT ═══════════════════════════════════════
     {
-      id: "univ-allahabad",
-      name: "University Tower",
+      id: "saraswati-vihar",
+      name: "Saraswati Vihar",
       subtitle: "M.SC. COMPUTER SCIENCE",
-      pos: [-10, -38],
-      roadPos: [-10, -33],
-      facing: "down",
-      size: [7, 7],
-      height: 16,
-      color: 0x100025,
+      pos: [-22, -72],
+      roadPos: [-22, -62],
+      size: [10, 9],
+      height: 14,
       glowColor: "#a78bfa",
-      roofColor: 0x18003a,
-      windowColor: 0xccbbff,
-      type: "university",
+      templeType: "gopuram",
       isEducation: true,
       icon: "🎓",
       tag: "UNIVERSITY OF ALLAHABAD · 2019–2021",
@@ -651,13 +610,13 @@ window.CITY_DATA = {
         { v: "2021", l: "GRADUATED" },
       ],
       story:
-        "<em>Master of Science in Computer Science</em>\nUniversity of Allahabad, Prayagraj, India · 2019–2021\n\nDeep study of algorithms, data structures, software engineering, database systems, and distributed computing. Built the academic foundation for every architecture decision.",
+        "<em>Saraswati — goddess of knowledge, wisdom, and learning. This is where Aditya sat at her feet.</em>\n\nMaster of Science in Computer Science, University of Allahabad, Prayagraj · 2019–2021\n\nAlgorithms. Data structures. Distributed systems. Software engineering. Database design. Every architecture decision since traces back to these two years.",
       outcome:
-        "M.Sc. in Computer Science. The theoretical grounding that informs every architecture decision.",
+        "M.Sc. Computer Science. The theoretical grounding behind every system designed since.",
       connects: [
         {
-          to: "Trilasoft (2022)",
-          how: "M.Sc. directly led to backend architecture career",
+          to: "Trilasoft 2022",
+          how: "M.Sc. led directly to backend architecture career",
         },
       ],
       tech: [
@@ -671,21 +630,16 @@ window.CITY_DATA = {
       engineerDetail: null,
     },
 
-    // M.P. P.G. College
     {
-      id: "mpg-college",
-      name: "M.P.P.G. College",
+      id: "gurukul-ashram",
+      name: "Gurukul Ashram",
       subtitle: "B.SC. MATH · STATS · CS",
-      pos: [10, -38],
-      roadPos: [10, -33],
-      facing: "down",
-      size: [7, 6],
-      height: 11,
-      color: 0x002210,
+      pos: [22, -72],
+      roadPos: [22, -62],
+      size: [10, 9],
+      height: 12,
       glowColor: "#34d399",
-      roofColor: 0x003318,
-      windowColor: 0xaaffcc,
-      type: "university",
+      templeType: "gopuram",
       isEducation: true,
       icon: "📚",
       tag: "M.P. P.G. COLLEGE · GORAKHPUR · 2015–2019",
@@ -697,12 +651,12 @@ window.CITY_DATA = {
         { v: "2019", l: "GRADUATED" },
       ],
       story:
-        "<em>Bachelor of Science — Mathematics, Statistics & Computer Science</em>\nM.P. P.G. College, Gorakhpur, India · 2015–2019\n\nFoundational studies in pure mathematics, statistical analysis, and computer science. The combination of mathematical rigor and computing fundamentals shaped the analytical approach to system design.",
+        "<em>Gurukul — the ancient teaching tradition. Student lives with the teacher. Knowledge is total immersion.</em>\n\nB.Sc. in Mathematics, Statistics & Computer Science, M.P. P.G. College, Gorakhpur · 2015–2019\n\nMathematical rigor. Statistical thinking. The combination of math and computing shaped every data model since.",
       outcome:
-        "B.Sc. with Mathematics, Statistics & CS. Mathematical thinking that informs every data model.",
+        "B.Sc. Math + CS. Mathematical thinking that informs every data model and algorithmic choice.",
       connects: [
         {
-          to: "University of Allahabad",
+          to: "Saraswati Vihar",
           how: "B.Sc. qualified for M.Sc. Computer Science",
         },
       ],
@@ -714,111 +668,6 @@ window.CITY_DATA = {
         "Discrete Math",
       ],
       engineerDetail: null,
-    },
-  ],
-
-  // ── JOURNEY SLIDES ────────────────────────────────────────────────────────
-  // Used by the Journey Board — arrow-key navigation
-  journey: [
-    {
-      year: "2015",
-      title: "The Beginning",
-      subtitle: "M.P. P.G. College, Gorakhpur",
-      content:
-        "Started Bachelor of Science in Mathematics, Statistics & Computer Science. First exposure to programming fundamentals, discrete math, and algorithms. The mathematical rigor here would shape every future architecture decision.",
-      type: "education",
-      color: "#34d399",
-      icon: "📚",
-    },
-    {
-      year: "2019",
-      title: "Graduate Studies",
-      subtitle: "University of Allahabad, Prayagraj",
-      content:
-        "Master of Science in Computer Science. Deep dive into distributed systems, database design, software engineering principles, and advanced algorithms. This is where theoretical foundations became practical thinking.",
-      type: "education",
-      color: "#a78bfa",
-      icon: "🎓",
-    },
-    {
-      year: "Jan 2022",
-      title: "Trainee Engineer",
-      subtitle: "Trilasoft Solutions Pvt. Ltd.",
-      content:
-        "Joined Trilasoft as a Trainee Engineer, placed directly on RedSky — a massive B2B relocation platform built on Struts2/Spring3/Hibernate5. Most engineers needed months before touching production. He was delivering fixes within weeks.",
-      type: "career",
-      color: "#ff6b00",
-      icon: "🚀",
-    },
-    {
-      year: "Sep 2022",
-      title: "Junior Software Engineer",
-      subtitle: "Promoted · Trilasoft Solutions",
-      content:
-        "Promoted to Junior Software Engineer after demonstrating production-ready work at pace. Started working on MovePulse (real-time tracking) and the Survey Bridge integration — first systems designed end-to-end.",
-      type: "career",
-      color: "#ff9950",
-      icon: "⬆",
-    },
-    {
-      year: "2023",
-      title: "System Modernization",
-      subtitle: "Led platform-wide upgrades",
-      content:
-        "Led three MySQL migrations (5.x → 8.0 → 8.4), zero data lost across all three. Simultaneously led the migration of 80+ Mule ESB applications to AWS Lambda and standalone Java services — eliminating the platform's single point of failure.",
-      type: "milestone",
-      color: "#ffcc44",
-      icon: "⚡",
-    },
-    {
-      year: "2023",
-      title: "The Bridge",
-      subtitle: "Solo architecture decision",
-      content:
-        "Designed the Java 1.7/1.8 backward compatibility architecture entirely solo. IBM MQ client incompatible with MySQL 8 JDBC — solved without touching either legacy system. The bridge is still running.",
-      type: "milestone",
-      color: "#7dff4f",
-      icon: "🌉",
-    },
-    {
-      year: "2024",
-      title: "Backend Architect",
-      subtitle: "Promoted · Lead Architect",
-      content:
-        "Promoted to Backend Architect. Led two greenfield systems (ATS + Operations App) from schema design to production. Both in active use. Designed LedgerFlow — financial system where duplicate records are architecturally impossible.",
-      type: "career",
-      color: "#c084fc",
-      icon: "🏛",
-    },
-    {
-      year: "2024",
-      title: "Auth Tower",
-      subtitle: "Platform identity layer",
-      content:
-        "Built the centralized SSO platform from scratch — JWT with RS256, PassKey authentication, Single Logout, per-application RBAC. 10+ applications unified. 10K+ sessions managed. Zero breaches.",
-      type: "milestone",
-      color: "#00c8ff",
-      icon: "🔐",
-    },
-    {
-      year: "2024",
-      title: "API Forge",
-      subtitle: "Developer productivity",
-      content:
-        "Built an internal API testing platform beyond Postman — Swagger auto-discovery, API flow chaining via DAG execution, DB console, environment comparison, PDF/Excel reports, coverage tracking. Changed how the entire team works.",
-      type: "milestone",
-      color: "#7dff4f",
-      icon: "⚙",
-    },
-    {
-      year: "4 Years",
-      title: "Every System Still Running",
-      subtitle: "Trilasoft Solutions · Ongoing",
-      content:
-        'Four years. Ten systems designed and built. Three database migrations. Eighty integrations modernized. Zero breaches. Zero critical downtime. Every system still running.\n\n"I build systems that work at 3am — not systems that work in demos."',
-      type: "present",
-      color: "#ffffff",
-      icon: "∞",
     },
   ],
 };
