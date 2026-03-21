@@ -22,7 +22,7 @@ window.CityEngine = (function () {
   let sunLight, fillLight, ambLight, hemiLight;
   let carHL, carHR, carTL, carTR;
   let waveLines = [];
-  let isNight = true;
+  let isNight = false; // ← DAY is default, like Bruno Simon
 
   // Weather
   let currentWeather = "night"; // 'day' | 'night' | 'rain' | 'fog' | 'sunset' | 'snow'
@@ -36,6 +36,7 @@ window.CityEngine = (function () {
   let checkpointGroups = [];
   let proximityBuilding = null;
   let windowMaterials = [];
+  let confettiPieces = [];
 
   // Audio
   let audioCtx = null,
@@ -54,51 +55,74 @@ window.CityEngine = (function () {
   const PROX = 22; // generous — show notification well before reaching building
   const CAR_HW = 0.85;
   const CAR_HD = 1.3;
+  let weatherGrip = 1.0; // 1.0 = dry, 0.3 = rain, 0.12 = snow
 
   // ── PALETTE — Bruno Simon EXACT warm peach + cool blue shadow ────────────
   const P = {
-    // Ground: warm sandy peach like Bruno Simon
-    ground: 0xd4956a, // warm sandy peach
-    groundAlt: 0xc8845a, // slightly darker variation
-    road: 0xb87a52, // road slightly darker than ground, not blue
-    sidewalk: 0xcf9070, // pavement = warm sandstone
-    roadLine: 0xf5e642, // yellow dashes
+    // Ground: BRIGHT warm orange-peach exactly like Bruno Simon
+    ground: 0xe8966a, // vivid sandy orange
+    groundAlt: 0xdd8855,
+    road: 0xd4845a, // road only slightly darker
+    sidewalk: 0xf0a878, // warm light pavement
+    roadLine: 0xf5e642,
 
-    // Buildings: warm terracotta family — ALL warm, Bruno Simon style
-    b1: 0xc9603a,
-    b2: 0xd4844a,
-    b3: 0xe8a84a, // red/orange/ochre
-    b4: 0xa05030,
-    b5: 0xcc7040,
-    b6: 0xb86030, // dark reds
-    b7: 0xe09050,
-    b8: 0xba6840, // warm amber
+    // Buildings: warm terracotta family
+    b1: 0xd96840,
+    b2: 0xe8904a,
+    b3: 0xf0a84a,
+    b4: 0xb05535,
+    b5: 0xdc7845,
+    b6: 0xc46835,
+    b7: 0xf0a055,
+    b8: 0xcc7245,
 
-    roofDark: 0x7a3a22, // dark brown roof
-    roofRed: 0x993320, // dark red roof
-    roofGrey: 0x8a5a3a, // warm brown roof
+    roofDark: 0x7a3a22,
+    roofRed: 0x993320,
+    roofGrey: 0x8a5a3a,
 
-    treeTrunk: 0x7a4a22,
-    treeLeaf1: 0x8a7040, // muted olive — Bruno's trees are NOT bright green
-    treeLeaf2: 0x6a5830, // darker muted
-    treeLeaf3: 0x9a8050, // warm tan
-    treeSpike: 0x5a4828, // dark spike bushes
+    // Trees: VIVID like Bruno Simon — pink, bright green, autumn orange
+    treeTrunk: 0x8a5228,
+    treeLeaf1: 0xff88aa, // PINK cherry blossom — Bruno's signature
+    treeLeaf2: 0xee5533, // autumn orange-red
+    treeLeaf3: 0xaacc44, // bright spring green
+    treeLeaf4: 0xffcc44, // golden yellow
+    treeLeaf5: 0xdd7722, // deep amber
+    treeSpike: 0x558833, // dark pine green
+
+    // Grass patches — thick bright
+    grass1: 0xaacc44,
+    grass2: 0xddee33,
+    grass3: 0x88bb22,
 
     lampPole: 0x8a6a4a,
     lampHead: 0xffeeaa,
 
-    carBody: 0xcc2200, // BRIGHT RED — Bruno Simon exact
-    carDark: 0x881400,
-    carBlack: 0x1a1510,
-    carGlass: 0x7799bb,
-    carChrome: 0x999988,
-    carTyre: 0x151210,
-    carHub: 0xcc2200, // red hub
+    carBody: 0xdd2200,
+    carDark: 0x881200,
+    carBlack: 0x181210,
+    carGlass: 0x5588bb,
+    carChrome: 0xbbbbaa,
+    carTyre: 0x141210,
+    carHub: 0xcc2000,
 
-    water: 0x3355aa,
+    water: 0x4499cc, // brighter teal water like Bruno
   };
 
+  // ── MATCAP SYSTEM ─────────────────────────────────────────────────────────
+  // Pre-baked sphere textures — no real-time lighting calc on matcap objects
+  let matcaps = {}; // warm | cool | stone | car | gold | dark | tree
+
+  // ── ZONE + LABEL SYSTEM ───────────────────────────────────────────────────
+  let blobShadows = []; // { mesh, building } — fake ground shadows
+  let worldLabels = []; // THREE.Sprite billboard array
+  let zoneAmbients = []; // per-zone colored point lights
+
   // ── INIT ──────────────────────────────────────────────────────────────────
+  function progress(pct, msg) {
+    if (typeof window.onCityProgress === "function")
+      window.onCityProgress(pct, msg);
+  }
+
   function init(canvas) {
     const W = window.innerWidth,
       H = window.innerHeight;
@@ -106,37 +130,286 @@ window.CityEngine = (function () {
     scene = new THREE.Scene();
     clock = new THREE.Clock();
 
-    camera = new THREE.PerspectiveCamera(48, W / H, 0.1, 500);
-    camera.position.set(0, 9, 20);
-    camera.lookAt(0, 0, 6);
+    camera = new THREE.PerspectiveCamera(52, W / H, 0.1, 500);
+    camera.position.set(0, 11, 22);
+    camera.lookAt(0, 0, 5);
 
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.setSize(W, H);
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // ── NO GPU SHADOW MAPS — replaced by fake blob shadows (Bruno Simon style)
+    renderer.shadowMap.enabled = false;
     renderer.toneMapping = THREE.ReinhardToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = 1.2;
 
-    applyWeather("night");
-    buildGround();
-    buildRoads();
-    buildAllBuildings();
-    buildTrees();
-    buildLamps();
-    buildCenterpiece();
-    buildCar();
-    buildCheckpoints();
-    buildAtmosphere();
-    buildWaveLines();
+    // Kick renderer once to avoid white flash
+    renderer.render(new THREE.Scene(), camera);
 
-    setupControls();
-    window.addEventListener("resize", onResize);
+    initMatcaps();
+    progress(5, "MATCAP SYSTEM READY");
 
-    // Trigger first proximity check after a short delay
-    setTimeout(() => checkProximity(), 300);
+    // ── DEFERRED BUILD — lets loading screen render between steps ─────────
+    const buildSteps = [
+      () => {
+        applyWeather("day");
+        buildGround();
+        progress(12, "TERRAIN LOADED");
+      },
+      () => {
+        buildRoads();
+        progress(20, "ROAD NETWORK");
+      },
+      () => {
+        buildAllBuildings();
+        progress(44, "SYSTEMS ONLINE");
+      },
+      () => {
+        buildTrees();
+        buildGrassPatches();
+        buildLamps();
+        progress(58, "DISTRICT FLORA");
+      },
+      () => {
+        buildCenterpiece();
+        build3DName();
+        buildCar();
+        progress(72, "VEHICLES READY");
+      },
+      () => {
+        buildCheckpoints();
+        buildAtmosphere();
+        buildWaveLines();
+        progress(84, "ATMOSPHERE");
+      },
+      () => {
+        buildWorldLabels();
+        buildZoneAmbients();
+        buildCareerTimeline();
+        progress(95, "LABELS DEPLOYED");
+      },
+      () => {
+        setupControls();
+        window.addEventListener("resize", onResize);
+        setTimeout(() => checkProximity(), 300);
+        animate();
+        progress(100, "CITY LIVE");
+      },
+    ];
 
-    animate();
+    let step = 0;
+    function runNext() {
+      if (step < buildSteps.length) {
+        buildSteps[step++]();
+        setTimeout(runNext, 18);
+      }
+    }
+    runNext();
+  }
+
+  // ── MATCAP TEXTURES ───────────────────────────────────────────────────────
+  // Each matcap is a canvas-painted sphere texture: highlight, midtone, shadow
+  function createMatcap(highlight, midtone, shadow, specular) {
+    const S = 128;
+    const c = document.createElement("canvas");
+    c.width = c.height = S;
+    const ctx = c.getContext("2d");
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, S, S);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(S / 2, S / 2, S / 2 - 1, 0, Math.PI * 2);
+    ctx.clip();
+    // Base gradient — shadow → midtone → highlight
+    const g1 = ctx.createLinearGradient(0, S, 0, 0);
+    g1.addColorStop(0, shadow);
+    g1.addColorStop(0.4, midtone);
+    g1.addColorStop(1, highlight);
+    ctx.fillStyle = g1;
+    ctx.fillRect(0, 0, S, S);
+    // Specular glint (top-left)
+    const g2 = ctx.createRadialGradient(
+      S * 0.3,
+      S * 0.25,
+      0,
+      S * 0.45,
+      S * 0.45,
+      S * 0.5,
+    );
+    g2.addColorStop(0, specular || "rgba(255,255,255,0.88)");
+    g2.addColorStop(0.22, "rgba(255,255,255,0.22)");
+    g2.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g2;
+    ctx.fillRect(0, 0, S, S);
+    // Cool rim light (bottom-right — Bruno Simon style)
+    const g3 = ctx.createRadialGradient(
+      S * 0.78,
+      S * 0.8,
+      0,
+      S * 0.7,
+      S * 0.72,
+      S * 0.32,
+    );
+    g3.addColorStop(0, "rgba(80,130,255,0.38)");
+    g3.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g3;
+    ctx.fillRect(0, 0, S, S);
+    ctx.restore();
+    return new THREE.CanvasTexture(c);
+  }
+
+  function initMatcaps() {
+    matcaps.warm = createMatcap("#ffddaa", "#bb6633", "#440e00"); // terracotta
+    matcaps.cool = createMatcap("#aaccff", "#2244aa", "#000b22"); // steel blue
+    matcaps.stone = createMatcap("#bbaa99", "#66554a", "#1a1008"); // worn stone
+    matcaps.gold = createMatcap("#ffe988", "#bb7700", "#331b00"); // amber gold
+    matcaps.green = createMatcap("#aaff88", "#2a8844", "#083310"); // acid green
+    matcaps.purple = createMatcap("#cc99ff", "#7733cc", "#1a0033"); // violet
+    matcaps.car = createMatcap(
+      "#ff8866",
+      "#cc2200",
+      "#330000", // candy red
+      "rgba(255,230,220,0.95)",
+    );
+    matcaps.carDark = createMatcap("#dd4422", "#881400", "#220000"); // dark red
+    matcaps.chrome = createMatcap("#eeeedd", "#888877", "#222214"); // chrome
+    matcaps.glass = createMatcap("#88aadd", "#2244aa", "#000a22"); // glass
+    matcaps.tyre = createMatcap("#333222", "#151210", "#050404"); // rubber
+    matcaps.tree = createMatcap("#bbff88", "#44aa22", "#0a2200"); // vivid foliage
+    matcaps.dark = createMatcap("#2a2820", "#111008", "#050302"); // near-black trim
+  }
+
+  // ── BLOB SHADOW ───────────────────────────────────────────────────────────
+  // Per-building fake shadow plane — no GPU shadow maps needed
+  function addBlobShadow(b, group) {
+    const w = b.size[0] * 0.8;
+    const d = b.size[1] * 0.72;
+    const gc = pc(b.glowColor);
+    // Shadow tinted subtly with building's glow color (subliminal district feeling)
+    const rr = ((gc >> 16) & 0xff) / 255;
+    const gg = ((gc >> 8) & 0xff) / 255;
+    const bb2 = (gc & 0xff) / 255;
+
+    const shadowMat = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(
+        rr * 0.07 + 0.01,
+        gg * 0.05 + 0.005,
+        bb2 * 0.09 + 0.008,
+      ),
+      transparent: true,
+      opacity: 0.6,
+      depthWrite: false,
+    });
+    const shadow = new THREE.Mesh(new THREE.CircleGeometry(1, 18), shadowMat);
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.scale.set(w, d, 1);
+    shadow.position.y = 0.025;
+    group.add(shadow);
+    blobShadows.push({ mesh: shadow, building: b, baseMat: shadowMat });
+  }
+
+  // ── WORLD-SPACE BILLBOARD LABELS ──────────────────────────────────────────
+  // Float above buildings when you're in range — billboard always faces camera
+  function buildWorldLabels() {
+    window.CITY_DATA.buildings.forEach((b) => {
+      const W = 320,
+        H = 108;
+      const can = document.createElement("canvas");
+      can.width = W;
+      can.height = H;
+      const ctx = can.getContext("2d");
+
+      const gc = b.glowColor;
+      // Panel background
+      ctx.fillStyle = "rgba(4,6,12,0.92)";
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(3, 3, W - 6, H - 6, 8);
+      else ctx.rect(3, 3, W - 6, H - 6);
+      ctx.fill();
+      // Accent border
+      ctx.strokeStyle = gc + "bb";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      // Top accent line
+      ctx.fillStyle = gc;
+      ctx.fillRect(12, 3, 60, 2.5);
+
+      // Status dot
+      ctx.fillStyle = b.status === "OPERATIONAL" ? "#3dff88" : "#ffcc44";
+      ctx.beginPath();
+      ctx.arc(22, 32, 5.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Building name
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 20px 'Barlow Condensed', sans-serif";
+      ctx.fillText(b.name.toUpperCase(), 36, 38);
+
+      // Tag line
+      ctx.fillStyle = gc + "cc";
+      ctx.font = "11px 'Share Tech Mono', monospace";
+      const tag = b.tag || b.subtitle || "";
+      ctx.fillText(tag.length > 32 ? tag.slice(0, 32) + "…" : tag, 14, 62);
+
+      // Key metric
+      if (b.metrics && b.metrics[0]) {
+        ctx.fillStyle = gc;
+        ctx.font = "bold 14px 'Barlow Condensed', sans-serif";
+        ctx.fillText(b.metrics[0].v, 14, 90);
+        ctx.fillStyle = "rgba(255,255,255,0.4)";
+        ctx.font = "10px 'Share Tech Mono', monospace";
+        ctx.fillText(
+          b.metrics[0].l,
+          14 + ctx.measureText(b.metrics[0].v).width + 6,
+          90,
+        );
+      }
+
+      const tex = new THREE.CanvasTexture(can);
+      const mat = new THREE.SpriteMaterial({
+        map: tex,
+        transparent: true,
+        opacity: 0,
+        depthTest: false,
+      });
+      const sprite = new THREE.Sprite(mat);
+      const aspect = W / H;
+      sprite.scale.set(
+        ((((9 * aspect) / H) * H) / W) * 6.5,
+        (((6.5 / aspect) * W) / H) * aspect,
+        1,
+      );
+      sprite.scale.set(9, 3.1, 1);
+      const bh = (b.height || 8) + 5.5;
+      sprite.position.set(b.pos[0], bh, b.pos[1]);
+      sprite.userData.building = b;
+      sprite.userData.baseY = bh;
+      scene.add(sprite);
+      worldLabels.push(sprite);
+    });
+  }
+
+  // ── ZONE AMBIENT POINT LIGHTS ─────────────────────────────────────────────
+  // Each district gets a soft colored point light that colors the ground
+  function buildZoneAmbients() {
+    const zones = [
+      { pos: [-14, -8], color: 0x0088cc, intensity: 0.4, dist: 28 }, // hero/auth
+      { pos: [14, -8], color: 0x33aa22, intensity: 0.35, dist: 26 }, // api forge
+      { pos: [0, -36], color: 0x6633aa, intensity: 0.3, dist: 30 }, // education
+      { pos: [32, -8], color: 0x0066aa, intensity: 0.3, dist: 24 }, // cloud
+      { pos: [-32, -8], color: 0xaa7700, intensity: 0.3, dist: 24 }, // data
+      { pos: [0, 28], color: 0xcc5500, intensity: 0.28, dist: 22 }, // ops
+    ];
+    zones.forEach(({ pos, color, intensity, dist }) => {
+      const light = new THREE.PointLight(
+        color,
+        isNight ? intensity : intensity * 0.3,
+        dist,
+      );
+      light.position.set(pos[0], 1.5, pos[1]);
+      light.userData.nightI = intensity;
+      scene.add(light);
+      zoneAmbients.push(light);
+    });
   }
 
   // ── WEATHER SYSTEM ────────────────────────────────────────────────────────
@@ -166,28 +439,28 @@ window.CityEngine = (function () {
         exp: 1.15,
       },
       day: {
-        bg: 0xffe0c0,
-        fog: 0xffe0c0,
-        fogD: 0.004,
-        sun: 0xffcc88,
-        sunI: 2.4,
-        fill: 0x4466cc,
-        fillI: 0.7,
-        amb: 0x221408,
-        ambI: 0.3,
-        exp: 1.0,
+        bg: 0xf5c08a, // Bruno Simon warm orange-peach sky
+        fog: 0xf5c08a,
+        fogD: 0.003, // very light fog — world is readable far away
+        sun: 0xffcc88, // warm golden sun
+        sunI: 3.2, // BRIGHT — Bruno's world is punchy
+        fill: 0x9966cc, // cool purple-blue fill from bottom — creates depth
+        fillI: 0.9,
+        amb: 0xff8833, // warm amber ambient — NO dark shadows
+        ambI: 0.55, // higher ambient = brighter overall scene
+        exp: 1.05,
       },
       sunset: {
-        bg: 0xff7040,
-        fog: 0xff7040,
-        fogD: 0.006,
-        sun: 0xff5522,
-        sunI: 2.6,
-        fill: 0x6633cc,
-        fillI: 1.0,
-        amb: 0x330800,
-        ambI: 0.2,
-        exp: 1.05,
+        bg: 0xff6030,
+        fog: 0xff6030,
+        fogD: 0.005,
+        sun: 0xff4411,
+        sunI: 2.8,
+        fill: 0x5522bb,
+        fillI: 1.1,
+        amb: 0x440800,
+        ambI: 0.25,
+        exp: 1.08,
       },
       fog: {
         bg: 0xccb09a,
@@ -243,11 +516,45 @@ window.CityEngine = (function () {
       ambLight.color.set(cfg.amb);
       ambLight.intensity = cfg.ambI;
     }
+    // Hemisphere: sky warm, ground cool — tune per weather
+    if (hemiLight) {
+      const hemiConfigs = {
+        day: { sky: 0xffcc88, gnd: 0x9966cc, i: 1.4 },
+        night: { sky: 0x3344bb, gnd: 0x110808, i: 0.6 },
+        sunset: { sky: 0xff6622, gnd: 0x5522bb, i: 1.2 },
+        fog: { sky: 0xddbbaa, gnd: 0x776655, i: 0.9 },
+        rain: { sky: 0x445566, gnd: 0x223344, i: 0.7 },
+        snow: { sky: 0xeeddcc, gnd: 0x7799cc, i: 1.0 },
+      };
+      const hc = hemiConfigs[w] || hemiConfigs.day;
+      hemiLight.color.set(hc.sky);
+      hemiLight.groundColor.set(hc.gnd);
+      hemiLight.intensity = hc.i;
+    }
     if (renderer) renderer.toneMappingExposure = cfg.exp;
 
     isNight = w === "night";
     updateCarLights();
     updateWindowLights();
+
+    // ── WEATHER GRIP — affects car physics (rain/snow = slide) ───────────
+    const gripMap = {
+      night: 1.0,
+      day: 1.0,
+      sunset: 1.0,
+      fog: 0.72,
+      rain: 0.3,
+      snow: 0.12,
+    };
+    weatherGrip = gripMap[w] ?? 1.0;
+
+    // ── ZONE AMBIENT INTENSITIES — dimmer in bright weather ──────────────
+    zoneAmbients.forEach((l) => {
+      l.intensity = isNight
+        ? l.userData.nightI || 0.35
+        : (l.userData.nightI || 0.35) * 0.25;
+    });
+
     if (w === "rain") buildRainParticles();
     if (w === "snow") buildSnowParticles();
 
@@ -320,28 +627,25 @@ window.CityEngine = (function () {
 
   // ── LIGHTING ─────────────────────────────────────────────────────────────
   function buildLightingObjects() {
-    // Bruno Simon uses TWO directional lights, not hemisphere
-    // Key: warm peach from top-front-right
-    sunLight = new THREE.DirectionalLight(0xff9966, 1.4);
-    sunLight.position.set(40, 60, 20); // top-right-front
-    sunLight.castShadow = true;
-    sunLight.shadow.mapSize.set(2048, 2048);
-    sunLight.shadow.camera.left = -80;
-    sunLight.shadow.camera.right = 80;
-    sunLight.shadow.camera.top = 80;
-    sunLight.shadow.camera.bottom = -80;
-    sunLight.shadow.camera.near = 1;
-    sunLight.shadow.camera.far = 200;
-    sunLight.shadow.bias = -0.001;
+    // Bruno Simon lighting: warm top + cool bottom hemisphere = depth without darkness
+    // Plus two directional lights for shadow directionality
+
+    // HemisphereLight: warm orange sky, cool purple ground = perfect diorama depth
+    hemiLight = new THREE.HemisphereLight(0xffcc88, 0x9966cc, 1.2);
+    scene.add(hemiLight);
+
+    // Key directional: warm golden from top-front-right
+    sunLight = new THREE.DirectionalLight(0xffcc88, 2.2);
+    sunLight.position.set(40, 80, 30);
     scene.add(sunLight);
 
-    // Fill: cool blue from bottom-left-back — creates purple shadows
-    fillLight = new THREE.DirectionalLight(0x3344bb, 1.2);
-    fillLight.position.set(-40, -20, -30);
+    // Fill: cool blue-purple from bottom-left — creates colored shadows
+    fillLight = new THREE.DirectionalLight(0x7755cc, 0.85);
+    fillLight.position.set(-50, -30, -40);
     scene.add(fillLight);
 
-    // Ambient: very low — scene needs depth
-    ambLight = new THREE.AmbientLight(0x110806, 0.3);
+    // Ambient: warm so nothing is fully black
+    ambLight = new THREE.AmbientLight(0xffaa66, 0.5);
     scene.add(ambLight);
   }
 
@@ -383,16 +687,16 @@ window.CityEngine = (function () {
       scene.add(blk);
     });
 
-    // ── WATER ─ flat deep-blue plane with slightly elevated shore ──
-    const waterMat = new THREE.MeshLambertMaterial({ color: 0x2244aa });
+    // ── WATER — bright teal like Bruno Simon ──
+    const waterMat = new THREE.MeshLambertMaterial({ color: 0x44aacc });
     const water = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), waterMat);
     water.rotation.x = -Math.PI / 2;
     water.position.y = -0.5;
     scene.add(water);
 
-    // Shore — slightly lighter water near edges
+    // Shore — slightly lighter
     const shoreMat = new THREE.MeshLambertMaterial({
-      color: 0x3355bb,
+      color: 0x66bbdd,
       transparent: true,
       opacity: 0.7,
     });
@@ -440,10 +744,10 @@ window.CityEngine = (function () {
 
   // ── ROADS ────────────────────────────────────────────────────────────────
   function buildRoads() {
-    // Roads should be SUBTLY darker than ground, not harshly different color
-    const roadMat = new THREE.MeshLambertMaterial({ color: 0xb87850 }); // darker sandy
-    const swMat = new THREE.MeshLambertMaterial({ color: 0xcc9870 }); // warm pavement
-    const lineMat = new THREE.MeshLambertMaterial({ color: 0xf5e050 }); // yellow
+    // Roads: warm sandy-orange tones that complement the vivid ground
+    const roadMat = new THREE.MeshLambertMaterial({ color: 0xcc9060 }); // warm sandy road
+    const swMat = new THREE.MeshLambertMaterial({ color: 0xdda878 }); // slightly lighter sidewalk
+    const lineMat = new THREE.MeshLambertMaterial({ color: 0xf8e855 }); // bright yellow center line
 
     function road(x1, z1, x2, z2, w) {
       const dx = x2 - x1,
@@ -546,12 +850,28 @@ window.CityEngine = (function () {
     // Foundation pad (warm sandstone)
     g.add(box(w + 3.5, 0.3, d + 3.5, P.sidewalk, [0, 0.15, 0]));
 
-    // Main body — MeshLambertMaterial for consistent low-poly look
-    const bodyMat = new THREE.MeshLambertMaterial({
+    // ── MATCAP MATERIAL — pick based on glow color ─────────────────────────
+    // Warm amber buildings → warm matcap, cool blue → cool, edu → stone, etc.
+    let chosenMatcap = matcaps.warm; // default fallback
+    const gs = b.glowColor;
+    if (gs === "#00c8ff" || gs === "#4dd4ff")
+      chosenMatcap = matcaps.cool || matcaps.warm;
+    else if (gs === "#7dff4f") chosenMatcap = matcaps.green || matcaps.warm;
+    else if (gs === "#ffcc44" || gs === "#ff9950")
+      chosenMatcap = matcaps.gold || matcaps.warm;
+    else if (gs === "#ff6b00") chosenMatcap = matcaps.warm;
+    else if (gs === "#a78bfa" || gs === "#c084fc")
+      chosenMatcap = matcaps.purple || matcaps.warm;
+    else if (gs === "#34d399") chosenMatcap = matcaps.green || matcaps.warm;
+    // Ensure we NEVER pass undefined to MeshMatcapMaterial
+    if (!chosenMatcap) chosenMatcap = matcaps.warm;
+
+    const bodyMat = new THREE.MeshMatcapMaterial({
       color: bColor,
-      emissive: gc,
-      emissiveIntensity: isNight ? 0.06 : 0.0,
+      matcap: chosenMatcap,
     });
+    // MeshMatcapMaterial has no emissive — proximity highlight uses color tinting instead
+    bodyMat.userData.baseColor = bColor; // store for highlight restore
     const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), bodyMat);
     body.position.y = h / 2 + 0.32;
     body.castShadow = true;
@@ -561,15 +881,15 @@ window.CityEngine = (function () {
     // Setback top floor (architectural detail)
     if (h > 6) {
       const sbH = h * 0.35;
-      const sbMat = new THREE.MeshLambertMaterial({
+      const sbMat = new THREE.MeshMatcapMaterial({
         color: darken(bColor, 0.15),
+        matcap: chosenMatcap,
       });
       const sb = new THREE.Mesh(
         new THREE.BoxGeometry(w * 0.7, sbH, d * 0.7),
         sbMat,
       );
       sb.position.y = h + sbH / 2 + 0.32;
-      sb.castShadow = true;
       g.add(sb);
     }
 
@@ -659,6 +979,9 @@ window.CityEngine = (function () {
       maxZ: b.pos[1] + d / 2 + 1.0,
     });
 
+    // ── BLOB SHADOW — tinted with zone color (replaces GPU shadow maps)
+    addBlobShadow(b, g);
+
     buildingMeshes.push({ group: g, body, building: b, bodyMat });
     scene.add(g);
   }
@@ -711,44 +1034,164 @@ window.CityEngine = (function () {
     }
   }
 
-  // ── CENTERPIECE ───────────────────────────────────────────────────────────
+  // ── CENTERPIECE — Bruno Simon style island with bench, trees, glow ring ──
   function buildCenterpiece() {
-    // Low-poly plinth
-    scene.add(box(8, 0.6, 8, P.sidewalk, [0, 0.3, 0], 8)); // octagonal base
-    // Cylinder pillar
-    const ped = new THREE.Mesh(
-      new THREE.CylinderGeometry(1.2, 1.5, 3.5, 8),
-      new THREE.MeshLambertMaterial({ color: 0x2a2a3a }),
+    // Raised circular platform
+    const islandMat = new THREE.MeshLambertMaterial({ color: 0xf0a870 });
+    const island = new THREE.Mesh(
+      new THREE.CylinderGeometry(7.5, 8.2, 0.55, 18),
+      islandMat,
     );
-    ped.position.y = 2.1;
-    ped.castShadow = true;
-    scene.add(ped);
-
-    // "AS" sign as low-poly geometry
-    const sign = new THREE.Mesh(
-      new THREE.BoxGeometry(2.8, 0.65, 0.25),
-      new THREE.MeshBasicMaterial({ color: 0x00ddff }),
+    island.position.y = 0.28;
+    scene.add(island);
+    const paveMat = new THREE.MeshLambertMaterial({ color: 0xf5b885 });
+    const pave = new THREE.Mesh(
+      new THREE.CylinderGeometry(5.5, 5.8, 0.2, 12),
+      paveMat,
     );
-    sign.position.set(0, 4.0, 0.5);
-    scene.add(sign);
+    pave.position.y = 0.6;
+    scene.add(pave);
 
-    // Rotating low-poly rings
-    [2.5, 3.4].forEach((r, i) => {
-      const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(r, 0.1, 4, 12), // 4-segment = diamond shape
-        new THREE.MeshBasicMaterial({
-          color: 0x00ddff,
-          transparent: true,
-          opacity: 0.35 - i * 0.08,
-        }),
-      );
-      ring.rotation.x = Math.PI / 2;
-      ring.position.y = 1.0;
-      ring.userData.isRing = true;
-      ring.userData.rotSpeed = 0.4 + i * 0.2;
-      scene.add(ring);
+    // Glowing ground ring (Bruno Simon neon floor circle)
+    const groundRing = new THREE.Mesh(
+      new THREE.TorusGeometry(5.8, 0.12, 4, 48),
+      new THREE.MeshBasicMaterial({
+        color: 0xddaaff,
+        transparent: true,
+        opacity: 0.85,
+      }),
+    );
+    groundRing.rotation.x = Math.PI / 2;
+    groundRing.position.y = 0.72;
+    scene.add(groundRing);
+    scene.add(ptLight(0xddaaff, 2.0, 14, [0, 1.0, 0]));
+
+    // Wooden bench
+    const woodMat = new THREE.MeshMatcapMaterial({
+      color: 0xcc8844,
+      matcap: matcaps.warm,
     });
-    scene.add(ptLight(0x00ddff, isNight ? 4 : 0.5, 20, [0, 4.5, 0]));
+    const legMat = new THREE.MeshMatcapMaterial({
+      color: 0x7755aa,
+      matcap: matcaps.purple,
+    });
+    for (let i = -1; i <= 1; i++) {
+      const slat = new THREE.Mesh(
+        new THREE.BoxGeometry(2.2, 0.1, 0.35),
+        woodMat,
+      );
+      slat.position.set(0.2, 1.12, i * 0.4);
+      scene.add(slat);
+    }
+    for (let i = -1; i <= 1; i++) {
+      const slat = new THREE.Mesh(
+        new THREE.BoxGeometry(2.2, 0.1, 0.3),
+        woodMat,
+      );
+      slat.position.set(0.2, 1.62, i * 0.36 - 0.42);
+      slat.rotation.x = 0.28;
+      scene.add(slat);
+    }
+    [
+      [-0.85, -0.6],
+      [0.85, -0.6],
+      [-0.85, 0.6],
+      [0.85, 0.6],
+    ].forEach(([x, z]) => {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.88, 0.1), legMat);
+      leg.position.set(x + 0.2, 0.68, z);
+      scene.add(leg);
+    });
+
+    // Lamp posts
+    const poleMat = new THREE.MeshMatcapMaterial({
+      color: 0x776688,
+      matcap: matcaps.purple,
+    });
+    [-3.5, 3.5].forEach((x) => {
+      const pole = new THREE.Mesh(
+        new THREE.BoxGeometry(0.14, 3.5, 0.14),
+        poleMat,
+      );
+      pole.position.set(x, 1.75, -1.5);
+      scene.add(pole);
+      const head = new THREE.Mesh(
+        new THREE.BoxGeometry(0.55, 0.28, 0.55),
+        new THREE.MeshBasicMaterial({ color: 0xffeeaa }),
+      );
+      head.position.set(x, 3.6, -1.5);
+      scene.add(head);
+      scene.add(ptLight(0xffeeaa, isNight ? 2.5 : 0.4, 9, [x, 3.7, -1.5]));
+    });
+
+    // Cherry blossom trees around island — Bruno Simon signature
+    [
+      [4.5, 3.2],
+      [-4.5, 3.2],
+      [0, 5.5],
+      [5.0, -2.5],
+      [-5.0, -2.5],
+    ].forEach(([x, z]) => {
+      const trunkH = 1.6 + Math.random() * 0.8;
+      const trunk = new THREE.Mesh(
+        new THREE.BoxGeometry(0.22, trunkH, 0.22),
+        new THREE.MeshMatcapMaterial({ color: 0x8a5228, matcap: matcaps.warm }),
+      );
+      trunk.position.set(x, trunkH / 2, z);
+      scene.add(trunk);
+      const pinks = [0xff88aa, 0xff99bb, 0xffaabb, 0xee7799];
+      const r = 1.1 + Math.random() * 0.5;
+      [0, 0.65 * r, -0.45 * r].forEach((ox, j) => {
+        const leaf = new THREE.Mesh(
+          new THREE.SphereGeometry(r * (0.82 + j * 0.1), 7, 5),
+          new THREE.MeshMatcapMaterial({
+            color: pinks[Math.floor(Math.random() * pinks.length)],
+            matcap: matcaps.tree,
+          }),
+        );
+        leaf.position.set(
+          x + ox * 0.4,
+          trunkH + r * 0.8 + j * 0.2,
+          z + ox * 0.3,
+        );
+        scene.add(leaf);
+      });
+    });
+
+    // Decorative stones
+    const stoneMat = new THREE.MeshMatcapMaterial({
+      color: 0xbbaa99,
+      matcap: matcaps.stone,
+    });
+    [
+      [2.5, 1.5],
+      [-2.0, 2.8],
+      [1.2, -2.4],
+      [-3.0, -1.2],
+    ].forEach(([x, z]) => {
+      const stone = new THREE.Mesh(
+        new THREE.DodecahedronGeometry(0.18 + Math.random() * 0.12, 0),
+        stoneMat,
+      );
+      stone.position.set(x, 0.65, z);
+      stone.rotation.y = Math.random() * Math.PI;
+      scene.add(stone);
+    });
+
+    // Downward-pointing arrow above island
+    const arr = new THREE.Mesh(
+      new THREE.ConeGeometry(0.32, 0.88, 4),
+      new THREE.MeshBasicMaterial({
+        color: 0xddaaff,
+        transparent: true,
+        opacity: 0.9,
+      }),
+    );
+    arr.position.set(0, 5.5, 0);
+    arr.rotation.z = Math.PI;
+    arr.userData.isFloatArrow = true;
+    arr.userData.baseY = 5.5;
+    scene.add(arr);
   }
 
   // ── TREES (low-poly — flat-shaded spheres on sticks) ─────────────────────
@@ -810,20 +1253,22 @@ window.CityEngine = (function () {
       [-42, -5],
     ];
     const leafColors = [
-      P.treeLeaf1,
-      P.treeLeaf2,
-      P.treeLeaf3,
-      0x7a6030, // very muted tan
-      0x5a4820, // dark khaki
+      P.treeLeaf1, // pink cherry blossom
+      P.treeLeaf2, // autumn red-orange
+      P.treeLeaf3, // bright green
+      P.treeLeaf4, // golden yellow
+      P.treeLeaf5, // deep amber
     ];
-    const trunkMat = new THREE.MeshLambertMaterial({ color: P.treeTrunk });
-    const spikyMat = new THREE.MeshLambertMaterial({ color: P.treeSpike }); // dark spike bushes
+    const trunkMat = new THREE.MeshMatcapMaterial({
+      color: P.treeTrunk,
+      matcap: matcaps.warm || matcaps.tyre,
+    });
 
     positions.forEach(([x, z]) => {
-      const h = 0.9 + Math.random() * 0.9;
-      const r = 0.75 + Math.random() * 0.55;
+      const h = 1.0 + Math.random() * 1.1;
+      const r = 0.9 + Math.random() * 0.65;
+      const isCherryBlossom = Math.random() > 0.55;
 
-      // Group: trunk + leaf together for shake
       const tg = new THREE.Group();
       tg.position.set(x, 0, z);
 
@@ -832,25 +1277,42 @@ window.CityEngine = (function () {
         trunkMat,
       );
       trunk.position.y = h * 0.65;
-      trunk.castShadow = true;
       tg.add(trunk);
 
-      const leaf = new THREE.Mesh(
-        Math.random() > 0.4
-          ? new THREE.SphereGeometry(r, 5, 4) // fluffy round tree
-          : new THREE.ConeGeometry(r * 0.7, r * 1.8, 5), // spiky pine — Bruno Simon style!
-        new THREE.MeshLambertMaterial({
-          color: leafColors[Math.floor(Math.random() * leafColors.length)],
-        }),
-      );
-      leaf.position.y = h * 1.3 + r * 0.75;
-      leaf.castShadow = true;
-      tg.add(leaf);
+      // Pick leaf color biased toward pink/vivid
+      const lColor = leafColors[Math.floor(Math.random() * leafColors.length)];
+      const lMat = new THREE.MeshMatcapMaterial({
+        color: lColor,
+        matcap: matcaps.tree,
+      });
+
+      let leafMesh;
+      if (isCherryBlossom) {
+        // Big fluffy round crown — Bruno Simon signature
+        leafMesh = new THREE.Mesh(new THREE.SphereGeometry(r, 6, 5), lMat);
+        leafMesh.position.y = h * 1.3 + r * 0.7;
+        tg.add(leafMesh);
+        // Second smaller sphere to make it look like a cloud cluster
+        const leaf2 = new THREE.Mesh(
+          new THREE.SphereGeometry(r * 0.7, 5, 4),
+          new THREE.MeshMatcapMaterial({ color: lColor, matcap: matcaps.tree }),
+        );
+        leaf2.position.set(r * 0.55, h * 1.3 + r * 0.9, r * 0.3);
+        tg.add(leaf2);
+      } else {
+        // Spiky cone pine
+        leafMesh = new THREE.Mesh(
+          new THREE.ConeGeometry(r * 0.75, r * 2.0, 6),
+          lMat,
+        );
+        leafMesh.position.y = h * 1.3 + r * 0.8;
+        tg.add(leafMesh);
+      }
 
       scene.add(tg);
       trees.push({
         group: tg,
-        leaf,
+        leaf: leafMesh,
         shakeT: 0,
         baseX: x,
         baseZ: z,
@@ -912,23 +1374,333 @@ window.CityEngine = (function () {
       [36, -4],
       [-36, -4],
     ];
-    const poleMat = new THREE.MeshLambertMaterial({ color: P.lampPole });
-    const headMat = new THREE.MeshBasicMaterial({ color: P.lampHead });
+    // Bruno Simon: deep purple/blue poles, warm lamp heads
+    const poleMat = new THREE.MeshMatcapMaterial({
+      color: 0x554477,
+      matcap: matcaps.purple || matcaps.cool,
+    });
+    const headMat = new THREE.MeshBasicMaterial({ color: 0xffeeaa });
+    const glassMat = new THREE.MeshBasicMaterial({
+      color: 0xffcc66,
+      transparent: true,
+      opacity: 0.88,
+    });
 
     positions.forEach(([x, z]) => {
-      // Pole
-      scene.add(box(0.18, 4.8, 0.18, P.lampPole, [x, 2.4, z]));
-      // Arm
-      scene.add(box(0.12, 0.12, 0.75, P.lampPole, [x, 5.0, z + 0.38]));
-      // Head (glowing cube — low poly)
-      const head = new THREE.Mesh(
-        new THREE.BoxGeometry(0.45, 0.45, 0.45),
+      // Main pole
+      const pole = new THREE.Mesh(
+        new THREE.BoxGeometry(0.16, 4.8, 0.16),
+        poleMat,
+      );
+      pole.position.set(x, 2.4, z);
+      scene.add(pole);
+
+      // Horizontal arm
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.8), poleMat);
+      arm.position.set(x, 5.0, z + 0.4);
+      scene.add(arm);
+
+      // Lantern housing (hexagonal = Bruno Simon style)
+      const housing = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.28, 0.28, 0.52, 6),
+        poleMat,
+      );
+      housing.position.set(x, 5.12, z + 0.78);
+      scene.add(housing);
+
+      // Glowing inner cube
+      const glow = new THREE.Mesh(
+        new THREE.BoxGeometry(0.3, 0.28, 0.3),
         headMat,
       );
-      head.position.set(x, 5.0, z + 0.75);
-      scene.add(head);
-      // Light
-      scene.add(ptLight(0xffeeaa, isNight ? 2.5 : 0, 15, [x, 5.0, z + 0.75]));
+      glow.position.set(x, 5.12, z + 0.78);
+      scene.add(glow);
+
+      // Glass panels (transparent sides)
+      const glass = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.22, 0.22, 0.42, 6),
+        glassMat,
+      );
+      glass.position.set(x, 5.12, z + 0.78);
+      scene.add(glass);
+
+      // Cap
+      const cap = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.32, 0.28, 0.12, 6),
+        poleMat,
+      );
+      cap.position.set(x, 5.42, z + 0.78);
+      scene.add(cap);
+
+      // Point light — warm and localised like Bruno Simon
+      scene.add(ptLight(0xffeeaa, isNight ? 2.8 : 0, 14, [x, 5.12, z + 0.78]));
+    });
+  }
+
+  // ── GRASS PATCHES — thick clumps around world edges (Bruno Simon style) ──
+  function buildGrassPatches() {
+    const grassColors = [P.grass1, P.grass2, P.grass3, 0xccdd44, 0x99cc33];
+    const patchPositions = [
+      // Border ring of thick grass
+      ...[
+        [-52, 0],
+        [-52, -20],
+        [-52, 20],
+        [-52, -40],
+        [52, 0],
+        [52, -20],
+        [52, 20],
+        [52, -40],
+        [0, -52],
+        [20, -52],
+        [-20, -52],
+        [40, -52],
+        [-40, -52],
+        [0, 40],
+        [20, 40],
+        [-20, 40],
+        [30, 40],
+        [-30, 40],
+        // Mid-world clumps between buildings
+        [-24, 14],
+        [24, 14],
+        [-24, -22],
+        [24, -22],
+        [-8, 14],
+        [8, 14],
+        [0, 14],
+        [38, 18],
+        [-38, 18],
+        [38, -22],
+        [-38, -22],
+        [10, -48],
+        [-10, -48],
+        [14, -44],
+        [-14, -44],
+      ],
+    ];
+
+    // Normalize patch positions (handles both [[x,z]] and flat [x,z,x,z])
+    function normalizePositions(positions) {
+      if (!positions || positions.length === 0) return [];
+
+      // Case 1: already correct [[x,z]]
+      if (Array.isArray(positions[0])) return positions;
+
+      // Case 2: flat array → convert to pairs
+      const result = [];
+      for (let i = 0; i < positions.length; i += 2) {
+        if (
+          typeof positions[i] === "number" &&
+          typeof positions[i + 1] === "number"
+        ) {
+          result.push([positions[i], positions[i + 1]]);
+        }
+      }
+      return result;
+    }
+
+    const safePositions = normalizePositions(patchPositions[0]);
+
+    safePositions.forEach(([x, z]) => {
+      const count = 3 + Math.floor(Math.random() * 4);
+
+      for (let i = 0; i < count; i++) {
+        const gx = x + (Math.random() - 0.5) * 5;
+        const gz = z + (Math.random() - 0.5) * 5;
+
+        // your existing grass creation logic
+      }
+    });
+  }
+
+  // ── 3D NAME LETTERS — "ADITYA SRIVASTAVA" on the ground like Bruno Simon ─
+  function build3DName() {
+    // We use stacked box geometry to form block letters on the ground
+    // Spawn area is around [0, 18] — name placed just south of start
+    const letterH = 0.55; // height above ground
+    const letterD = 0.45; // depth of letter slab
+    const mat = new THREE.MeshMatcapMaterial({
+      color: 0xffeedd,
+      matcap: matcaps.stone || matcaps.warm,
+    });
+    const matBlue = new THREE.MeshBasicMaterial({ color: 0x00ddff });
+
+    // Simplified: spell out "ADITYA" in 3D block letters near spawn
+    // Each letter is a group of boxes; font is pixel-art 5×7 grid
+    // We'll use a sprite-based approach for simplicity & accuracy
+    const W = 260,
+      H = 80;
+    const can = document.createElement("canvas");
+    can.width = W;
+    can.height = H;
+    const ctx = can.getContext("2d");
+
+    // Transparent background
+    ctx.clearRect(0, 0, W, H);
+
+    // Drop shadow
+    ctx.shadowColor = "rgba(0,0,0,0.35)";
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 4;
+
+    // Name text
+    ctx.fillStyle = "#fff8f0";
+    ctx.font = "bold 52px 'Barlow Condensed', 'Arial Narrow', sans-serif";
+    ctx.letterSpacing = "4px";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("ADITYA", W / 2, H / 2);
+
+    const tex = new THREE.CanvasTexture(can);
+    const spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+    const sprite = new THREE.Sprite(spriteMat);
+    sprite.scale.set(14, 4.3, 1);
+    sprite.position.set(0, 2.8, 14);
+    scene.add(sprite);
+
+    // Second line — surname
+    const can2 = document.createElement("canvas");
+    can2.width = 340;
+    can2.height = 72;
+    const ctx2 = can2.getContext("2d");
+    ctx2.clearRect(0, 0, 340, 72);
+    ctx2.shadowColor = "rgba(0,0,0,0.3)";
+    ctx2.shadowBlur = 6;
+    ctx2.fillStyle = "#ffd8aa";
+    ctx2.font = "bold 42px 'Barlow Condensed', 'Arial Narrow', sans-serif";
+    ctx2.textAlign = "center";
+    ctx2.textBaseline = "middle";
+    ctx2.fillText("SRIVASTAVA", 170, 36);
+    const tex2 = new THREE.CanvasTexture(can2);
+    const sm2 = new THREE.SpriteMaterial({ map: tex2, transparent: true });
+    const sp2 = new THREE.Sprite(sm2);
+    sp2.scale.set(14.5, 3.1, 1);
+    sp2.position.set(0, 1.6, 14.5);
+    scene.add(sp2);
+
+    // Role label
+    const can3 = document.createElement("canvas");
+    can3.width = 320;
+    can3.height = 44;
+    const ctx3 = can3.getContext("2d");
+    ctx3.clearRect(0, 0, 320, 44);
+    ctx3.fillStyle = "#00ddff";
+    ctx3.font = "bold 22px 'Share Tech Mono', monospace";
+    ctx3.textAlign = "center";
+    ctx3.textBaseline = "middle";
+    ctx3.fillText("// BACKEND ARCHITECT · 4 YEARS", 160, 22);
+    const tex3 = new THREE.CanvasTexture(can3);
+    const sm3 = new THREE.SpriteMaterial({ map: tex3, transparent: true });
+    const sp3 = new THREE.Sprite(sm3);
+    sp3.scale.set(12, 1.7, 1);
+    sp3.position.set(0, 0.8, 15.2);
+    scene.add(sp3);
+
+    // Physical slab under the text — like Bruno's raised ground letters
+    const slabMat = new THREE.MeshLambertMaterial({ color: 0xf5ddc8 });
+    const slab = new THREE.Mesh(new THREE.BoxGeometry(13, 0.22, 5), slabMat);
+    slab.position.set(0, 0.11, 14.5);
+    scene.add(slab);
+
+    // Glowing accent rings in front of the name
+    [1.5, 2.4].forEach((r, i) => {
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(r, 0.055, 4, 18),
+        new THREE.MeshBasicMaterial({
+          color: 0x00ddff,
+          transparent: true,
+          opacity: 0.5 - i * 0.15,
+        }),
+      );
+      ring.rotation.x = Math.PI / 2;
+      ring.position.set(0, 0.3, 17.5);
+      ring.userData.isRing = true;
+      ring.userData.rotSpeed = 0.4 + i * 0.3;
+      scene.add(ring);
+    });
+  }
+
+  // ── CAREER TIMELINE RAIL — like Bruno Simon's glowing floor tracks ─────────
+  function buildCareerTimeline() {
+    // Horizontal timeline along z=-48 (education district)
+    // Glowing rail with year markers and floating labels
+    const railMat = new THREE.MeshBasicMaterial({
+      color: 0x00ddff,
+      transparent: true,
+      opacity: 0.7,
+    });
+    const railGold = new THREE.MeshBasicMaterial({
+      color: 0xffcc44,
+      transparent: true,
+      opacity: 0.7,
+    });
+
+    // Main rail — two parallel glowing lines
+    [-0.3, 0.3].forEach((offset, ri) => {
+      const rail = new THREE.Mesh(
+        new THREE.BoxGeometry(60, 0.06, 0.12),
+        ri === 0 ? railMat : railGold,
+      );
+      rail.position.set(0, 0.2, -50 + offset);
+      scene.add(rail);
+    });
+
+    // Year milestones — boxes on the rail with floating labels
+    const milestones = [
+      { year: "2015", label: "B.Sc Begins", x: -26, color: "#34d399" },
+      { year: "2019", label: "B.Sc Completed", x: -16, color: "#34d399" },
+      { year: "2021", label: "M.Sc CS", x: -4, color: "#a78bfa" },
+      { year: "2022", label: "Trainee → Junior", x: 8, color: "#ffcc44" },
+      { year: "2024", label: "Backend Architect", x: 20, color: "#ff6b00" },
+    ];
+
+    milestones.forEach(({ year, label, x, color }) => {
+      const gc = parseInt(color.slice(1), 16);
+
+      // Glowing post
+      const postMat = new THREE.MeshBasicMaterial({ color: gc });
+      const post = new THREE.Mesh(
+        new THREE.BoxGeometry(0.18, 2.2, 0.18),
+        postMat,
+      );
+      post.position.set(x, 1.1, -50);
+      scene.add(post);
+
+      // Top gem (diamond)
+      const gem = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.32, 0),
+        new THREE.MeshBasicMaterial({ color: gc }),
+      );
+      gem.position.set(x, 2.6, -50);
+      gem.userData.isTimelineGem = true;
+      gem.userData.baseY = 2.6;
+      gem.userData.phase = x * 0.4;
+      scene.add(gem);
+      scene.add(new THREE.PointLight(gc, 0.8, 5, x, 2.5, -50));
+
+      // Year canvas label
+      const cw = 160,
+        ch = 72;
+      const can = document.createElement("canvas");
+      can.width = cw;
+      can.height = ch;
+      const ctx = can.getContext("2d");
+      ctx.clearRect(0, 0, cw, ch);
+      ctx.fillStyle = color;
+      ctx.font = "bold 28px 'Barlow Condensed', sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(year, cw / 2, 32);
+      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.font = "13px 'Share Tech Mono', monospace";
+      ctx.fillText(label, cw / 2, 56);
+      const tex = new THREE.CanvasTexture(can);
+      const sp = new THREE.Sprite(
+        new THREE.SpriteMaterial({ map: tex, transparent: true }),
+      );
+      sp.scale.set(4.5, 2.0, 1);
+      sp.position.set(x, 4.2, -50);
+      scene.add(sp);
     });
   }
 
@@ -1019,42 +1791,61 @@ window.CityEngine = (function () {
 
   // ── ATMOSPHERE (floating particles) ──────────────────────────────────────
   function buildAtmosphere() {
-    const cnt = 600,
-      pos = new Float32Array(cnt * 3),
-      col = new Float32Array(cnt * 3);
+    // ── FLOATING BLOSSOM PETALS — Bruno Simon's magical atmosphere ────────
+    // Pink/orange/yellow petals drifting through the air
+    const cnt = 380;
+    const pos = new Float32Array(cnt * 3);
+    const col = new Float32Array(cnt * 3);
+    const vel = new Float32Array(cnt * 3); // drift velocity per petal
+
     for (let i = 0; i < cnt; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * 120;
-      pos[i * 3 + 1] = Math.random() * 22;
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 120;
+      pos[i * 3] = (Math.random() - 0.5) * 90;
+      pos[i * 3 + 1] = Math.random() * 18;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 90;
+      // Drift: slow horizontal + slight downward
+      vel[i * 3] = (Math.random() - 0.5) * 0.012;
+      vel[i * 3 + 1] = -0.006 - Math.random() * 0.008;
+      vel[i * 3 + 2] = (Math.random() - 0.5) * 0.012;
+      // Colors: pink, soft orange, pale yellow, white
       const t = Math.random();
-      if (t < 0.45) {
-        col[i * 3] = 0.2;
-        col[i * 3 + 1] = 0.6;
-        col[i * 3 + 2] = 1;
-      } else if (t < 0.7) {
+      if (t < 0.4) {
+        // pink blossom
         col[i * 3] = 1;
-        col[i * 3 + 1] = 0.85;
-        col[i * 3 + 2] = 0.3;
+        col[i * 3 + 1] = 0.55;
+        col[i * 3 + 2] = 0.68;
+      } else if (t < 0.65) {
+        // warm orange
+        col[i * 3] = 1;
+        col[i * 3 + 1] = 0.78;
+        col[i * 3 + 2] = 0.35;
+      } else if (t < 0.82) {
+        // soft yellow
+        col[i * 3] = 1;
+        col[i * 3 + 1] = 0.95;
+        col[i * 3 + 2] = 0.55;
       } else {
-        col[i * 3] = 0.6;
-        col[i * 3 + 1] = 1;
-        col[i * 3 + 2] = 0.5;
+        // pale white
+        col[i * 3] = 1;
+        col[i * 3 + 1] = 0.95;
+        col[i * 3 + 2] = 0.92;
       }
     }
+
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
-    scene.add(
-      new THREE.Points(
-        geo,
-        new THREE.PointsMaterial({
-          size: 0.06,
-          vertexColors: true,
-          transparent: true,
-          opacity: 0.5,
-        }),
-      ),
+    const petals = new THREE.Points(
+      geo,
+      new THREE.PointsMaterial({
+        size: 0.22,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.78,
+      }),
     );
+    petals.userData.isPetals = true;
+    petals.userData.vel = vel;
+    scene.add(petals);
   }
 
   // ── CAR (Clean low-poly SUV — one unified body, correct wheels) ──────────
@@ -1062,402 +1853,464 @@ window.CityEngine = (function () {
     carGroup = new THREE.Group();
     wheelGroups = [];
 
-    // MeshLambertMaterial for low-poly look exactly like Bruno Simon
-    function mL(color) {
-      return new THREE.MeshLambertMaterial({ color });
+    // ── MATCAP HELPERS ────────────────────────────────────────────────────
+    function mM(key, color) {
+      return new THREE.MeshMatcapMaterial({
+        color,
+        matcap: matcaps[key] || matcaps.warm,
+      });
     }
-    const mBody = mL(0xcc2200); // BRIGHT RED — exactly like Bruno Simon screenshot
-    const mDark = mL(0x881400); // darker red for cabin/hood
-    const mBlack = mL(0x1a1510); // near-black for trim
-    const mArch = mL(0x991a00); // wheel arch — slightly different red
-    const mGlass = new THREE.MeshLambertMaterial({
-      color: 0x7799bb,
+
+    // ── MATERIALS ──────────────────────────────────────────────────────────
+    const mBody = mM("car", 0xdd2200); // candy red — Bruno Simon exact
+    const mDark = mM("carDark", 0x881200); // dark red cabin/hood
+    const mBlack = mM("dark", 0x181210); // near-black chassis
+    const mArch = mM("carDark", 0x771100); // wheel arch flares
+    const mGlass = new THREE.MeshMatcapMaterial({
+      color: 0x4477aa,
+      matcap: matcaps.glass,
       transparent: true,
-      opacity: 0.5,
+      opacity: 0.68,
     });
-    const mChrome = mL(0x999988);
-    const mTyre = mL(0x151210);
-    const mHub = mL(0xbbbbcc);
+    const mChrome = mM("chrome", 0xbbbbaa);
+    const mTyre = mM("tyre", 0x141210);
+    const mRed = mM("car", 0xcc2000); // red trim/hubs
 
-    // ── KEY DIMENSIONS ────────────────────────────────────────────────
-    // Bruno Simon: big wheels, compact body — almost square profile
-    const WR = 0.5; // BIGGER wheel radius (Bruno Simon has large wheels)
-    const AXH = WR;
-    const WW = 0.42; // WIDER wheels
-    const WOFX = 1.12; // wider wheel track
-    const WOFZ = 0.95;
+    // ── PROPORTIONS ───────────────────────────────────────────────────────
+    // Bruno Simon key secret: wheels are HUGE relative to body
+    // Body squished vertically, wheels tall and wide = toy-truck silhouette
+    const WR = 0.58; // wheel radius  — BIG
+    const WW = 0.46; // wheel width   — WIDE
+    const WTX = 1.22; // wheel track X — very wide stance
+    const WFZ = 1.55; // front axle Z
+    const WRZ = -1.55; // rear  axle Z
+    const AXH = WR; // axle height = wheel radius
 
-    const BY = AXH + 0.06;
-    const BH = 0.52;
-    const CY = BY + BH;
-    const CH = 0.54;
-    const RY = CY + CH;
-    const FZ = 1.52;
-    const RZ = -1.52;
+    // Body sits close above axle
+    const BY = AXH + 0.04; // body base Y
+    const BH = 0.46; // body height — keep low (squished)
+    const BW = 1.58; // body width
+    const BD = 2.95; // body depth (length)
 
-    // ── UNDERCARRIAGE ─────────────────────────────────────────────────
+    const CY = BY + BH; // cabin base Y
+    const CH = 0.52; // cabin height
+    const CW = 1.38; // cabin width (narrower than body)
+    const CD = 1.6; // cabin depth
+    const CZ = -0.2; // cabin offset rearward
+
+    const RY = CY + CH; // roof Y
+
+    // ── UNDERCARRIAGE ────────────────────────────────────────────────────
     const under = new THREE.Mesh(
-      new THREE.BoxGeometry(1.95, 0.22, 3.1),
+      new THREE.BoxGeometry(BW + 0.1, 0.18, BD),
       mBlack,
     );
-    under.position.y = AXH + 0.11;
+    under.position.y = AXH + 0.09;
     carGroup.add(under);
 
-    // ── MAIN BODY ─────────────────────────────────────────────────────
-    const body = new THREE.Mesh(new THREE.BoxGeometry(1.72, BH, 3.1), mBody);
+    // Diff humps (axle covers)
+    [WFZ, WRZ].forEach((z) => {
+      const hump = new THREE.Mesh(
+        new THREE.BoxGeometry(BW - 0.1, 0.22, 0.55),
+        mBlack,
+      );
+      hump.position.set(0, AXH + 0.22, z);
+      carGroup.add(hump);
+    });
+
+    // ── MAIN BODY ─────────────────────────────────────────────────────────
+    const body = new THREE.Mesh(new THREE.BoxGeometry(BW, BH, BD), mBody);
     body.position.y = BY + BH / 2;
-    body.castShadow = true;
     carGroup.add(body);
     carBodyMesh = body;
 
-    // Side sills
-    [-0.87, 0.87].forEach((x) => {
-      const sill = new THREE.Mesh(
-        new THREE.BoxGeometry(0.05, 0.18, 2.6),
+    // Side rock-sliders (black protective rails)
+    [-BW / 2 - 0.02, BW / 2 + 0.02].forEach((x) => {
+      const slider = new THREE.Mesh(
+        new THREE.BoxGeometry(0.09, 0.14, BD - 0.3),
         mBlack,
       );
-      sill.position.set(x, BY + 0.09, 0);
-      carGroup.add(sill);
+      slider.position.set(x, BY + 0.07, 0);
+      carGroup.add(slider);
     });
 
-    // ── WHEEL ARCH FLARES — Bruno Simon's key feature ──────────────────
-    // Wide flares that stick out SIGNIFICANTLY beyond body width
-    // Front arches
-    [FZ * 0.6, RZ * 0.6].forEach((z, zi) => {
+    // Body crease lines (raised detail strips on sides)
+    [-BW / 2 + 0.04, BW / 2 - 0.04].forEach((x) => {
+      const crease = new THREE.Mesh(
+        new THREE.BoxGeometry(0.06, BH * 0.45, BD * 0.7),
+        mDark,
+      );
+      crease.position.set(x, BY + BH * 0.55, 0);
+      carGroup.add(crease);
+    });
+
+    // ── WHEEL ARCH FLARES — Bruno Simon's signature feature ───────────────
+    // Super-wide flares that extend FAR beyond the body width
+    const archW = 0.22; // how far flare extends outward
+    const archH = 0.42;
+    const archD = 1.12;
+    [WFZ * 0.64, WRZ * 0.64].forEach((z) => {
       [-1, 1].forEach((side) => {
-        // Main arch box — extends well beyond body
+        const ox = side * (BW / 2 + archW / 2 - 0.02);
+        // Main arch slab
         const arch = new THREE.Mesh(
-          new THREE.BoxGeometry(0.18, 0.4, 1.05),
+          new THREE.BoxGeometry(archW, archH, archD),
           mArch,
         );
-        arch.position.set(side * (0.86 + 0.09), BY + 0.24, z);
-        arch.castShadow = true;
+        arch.position.set(ox, BY + 0.22, z);
         carGroup.add(arch);
-        // Arch lip (bottom edge — darker)
+        // Arch lip — flat black bottom edge
         const lip = new THREE.Mesh(
-          new THREE.BoxGeometry(0.2, 0.06, 1.02),
+          new THREE.BoxGeometry(archW + 0.06, 0.07, archD + 0.04),
           mBlack,
         );
-        lip.position.set(side * (0.86 + 0.1), BY + 0.04, z);
+        lip.position.set(ox, BY + 0.02, z);
         carGroup.add(lip);
+        // Arch top bevel
+        const bevel = new THREE.Mesh(
+          new THREE.BoxGeometry(archW - 0.04, 0.09, archD - 0.06),
+          mDark,
+        );
+        bevel.position.set(ox, BY + archH * 0.82, z);
+        carGroup.add(bevel);
       });
     });
 
-    // ── CABIN ─────────────────────────────────────────────────────────
-    const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.44, CH, 1.76), mDark);
-    cabin.position.set(0, CY + CH / 2, -0.18);
-    cabin.castShadow = true;
+    // ── CABIN ─────────────────────────────────────────────────────────────
+    const cabin = new THREE.Mesh(new THREE.BoxGeometry(CW, CH, CD), mDark);
+    cabin.position.set(0, CY + CH / 2, CZ);
     carGroup.add(cabin);
 
-    // ── ROOF ──────────────────────────────────────────────────────────
-    const roofSlab = new THREE.Mesh(
-      new THREE.BoxGeometry(1.4, 0.09, 1.76),
+    // Cabin corner pillars (A/B pillars) — Bruno Simon detail
+    [
+      [-CW / 2 + 0.06, CD * 0.46],
+      [CW / 2 - 0.06, CD * 0.46],
+      [-CW / 2 + 0.06, -CD * 0.46],
+      [CW / 2 - 0.06, -CD * 0.46],
+    ].forEach(([x, z]) => {
+      const pillar = new THREE.Mesh(
+        new THREE.BoxGeometry(0.1, CH, 0.1),
+        mBlack,
+      );
+      pillar.position.set(x, CY + CH / 2, CZ + z);
+      carGroup.add(pillar);
+    });
+
+    // ── ROOF ──────────────────────────────────────────────────────────────
+    const roof = new THREE.Mesh(
+      new THREE.BoxGeometry(CW + 0.05, 0.1, CD + 0.02),
       mBlack,
     );
-    roofSlab.position.set(0, RY + 0.045, -0.18);
-    carGroup.add(roofSlab);
+    roof.position.set(0, RY + 0.05, CZ);
+    carGroup.add(roof);
 
-    // Roof rack
-    [-0.54, 0.54].forEach((x) => {
+    // Roof rack rails
+    [-CW / 2 + 0.1, CW / 2 - 0.1].forEach((x) => {
       const rail = new THREE.Mesh(
-        new THREE.BoxGeometry(0.045, 0.045, 1.5),
+        new THREE.BoxGeometry(0.05, 0.05, CD * 0.78),
         mChrome,
       );
-      rail.position.set(x, RY + 0.09, -0.18);
+      rail.position.set(x, RY + 0.1, CZ);
       carGroup.add(rail);
     });
-    [-0.48, 0.08, 0.62].forEach((z) => {
+    // Roof rack cross-bars
+    [-0.38, 0.18, 0.62].forEach((zOff) => {
       const bar = new THREE.Mesh(
-        new THREE.BoxGeometry(1.06, 0.04, 0.045),
+        new THREE.BoxGeometry(CW * 0.82, 0.04, 0.05),
         mChrome,
       );
-      bar.position.set(0, RY + 0.1, z - 0.18);
+      bar.position.set(0, RY + 0.115, CZ + zOff - 0.1);
       carGroup.add(bar);
     });
 
-    // LED light bar on roof front
+    // LED light bar on roof-front (glowing)
     const ledBar = new THREE.Mesh(
-      new THREE.BoxGeometry(1.15, 0.065, 0.1),
-      new THREE.MeshBasicMaterial({ color: 0xffffcc }),
+      new THREE.BoxGeometry(CW * 0.92, 0.07, 0.11),
+      new THREE.MeshBasicMaterial({ color: 0xfffbe8 }),
     );
-    ledBar.position.set(0, RY + 0.105, 0.74);
+    ledBar.position.set(0, RY + 0.12, CZ + CD / 2 - 0.04);
     carGroup.add(ledBar);
-    const ledPt = new THREE.PointLight(0xffffcc, isNight ? 1.6 : 0, 9);
-    ledPt.position.set(0, RY + 0.18, 0.85);
+    const ledPt = new THREE.PointLight(0xfffbe8, isNight ? 1.8 : 0, 10);
+    ledPt.position.set(0, RY + 0.22, CZ + CD / 2 + 0.5);
     carGroup.add(ledPt);
 
-    // ── HOOD ──────────────────────────────────────────────────────────
-    const hood = new THREE.Mesh(new THREE.BoxGeometry(1.64, 0.08, 0.84), mBody);
-    hood.position.set(0, BY + BH + 0.04, FZ * 0.73);
+    // ── HOOD ──────────────────────────────────────────────────────────────
+    const hood = new THREE.Mesh(
+      new THREE.BoxGeometry(BW - 0.12, 0.09, 0.92),
+      mBody,
+    );
+    hood.position.set(0, BY + BH + 0.045, WFZ * 0.72);
     carGroup.add(hood);
-    // Power dome
-    const dome = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.055, 0.7), mDark);
-    dome.position.set(0, BY + BH + 0.075, FZ * 0.73);
-    carGroup.add(dome);
+    // Power bulge
+    const bulge = new THREE.Mesh(
+      new THREE.BoxGeometry(0.36, 0.06, 0.72),
+      mDark,
+    );
+    bulge.position.set(0, BY + BH + 0.085, WFZ * 0.72);
+    carGroup.add(bulge);
 
-    // ── WINDSHIELDS ───────────────────────────────────────────────────
-    // Front — angled
+    // ── WINDSHIELDS ───────────────────────────────────────────────────────
+    // Front windshield — slightly angled
     const wsF = new THREE.Mesh(
-      new THREE.BoxGeometry(1.38, 0.46, 0.055),
-      mGlass.clone(),
+      new THREE.BoxGeometry(CW - 0.08, CH * 0.82, 0.08),
+      mGlass,
     );
-    wsF.position.set(0, CY + 0.24, FZ * 0.58);
-    wsF.rotation.x = 0.22;
+    wsF.position.set(0, CY + CH * 0.48, CZ + CD / 2 + 0.01);
+    wsF.rotation.x = 0.24;
     carGroup.add(wsF);
-    // Rear
+    // Rear windshield
     const wsR = new THREE.Mesh(
-      new THREE.BoxGeometry(1.38, 0.44, 0.055),
-      mGlass.clone(),
+      new THREE.BoxGeometry(CW - 0.08, CH * 0.78, 0.08),
+      mGlass,
     );
-    wsR.position.set(0, CY + 0.23, -1.0);
+    wsR.position.set(0, CY + CH * 0.46, CZ - CD / 2 - 0.01);
     wsR.rotation.x = -0.22;
     carGroup.add(wsR);
-    // Side windows ×2 per side
-    [-0.73, 0.73].forEach((x) => {
-      const sw1 = new THREE.Mesh(
-        new THREE.BoxGeometry(0.055, 0.36, 0.58),
-        mGlass.clone(),
+    // Side windows
+    [-1, 1].forEach((side) => {
+      const sw = new THREE.Mesh(
+        new THREE.BoxGeometry(0.07, CH * 0.74, CD * 0.68),
+        mGlass,
       );
-      sw1.position.set(x, CY + 0.24, 0.32);
-      carGroup.add(sw1);
-      const sw2 = new THREE.Mesh(
-        new THREE.BoxGeometry(0.055, 0.34, 0.48),
-        mGlass.clone(),
-      );
-      sw2.position.set(x, CY + 0.22, -0.38);
-      carGroup.add(sw2);
-    });
-    // B-pillar
-    [-0.72, 0.72].forEach((x) => {
-      const bp = new THREE.Mesh(
-        new THREE.BoxGeometry(0.075, 0.5, 0.09),
-        mBlack,
-      );
-      bp.position.set(x, CY + 0.25, -0.06);
-      carGroup.add(bp);
+      sw.position.set(side * (CW / 2 + 0.02), CY + CH * 0.5, CZ);
+      carGroup.add(sw);
     });
 
-    // ── FRONT FACE ────────────────────────────────────────────────────
-    // Grille surround
-    const gSurr = new THREE.Mesh(
-      new THREE.BoxGeometry(1.62, 0.38, 0.08),
+    // ── FRONT FACE ────────────────────────────────────────────────────────
+    // Grille surround (full front face)
+    const gFront = new THREE.Mesh(
+      new THREE.BoxGeometry(BW - 0.06, BH * 0.72, 0.09),
       mBlack,
     );
-    gSurr.position.set(0, BY + 0.21, FZ);
-    carGroup.add(gSurr);
-    // Grille bars
-    for (let i = 0; i < 4; i++) {
-      const gb = new THREE.Mesh(
-        new THREE.BoxGeometry(1.38, 0.03, 0.05),
-        new THREE.MeshLambertMaterial({ color: 0x1a1610 }),
+    gFront.position.set(0, BY + BH * 0.38, WFZ + BD / 2 - 0.04);
+    carGroup.add(gFront);
+
+    // Horizontal grille slats
+    for (let i = 0; i < 5; i++) {
+      const slat = new THREE.Mesh(
+        new THREE.BoxGeometry(BW - 0.28, 0.04, 0.06),
+        mDark,
       );
-      gb.position.set(0, BY + 0.07 + i * 0.09, FZ + 0.01);
-      carGroup.add(gb);
+      slat.position.set(0, BY + 0.08 + i * 0.08, WFZ + BD / 2 + 0.01);
+      carGroup.add(slat);
     }
-    // Round headlights — G-Wagon style
-    [-0.6, 0.6].forEach((x) => {
+
+    // Round headlights — G-Wagon / Bruno Simon style
+    [-0.54, 0.54].forEach((x) => {
       const housing = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.18, 0.18, 0.09, 10),
+        new THREE.CylinderGeometry(0.2, 0.2, 0.1, 12),
         mBlack,
       );
       housing.rotation.x = Math.PI / 2;
-      housing.position.set(x, BY + 0.32, FZ + 0.01);
+      housing.position.set(x, BY + BH * 0.52, WFZ + BD / 2 + 0.01);
       carGroup.add(housing);
+      // Lens
       const lens = new THREE.Mesh(
-        new THREE.CircleGeometry(0.14, 10),
-        new THREE.MeshBasicMaterial({ color: 0xffee88 }),
+        new THREE.CircleGeometry(0.155, 12),
+        new THREE.MeshBasicMaterial({ color: 0xffeeaa }),
       );
-      lens.position.set(x, BY + 0.32, FZ + 0.06);
+      lens.position.set(x, BY + BH * 0.52, WFZ + BD / 2 + 0.06);
       carGroup.add(lens);
+      // DRL ring
       const drl = new THREE.Mesh(
-        new THREE.RingGeometry(0.1, 0.15, 10),
-        new THREE.MeshBasicMaterial({
-          color: 0xffffff,
-          side: THREE.DoubleSide,
-        }),
+        new THREE.TorusGeometry(0.175, 0.022, 6, 14),
+        new THREE.MeshBasicMaterial({ color: 0xffffff }),
       );
-      drl.position.set(x, BY + 0.32, FZ + 0.07);
+      drl.position.set(x, BY + BH * 0.52, WFZ + BD / 2 + 0.055);
       carGroup.add(drl);
     });
-    carHL = ptLight(0xffffaa, isNight ? 7 : 0, 36, [-0.6, BY + 0.32, FZ + 0.2]);
-    carHR = ptLight(0xffffaa, isNight ? 7 : 0, 36, [0.6, BY + 0.32, FZ + 0.2]);
+
+    // Headlight point lights
+    carHL = new THREE.PointLight(0xffe8aa, isNight ? 8 : 0, 16);
+    carHL.position.set(0, BY + BH * 0.5, WFZ + BD / 2 + 1.2);
     carGroup.add(carHL);
-    carGroup.add(carHR);
+    carHR = carHL; // single forward light, share ref
 
     // Front bumper
-    const bmpF = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.17, 0.15), mBlack);
-    bmpF.position.set(0, BY + 0.09, FZ + 0.04);
+    const bmpF = new THREE.Mesh(
+      new THREE.BoxGeometry(BW + 0.08, 0.2, 0.17),
+      mBlack,
+    );
+    bmpF.position.set(0, BY + 0.1, WFZ + BD / 2 + 0.04);
     carGroup.add(bmpF);
-    // Skid plate
-    const skid = new THREE.Mesh(
-      new THREE.BoxGeometry(1.18, 0.08, 0.17),
+    // Bull-bar
+    const bull = new THREE.Mesh(
+      new THREE.BoxGeometry(BW - 0.28, 0.2, 0.1),
       mChrome,
     );
-    skid.position.set(0, BY + 0.04, FZ + 0.04);
-    carGroup.add(skid);
+    bull.position.set(0, BY + 0.3, WFZ + BD / 2 + 0.07);
+    carGroup.add(bull);
+    // Bull-bar uprights
+    [-0.44, 0.44].forEach((x) => {
+      const up = new THREE.Mesh(
+        new THREE.BoxGeometry(0.07, BH * 0.55, 0.09),
+        mChrome,
+      );
+      up.position.set(x, BY + BH * 0.28, WFZ + BD / 2 + 0.07);
+      carGroup.add(up);
+    });
     // Tow hooks
-    [-0.46, 0.46].forEach((x) => {
+    [-0.38, 0.38].forEach((x) => {
       const hk = new THREE.Mesh(
-        new THREE.TorusGeometry(0.06, 0.018, 4, 8),
-        new THREE.MeshLambertMaterial({ color: 0xddaa00 }),
+        new THREE.TorusGeometry(0.065, 0.02, 5, 9),
+        mM("gold", 0xddaa00),
       );
       hk.rotation.y = Math.PI / 2;
-      hk.position.set(x, BY + 0.03, FZ + 0.09);
+      hk.position.set(x, BY + 0.06, WFZ + BD / 2 + 0.1);
       carGroup.add(hk);
     });
 
-    // ── REAR ──────────────────────────────────────────────────────────
-    // Full-width tail LED strip
-    const tlStrip = new THREE.Mesh(
-      new THREE.BoxGeometry(1.36, 0.06, 0.032),
-      new THREE.MeshBasicMaterial({ color: 0xff2200 }),
+    // ── REAR FACE ────────────────────────────────────────────────────────
+    // Full-width tail light strip
+    const tStrip = new THREE.Mesh(
+      new THREE.BoxGeometry(BW - 0.12, 0.07, 0.04),
+      new THREE.MeshBasicMaterial({ color: 0xff1800 }),
     );
-    tlStrip.position.set(0, BY + BH - 0.06, RZ);
-    carGroup.add(tlStrip);
-    // Corner tail clusters
-    [-0.66, 0.66].forEach((x) => {
-      const tc = new THREE.Mesh(
-        new THREE.BoxGeometry(0.2, 0.2, 0.04),
-        new THREE.MeshBasicMaterial({ color: 0xff3300 }),
+    tStrip.position.set(0, BY + BH * 0.72, WRZ - BD / 2 - 0.02);
+    carGroup.add(tStrip);
+    // Reverse lights
+    [-0.42, 0.42].forEach((x) => {
+      const rev = new THREE.Mesh(
+        new THREE.BoxGeometry(0.14, 0.12, 0.04),
+        new THREE.MeshBasicMaterial({ color: 0xffeedd }),
       );
-      tc.position.set(x, BY + 0.26, RZ);
-      carGroup.add(tc);
+      rev.position.set(x, BY + BH * 0.32, WRZ - BD / 2 - 0.02);
+      carGroup.add(rev);
     });
-    carTL = ptLight(0xff1100, isNight ? 2.5 : 0, 8, [
-      -0.66,
-      BY + 0.26,
-      RZ - 0.08,
-    ]);
-    carTR = ptLight(0xff1100, isNight ? 2.5 : 0, 8, [
-      0.66,
-      BY + 0.26,
-      RZ - 0.08,
-    ]);
-    carGroup.add(carTL);
-    carGroup.add(carTR);
     // Rear bumper
     const bmpR = new THREE.Mesh(
-      new THREE.BoxGeometry(1.66, 0.15, 0.13),
+      new THREE.BoxGeometry(BW + 0.08, 0.19, 0.16),
       mBlack,
     );
-    bmpR.position.set(0, BY + 0.08, RZ - 0.02);
+    bmpR.position.set(0, BY + 0.1, WRZ - BD / 2 - 0.04);
     carGroup.add(bmpR);
-    // Exhaust pipes
-    [-0.48, 0.48].forEach((x) => {
-      const pipe = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.044, 0.05, 0.16, 6),
-        mChrome,
-      );
-      pipe.rotation.x = Math.PI / 2;
-      pipe.position.set(x, BY + 0.04, RZ - 0.04);
-      carGroup.add(pipe);
-    });
+    // Tail-pipe
+    const pipe = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.05, 0.05, 0.22, 7),
+      mChrome,
+    );
+    pipe.rotation.z = Math.PI / 2;
+    pipe.position.set(-BW / 2 + 0.2, BY + 0.06, WRZ - BD / 2 - 0.08);
+    carGroup.add(pipe);
 
-    // Side mirrors
-    [-0.84, 0.84].forEach((x) => {
-      const arm = new THREE.Mesh(
-        new THREE.BoxGeometry(0.06, 0.05, 0.18),
-        mBlack,
-      );
-      arm.position.set(x + (x < 0 ? -0.05 : 0.05), CY + 0.16, FZ * 0.42);
-      carGroup.add(arm);
-      const head = new THREE.Mesh(
-        new THREE.BoxGeometry(0.05, 0.16, 0.22),
-        mBlack,
-      );
-      head.position.set(x + (x < 0 ? -0.09 : 0.09), CY + 0.16, FZ * 0.42);
-      carGroup.add(head);
-    });
+    // Tail lights point-light
+    carTL = new THREE.PointLight(0xff1800, isNight ? 2.8 : 0, 8);
+    carTL.position.set(0, BY + BH * 0.7, WRZ - BD / 2 - 1.0);
+    carGroup.add(carTL);
+    carTR = carTL; // share ref
 
-    // Underglow
-    const ug = new THREE.PointLight(0x002299, isNight ? 0.8 : 0, 6);
-    ug.position.set(0, 0.08, 0);
-    carGroup.add(ug);
-
-    // ── WHEELS ────────────────────────────────────────────────────────
-    // Each wheel: position group (wg, never rotated) + spin group (sg, rotation.x += spin)
-    // Tyre cylinder has rotation.z=PI/2 so its axis is X → sg.rotation.x rolls it ✓
-    const WPOS = [
-      [-WOFX, WOFZ],
-      [WOFX, WOFZ],
-      [-WOFX, -WOFZ],
-      [WOFX, -WOFZ],
-    ];
-    WPOS.forEach(([wx, wz]) => {
+    // ── WHEELS × 4 ───────────────────────────────────────────────────────
+    // Larger, fatter wheels — Bruno Simon's most iconic visual
+    [
+      [WTX, AXH, WFZ, false], // FR
+      [-WTX, AXH, WFZ, true], // FL
+      [WTX, AXH, WRZ, false], // RR
+      [-WTX, AXH, WRZ, true], // RL
+    ].forEach(([wx, wy, wz, isLeft]) => {
       const wg = new THREE.Group();
-      wg.position.set(wx, AXH, wz);
+      wg.position.set(wx, wy, wz);
       carGroup.add(wg);
 
+      // Spin group — rotation.x = forward roll
       const sg = new THREE.Group();
       wg.add(sg);
       wheelGroups.push(sg);
 
-      // Tyre
+      // ── TYRE ──────────────────────────────────────────────────────────
       const tyre = new THREE.Mesh(
         new THREE.CylinderGeometry(WR, WR, WW, 14),
         mTyre,
       );
       tyre.rotation.z = Math.PI / 2;
-      tyre.castShadow = true;
       sg.add(tyre);
 
-      // Tyre inner rim ring - RED like Bruno Simon!
+      // Tread ribs (chunky off-road detail)
+      for (let r = 0; r < 8; r++) {
+        const ang = (r / 8) * Math.PI * 2;
+        const rib = new THREE.Mesh(
+          new THREE.BoxGeometry(WW + 0.02, WR * 0.12, WR * 0.22),
+          new THREE.MeshMatcapMaterial({
+            color: 0x1e1a14,
+            matcap: matcaps.tyre || matcaps.dark,
+          }),
+        );
+        rib.rotation.x = ang;
+        rib.position.y = 0;
+        sg.add(rib);
+      }
+
+      // ── RED INNER RIM RING ────────────────────────────────────────────
       const rim = new THREE.Mesh(
-        new THREE.CylinderGeometry(WR * 0.78, WR * 0.78, WW + 0.02, 14),
-        new THREE.MeshLambertMaterial({ color: 0x881100 }),
-      ); // red rim!
+        new THREE.CylinderGeometry(WR * 0.76, WR * 0.76, WW + 0.04, 14),
+        mRed,
+      );
       rim.rotation.z = Math.PI / 2;
       sg.add(rim);
 
-      // Hub face (outer side)
-      const outerX = wx < 0 ? -(WW / 2 + 0.012) : WW / 2 + 0.012;
+      // ── 5-SPOKE WHEEL FACE (outer side) ──────────────────────────────
+      const outerX = isLeft ? -(WW / 2 + 0.015) : WW / 2 + 0.015;
+      const faceDir = isLeft ? -1 : 1;
+
+      // Hub disc — solid red
       const hub = new THREE.Mesh(
-        new THREE.CircleGeometry(WR * 0.62, 12),
-        new THREE.MeshLambertMaterial({ color: 0xcc2200 }),
-      ); // red hub like Bruno Simon
-      hub.position.x = outerX;
-      hub.rotation.y = wx < 0 ? -Math.PI / 2 : Math.PI / 2;
+        new THREE.CylinderGeometry(WR * 0.38, WR * 0.38, 0.06, 12),
+        mRed,
+      );
+      hub.rotation.z = Math.PI / 2;
+      hub.position.x = outerX + faceDir * 0.008;
       sg.add(hub);
 
-      // Center cap
-      const cap = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.1, 0.1, 0.05, 8),
-        mChrome,
-      );
-      cap.rotation.z = Math.PI / 2;
-      cap.position.x = outerX + (wx < 0 ? -0.025 : 0.025);
-      sg.add(cap);
-
-      // 5 spokes
+      // 5 spokes fanning out from hub
       for (let s = 0; s < 5; s++) {
         const ang = (s / 5) * Math.PI * 2;
         const spk = new THREE.Mesh(
-          new THREE.BoxGeometry(WW * 0.3, WR * 1.15, 0.055),
-          new THREE.MeshLambertMaterial({ color: 0xddddee }),
+          new THREE.BoxGeometry(0.08, WR * 1.18, WW * 0.28),
+          mChrome,
         );
-        spk.rotation.x = ang; // fans them around X in Y-Z plane ✓
-        spk.position.x = outerX - (wx < 0 ? -0.005 : 0.005);
+        spk.rotation.x = ang;
+        spk.position.x = outerX;
         sg.add(spk);
       }
+
+      // Center cap
+      const cap = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.1, 0.1, 0.06, 8),
+        mChrome,
+      );
+      cap.rotation.z = Math.PI / 2;
+      cap.position.x = outerX + faceDir * 0.035;
+      sg.add(cap);
+
+      // Cap logo dot
+      const logo = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.04, 0.04, 0.02, 6),
+        new THREE.MeshBasicMaterial({ color: 0x00ddff }),
+      );
+      logo.rotation.z = Math.PI / 2;
+      logo.position.x = outerX + faceDir * 0.065;
+      sg.add(logo);
     });
 
-    // ── CAR SELF-ILLUMINATION (warm point from above, like studio light) ──
-    const carTopLight = new THREE.PointLight(0xffcc88, isNight ? 2.5 : 1.2, 6);
-    carTopLight.position.set(0, 3.5, 0);
+    // ── CAR TOP-LIGHT (warm fill from above — studio look) ────────────────
+    const carTopLight = new THREE.PointLight(0xffcc88, isNight ? 2.2 : 1.0, 5);
+    carTopLight.position.set(0, 3.8, 0);
     carGroup.add(carTopLight);
 
-    // ── FLAT SHADOW DISC under car (Bruno Simon style) ─────────────────
+    // ── BLOB SHADOW ───────────────────────────────────────────────────────
     const shadowDisc = new THREE.Mesh(
-      new THREE.CircleGeometry(2.2, 16),
+      new THREE.EllipseCurve()
+        ? new THREE.CircleGeometry(2.6, 20)
+        : new THREE.CircleGeometry(2.6, 20),
       new THREE.MeshBasicMaterial({
         color: 0x000000,
         transparent: true,
-        opacity: 0.22,
+        opacity: 0.24,
         depthWrite: false,
         side: THREE.DoubleSide,
       }),
     );
     shadowDisc.rotation.x = -Math.PI / 2;
+    shadowDisc.scale.set(1, 0.65, 1); // oval under car
     shadowDisc.position.y = 0.03;
     carGroup.add(shadowDisc);
 
@@ -1791,17 +2644,36 @@ window.CityEngine = (function () {
 
   // ── CAR PHYSICS (scalar — zero drift) ────────────────────────────────────
   function updateCar() {
-    const fwd = keys["ArrowUp"] || keys["KeyW"];
-    const bwd = keys["ArrowDown"] || keys["KeyS"];
-    const lft = keys["ArrowLeft"] || keys["KeyA"];
-    const rgt = keys["ArrowRight"] || keys["KeyD"];
+    // ── TOUCH JOYSTICK INPUT — merged with keyboard ───────────────────────
+    const tj = window._touchJoy || { ax: 0, ay: 0 };
+    const fwd = keys["ArrowUp"] || keys["KeyW"] || tj.ay < -0.25;
+    const bwd = keys["ArrowDown"] || keys["KeyS"] || tj.ay > 0.25;
+    const lft = keys["ArrowLeft"] || keys["KeyA"] || tj.ax < -0.25;
+    const rgt = keys["ArrowRight"] || keys["KeyD"] || tj.ax > 0.25;
     const brk = keys["Space"];
 
-    // Acceleration — scalar along forward axis
-    if (fwd) carSpeed = Math.min(carSpeed + ACCEL, MAX_SPD);
-    else if (bwd) carSpeed = Math.max(carSpeed - BRAKE * 0.65, -MAX_SPD * 0.45);
+    // Touch analog — partial throttle when stick partially pushed
+    const fwdStr = tj.ay < 0 ? Math.min(1, -tj.ay / 0.6) : fwd ? 1 : 0;
+    // FIX: left arrow = positive carAngle change = turn left. lft→+1, rgt→-1
+    const steerStr = Math.abs(tj.ax) > 0.15 ? -tj.ax : lft ? 1 : rgt ? -1 : 0;
+
+    // ── WEATHER GRIP PHYSICS ─────────────────────────────────────────────
+    // Rain/snow = real slip — grip < 1 makes car slide past intended direction
+    const gripAccel = ACCEL * weatherGrip;
+    const gripDecel = DECEL * (0.6 + weatherGrip * 0.4);
+    const gripTurn = TURN * (0.5 + weatherGrip * 0.5);
+    const maxSpd = MAX_SPD * (0.7 + weatherGrip * 0.3);
+
+    // Acceleration
+    if (fwd || fwdStr > 0)
+      carSpeed = Math.min(carSpeed + gripAccel * fwdStr, maxSpd);
+    else if (bwd)
+      carSpeed = Math.max(
+        carSpeed - BRAKE * 0.65 * weatherGrip,
+        -maxSpd * 0.45,
+      );
     else {
-      carSpeed += carSpeed > 0 ? -DECEL : carSpeed < 0 ? DECEL : 0;
+      carSpeed += carSpeed > 0 ? -gripDecel : carSpeed < 0 ? gripDecel : 0;
       if (Math.abs(carSpeed) < 0.002) carSpeed = 0;
     }
     if (brk) {
@@ -1809,30 +2681,39 @@ window.CityEngine = (function () {
       if (Math.abs(carSpeed) < 0.002) carSpeed = 0;
     }
 
-    // Steering — only while moving, scaled by speed
+    // Steering — scaled by grip (low grip = heavy understeer)
     if (Math.abs(carSpeed) > 0.005) {
       const dir = carSpeed > 0 ? 1 : -1;
       const sf = Math.min(Math.abs(carSpeed) / (MAX_SPD * 0.5), 1.0);
-      if (lft) carAngle += TURN * sf * dir;
-      if (rgt) carAngle -= TURN * sf * dir;
+      carAngle += steerStr * gripTurn * sf * dir;
     }
 
-    // Move along car's own forward axis — NO DRIFT
+    // ── SLIDE DRIFT on low grip ───────────────────────────────────────────
+    // Car drifts outward on corners — steerStr positive = left = drift right
+    const slip = 1 - weatherGrip;
     const sinA = Math.sin(carAngle),
       cosA = Math.cos(carAngle);
-    const nx = carX + sinA * carSpeed,
-      nz = carZ + cosA * carSpeed;
+    // Lateral = perpendicular to forward direction
+    const latX = cosA; // +cosA = rightward lateral
+    const latZ = -sinA;
+    const nx =
+      carX +
+      sinA * carSpeed +
+      latX * -steerStr * slip * Math.abs(carSpeed) * 0.3;
+    const nz =
+      carZ +
+      cosA * carSpeed +
+      latZ * -steerStr * slip * Math.abs(carSpeed) * 0.3;
 
     if (!collides(nx, nz)) {
       carX = nx;
       carZ = nz;
-      // Gently shake trees when driving very close (brushing past)
       if (Math.abs(carSpeed) > 0.1) shakeNearbyTrees(carX, carZ, 2.5);
     } else {
       if (crashCooldown <= 0 && Math.abs(carSpeed) > 0.04) {
         playCrash();
         shakeCam();
-        shakeNearbyTrees(carX, carZ, 6); // shake all trees within 6 units on impact
+        shakeNearbyTrees(carX, carZ, 6);
         crashCooldown = 45;
       }
       carSpeed *= -0.3;
@@ -1844,31 +2725,30 @@ window.CityEngine = (function () {
     carGroup.position.set(carX, 0, carZ);
     carGroup.rotation.y = carAngle;
 
-    // Wheel spin: spinGroup.rotation.x → rolls wheel forward/backward ✓
-    // (spinGroup has no pre-rotation, so X = world X = correct roll axis)
     const spin = Math.abs(carSpeed) * 2.2 * (carSpeed >= 0 ? 1 : -1);
     wheelGroups.forEach((sg) => {
       sg.rotation.x += spin;
     });
 
-    // Body roll — smooth lean into corners
-    const steer = (lft ? 1 : 0) - (rgt ? 1 : 0);
+    // Body roll — exaggerated on slippery surfaces
+    const steerVal = steerStr;
     carGroup.rotation.z +=
-      (steer * carSpeed * 0.07 - carGroup.rotation.z) * 0.12;
+      (steerVal * carSpeed * (0.07 + slip * 0.08) - carGroup.rotation.z) * 0.12;
 
     // Bounce
     carGroup.position.y = Math.abs(
       Math.sin(Date.now() * 0.016) * carSpeed * 0.015,
     );
 
-    // Camera — Bruno Simon style: ~45° angle, NOT top-down
-    // Distance 14, height 10 → angle ≈ arctan(10/14) ≈ 35°
-    const tx = carX - sinA * 14,
-      tz = carZ - cosA * 14;
-    camera.position.x += (tx - camera.position.x) * 0.1;
-    camera.position.y += (9 - camera.position.y) * 0.06;
-    camera.position.z += (tz - camera.position.z) * 0.1;
-    camera.lookAt(carX + sinA * 2, 0.8, carZ + cosA * 2);
+    // Camera — Bruno Simon: tight behind car, 35-40° angle down
+    const camDist = 15,
+      camH = 10.5;
+    const tx = carX - sinA * camDist;
+    const tz = carZ - cosA * camDist;
+    camera.position.x += (tx - camera.position.x) * 0.09;
+    camera.position.y += (camH - camera.position.y) * 0.055;
+    camera.position.z += (tz - camera.position.z) * 0.09;
+    camera.lookAt(carX + sinA * 3, 0.6, carZ + cosA * 3);
 
     if (prevSpeed > 0.09 && carSpeed < 0.03) playBrake();
     prevSpeed = carSpeed;
@@ -1913,13 +2793,66 @@ window.CityEngine = (function () {
   function highlightBuilding(id, on) {
     buildingMeshes.forEach((bm) => {
       if (bm.building.id !== id) return;
-      bm.bodyMat.emissive = new THREE.Color(on ? pc(bm.building.glowColor) : 0);
-      bm.bodyMat.emissiveIntensity = on ? 0.22 : 0;
+      const baseHex =
+        bm.bodyMat.userData.baseColor || bm.bodyMat.color.getHex();
+      if (!bm.bodyMat.userData.baseColor)
+        bm.bodyMat.userData.baseColor = baseHex;
+      if (on) {
+        const gc = pc(bm.building.glowColor);
+        const baseC = new THREE.Color(baseHex);
+        const glowC = new THREE.Color(gc);
+        bm.bodyMat.color.setRGB(
+          Math.min(1, baseC.r + glowC.r * 0.22),
+          Math.min(1, baseC.g + glowC.g * 0.22),
+          Math.min(1, baseC.b + glowC.b * 0.22),
+        );
+        const bs = blobShadows.find((s) => s.building.id === id);
+        if (bs) bs.mesh.material.opacity = 0.85;
+      } else {
+        bm.bodyMat.color.setHex(baseHex);
+        const bs = blobShadows.find((s) => s.building.id === id);
+        if (bs) bs.mesh.material.opacity = 0.6;
+      }
     });
   }
 
   function enterNearestBuilding() {
-    if (proximityBuilding) window.CityUI?.openBuilding(proximityBuilding);
+    if (!proximityBuilding) return;
+    window.CityUI?.openBuilding(proximityBuilding);
+    // ── CONFETTI BURST — Bruno Simon celebration effect ────────────────
+    spawnConfetti(carX, carZ, pc(proximityBuilding.glowColor));
+  }
+
+  function spawnConfetti(cx, cz, color) {
+    const colors = [color, 0xff88aa, 0xffcc44, 0x7dff4f, 0x00ddff, 0xff9950];
+    const mat = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: 0.92,
+    });
+    const pieces = [];
+    for (let i = 0; i < 40; i++) {
+      const c = new THREE.Mesh(
+        new THREE.BoxGeometry(0.18, 0.18, 0.04),
+        new THREE.MeshBasicMaterial({
+          color: colors[Math.floor(Math.random() * colors.length)],
+          transparent: true,
+          opacity: 0.92,
+        }),
+      );
+      c.position.set(
+        cx + (Math.random() - 0.5) * 2,
+        1.5,
+        cz + (Math.random() - 0.5) * 2,
+      );
+      c.userData.vx = (Math.random() - 0.5) * 0.22;
+      c.userData.vy = 0.12 + Math.random() * 0.18;
+      c.userData.vz = (Math.random() - 0.5) * 0.22;
+      c.userData.life = 1.0;
+      scene.add(c);
+      pieces.push(c);
+    }
+    confettiPieces.push(...pieces);
   }
 
   function updateCarLights() {
@@ -1935,7 +2868,12 @@ window.CityEngine = (function () {
 
   function updateWindowLights() {
     windowMaterials.forEach((wm) => {
-      wm.mat.opacity = isNight && wm.isLit ? 0.88 : isNight ? 0.05 : 0.15;
+      if (isNight) {
+        wm.mat.opacity = wm.isLit ? 0.88 : 0.05;
+      } else {
+        // Day: windows slightly visible as dark recesses for architectural detail
+        wm.mat.opacity = 0.18;
+      }
     });
   }
 
@@ -1981,50 +2919,126 @@ window.CityEngine = (function () {
       const rx = building.roadPos ? building.roadPos[0] : building.pos[0];
       const rz = building.roadPos ? building.roadPos[1] : building.pos[1];
       const dist = Math.hypot(carX - rx, carZ - rz);
-      const alpha = Math.max(0, Math.min(1, (dist - 3) / 18));
+      // Bruno Simon: marker fades in at distance, brightens on close approach
+      const farAlpha = Math.max(0, Math.min(1, (dist - 2) / 14));
+      const nearPulse = dist < 10 ? Math.sin(t * 3.5) * 0.3 + 0.9 : 1.0;
 
       group.traverse((c) => {
         if (
           c.isMesh &&
           c.material &&
           c.material.transparent &&
-          c.material.opacity > 0
+          c.material.opacity >= 0
         ) {
           if (!c.userData._mbo) c.userData._mbo = c.material.opacity;
-          c.material.opacity = c.userData._mbo * alpha;
+          c.material.opacity = c.userData._mbo * farAlpha * nearPulse;
         }
       });
 
       if (diamond) {
         const bh = group.userData.beamH || 10;
+        // Float & spin
         diamond.position.y =
-          bh + 0.6 + Math.sin(t * 2.1 + diamond.userData.floatPhase) * 0.48;
-        diamond.rotation.y = t * 1.5;
+          bh + 0.6 + Math.sin(t * 2.1 + diamond.userData.floatPhase) * 0.52;
+        diamond.rotation.y = t * 1.8;
         if (pRing) pRing.position.y = diamond.position.y;
+        // Squish scale pulse
+        const sq = 1 + Math.sin(t * 2.8) * 0.12;
+        diamond.scale.set(sq, 1 / sq, sq);
       }
       if (pRing) {
-        const s = 1 + Math.sin(t * 2.8 + building.pos[0]) * 0.22;
+        const s = 1 + Math.sin(t * 2.4 + building.pos[0]) * 0.18;
         pRing.scale.set(s, s, 1);
       }
       group.children.forEach((c) => {
         if (c.userData.cpRing) {
-          const rs = 1 + Math.sin(t * 2.4 + c.userData.phase) * 0.14;
+          const rs = 1 + Math.sin(t * 2.2 + c.userData.phase) * 0.16;
           c.scale.set(rs, 1, rs);
         }
       });
     });
 
-    // ── BLOOM SIMULATION ─────────────────────────────────────────────────
-    // Three.js r128 has no built-in bloom pass without loaders.
-    // We simulate it by pulsing emissiveIntensity on all glowing building lights
-    // and making glow orbs slightly scale-pulse.
+    // ── BLOSSOM PETAL DRIFT ──────────────────────────────────────────────────
+    scene.children.forEach((c) => {
+      if (!c.userData.isPetals) return;
+      const pos = c.geometry.attributes.position.array;
+      const vel = c.userData.vel;
+      const cnt = pos.length / 3;
+      for (let i = 0; i < cnt; i++) {
+        pos[i * 3] += vel[i * 3];
+        pos[i * 3 + 1] += vel[i * 3 + 1];
+        pos[i * 3 + 2] += vel[i * 3 + 2];
+        // Add gentle sine sway
+        pos[i * 3] += Math.sin(t * 0.7 + i * 0.4) * 0.003;
+        // Reset petals that fall below ground
+        if (pos[i * 3 + 1] < 0) {
+          pos[i * 3] = (Math.random() - 0.5) * 90;
+          pos[i * 3 + 1] = 16 + Math.random() * 4;
+          pos[i * 3 + 2] = (Math.random() - 0.5) * 90;
+        }
+      }
+      c.geometry.attributes.position.needsUpdate = true;
+    });
+    scene.children.forEach((c) => {
+      if (c.userData.isTimelineGem) {
+        c.position.y =
+          c.userData.baseY + Math.sin(t * 1.8 + c.userData.phase) * 0.22;
+        c.rotation.y = t * 1.2;
+      }
+      if (c.userData.isFloatArrow) {
+        c.position.y = c.userData.baseY + Math.sin(t * 2.2) * 0.28;
+      }
+    });
+    worldLabels.forEach((sprite) => {
+      const b = sprite.userData.building;
+      const rx = b.roadPos ? b.roadPos[0] : b.pos[0];
+      const rz = b.roadPos ? b.roadPos[1] : b.pos[1];
+      const dist = Math.hypot(carX - rx, carZ - rz);
+      const target = dist < 16 && dist > 3 ? Math.min(1, (16 - dist) / 8) : 0;
+      sprite.material.opacity += (target - sprite.material.opacity) * 0.08;
+      // Gentle float
+      sprite.position.y =
+        sprite.userData.baseY + Math.sin(t * 1.3 + b.pos[0] * 0.4) * 0.18;
+    });
+
+    // ── CONFETTI UPDATE ──────────────────────────────────────────────────────
+    if (confettiPieces.length > 0) {
+      confettiPieces = confettiPieces.filter((c) => {
+        c.userData.vy -= 0.008; // gravity
+        c.position.x += c.userData.vx;
+        c.position.y += c.userData.vy;
+        c.position.z += c.userData.vz;
+        c.rotation.x += 0.18;
+        c.rotation.y += 0.12;
+        c.userData.life -= 0.025;
+        c.material.opacity = c.userData.life * 0.92;
+        if (c.userData.life <= 0) {
+          scene.remove(c);
+          return false;
+        }
+        return true;
+      });
+    }
+
+    // ── PROXIMITY GLOW PULSE on highlighted building ─────────────────────────
     if (isNight) {
-      const bloomPulse = Math.sin(t * 0.8) * 0.04;
-      buildingMeshes.forEach(({ bodyMat }) => {
-        if (bodyMat.emissiveIntensity > 0) {
-          bodyMat.emissiveIntensity = Math.max(
-            0.05,
-            bodyMat.emissiveIntensity + bloomPulse,
+      buildingMeshes.forEach(({ bodyMat, building }) => {
+        const baseHex = bodyMat.userData.baseColor;
+        if (!baseHex) return;
+        const gc = pc(building.glowColor);
+        const glowC = new THREE.Color(gc);
+        const baseC = new THREE.Color(baseHex);
+        const curr = bodyMat.color;
+        // Only pulse if currently highlighted (colour differs from base)
+        if (
+          Math.abs(curr.r - baseC.r) > 0.015 ||
+          Math.abs(curr.g - baseC.g) > 0.015
+        ) {
+          const p = Math.sin(t * 2.4) * 0.02;
+          bodyMat.color.setRGB(
+            Math.min(1, curr.r + p),
+            Math.min(1, curr.g + p * (glowC.g + 0.1)),
+            Math.min(1, curr.b + p * (glowC.b + 0.1)),
           );
         }
       });
@@ -2061,6 +3075,9 @@ window.CityEngine = (function () {
     },
     get carSpeed() {
       return carSpeed;
+    },
+    get weatherGrip() {
+      return weatherGrip;
     },
   };
 })();
