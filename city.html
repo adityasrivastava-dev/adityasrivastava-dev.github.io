@@ -2,8 +2,16 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-    <title>Aditya's City — Architecture Portfolio</title>
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1.0,user-scalable=no"
+    />
+    <meta
+      name="description"
+      content="Aditya Srivastava — Backend Architect. Drive through a 3D city to explore 10 systems."
+    />
+    <meta name="theme-color" content="#1a1030" />
+    <title>Aditya's City — Drive &amp; Explore</title>
     <link
       href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@300;400;500&family=Share+Tech+Mono&display=swap"
       rel="stylesheet"
@@ -37,8 +45,12 @@
       * {
         cursor: none !important;
       }
-
-      /* Custom cursor */
+      button,
+      a,
+      .hb,
+      .px-btn {
+        cursor: none !important;
+      }
       #cur {
         position: fixed;
         z-index: 9999;
@@ -54,88 +66,116 @@
           height 0.15s;
       }
       #cur.big {
-        width: 36px;
-        height: 36px;
+        width: 34px;
+        height: 34px;
         opacity: 0.12;
       }
-
-      /* Canvas full screen */
-      #city-canvas {
+      /* Canvas BEHIND everything */
+      canvas {
         position: fixed;
         inset: 0;
         display: block;
-        width: 100% !important;
-        height: 100% !important;
+        z-index: 1;
+        pointer-events: none;
+      }
+      #scan {
+        position: fixed;
+        inset: 0;
+        z-index: 2;
+        pointer-events: none;
+        background: repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 3px,
+          rgba(0, 200, 255, 0.009) 3px,
+          rgba(0, 200, 255, 0.009) 4px
+        );
+      }
+      #vig {
+        position: fixed;
+        inset: 0;
+        z-index: 2;
+        pointer-events: none;
+        background: radial-gradient(
+          ellipse 90% 80% at 50% 50%,
+          transparent 30%,
+          rgba(6, 8, 14, 0.55) 100%
+        );
       }
 
-      /* ── HEADER HUD ── */
+      /* ── HUD ── */
       #hud-top {
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
-        z-index: 200;
-        height: 54px;
+        z-index: 300;
+        height: 52px;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 0 24px;
+        padding: 0 20px;
         background: linear-gradient(
           180deg,
           rgba(6, 8, 14, 0.95) 0%,
           transparent 100%
         );
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        pointer-events: none;
       }
-      .hud-name {
+      .h-name {
         font-family: var(--ff);
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 700;
         letter-spacing: 5px;
         color: #fff;
-        text-shadow: 0 0 20px rgba(0, 200, 255, 0.5);
-        pointer-events: all;
+        text-shadow: 0 0 18px rgba(0, 200, 255, 0.5);
       }
-      .hud-mode {
+      .h-mid {
         position: absolute;
         left: 50%;
         transform: translateX(-50%);
         font-family: var(--fm);
-        font-size: 8px;
+        font-size: 7.5px;
         letter-spacing: 4px;
-        color: rgba(255, 255, 255, 0.22);
+        color: rgba(255, 255, 255, 0.2);
       }
-      .hud-actions {
+      .h-acts {
         display: flex;
         align-items: center;
-        gap: 12px;
-        pointer-events: all;
+        gap: 7px;
       }
-      .hud-btn {
+      .hb {
         font-family: var(--fm);
-        font-size: 8px;
+        font-size: 7.5px;
         letter-spacing: 2px;
-        padding: 6px 14px;
+        padding: 5px 11px;
         border: 1px solid rgba(255, 255, 255, 0.12);
         background: rgba(255, 255, 255, 0.05);
         color: rgba(255, 255, 255, 0.5);
         transition: all 0.2s;
       }
-      .hud-btn:hover {
+      .hb:hover {
         border-color: rgba(255, 255, 255, 0.3);
         color: #fff;
         background: rgba(255, 255, 255, 0.1);
       }
-      .hud-btn.night-btn.day {
-        border-color: rgba(255, 220, 80, 0.3);
+      .hb.gold {
+        border-color: rgba(255, 204, 68, 0.3);
         color: var(--gold);
+      }
+      .hb.gold:hover {
+        border-color: var(--gold);
+        background: rgba(255, 204, 68, 0.08);
+      }
+      .hb.active {
+        border-color: rgba(61, 255, 136, 0.4);
+        color: #3dff88;
       }
       #mode-chip {
         font-family: var(--fm);
         font-size: 7px;
         letter-spacing: 3px;
-        padding: 4px 12px;
+        padding: 4px 11px;
         border: 1px solid;
         clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
       }
@@ -150,16 +190,24 @@
         background: rgba(0, 200, 255, 0.06);
       }
 
-      /* ── SPEED / GEAR HUD ── */
-      #hud-speed-panel {
+      /* Weather button shows current condition */
+      #weather-btn {
+        position: relative;
+      }
+      #weather-label {
+        font-size: 11px;
+        margin-right: 4px;
+      }
+
+      /* ── SPEED HUD ── */
+      #spd-hud {
         position: fixed;
-        bottom: 90px;
-        left: 24px;
+        bottom: 108px;
+        left: 20px;
         z-index: 200;
-        background: rgba(6, 8, 14, 0.88);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        padding: 12px 20px;
-        min-width: 120px;
+        background: rgba(6, 8, 14, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 12px 18px;
         clip-path: polygon(
           0 0,
           100% 0,
@@ -168,132 +216,140 @@
           0 100%
         );
         pointer-events: none;
+        min-width: 105px;
       }
-      .spd-val {
+      .spd {
         font-family: var(--ff);
-        font-size: 36px;
+        font-size: 42px;
         font-weight: 900;
         color: #fff;
         line-height: 1;
         display: block;
       }
-      .spd-unit {
+      .spd-u {
         font-family: var(--fm);
-        font-size: 8px;
+        font-size: 7.5px;
         letter-spacing: 3px;
         color: rgba(255, 255, 255, 0.3);
-      }
-      .gear-val {
-        font-family: var(--ff);
-        font-size: 22px;
-        font-weight: 700;
-        color: var(--arc);
-        margin-top: 4px;
         display: block;
-        text-shadow: 0 0 12px var(--arc);
       }
-
-      /* ── VISITED COUNTER ── */
-      #visited-count {
-        position: fixed;
-        bottom: 90px;
-        right: 24px;
-        z-index: 200;
-        font-family: var(--fm);
-        font-size: 8px;
-        letter-spacing: 3px;
-        color: rgba(255, 255, 255, 0.3);
-        background: rgba(6, 8, 14, 0.88);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        padding: 8px 14px;
+      .gear {
+        font-family: var(--ff);
+        font-size: 20px;
+        font-weight: 700;
+        display: block;
+        margin-top: 3px;
       }
 
       /* ── MINIMAP ── */
       #minimap {
         position: fixed;
-        bottom: 24px;
-        left: 24px;
+        bottom: 20px;
+        left: 20px;
         z-index: 200;
-        background: rgba(6, 8, 14, 0.88);
+        background: rgba(6, 8, 14, 0.92);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 10px;
-        clip-path: polygon(
-          0 0,
-          100% 0,
-          100% calc(100% - 10px),
-          calc(100% - 10px) 100%,
-          0 100%
-        );
+        padding: 8px;
       }
-      #minimap-label {
+      #mm-lbl {
         font-family: var(--fm);
         font-size: 7px;
         letter-spacing: 3px;
         color: rgba(255, 255, 255, 0.25);
-        margin-bottom: 6px;
+        margin-bottom: 4px;
         text-align: center;
       }
-      #minimap-canvas {
+      #mm-canvas {
         display: block;
-        border: 1px solid rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.07);
       }
-      #minimap-visited {
+      #mm-visited {
         display: none;
       }
 
-      /* ── CONTROLS HINT ── */
-      #controls-hint {
+      /* ── VISITED ── */
+      #visited {
         position: fixed;
-        bottom: 24px;
-        right: 24px;
+        bottom: 108px;
+        right: 20px;
         z-index: 200;
-        background: rgba(6, 8, 14, 0.88);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        padding: 12px 18px;
+        font-family: var(--fm);
+        font-size: 7.5px;
+        letter-spacing: 3px;
+        color: rgba(255, 255, 255, 0.3);
+        background: rgba(6, 8, 14, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        padding: 7px 12px;
+      }
+
+      /* ── CONTROLS ── */
+      #ctrl {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 200;
+        background: rgba(6, 8, 14, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        padding: 11px 15px;
         clip-path: polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px);
         pointer-events: none;
       }
-      .ctrl-row {
+      .cr {
         display: flex;
         align-items: center;
-        gap: 10px;
-        margin-bottom: 6px;
+        gap: 8px;
+        margin-bottom: 5px;
         font-family: var(--fm);
-        font-size: 9px;
+        font-size: 8.5px;
         letter-spacing: 2px;
-        color: rgba(255, 255, 255, 0.35);
+        color: rgba(255, 255, 255, 0.33);
       }
-      .ctrl-key {
+      .cr:last-child {
+        margin-bottom: 0;
+      }
+      .ck {
         background: rgba(255, 255, 255, 0.08);
         border: 1px solid rgba(255, 255, 255, 0.15);
-        padding: 2px 7px;
-        font-size: 9px;
-        min-width: 24px;
+        padding: 2px 6px;
+        font-size: 8.5px;
+        min-width: 20px;
         text-align: center;
-        color: rgba(255, 255, 255, 0.7);
-      }
-      .ctrl-sep {
-        color: rgba(255, 255, 255, 0.15);
+        color: rgba(255, 255, 255, 0.65);
       }
 
-      /* ── PROXIMITY NOTICE ── */
-      #proximity-notice {
+      /* ── WEATHER TOAST ── */
+      #weather-toast {
+        position: fixed;
+        top: 64px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 400;
+        background: rgba(6, 8, 14, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        padding: 10px 24px;
+        font-family: var(--fm);
+        font-size: 9px;
+        letter-spacing: 4px;
+        color: rgba(255, 255, 255, 0.7);
+        opacity: 0;
+        transition: opacity 0.4s;
+        pointer-events: none;
+      }
+      #weather-toast.show {
+        opacity: 1;
+      }
+
+      /* ── PROXIMITY NOTICE — z-index:9000, NO clip-path (kills button events) ── */
+      #prox {
         position: fixed;
         bottom: 24px;
         left: 50%;
-        transform: translateX(-50%) translateY(20px);
-        z-index: 300;
-        background: rgba(6, 8, 14, 0.94);
-        border: 1px solid var(--nc, var(--arc));
+        z-index: 9000;
+        transform: translateX(-50%) translateY(40px);
+        background: rgba(6, 8, 14, 0.97);
+        border: 2px solid var(--nc, #00c8ff);
+        border-radius: 4px;
         padding: 14px 24px;
-        clip-path: polygon(
-          12px 0,
-          100% 0,
-          100% calc(100% - 12px),
-          calc(100% - 12px) 100%,
-          0 100%,
-          0 12px
-        );
         display: flex;
         align-items: center;
         gap: 16px;
@@ -301,54 +357,53 @@
         transition:
           opacity 0.3s,
           transform 0.3s;
-        backdrop-filter: blur(12px);
         pointer-events: none;
-        box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
+        box-shadow:
+          0 0 30px rgba(0, 0, 0, 0.8),
+          0 0 20px var(--nc, rgba(0, 200, 255, 0.15));
+        min-width: 320px;
       }
-      #proximity-notice.show {
+      #prox.show {
         opacity: 1;
         transform: translateX(-50%) translateY(0);
+        pointer-events: auto;
       }
-      .notice-icon {
+      #prox.show * {
+        pointer-events: auto;
+      }
+      .px-icon {
         font-size: 22px;
+        flex-shrink: 0;
       }
-      .notice-text {
-      }
-      .notice-name {
+      .px-name {
         font-family: var(--ff);
-        font-size: 16px;
+        font-size: 17px;
         font-weight: 700;
         letter-spacing: 2px;
         color: #fff;
-        margin-bottom: 2px;
+        margin-bottom: 3px;
       }
-      .notice-sub {
+      .px-sub {
         font-family: var(--fm);
-        font-size: 8px;
+        font-size: 7px;
         letter-spacing: 3px;
         color: rgba(255, 255, 255, 0.4);
       }
-      .notice-enter {
-        font-family: var(--fm);
-        font-size: 8px;
-        letter-spacing: 2px;
-        padding: 5px 12px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        background: rgba(255, 255, 255, 0.06);
-        color: rgba(255, 255, 255, 0.6);
+      .px-btn {
+        font-family: var(--ff);
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 3px;
+        padding: 11px 22px;
+        border: 2px solid #ffffff;
+        background: rgba(255, 255, 255, 0.18);
+        color: #ffffff;
+        border-radius: 3px;
         transition: all 0.2s;
-        pointer-events: all;
+        flex-shrink: 0;
       }
-      .notice-enter:hover {
-        background: rgba(255, 255, 255, 0.12);
-        color: #fff;
-      }
-      .notice-key {
-        font-family: var(--fm);
-        font-size: 7px;
-        letter-spacing: 2px;
-        color: rgba(255, 255, 255, 0.3);
-        margin-left: 4px;
+      .px-btn:hover {
+        background: rgba(255, 255, 255, 0.35);
       }
 
       /* ── SIDE PANEL ── */
@@ -357,9 +412,8 @@
         top: 0;
         right: 0;
         bottom: 0;
-        z-index: 500;
-        width: 480px;
-        max-width: 100vw;
+        z-index: 600;
+        width: min(490px, 50vw);
         transform: translateX(110%);
         transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         pointer-events: none;
@@ -368,15 +422,44 @@
         transform: translateX(0);
         pointer-events: all;
       }
-      #panel-inner {
+      /* When panel open — canvas and HUD shift left */
+      body.panel-open canvas {
+        transform: translateX(calc(-min(245px, 25vw)));
+        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      body.panel-open #hud-top {
+        right: min(490px, 50vw);
+        transition: right 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      body.panel-open #spd-hud,
+      body.panel-open #minimap,
+      body.panel-open #ctrl,
+      body.panel-open #visited,
+      body.panel-open #prox {
+        transform: translateX(calc(-min(245px, 25vw)));
+        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      canvas {
+        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      #hud-top {
+        transition: right 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      #spd-hud,
+      #minimap,
+      #ctrl,
+      #visited {
+        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      #sp-inner {
         position: absolute;
         inset: 0;
-        background: rgba(6, 8, 14, 0.97);
-        border-left: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(6, 8, 14, 0.98);
+        border-left: 1px solid rgba(255, 255, 255, 0.12);
         overflow-y: auto;
-        box-shadow: -20px 0 60px rgba(0, 0, 0, 0.5);
+        box-shadow: -24px 0 80px rgba(0, 0, 0, 0.6);
       }
-      #panel-inner::before {
+      #sp-inner::before {
         content: "";
         position: sticky;
         top: 0;
@@ -387,22 +470,12 @@
         background: linear-gradient(
           90deg,
           transparent,
-          rgba(0, 200, 255, 0.6),
+          var(--arc),
+          rgba(0, 200, 255, 0.4),
           transparent
         );
       }
-      #panel-head {
-        position: sticky;
-        top: 1px;
-        z-index: 10;
-        background: rgba(6, 8, 14, 0.97);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-        padding: 14px 22px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-      #side-panel.open #panel-inner {
+      #side-panel.open #sp-inner {
         animation: pscan 0.5s ease;
       }
       @keyframes pscan {
@@ -413,23 +486,32 @@
           clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
         }
       }
-      #panel-label {
+      #sp-head {
+        position: sticky;
+        top: 1px;
+        z-index: 10;
+        background: rgba(6, 8, 14, 0.97);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+        padding: 13px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      #sp-lbl {
         font-family: var(--fm);
         font-size: 7px;
         letter-spacing: 5px;
         color: rgba(255, 255, 255, 0.25);
       }
-      #panel-close {
+      #sp-x {
         width: 28px;
         height: 28px;
-        border: 1px solid rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.14);
         display: flex;
         align-items: center;
         justify-content: center;
-        color: rgba(255, 255, 255, 0.35);
+        color: rgba(255, 255, 255, 0.4);
         font-size: 16px;
-        background: none;
-        transition: all 0.2s;
         clip-path: polygon(
           6px 0,
           100% 0,
@@ -438,36 +520,35 @@
           0 100%,
           0 6px
         );
+        background: none;
+        transition: all 0.2s;
       }
-      #panel-close:hover {
+      #sp-x:hover {
         border-color: var(--ember);
         color: var(--ember);
-        background: rgba(255, 107, 0, 0.08);
       }
-      #panel-body {
-        padding: 26px 22px 60px;
+      #sp-body {
+        padding: 24px 21px 60px;
       }
 
-      /* Panel content styles */
-      .p-badge,
-      .p-edu-badge {
+      /* Panel styles */
+      .p-badge {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
         font-family: var(--fm);
         font-size: 7px;
         letter-spacing: 3px;
-        padding: 4px 14px;
-        margin-bottom: 16px;
+        padding: 4px 13px;
+        margin-bottom: 15px;
         clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
         border: 1px solid;
       }
-      .p-accent {
+      .p-line {
         height: 1px;
-        margin-bottom: 20px;
+        margin-bottom: 19px;
         position: relative;
       }
-      .p-accent::after {
+      .p-line::after {
         content: "◆";
         position: absolute;
         right: 0;
@@ -488,35 +569,35 @@
         font-size: 22px;
         font-weight: 700;
         letter-spacing: 2px;
-        color: #eef6ff;
+        color: #eef8ff;
         margin-bottom: 4px;
         line-height: 1.1;
       }
-      .p-subtitle {
+      .p-sub {
         font-family: var(--fm);
         font-size: 7px;
         letter-spacing: 4px;
         color: rgba(255, 255, 255, 0.22);
-        margin-bottom: 18px;
+        margin-bottom: 17px;
       }
-      .p-status {
+      .p-stat {
         display: inline-flex;
         align-items: center;
         gap: 8px;
         font-family: var(--fm);
         font-size: 7px;
         letter-spacing: 3px;
-        padding: 4px 14px;
-        margin-bottom: 20px;
-        border: 1px solid;
+        padding: 4px 13px;
+        margin-bottom: 19px;
         clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+        border: 1px solid;
       }
-      .p-status.op {
+      .p-stat.op {
         color: #3dff88;
         border-color: rgba(61, 255, 136, 0.2);
         background: rgba(61, 255, 136, 0.04);
       }
-      .p-status.ac {
+      .p-stat.ac {
         color: var(--arc);
         border-color: rgba(0, 200, 255, 0.2);
         background: rgba(0, 200, 255, 0.04);
@@ -538,91 +619,91 @@
           opacity: 0.25;
         }
       }
-      .p-mets {
+      .mets {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 1px;
-        margin-bottom: 22px;
+        margin-bottom: 18px;
         border: 1px solid rgba(255, 255, 255, 0.06);
         background: rgba(255, 255, 255, 0.04);
       }
-      .p-met {
-        padding: 13px 8px;
+      .met {
+        padding: 12px 9px;
         text-align: center;
-        background: rgba(6, 8, 14, 0.85);
+        background: rgba(6, 8, 14, 0.88);
       }
-      .p-mv {
+      .mv {
         font-family: var(--ff);
         font-size: 18px;
         font-weight: 700;
         display: block;
         margin-bottom: 3px;
       }
-      .p-ml {
+      .ml {
         font-family: var(--fm);
         font-size: 6px;
         letter-spacing: 3px;
         color: rgba(255, 255, 255, 0.25);
       }
-      .p-sl {
+      .sl {
         font-family: var(--fm);
         font-size: 7px;
         letter-spacing: 5px;
-        margin-bottom: 10px;
-        margin-top: 6px;
+        margin-bottom: 9px;
+        margin-top: 5px;
         opacity: 0.7;
         display: flex;
         align-items: center;
         gap: 10px;
       }
-      .p-sl::after {
+      .sl::after {
         content: "";
         flex: 1;
         height: 1px;
         background: linear-gradient(90deg, currentColor, transparent);
         opacity: 0.2;
       }
-      .p-story {
+      .story {
         font-family: var(--fb);
         font-size: 13px;
         line-height: 2.2;
         color: rgba(200, 220, 240, 0.65);
-        margin-bottom: 16px;
-      }
-      .p-outcome-box {
-        padding: 13px 16px;
-        background: rgba(61, 255, 136, 0.03);
-        border: 1px solid rgba(61, 255, 136, 0.14);
         margin-bottom: 14px;
       }
-      .p-outcome-label {
+      .out-box {
+        padding: 12px 15px;
+        background: rgba(61, 255, 136, 0.03);
+        border: 1px solid rgba(61, 255, 136, 0.14);
+        margin-bottom: 13px;
+      }
+      .out-l {
         font-family: var(--fm);
         font-size: 7px;
         letter-spacing: 4px;
         color: rgba(61, 255, 136, 0.5);
-        margin-bottom: 7px;
+        margin-bottom: 6px;
       }
-      .p-outcome-text {
+      .out-t {
         font-family: var(--fb);
         font-size: 12px;
         line-height: 1.9;
         color: rgba(160, 220, 160, 0.72);
       }
-      .p-conn-box {
-        padding: 13px 16px;
+      .conn-box {
+        padding: 12px 15px;
         background: rgba(0, 200, 255, 0.03);
         border: 1px solid rgba(0, 200, 255, 0.1);
         border-left: 2px solid rgba(0, 200, 255, 0.28);
-        margin-bottom: 14px;
+        margin-bottom: 13px;
       }
-      .p-conn-label {
+      .conn-l {
         font-family: var(--fm);
         font-size: 7px;
         letter-spacing: 4px;
         color: rgba(0, 200, 255, 0.45);
-        margin-bottom: 8px;
+        margin-bottom: 7px;
       }
-      .p-conn-item {
+      .conn-i {
         display: flex;
         gap: 10px;
         margin-bottom: 6px;
@@ -631,24 +712,21 @@
         line-height: 1.8;
         color: rgba(160, 190, 220, 0.55);
       }
-      .p-conn-arrow {
-        flex-shrink: 0;
-      }
-      .p-prob {
+      .e-prob {
         font-family: var(--fb);
         font-size: 12px;
         line-height: 2.1;
         color: rgba(220, 180, 160, 0.68);
-        padding: 13px 15px;
+        padding: 12px 15px;
         background: rgba(255, 60, 60, 0.04);
         border: 1px solid rgba(255, 60, 60, 0.14);
         border-left: 2px solid rgba(255, 80, 80, 0.3);
         margin-bottom: 13px;
       }
-      .p-rej-list {
+      .rej-list {
         margin-bottom: 13px;
       }
-      .p-rej-item {
+      .rej-i {
         display: flex;
         gap: 10px;
         padding: 9px 13px;
@@ -660,104 +738,278 @@
         line-height: 1.8;
         color: rgba(180, 140, 140, 0.55);
       }
-      .p-rej-x {
+      .rej-x {
         color: #ff6060;
         flex-shrink: 0;
         font-size: 12px;
         margin-top: 1px;
       }
-      .p-rej-reason {
+      .rej-r {
         color: rgba(180, 120, 120, 0.42);
         font-style: italic;
         font-size: 9px;
         margin-top: 3px;
         display: block;
       }
-      .p-dec {
-        padding: 13px 15px;
+      .dec-box {
+        padding: 12px 15px;
         background: rgba(0, 200, 255, 0.04);
         border: 1px solid rgba(0, 200, 255, 0.14);
         border-left: 2px solid rgba(0, 200, 255, 0.35);
         margin-bottom: 13px;
       }
-      .p-dec-label {
+      .dec-l {
         font-family: var(--fm);
         font-size: 7px;
         letter-spacing: 4px;
         color: rgba(0, 200, 255, 0.48);
-        margin-bottom: 8px;
+        margin-bottom: 7px;
       }
-      .p-dec-body {
+      .dec-b {
         font-family: var(--fm);
         font-size: 10.5px;
         line-height: 2;
         color: rgba(120, 170, 210, 0.78);
       }
-      .p-impl {
-        padding: 13px 15px;
+      .impl-box {
+        padding: 12px 15px;
         background: rgba(125, 255, 79, 0.025);
         border: 1px solid rgba(125, 255, 79, 0.12);
         border-left: 2px solid rgba(125, 255, 79, 0.28);
         margin-bottom: 13px;
       }
-      .p-impl-label {
+      .impl-l {
         font-family: var(--fm);
         font-size: 7px;
         letter-spacing: 4px;
         color: rgba(125, 255, 79, 0.5);
-        margin-bottom: 8px;
+        margin-bottom: 7px;
       }
-      .p-impl-body {
+      .impl-b {
         font-family: var(--fm);
         font-size: 10.5px;
         line-height: 2;
-        color: rgba(140, 200, 140, 0.7);
+        color: rgba(140, 200, 140, 0.68);
       }
-      .p-impl-body code,
-      .p-dec-body code {
+      .dec-b code,
+      .impl-b code {
         color: var(--arc);
         background: rgba(0, 200, 255, 0.08);
         padding: 1px 5px;
       }
-      .p-lesson {
+      .lesson {
         padding: 11px 15px;
         background: rgba(255, 204, 68, 0.03);
         border: 1px solid rgba(255, 204, 68, 0.1);
-        margin-bottom: 14px;
+        margin-bottom: 13px;
         font-family: var(--fm);
         font-size: 10px;
         line-height: 1.9;
         color: rgba(220, 190, 100, 0.58);
       }
-      .p-lesson-label {
+      .lesson-l {
         font-size: 7px;
         letter-spacing: 4px;
         color: rgba(255, 204, 68, 0.42);
-        margin-bottom: 7px;
+        margin-bottom: 6px;
       }
-      .p-ttags {
+      .ttags {
         display: flex;
         flex-wrap: wrap;
         gap: 5px;
-        margin-top: 16px;
+        margin-top: 14px;
       }
-      .p-ttag {
+      .ttag {
         font-family: var(--fm);
         font-size: 7px;
         letter-spacing: 2px;
-        padding: 3px 10px;
+        padding: 3px 9px;
         clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
       }
 
-      /* ── ORACLE ── */
-      #oracle-btn {
+      /* ── JOURNEY ── */
+      #journey {
         position: fixed;
-        bottom: 90px;
-        right: 24px;
-        z-index: 300;
-        width: 44px;
-        height: 44px;
-        background: rgba(6, 8, 14, 0.9);
+        inset: 0;
+        z-index: 700;
+        background: rgba(6, 8, 14, 0.97);
+        backdrop-filter: blur(24px);
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      #journey.open {
+        display: flex;
+      }
+      #jb-x {
+        position: absolute;
+        top: 20px;
+        right: 22px;
+        font-family: var(--fm);
+        font-size: 7.5px;
+        letter-spacing: 3px;
+        color: rgba(255, 255, 255, 0.4);
+        background: none;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        padding: 7px 13px;
+        transition: all 0.2s;
+      }
+      #jb-x:hover {
+        color: #fff;
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+      .jb-hd {
+        font-family: var(--ff);
+        font-size: 10px;
+        letter-spacing: 8px;
+        color: rgba(255, 255, 255, 0.22);
+        margin-bottom: 8px;
+        text-align: center;
+      }
+      .jb-sh {
+        font-family: var(--fm);
+        font-size: 7.5px;
+        letter-spacing: 3px;
+        color: rgba(255, 255, 255, 0.14);
+        margin-bottom: 42px;
+        text-align: center;
+      }
+      #jb-slide {
+        width: 100%;
+        max-width: 760px;
+        padding: 0 22px;
+      }
+      .jb-card {
+        padding: 36px 40px;
+        background: rgba(10, 14, 26, 0.96);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        clip-path: polygon(
+          20px 0,
+          100% 0,
+          100% calc(100% - 20px),
+          calc(100% - 20px) 100%,
+          0 100%,
+          0 20px
+        );
+        position: relative;
+        min-height: 230px;
+      }
+      .jb-type {
+        font-family: var(--fm);
+        font-size: 7px;
+        letter-spacing: 5px;
+        margin-bottom: 9px;
+        display: block;
+      }
+      .jb-year {
+        font-family: var(--ff);
+        font-size: clamp(42px, 6vw, 75px);
+        font-weight: 900;
+        line-height: 1;
+        letter-spacing: -2px;
+        margin-bottom: 11px;
+        display: block;
+      }
+      .jb-ico {
+        position: absolute;
+        top: 32px;
+        right: 36px;
+        font-size: 32px;
+      }
+      .jb-ttl {
+        font-family: var(--ff);
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        color: #eef6ff;
+        margin-bottom: 5px;
+      }
+      .jb-stl {
+        font-family: var(--fm);
+        font-size: 8.5px;
+        letter-spacing: 3px;
+        color: rgba(255, 255, 255, 0.32);
+        margin-bottom: 18px;
+      }
+      .jb-bdy {
+        font-family: var(--fb);
+        font-size: 14px;
+        line-height: 2.1;
+        color: rgba(200, 220, 240, 0.62);
+      }
+      #jb-nav {
+        display: flex;
+        align-items: center;
+        gap: 26px;
+        margin-top: 26px;
+        justify-content: center;
+      }
+      .jb-arr {
+        width: 50px;
+        height: 50px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 21px;
+        color: rgba(255, 255, 255, 0.6);
+        background: rgba(255, 255, 255, 0.04);
+        transition: all 0.25s;
+      }
+      .jb-arr:hover {
+        border-color: #fff;
+        color: #fff;
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .jb-arr:disabled {
+        opacity: 0.2;
+        pointer-events: none;
+      }
+      #jb-ctr {
+        font-family: var(--fm);
+        font-size: 8.5px;
+        letter-spacing: 4px;
+        color: rgba(255, 255, 255, 0.3);
+        text-align: center;
+        margin-bottom: 9px;
+      }
+      #jb-dots {
+        display: flex;
+        gap: 7px;
+        justify-content: center;
+      }
+      .jb-dot-wrap {
+        background: none;
+        border: none;
+        padding: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .jb-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.15);
+        transition: all 0.3s;
+        display: block;
+      }
+      .jb-dot.on {
+        background: #fff;
+        transform: scale(1.4);
+      }
+
+      /* ── ORACLE ── */
+      #ob {
+        position: fixed;
+        bottom: 108px;
+        right: 20px;
+        z-index: 400;
+        width: 42px;
+        height: 42px;
+        background: rgba(6, 8, 14, 0.92);
         border: 1px solid rgba(255, 107, 0, 0.4);
         clip-path: polygon(
           10px 0,
@@ -768,25 +1020,24 @@
           0 10px
         );
         color: var(--ember);
-        font-size: 18px;
+        font-size: 17px;
         font-family: serif;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 0 20px rgba(255, 107, 0, 0.1);
         transition: all 0.3s;
       }
-      #oracle-btn:hover {
-        box-shadow: 0 0 30px rgba(255, 107, 0, 0.25);
+      #ob:hover {
+        box-shadow: 0 0 25px rgba(255, 107, 0, 0.25);
         border-color: var(--ember);
       }
-      #oracle-panel {
+      #op {
         position: fixed;
-        bottom: 146px;
-        right: 24px;
-        z-index: 300;
-        width: 330px;
-        background: rgba(6, 8, 14, 0.97);
+        bottom: 162px;
+        right: 20px;
+        z-index: 400;
+        width: 326px;
+        background: rgba(6, 8, 14, 0.98);
         border: 1px solid rgba(255, 107, 0, 0.2);
         clip-path: polygon(
           0 0,
@@ -798,14 +1049,13 @@
         backdrop-filter: blur(20px);
         display: none;
         flex-direction: column;
-        max-height: 400px;
-        box-shadow: -8px 8px 40px rgba(0, 0, 0, 0.6);
+        max-height: 390px;
       }
-      #oracle-panel.open {
+      #op.open {
         display: flex;
       }
-      .o-head {
-        padding: 10px 14px;
+      .oh {
+        padding: 9px 13px;
         border-bottom: 1px solid rgba(255, 107, 0, 0.1);
         font-family: var(--fm);
         font-size: 7px;
@@ -815,31 +1065,31 @@
         justify-content: space-between;
         align-items: center;
       }
-      #oracle-close {
+      #ox {
         color: rgba(255, 107, 0, 0.4);
-        font-size: 14px;
-        transition: color 0.2s;
+        font-size: 13px;
         background: none;
         border: none;
+        transition: color 0.2s;
       }
-      #oracle-close:hover {
+      #ox:hover {
         color: var(--ember);
       }
-      #oracle-msgs {
+      #om {
         flex: 1;
         overflow-y: auto;
-        padding: 12px;
+        padding: 11px;
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 7px;
         font-family: var(--fm);
-        font-size: 11px;
+        font-size: 10.5px;
         line-height: 1.85;
       }
-      .o-msg {
-        padding: 8px 12px;
+      .om {
+        padding: 7px 11px;
       }
-      .o-msg.user {
+      .om.u {
         align-self: flex-end;
         color: rgba(0, 200, 255, 0.52);
         font-size: 10px;
@@ -847,34 +1097,34 @@
         border: 1px solid rgba(0, 200, 255, 0.12);
         background: rgba(0, 200, 255, 0.03);
       }
-      .o-msg.bot {
+      .om.b {
         color: rgba(150, 190, 220, 0.82);
         border: 1px solid rgba(255, 107, 0, 0.1);
         background: rgba(255, 107, 0, 0.025);
       }
-      .o-msg.thinking {
+      .om.t {
         color: rgba(0, 200, 255, 0.22);
         font-style: italic;
         border: none;
       }
-      .o-row {
+      .or {
         display: flex;
         border-top: 1px solid rgba(255, 107, 0, 0.08);
       }
-      #oracle-input {
+      #oi {
         flex: 1;
         background: transparent;
         border: none;
         color: #c8dff0;
         font-family: var(--fm);
         font-size: 10px;
-        padding: 10px 12px;
+        padding: 9px 11px;
         outline: none;
       }
-      #oracle-input::placeholder {
+      #oi::placeholder {
         color: rgba(0, 200, 255, 0.16);
       }
-      #oracle-send {
+      #os {
         background: transparent;
         border: none;
         border-left: 1px solid rgba(255, 107, 0, 0.1);
@@ -882,18 +1132,145 @@
         font-family: var(--fm);
         font-size: 7px;
         letter-spacing: 2px;
-        padding: 0 12px;
+        padding: 0 11px;
         transition: background 0.2s;
       }
-      #oracle-send:hover {
+      #os:hover {
         background: rgba(255, 107, 0, 0.08);
       }
 
-      /* ── INTRO ── */
-      #intro-overlay {
+      /* ── CONTACT ── */
+      #contact {
         position: fixed;
         inset: 0;
         z-index: 800;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(6, 8, 14, 0.94);
+        backdrop-filter: blur(28px);
+      }
+      #contact.vis {
+        display: flex;
+      }
+      .cc {
+        text-align: center;
+        padding: 52px 66px;
+        position: relative;
+        background: rgba(6, 8, 14, 0.92);
+        border: 1px solid rgba(0, 200, 255, 0.2);
+        clip-path: polygon(
+          20px 0,
+          100% 0,
+          100% calc(100% - 20px),
+          calc(100% - 20px) 100%,
+          0 100%,
+          0 20px
+        );
+      }
+      .cc::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 38px;
+        height: 38px;
+        border-top: 1px solid var(--arc);
+        border-left: 1px solid var(--arc);
+      }
+      .cc::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 38px;
+        height: 38px;
+        border-bottom: 1px solid var(--ember);
+        border-right: 1px solid var(--ember);
+      }
+      .cu {
+        font-family: var(--fm);
+        font-size: 7px;
+        letter-spacing: 6px;
+        color: rgba(0, 200, 255, 0.4);
+        margin-bottom: 22px;
+      }
+      .cn {
+        font-family: var(--ff);
+        font-size: 23px;
+        letter-spacing: 4px;
+        font-weight: 700;
+        margin-bottom: 6px;
+        background: linear-gradient(135deg, var(--arc), #fff, var(--ember));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      .cco {
+        font-family: var(--fm);
+        font-size: 8px;
+        letter-spacing: 4px;
+        color: rgba(0, 200, 255, 0.3);
+        margin-bottom: 4px;
+      }
+      .crr {
+        font-family: var(--fm);
+        font-size: 7px;
+        letter-spacing: 4px;
+        color: rgba(0, 200, 255, 0.18);
+        margin-bottom: 34px;
+      }
+      .cls {
+        display: flex;
+        flex-direction: column;
+        gap: 13px;
+        align-items: center;
+      }
+      .cl {
+        font-family: var(--fm);
+        font-size: 11px;
+        letter-spacing: 2px;
+        color: rgba(150, 200, 240, 0.62);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        transition: color 0.2s;
+      }
+      .cl:hover {
+        color: var(--arc);
+      }
+      .cll {
+        font-size: 7px;
+        letter-spacing: 3px;
+        color: rgba(0, 200, 255, 0.22);
+        width: 62px;
+        text-align: right;
+      }
+      .ccl {
+        position: absolute;
+        top: 13px;
+        right: 13px;
+        background: none;
+        border: 1px solid rgba(0, 200, 255, 0.18);
+        width: 27px;
+        height: 27px;
+        color: rgba(0, 200, 255, 0.32);
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.25s;
+      }
+      .ccl:hover {
+        color: var(--ember);
+        border-color: var(--ember);
+      }
+
+      /* ── INTRO ── */
+      #intro {
+        position: fixed;
+        inset: 0;
+        z-index: 900;
         background: var(--void);
         display: flex;
         flex-direction: column;
@@ -902,79 +1279,54 @@
         transition: opacity 1.2s ease;
         pointer-events: none;
       }
-      #intro-overlay.fade {
+      #intro.fade {
         opacity: 0;
       }
-      #intro-overlay.gone {
+      #intro.gone {
         display: none;
       }
-      .intro-city {
+      .ic {
         font-family: var(--ff);
-        font-size: clamp(48px, 8vw, 100px);
+        font-size: clamp(52px, 9vw, 108px);
         font-weight: 900;
         letter-spacing: 4px;
         color: #fff;
         line-height: 1;
         text-align: center;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
         opacity: 0;
         animation: rise 0.8s ease forwards 0.3s;
       }
-      .intro-sub {
+      .is {
         font-family: var(--fm);
-        font-size: 10px;
+        font-size: 9.5px;
         letter-spacing: 6px;
         color: rgba(255, 255, 255, 0.3);
         margin-bottom: 8px;
         opacity: 0;
         animation: rise 0.8s ease forwards 0.8s;
       }
-      .intro-name {
+      .in2 {
         font-family: var(--ff);
-        font-size: 20px;
+        font-size: 18px;
         font-weight: 700;
         letter-spacing: 5px;
         color: var(--arc);
-        text-shadow: 0 0 30px rgba(0, 200, 255, 0.5);
+        text-shadow: 0 0 28px rgba(0, 200, 255, 0.5);
         opacity: 0;
         animation: rise 0.8s ease forwards 1.3s;
       }
-      .intro-hint {
+      .ih {
         font-family: var(--fm);
-        font-size: 8px;
+        font-size: 7.5px;
         letter-spacing: 4px;
-        color: rgba(255, 255, 255, 0.18);
-        margin-top: 32px;
+        color: rgba(255, 255, 255, 0.16);
+        margin-top: 28px;
         opacity: 0;
         animation: rise 0.8s ease forwards 2s;
+        text-align: center;
+        padding: 0 18px;
       }
-
-      /* Scanlines + vignette */
-      #scan {
-        position: fixed;
-        inset: 0;
-        z-index: 700;
-        pointer-events: none;
-        background: repeating-linear-gradient(
-          0deg,
-          transparent,
-          transparent 3px,
-          rgba(0, 200, 255, 0.01) 3px,
-          rgba(0, 200, 255, 0.01) 4px
-        );
-      }
-      #vig {
-        position: fixed;
-        inset: 0;
-        z-index: 699;
-        pointer-events: none;
-        background: radial-gradient(
-          ellipse 90% 80% at 50% 50%,
-          transparent 25%,
-          rgba(6, 8, 14, 0.7) 100%
-        );
-      }
-
       @keyframes rise {
         from {
           opacity: 0;
@@ -1000,238 +1352,581 @@
     <div id="cur"></div>
     <div id="scan"></div>
     <div id="vig"></div>
-
-    <!-- Canvas -->
     <canvas id="city-canvas"></canvas>
 
-    <!-- Header HUD -->
+    <!-- HUD -->
     <header id="hud-top">
-      <div class="hud-name">ADITYA'S CITY</div>
-      <div class="hud-mode">DRIVE TO EXPLORE · PRESS E TO ENTER BUILDINGS</div>
-      <div class="hud-actions">
-        <span id="mode-chip" class="recruiter">RECRUITER</span>
+      <div class="h-name">ADITYA'S CITY</div>
+      <div class="h-mid">DRIVE · W/A/S/D · E = ENTER · J = JOURNEY</div>
+      <div class="h-acts">
+        <span id="mode-chip">--</span>
+        <button class="hb gold" onclick="openJourney()">📖 JOURNEY</button>
         <button
-          class="hud-btn night-btn"
-          id="daynight-btn"
-          onclick="toggleDayNight()"
+          class="hb"
+          id="weather-btn"
+          onclick="doWeather()"
+          title="Cycle Weather"
         >
-          🌙 NIGHT
+          <span id="weather-label">🌙</span><span>WEATHER</span>
         </button>
-        <button class="hud-btn" onclick="location.href = 'index.html'">
+        <button class="hb" id="mute-btn" onclick="doMute()">🔊 MUSIC</button>
+        <button
+          class="hb"
+          onclick="document.getElementById('contact').classList.add('vis')"
+        >
+          CONTACT
+        </button>
+        <button class="hb" onclick="location.href = 'index.html'">
           ← EXIT
         </button>
       </div>
     </header>
 
-    <!-- Speed HUD -->
-    <div id="hud-speed-panel">
-      <span class="spd-val" id="hud-speed">0</span>
-      <span class="spd-unit">KM/H</span>
-      <span class="gear-val" id="hud-gear">N</span>
+    <div id="spd-hud">
+      <span class="spd" id="spd">0</span>
+      <span class="spd-u">KM/H</span>
+      <span class="gear" id="gear" style="color: var(--arc)">N</span>
     </div>
-
-    <!-- Visited -->
-    <div id="visited-count">0 / 12 VISITED</div>
-    <div id="minimap-visited" style="display: none"></div>
-
-    <!-- Minimap -->
+    <div id="visited">0 / 12 VISITED</div>
+    <div id="mm-visited"></div>
     <div id="minimap">
-      <div id="minimap-label">CITY MAP</div>
-      <canvas id="minimap-canvas" width="140" height="140"></canvas>
+      <div id="mm-lbl">CITY MAP</div>
+      <canvas id="mm-canvas" width="148" height="148"></canvas>
     </div>
-
-    <!-- Controls -->
-    <div id="controls-hint">
-      <div class="ctrl-row">
-        <span class="ctrl-key">W</span><span class="ctrl-key">↑</span
+    <div id="ctrl">
+      <div class="cr">
+        <span class="ck">W</span><span class="ck">↑</span
         ><span>ACCELERATE</span>
       </div>
-      <div class="ctrl-row">
-        <span class="ctrl-key">S</span><span class="ctrl-key">↓</span
-        ><span>BRAKE / REVERSE</span>
+      <div class="cr">
+        <span class="ck">S</span><span class="ck">↓</span><span>BRAKE/REV</span>
       </div>
-      <div class="ctrl-row">
-        <span class="ctrl-key">A</span><span class="ctrl-key">D</span
-        ><span>STEER</span>
+      <div class="cr">
+        <span class="ck">A</span><span class="ck">D</span><span>STEER</span>
       </div>
-      <div class="ctrl-row">
-        <span class="ctrl-key">E</span><span>ENTER BUILDING</span>
-      </div>
+      <div class="cr"><span class="ck">E</span><span>ENTER BUILDING</span></div>
+      <div class="cr"><span class="ck">SPACE</span><span>HANDBRAKE</span></div>
     </div>
 
-    <!-- Proximity Notice -->
-    <div id="proximity-notice">
-      <div class="notice-icon" id="notice-icon">🏢</div>
-      <div class="notice-text">
-        <div class="notice-name" id="notice-name">Building</div>
-        <div class="notice-sub" id="notice-sub">SUBTITLE</div>
+    <!-- Weather toast -->
+    <div id="weather-toast"></div>
+
+    <!-- Proximity -->
+    <div id="prox">
+      <div class="px-icon" id="px-icon">🏢</div>
+      <div>
+        <div class="px-name" id="px-name">Building</div>
+        <div class="px-sub" id="px-sub">TAG</div>
       </div>
-      <button
-        class="notice-enter"
-        onclick="window.CityEngine.enterNearestBuilding()"
-      >
-        ENTER <span class="notice-key">[E]</span>
-      </button>
+      <button class="px-btn" id="px-btn">ENTER &nbsp;[E]</button>
     </div>
 
-    <!-- Side Panel -->
+    <!-- Side panel -->
     <div id="side-panel">
-      <div id="panel-inner">
-        <div id="panel-head">
-          <div id="panel-label">// BUILDING FILE</div>
-          <button id="panel-close">×</button>
+      <div id="sp-inner">
+        <div id="sp-head">
+          <div id="sp-lbl">// BUILDING FILE</div>
+          <button id="sp-x" onclick="closeSP()">×</button>
         </div>
-        <div id="panel-body"></div>
+        <div id="sp-body"></div>
+      </div>
+    </div>
+
+    <!-- Journey -->
+    <div id="journey">
+      <button id="jb-x" onclick="closeJourney()">× CLOSE</button>
+      <div class="jb-hd">ADITYA SRIVASTAVA</div>
+      <div class="jb-sh">CAREER &amp; EDUCATION · USE ← → TO NAVIGATE</div>
+      <div id="jb-slide"><div class="jb-card" id="jb-card"></div></div>
+      <div id="jb-nav">
+        <button class="jb-arr" id="jb-p" onclick="jNav(-1)">←</button>
+        <div>
+          <div id="jb-ctr"></div>
+          <div id="jb-dots"></div>
+        </div>
+        <button class="jb-arr" id="jb-n" onclick="jNav(1)">→</button>
       </div>
     </div>
 
     <!-- Oracle -->
     <button
-      id="oracle-btn"
-      onclick="
-        CityUI.toggleOracle
-          ? CityUI.toggleOracle()
-          : document.getElementById('oracle-panel').classList.toggle('open')
-      "
+      id="ob"
+      onclick="document.getElementById('op').classList.toggle('open')"
     >
       ⊕
     </button>
-    <div id="oracle-panel">
-      <div class="o-head">
-        <span>// ORACLE · CITY GUIDE</span
+    <div id="op">
+      <div class="oh">
+        <span>// ORACLE · GUIDE</span
         ><button
-          id="oracle-close"
-          onclick="
-            document.getElementById('oracle-panel').classList.remove('open')
-          "
+          id="ox"
+          onclick="document.getElementById('op').classList.remove('open')"
         >
           ×
         </button>
       </div>
-      <div id="oracle-msgs">
-        <div class="o-msg bot">
-          Welcome to Aditya's City. Drive to any building and press E to
-          explore. Ask me anything about the architect behind this city.
+      <div id="om">
+        <div class="om b">
+          Welcome to Aditya's City. Drive to a glowing checkpoint and press E.
+          Ask me anything.
         </div>
       </div>
-      <div class="o-row">
-        <input
-          id="oracle-input"
-          placeholder="Ask about any system…"
-          onkeydown="
-            if (event.key === 'Enter')
-              CityUI.sendOracle ? CityUI.sendOracle() : null;
-          "
-        /><button id="oracle-send">SEND</button>
+      <div class="or">
+        <input id="oi" placeholder="Ask about any system…" /><button id="os">
+          SEND
+        </button>
       </div>
     </div>
 
-    <!-- Intro overlay -->
-    <div id="intro-overlay">
-      <div class="intro-city">ADITYA'S<br />CITY</div>
-      <div class="intro-sub">INTERACTIVE PORTFOLIO</div>
-      <div class="intro-name">ADITYA SRIVASTAVA · BACKEND ARCHITECT</div>
-      <div class="intro-hint">
-        DRIVE THROUGH THE CITY · EXPLORE 12 SYSTEMS · DISCOVER THE STORY
+    <!-- Contact -->
+    <div id="contact">
+      <div class="cc">
+        <button
+          class="ccl"
+          onclick="document.getElementById('contact').classList.remove('vis')"
+        >
+          ×
+        </button>
+        <div class="cu">// CLEARANCE GRANTED</div>
+        <div class="cn">ADITYA SRIVASTAVA</div>
+        <div class="cco">TRILASOFT SOLUTIONS PVT. LTD.</div>
+        <div class="crr">BACKEND ARCHITECT · 4 YEARS · NOIDA, INDIA</div>
+        <div class="cls">
+          <a class="cl" href="mailto:adityasrivastava.dev@gmail.com"
+            ><span class="cll">MAIL</span>adityasrivastava.dev@gmail.com</a
+          >
+          <a
+            class="cl"
+            href="https://linkedin.com/in/adityasrivastava-dev"
+            target="_blank"
+            ><span class="cll">LINKEDIN</span
+            >linkedin.com/in/adityasrivastava-dev</a
+          >
+          <a
+            class="cl"
+            href="https://github.com/adityasrivastava-dev"
+            target="_blank"
+            ><span class="cll">GITHUB</span>github.com/adityasrivastava-dev</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- Intro -->
+    <div id="intro">
+      <div class="ic">ADITYA'S<br />CITY</div>
+      <div class="is">INTERACTIVE PORTFOLIO · DRIVE &amp; EXPLORE</div>
+      <div class="in2">ADITYA SRIVASTAVA · BACKEND ARCHITECT</div>
+      <div class="ih">
+        W/A/S/D OR ARROWS TO DRIVE · E TO ENTER BUILDINGS · J FOR JOURNEY ·
+        WEATHER BUTTON TO CHANGE WEATHER
       </div>
     </div>
 
     <script src="city-data.js"></script>
-    <script src="city-ui.js"></script>
-    <script src="city-engine.js"></script>
     <script>
-      // Init
-      const mode = sessionStorage.getItem("vp") || "recruiter";
-      document.getElementById("mode-chip").textContent = mode.toUpperCase();
-      document.getElementById("mode-chip").className = mode;
-      CityUI.init(mode);
+      "use strict";
+      const MODE = sessionStorage.getItem("vp") || "recruiter";
+      const chip = document.getElementById("mode-chip");
+      chip.textContent = MODE.toUpperCase();
+      chip.className = MODE;
 
-      const canvas = document.getElementById("city-canvas");
-      canvas.style.width = "100%";
-      canvas.style.height = "100%";
-      CityEngine.init(canvas);
-
-      // Custom cursor
-      const cur = document.getElementById("cur");
+      // Cursor
+      const curEl = document.getElementById("cur");
       window.addEventListener("mousemove", (e) => {
-        cur.style.left = e.clientX + "px";
-        cur.style.top = e.clientY + "px";
+        curEl.style.left = e.clientX + "px";
+        curEl.style.top = e.clientY + "px";
       });
-      document
-        .querySelectorAll("#side-panel, #proximity-notice, #oracle-panel")
-        .forEach((el) => {
-          el.addEventListener("mouseenter", () => cur.classList.add("big"));
-          el.addEventListener("mouseleave", () => cur.classList.remove("big"));
-        });
-
-      // E key = enter building
-      window.addEventListener("keydown", (e) => {
-        if (e.code === "KeyE") CityEngine.enterNearestBuilding();
+      [
+        "#side-panel",
+        "#prox",
+        "#op",
+        "#journey",
+        "#contact",
+        "#hud-top",
+      ].forEach((s) => {
+        const el = document.querySelector(s);
+        if (!el) return;
+        el.addEventListener("mouseenter", () => curEl.classList.add("big"));
+        el.addEventListener("mouseleave", () => curEl.classList.remove("big"));
       });
 
-      // Oracle send button
-      document.getElementById("oracle-send").addEventListener("click", () => {
-        // call via the module's exposed function
-        const input = document.getElementById("oracle-input");
-        if (input.value.trim()) {
-          // trigger the internal oracle send
-          const event = new KeyboardEvent("keydown", {
-            key: "Enter",
-            code: "Enter",
+      // Minimap dots
+      const mmv = document.getElementById("mm-visited");
+      window.CITY_DATA.buildings.forEach((b) => {
+        const d = document.createElement("div");
+        d.className = "mm-dot";
+        d.id = "dot-" + b.id;
+        mmv.appendChild(d);
+      });
+
+      // ── JOURNEY ───────────────────────────────────────────────────────────────
+      let jIdx = 0;
+      const JD = window.CITY_DATA.journey;
+      function renderJourney() {
+        const s = JD[jIdx];
+        const tc = {
+          education: "#a78bfa",
+          career: "#00c8ff",
+          milestone: "#ffcc44",
+          present: "#ffffff",
+        };
+        const col = tc[s.type] || "#fff";
+        document.getElementById("jb-card").innerHTML = `
+    <div class="jb-type" style="color:${col}88">// ${(s.type || "").toUpperCase()}</div>
+    <span class="jb-year" style="color:${col};text-shadow:0 0 40px ${col}44">${s.year}</span>
+    <div class="jb-ico">${s.icon}</div>
+    <div class="jb-ttl">${s.title}</div>
+    <div class="jb-stl" style="color:${col}66">${s.subtitle}</div>
+    <div class="jb-bdy">${s.content.replace(/\n/g, "<br>")}</div>
+  `;
+        document.getElementById("jb-card").style.borderColor = col + "22";
+        document.getElementById("jb-ctr").textContent =
+          `${jIdx + 1} / ${JD.length}`;
+        document.getElementById("jb-p").disabled = jIdx === 0;
+        document.getElementById("jb-n").disabled = jIdx === JD.length - 1;
+        const dots = document.getElementById("jb-dots");
+        dots.innerHTML = "";
+        JD.forEach((_, i) => {
+          const b = document.createElement("button");
+          b.className = "jb-dot-wrap";
+          b.innerHTML = `<span class="jb-dot${i === jIdx ? " on" : ""}"></span>`;
+          b.addEventListener("click", () => {
+            jIdx = i;
+            renderJourney();
           });
-          input.dispatchEvent(event);
-        }
-      });
-
-      // Day/night toggle
-      function toggleDayNight() {
-        CityEngine.toggleDayNight();
-        const btn = document.getElementById("daynight-btn");
-        btn.textContent = CityEngine.isNight ? "🌙 NIGHT" : "☀️ DAY";
-        btn.className = CityEngine.isNight
-          ? "hud-btn night-btn"
-          : "hud-btn night-btn day";
+          dots.appendChild(b);
+        });
+      }
+      function jNav(d) {
+        jIdx = Math.max(0, Math.min(JD.length - 1, jIdx + d));
+        renderJourney();
+      }
+      function openJourney() {
+        document.getElementById("journey").classList.add("open");
+        renderJourney();
+      }
+      function closeJourney() {
+        document.getElementById("journey").classList.remove("open");
       }
 
-      // Intro
-      const intro = document.getElementById("intro-overlay");
-      setTimeout(() => intro.classList.add("fade"), 3500);
-      setTimeout(() => intro.classList.add("gone"), 5000);
+      // ── KEYBOARD ──────────────────────────────────────────────────────────────
+      window.addEventListener("keydown", (e) => {
+        if (document.getElementById("journey").classList.contains("open")) {
+          if (e.key === "ArrowLeft") jNav(-1);
+          if (e.key === "ArrowRight") jNav(1);
+          if (e.key === "Escape") closeJourney();
+          return;
+        }
+        if (e.code === "KeyE" && typeof CityEngine !== "undefined")
+          CityEngine.enterNearestBuilding();
+        if (e.key === "j" || e.key === "J") openJourney();
+        if (e.key === "Escape") closeSP();
+        if (e.code === "KeyT") doWeather();
+      });
 
-      // Oracle send properly wired
-      document.getElementById("oracle-send").onclick = async function () {
-        const input = document.getElementById("oracle-input");
-        const msgs = document.getElementById("oracle-msgs");
-        const q = input.value.trim();
+      // ── PANEL ────────────────────────────────────────────────────────────────
+      function pCol(c) {
+        if (typeof c === "string" && c.startsWith("#")) return c;
+        if (typeof c === "number") return "#" + c.toString(16).padStart(6, "0");
+        return "#00c8ff";
+      }
+      function openBuilding(b) {
+        if (!b) return;
+        const dot = document.getElementById("dot-" + b.id);
+        if (dot) dot.classList.add("visited");
+        const vc = document.querySelectorAll(".mm-dot.visited").length;
+        document.getElementById("visited").textContent =
+          `${vc} / ${window.CITY_DATA.buildings.length} VISITED`;
+        const col = pCol(b.glowColor);
+        const body = document.getElementById("sp-body");
+        body.style.setProperty("--nc", col);
+        if (b.isEducation) {
+          body.innerHTML = eduPanel(b, col);
+        } else if (MODE === "engineer" && b.engineerDetail) {
+          body.innerHTML = engPanel(b, col);
+        } else {
+          body.innerHTML = recPanel(b, col);
+        }
+        document.getElementById("side-panel").classList.add("open");
+        document.body.classList.add("panel-open"); // shift canvas left
+      }
+      function closeSP() {
+        document.getElementById("side-panel").classList.remove("open");
+        document.body.classList.remove("panel-open"); // restore canvas
+      }
+
+      function eduPanel(b, col) {
+        return `
+  <div class="p-badge" style="color:${col};border-color:${col}44;background:${col}11">🎓 EDUCATION · ${b.year}</div>
+  <div class="p-line" style="background:linear-gradient(90deg,${col},transparent)"></div>
+  <div class="p-name">${b.name}</div><div class="p-sub">${b.subtitle}</div>
+  <div class="p-stat op"><div class="sdot"></div>COMPLETED</div>
+  <div class="mets">${b.metrics.map((m) => `<div class="met"><span class="mv" style="color:${col}">${m.v}</span><div class="ml">${m.l}</div></div>`).join("")}</div>
+  <div class="sl" style="color:${col}">ACADEMIC JOURNEY</div>
+  <div class="story">${b.story.replace(/\n/g, "<br>").replace(/<em>(.*?)<\/em>/g, `<em style="color:${col};font-style:normal;font-weight:600">$1</em>`)}</div>
+  <div class="out-box"><div class="out-l">OUTCOME</div><div class="out-t">${b.outcome}</div></div>
+  <div class="ttags">${b.tech.map((t) => `<span class="ttag" style="border-color:${col}22;color:${col}88;background:${col}08">${t}</span>`).join("")}</div>
+`;
+      }
+
+      function recPanel(b, col) {
+        const idx = window.CITY_DATA.buildings.indexOf(b) + 1;
+        return `
+  <div class="p-badge" style="color:${col};border-color:${col}44;background:${col}11">${b.isHero ? "★ HERO · " : ""}${b.tag}</div>
+  <div class="p-line" style="background:linear-gradient(90deg,${col},transparent)"></div>
+  <div class="p-num">// SYSTEM ${String(idx).padStart(2, "0")}</div>
+  <div class="p-name">${b.name}</div><div class="p-sub">${b.subtitle}</div>
+  <div class="p-stat ${b.status === "OPERATIONAL" ? "op" : "ac"}"><div class="sdot"></div>${b.status}</div>
+  <div class="mets">${b.metrics.map((m) => `<div class="met"><span class="mv" style="color:${col}">${m.v}</span><div class="ml">${m.l}</div></div>`).join("")}</div>
+  <div class="sl" style="color:${col}">MISSION LOG</div>
+  <div class="story">${b.story.replace(/\n/g, "<br>").replace(/<em>(.*?)<\/em>/g, `<em style="color:${col};font-style:normal;font-weight:600">$1</em>`)}</div>
+  <div class="out-box"><div class="out-l">OUTCOME</div><div class="out-t">${b.outcome}</div></div>
+  <div class="conn-box"><div class="conn-l">HOW THIS CONNECTS</div>${b.connects.map((c) => `<div class="conn-i"><span style="color:${col}">→</span><span><strong style="color:#ddeeff">${c.to}:</strong> ${c.how}</span></div>`).join("")}</div>
+  <div class="ttags">${b.tech.map((t) => `<span class="ttag" style="border-color:${col}22;color:${col}88;background:${col}08">${t}</span>`).join("")}</div>
+`;
+      }
+
+      function engPanel(b, col) {
+        const ed = b.engineerDetail;
+        const idx = window.CITY_DATA.buildings.indexOf(b) + 1;
+        return `
+  <div class="p-badge" style="color:${col};border-color:${col}44;background:${col}11">${b.isHero ? "★ " : ""}TECHNICAL FILE · ${b.tag}</div>
+  <div class="p-line" style="background:linear-gradient(90deg,${col},transparent)"></div>
+  <div class="p-num">// SYSTEM ${String(idx).padStart(2, "0")}</div>
+  <div class="p-name">${b.name}</div><div class="p-sub">${b.subtitle}</div>
+  <div class="p-stat ${b.status === "OPERATIONAL" ? "op" : "ac"}"><div class="sdot"></div>${b.status}</div>
+  <div class="mets">${b.metrics.map((m) => `<div class="met"><span class="mv" style="color:${col}">${m.v}</span><div class="ml">${m.l}</div></div>`).join("")}</div>
+  <div class="sl" style="color:${col}">THE REAL PROBLEM</div>
+  <div class="e-prob">${ed.problem}</div>
+  <div class="sl" style="color:${col}">WHAT WAS REJECTED</div>
+  <div class="rej-list">${ed.rejected.map((r) => `<div class="rej-i"><span class="rej-x">✕</span><div><strong style="color:rgba(210,150,150,.75)">${r.w}</strong><span class="rej-r">${r.r}</span></div></div>`).join("")}</div>
+  <div class="sl" style="color:${col}">THE DECISION</div>
+  <div class="dec-box"><div class="dec-l">// WHY THIS APPROACH</div><div class="dec-b">${ed.decision}</div></div>
+  <div class="sl" style="color:${col}">IMPLEMENTATION</div>
+  <div class="impl-box"><div class="impl-l">// HOW IT WORKS</div><div class="impl-b">${ed.impl.replace(/\n/g, "<br>").replace(/`([^`]+)`/g, "<code>$1</code>")}</div></div>
+  <div class="lesson"><div class="lesson-l">// KEY INSIGHT</div>${ed.lesson}</div>
+  <div class="ttags">${b.tech.map((t) => `<span class="ttag" style="border-color:${col}22;color:${col}88;background:${col}08">${t}</span>`).join("")}</div>
+`;
+      }
+
+      // ── NOTIFICATION ──────────────────────────────────────────────────────────
+      function showNotification(b) {
+        const el = document.getElementById("prox");
+        document.getElementById("px-icon").textContent = b.icon || "🏢";
+        document.getElementById("px-name").textContent = b.name;
+        document.getElementById("px-sub").textContent = b.subtitle;
+        el.style.setProperty("--nc", pCol(b.glowColor));
+        el.classList.add("show");
+      }
+      function hideNotification() {
+        document.getElementById("prox").classList.remove("show");
+      }
+
+      // ── HUD ───────────────────────────────────────────────────────────────────
+      function updateHUD(spd) {
+        document.getElementById("spd").textContent = Math.abs(
+          Math.round(spd * 230),
+        );
+        const g = document.getElementById("gear");
+        if (spd > 0.012) {
+          g.textContent = "D";
+          g.style.color = "var(--acid)";
+        } else if (spd < -0.012) {
+          g.textContent = "R";
+          g.style.color = "var(--ember)";
+        } else {
+          g.textContent = "N";
+          g.style.color = "var(--arc)";
+        }
+      }
+
+      // ── MINIMAP ───────────────────────────────────────────────────────────────
+      function updateMinimap(px, pz, pa) {
+        const cv = document.getElementById("mm-canvas");
+        if (!cv) return;
+        const ctx = cv.getContext("2d");
+        const W = cv.width,
+          H = cv.height,
+          S = W / 120;
+        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = "#06080e";
+        ctx.fillRect(0, 0, W, H);
+        ctx.strokeStyle = "rgba(255,255,255,0.07)";
+        ctx.lineWidth = 4;
+        [
+          [-12, -50, -12, 36],
+          [12, -50, 12, 36],
+          [-56, 0, 56, 0],
+          [-56, 22, 56, 22],
+          [-56, -33, 56, -33],
+        ].forEach(([x1, z1, x2, z2]) => {
+          ctx.beginPath();
+          ctx.moveTo(x1 * S + W / 2, z1 * S + H / 2);
+          ctx.lineTo(x2 * S + W / 2, z2 * S + H / 2);
+          ctx.stroke();
+        });
+        ctx.beginPath();
+        ctx.arc(W / 2, H / 2, 9 * S, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(255,255,255,0.06)";
+        ctx.stroke();
+        window.CITY_DATA.buildings.forEach((b) => {
+          const bx = b.pos[0] * S + W / 2,
+            bz = b.pos[1] * S + H / 2;
+          const vis = document
+            .getElementById("dot-" + b.id)
+            ?.classList.contains("visited");
+          ctx.beginPath();
+          ctx.arc(bx, bz, 3, 0, Math.PI * 2);
+          ctx.fillStyle = vis ? pCol(b.glowColor) : pCol(b.glowColor) + "44";
+          ctx.fill();
+        });
+        const cpx = px * S + W / 2,
+          cpz = pz * S + H / 2;
+        ctx.save();
+        ctx.translate(cpx, cpz);
+        ctx.rotate(pa);
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        ctx.moveTo(0, -6);
+        ctx.lineTo(4, 5);
+        ctx.lineTo(-4, 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // ── WEATHER ───────────────────────────────────────────────────────────────
+      const weatherIcons = {
+        night: "🌙",
+        day: "☀️",
+        sunset: "🌅",
+        fog: "🌫️",
+        rain: "🌧️",
+        snow: "❄️",
+      };
+      const weatherNames = {
+        night: "NIGHT",
+        day: "DAY",
+        sunset: "SUNSET",
+        fog: "FOG",
+        rain: "RAIN",
+        snow: "SNOW",
+      };
+      function doWeather() {
+        if (typeof CityEngine === "undefined") return;
+        CityEngine.cycleWeather();
+      }
+      // Called by engine when weather changes
+      function onWeatherChange(w) {
+        document.getElementById("weather-label").textContent =
+          weatherIcons[w] || "🌙";
+        const toast = document.getElementById("weather-toast");
+        toast.textContent =
+          (weatherIcons[w] || "") + "  " + (weatherNames[w] || w.toUpperCase());
+        toast.classList.add("show");
+        setTimeout(() => toast.classList.remove("show"), 2200);
+      }
+
+      // ── MUTE ─────────────────────────────────────────────────────────────────
+      let muted = false;
+      function doMute() {
+        muted = !muted;
+        if (typeof CityEngine !== "undefined" && CityEngine.setMusicVolume)
+          CityEngine.setMusicVolume(muted ? 0 : 1);
+        const btn = document.getElementById("mute-btn");
+        btn.textContent = muted ? "🔇 MUSIC" : "🔊 MUSIC";
+        btn.classList.toggle("active", !muted);
+      }
+
+      // ── ORACLE ────────────────────────────────────────────────────────────────
+      const oH = [];
+      document.getElementById("os").addEventListener("click", sendO);
+      document.getElementById("oi").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") sendO();
+      });
+      async function sendO() {
+        const inp = document.getElementById("oi"),
+          msgs = document.getElementById("om");
+        const q = inp.value.trim();
         if (!q) return;
-        input.value = "";
-        msgs.innerHTML += `<div class="o-msg user">${q}</div>`;
+        inp.value = "";
+        msgs.innerHTML += `<div class="om u">${q}</div>`;
         const th = document.createElement("div");
-        th.className = "o-msg bot thinking";
+        th.className = "om t";
         th.textContent = "// processing · · ·";
         msgs.appendChild(th);
         msgs.scrollTop = msgs.scrollHeight;
+        oH.push({ role: "user", content: q });
+        const sys = `You are the Oracle in Aditya Srivastava's interactive city portfolio. Aditya is a Backend Architect at Trilasoft Solutions Pvt Ltd, Noida, India. 4 years experience. Education: M.Sc. CS, University of Allahabad (2019-2021); B.Sc. Math+Stats+CS, M.P. P.G. College, Gorakhpur (2015-2019). Career: Trainee (Jan 2022) → Junior SE (Sep 2022) → Backend Architect (2024). Philosophy: "I build systems that work at 3am." 12 systems: Auth Tower (SSO, RS256 JWT, 10+ apps, 0 breaches), API Forge (testing platform, flow chaining DAG), Cloud District (80+ Mule→Lambda, eliminated SPOF), The Bridge (Java 1.7/1.8 backward compat, Runtime.exec), Data Vaults (3 MySQL migrations, shadow validation, 0 data lost), LedgerFlow (idempotency keys, state machine, no 2PC), Arch Quarter (2 greenfield systems, transition matrix), Survey Bridge (100% automated pipeline, configurable mapping), MovePulse (real-time B2B, READ UNCOMMITTED), Monolith Quarter (Struts2/Spring3, trace-first), University Tower (M.Sc. CS), M.P.P.G. College (B.Sc. Math+CS). Mode: ${MODE}. Answer 2-4 sentences. Direct. Never fabricate.`;
         try {
-          const sys = `You are the Oracle guide in Aditya Srivastava's interactive city portfolio. Aditya is a Backend Architect at Trilasoft Solutions (also 8086 Consultancy), Noida, India, 4 years experience. Education: M.Sc. Computer Science, University of Allahabad, Prayagraj (2019-2021); B.Sc. Mathematics, Statistics & CS, M.P. P.G. College, Gorakhpur (2015-2019). Career: Trainee (Jan 2022) → Junior SE (Sep 2022) → Backend Architect (2024-present). Philosophy: "I build systems that work at 3am — not demos." 12 buildings in this city represent his work. Key systems: Auth Tower (SSO, 10+ apps, 0 breaches), API Forge (internal testing platform, flow chaining), Cloud District (80+ Mule→Lambda), The Bridge (Java 1.7/1.8 backward compat), Data Vaults (3 MySQL migrations, 0 data lost), LedgerFlow (idempotent financial APIs), Architecture Quarter (2 greenfield systems), Survey Bridge (100% automated pipeline), MovePulse (real-time B2B tracking), Monolith Quarter (origin, Struts2/Spring3), University Tower (M.Sc. CS, Allahabad), M.P.P.G. College (B.Sc. Math+Stats+CS, Gorakhpur). Visitor mode: ${mode}. Answer in 2-4 sentences. Be direct, specific, never fabricate.`;
-          const res = await fetch("https://api.anthropic.com/v1/messages", {
+          const r = await fetch("https://api.anthropic.com/v1/messages", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               model: "claude-sonnet-4-20250514",
               max_tokens: 1000,
               system: sys,
-              messages: [{ role: "user", content: q }],
+              messages: oH,
             }),
           });
-          const data = await res.json();
-          th.className = "o-msg bot";
-          th.textContent = data.content?.[0]?.text || "Oracle offline.";
+          const d = await r.json();
+          const rep = d.content?.[0]?.text || "Oracle offline.";
+          th.className = "om b";
+          th.textContent = rep;
+          oH.push({ role: "assistant", content: rep });
         } catch {
-          th.className = "o-msg bot";
+          th.className = "om b";
           th.textContent = "Oracle offline.";
         }
         msgs.scrollTop = msgs.scrollHeight;
+      }
+
+      // ── CityUI ────────────────────────────────────────────────────────────────
+      window.CityUI = {
+        openBuilding,
+        showNotification,
+        hideNotification,
+        updateHUD,
+        updateMinimap,
+        onWeatherChange,
       };
+    </script>
+    <script src="city-engine.js"></script>
+    <script>
+      const cityCanvas = document.getElementById("city-canvas");
+      cityCanvas.width = window.innerWidth;
+      cityCanvas.height = window.innerHeight;
+      CityEngine.init(cityCanvas);
+
+      // Wire enter button AFTER engine init
+      // ── ENTER BUTTON — multiple event types for maximum compatibility ──
+      const pxBtn = document.getElementById("px-btn");
+      ["click", "touchend", "pointerup"].forEach((ev) => {
+        pxBtn.addEventListener(
+          ev,
+          function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            console.log(
+              "ENTER pressed",
+              ev,
+              typeof CityEngine !== "undefined",
+              CityEngine?.proximityBuilding,
+            );
+            if (typeof CityEngine !== "undefined") {
+              CityEngine.enterNearestBuilding();
+            }
+          },
+          { capture: true },
+        );
+      });
+
+      // Intro
+      const introEl = document.getElementById("intro");
+      setTimeout(() => introEl.classList.add("fade"), 3500);
+      setTimeout(() => introEl.classList.add("gone"), 5000);
     </script>
   </body>
 </html>
