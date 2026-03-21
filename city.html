@@ -1336,15 +1336,20 @@
       <div class="pl-msg">ROTATE TO<br />LANDSCAPE</div>
     </div>
     <div id="loader">
-      <div class="ld-name">ADITYA'S<br />CITY</div>
-      <div class="ld-sub">BACKEND ARCHITECT · INTERACTIVE PORTFOLIO</div>
+      <div class="ld-name">ADITYA<br />SRIVASTAVA</div>
+      <div class="ld-sub">
+        BACKEND ARCHITECT · TEMPLE CITY PORTFOLIO · TRILASOFT SOLUTIONS
+      </div>
       <div class="ld-pw"><div id="ld-bar"></div></div>
-      <div id="ld-msg">INITIALIZING…</div>
+      <div id="ld-msg">AWAKENING THE CITY…</div>
     </div>
     <div id="start-screen">
-      <div class="ss-click">CLICK TO START</div>
-      <div class="ss-arrow">↓</div>
-      <div class="ss-hint">W/A/S/D TO DRIVE · E TO ENTER · J FOR JOURNEY</div>
+      <div class="ss-click">CLICK TO ENTER THE CITY</div>
+      <div class="ss-arrow">◈</div>
+      <div class="ss-hint">
+        W/S DRIVE &nbsp;·&nbsp; A/D STEER &nbsp;·&nbsp; E ENTER TEMPLE
+        &nbsp;·&nbsp; M MAP &nbsp;·&nbsp; J JOURNEY
+      </div>
     </div>
     <div id="pp-glow"></div>
     <div id="vig"></div>
@@ -1469,6 +1474,23 @@
             href="https://github.com/adityasrivastava-dev"
             target="_blank"
             ><span class="cll">GITHUB</span>github.com/adityasrivastava-dev</a
+          >
+          <a
+            class="cl"
+            href="https://adityasrivastava-dev.github.io/resume.pdf"
+            target="_blank"
+            style="
+              margin-top: 12px;
+              border: 1px solid rgba(255, 204, 68, 0.4);
+              padding: 10px 16px;
+              border-radius: 4px;
+              background: rgba(255, 204, 68, 0.08);
+              justify-content: center;
+              font-weight: 700;
+              letter-spacing: 3px;
+              color: #ffcc44;
+            "
+            ><span class="cll">↓</span>DOWNLOAD RESUME</a
           >
         </div>
       </div>
@@ -1785,7 +1807,31 @@
         msgs.appendChild(th);
         msgs.scrollTop = msgs.scrollHeight;
         oH.push({ role: "user", content: q });
-        const sys = `You are the Oracle in Aditya Srivastava's interactive city portfolio. Aditya is a Backend Architect at Trilasoft Solutions Pvt Ltd, Noida, India. 4 years experience. Career: Trainee (Jan 2022) → Junior SE (Sep 2022) → Backend Architect (2024). Systems: Auth Tower (SSO/JWT), API Forge (testing platform), Cloud District (Mule→Lambda), The Bridge (Java 1.7/1.8 compat), Data Vaults (MySQL migrations), LedgerFlow (idempotency), Arch Quarter (greenfield), Survey Bridge (pipeline), MovePulse (B2B tracking), Monolith Quarter (Struts2), University Tower (M.Sc. CS), M.P.P.G. College (B.Sc.). Mode:${MODE}. Answer 2-4 sentences. Direct. Never fabricate.`;
+        const sys = `You are the Oracle of Aditya's Temple City — a sacred AI guide who speaks with wisdom and context about each temple and the system it represents.
+
+THE CITY: Aditya Srivastava is a Backend Architect at Trilasoft Solutions Pvt Ltd, Noida, India. 4 years of backend engineering experience (2022–present).
+
+EDUCATION: B.Sc. Math+Stats+CS from M.P.P.G. College, Gorakhpur (2015–2019) → M.Sc. Computer Science, University of Allahabad (2019–2021).
+
+CAREER PATH: Trainee Engineer (Jan 2022) → Junior Software Engineer (Sep 2022) → Backend Architect (2024).
+
+THE 12 TEMPLES AND THEIR SYSTEMS:
+• Surya Dwara (Gopuram) = SSO Platform. Like the Sun Gate — one source of identity illuminates all 10+ internal apps. JWT RS256, WebAuthn PassKey, Single Logout. Zero breaches.
+• Vishwakarma Shala (Gopuram) = API Testing Platform. Divine architect's workshop — built beyond Postman. Swagger auto-discovery, DAG flow chaining, DB console, PDF reports.
+• Akasha Mandapa (Mandapa) = AWS Cloud Migration. The sky pavilion, infinite and unbound — 80+ Mule ESB apps migrated to AWS Lambda. Eliminated single point of failure.
+• Setu Nagara (Shikhara) = Java 1.7/1.8 Bridge. Ram's bridge across the ocean — solved IBM MQ + MySQL 8 JDBC incompatibility via shell-script process boundary. Still running 3+ years.
+• Brahma Kund (Mandapa) = MySQL Data Migrations. Primordial reservoir — MySQL 5→8→8.4 across 3 waves, shadow validation, zero data lost.
+• Lakshmi Prasad (Shikhara) = LedgerFlow Financial System. Palace of wealth — idempotency keys + state machine makes duplicate invoices architecturally impossible.
+• Pura Stambha (Stupa) = RedSky Legacy Monolith. The ancient pillar — Struts2/Spring3 B2B relocation platform, 4 years production, trace-first debugging philosophy.
+• Maya Sabha (Stupa) = Greenfield Architecture. Maya's enchanted hall — Art Transport System + Operations App designed schema-first, both in active production.
+• Jyotish Vedha (Shikhara) = Survey Integration. The observatory — automated survey-to-service-order pipeline, 100% manual re-entry eliminated.
+• Vayu Rath (Shikhara) = MovePulse B2B Tracking. Wind chariot — real-time status with READ UNCOMMITTED, zero locks, zero impact on write performance.
+• Saraswati Vihar (Gopuram) = University of Allahabad, M.Sc. CS (2019–2021). Goddess of knowledge.
+• Gurukul Ashram (Gopuram) = M.P.P.G. College, B.Sc. Math+CS (2015–2019). Ancient teaching tradition.
+
+PHILOSOPHY: "I build systems that work at 3am — not systems that work in demos."
+
+Mode: ${MODE}. Answer 2-4 sentences. Speak with wisdom about both the temple mythology AND the engineering reality. Never fabricate technical details.`;
         try {
           const r = await fetch("https://api.anthropic.com/v1/messages", {
             method: "POST",
