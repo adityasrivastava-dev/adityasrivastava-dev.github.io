@@ -90,9 +90,9 @@ window.CityEngine = (function () {
   let carGroup, carBodyMesh;
   let wheelGroups = [];
   let carX = 0,
-    carZ = 6;
+    carZ = 0; // Spawn at world center — 11 temples visible, 0 prox triggers
   let gameStarted = false; // blocks all HUD/proximity/narrative before user clicks
-  let carAngle = 0,
+  let carAngle = Math.PI, // Face NORTH (-Z): all hero temples ahead
     carSpeed = 0;
   // Smooth steering — steering angle lerps toward input, never snaps
   let steerAngle = 0; // current smooth steering value (-1 to +1)
@@ -346,10 +346,13 @@ window.CityEngine = (function () {
 
     // ── STATIC — pre-click loading state. Camera holds at nice overview angle ──
     if (CAM.state === "STATIC") {
-      // Gentle slow pan showing the world before user clicks
-      const panAngle = t * 0.06;
-      camera.position.set(Math.sin(panAngle) * 55, 38, Math.cos(panAngle) * 55);
-      camera.lookAt(0, 2, 0); // always look at city center
+      if (camera.fov !== 58) {
+        camera.fov = 58;
+        camera.updateProjectionMatrix();
+      }
+      const panAngle = t * 0.05;
+      camera.position.set(Math.sin(panAngle) * 72, 48, Math.cos(panAngle) * 72);
+      camera.lookAt(0, 3, 0); // wider orbit for mythology layout
       return;
     }
 
@@ -398,6 +401,10 @@ window.CityEngine = (function () {
     }
 
     if (CAM.state === "FOCUS_TRANSITION") {
+      if (camera.fov > 59) {
+        camera.fov += (58 - camera.fov) * 0.08;
+        camera.updateProjectionMatrix();
+      }
       CAM.transT += dt / CAM.transDur;
       const t2 = Math.min(1, CAM.transT);
       const e = t2 < 0.5 ? 2 * t2 * t2 : 1 - Math.pow(-2 * t2 + 2, 2) / 2;
@@ -422,9 +429,8 @@ window.CityEngine = (function () {
     }
 
     if (CAM.state === "FOCUS" || CAM.locked) {
-      // Hold cinematic POV — subtle breathing only
-      const breath = Math.sin(t * 0.4 * Math.PI * 2) * 0.08;
-      camera.position.y += breath * dt * 6;
+      const focusBaseY = CAM.toPos.y || 10;
+      camera.position.y = focusBaseY + Math.sin(t * 0.4 * Math.PI * 2) * 0.06;
       return;
     }
 
@@ -489,9 +495,8 @@ window.CityEngine = (function () {
     const lookAhead = 4 + speedRatio * 8;
     camera.lookAt(carX + sinA * lookAhead, 1.5, carZ + cosA * lookAhead);
 
-    // Camera tilt on turns (enhanced from playerPresence steerFeedback)
-    if (CAM.state === "FOLLOW") {
-      camera.rotation.z = steerFeedback * -0.06 * (1 + speedRatio * 0.5);
+    if (CAM.state === "FOLLOW" && Math.abs(steerFeedback) > 0.0002) {
+      camera.rotateZ(steerFeedback * -0.02 * (1 + speedRatio * 0.5));
     }
 
     // Screen shake decay
@@ -1065,7 +1070,7 @@ window.CityEngine = (function () {
     buildGuideArrow();
 
     // Show first guide label
-    showGuideLabel("◈  DRIVE NORTH TO SURYA DWARA  ◈");
+    showGuideLabel("◈  DRIVE EAST  →  SURYA DWARA  ◈");
   }
 
   function buildYatraPath() {
@@ -1960,8 +1965,8 @@ window.CityEngine = (function () {
     clock = new THREE.Clock();
 
     camera = new THREE.PerspectiveCamera(58, W / H, 0.1, 600);
-    camera.position.set(0, 18, 42);
-    camera.lookAt(0, 2, 20);
+    camera.position.set(0, 55, 70);
+    camera.lookAt(0, 2, 0);
 
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -6021,6 +6026,12 @@ window.CityEngine = (function () {
 
   // ── CAR PHYSICS (scalar — zero drift) ────────────────────────────────────
   function updateCar() {
+    if (CAM.state === "FOCUS" || CAM.state === "FOCUS_TRANSITION") {
+      carSpeed *= 0.88;
+      if (Math.abs(carSpeed) < 0.002) carSpeed = 0;
+      carGroup.position.set(carX, 0, carZ);
+      return;
+    }
     const tj = window._touchJoy || { ax: 0, ay: 0 };
 
     // ── RAW INPUT ──────────────────────────────────────────────────────────
@@ -6051,6 +6062,7 @@ window.CityEngine = (function () {
     // Lerp: fast response when applying, slower when releasing (natural feel)
     const steerLerp = steerIn !== 0 ? 0.18 : 0.12;
     steerAngle += (steerTarget - steerAngle) * steerLerp;
+    if (Math.abs(steerAngle) < 0.0005) steerAngle = 0;
 
     // ── SMOOTH ACCELERATION — acceleration curve: slow start, faster mid-range ──
     if (throttleIn > 0) {
@@ -6128,8 +6140,8 @@ window.CityEngine = (function () {
     // Date.now() caused jitter when tab was throttled. Use carSpeed as frequency.
     const bounceFreq = 12 + Math.abs(carSpeed) * 40;
     const bounceAmp = Math.abs(carSpeed) * 0.018;
-    const rawBounce =
-      Math.abs(Math.sin(Date.now() * 0.001 * bounceFreq)) * bounceAmp;
+    const _t = clock ? clock.elapsedTime : Date.now() * 0.001;
+    const rawBounce = Math.abs(Math.sin(_t * bounceFreq)) * bounceAmp;
     suspensionY += (rawBounce - suspensionY) * 0.22; // smooth the bounce
     carGroup.position.y = suspensionY;
 
@@ -6159,8 +6171,9 @@ window.CityEngine = (function () {
 
   // ── PROXIMITY ─────────────────────────────────────────────────────────────
   function checkProximity() {
-    if (!gameStarted) return; // no notifications before user starts
-    closestDist = PROX;
+    if (!gameStarted) return;
+    let closest = null;
+    let closestDist = PROX;
     window.CITY_DATA.buildings.forEach((b) => {
       const rx = b.roadPos ? b.roadPos[0] : b.pos[0];
       const rz = b.roadPos ? b.roadPos[1] : b.pos[1];
