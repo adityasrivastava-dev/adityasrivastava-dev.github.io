@@ -210,6 +210,64 @@
         color: rgba(255, 255, 255, 0.3);
         margin-top: 8px;
       }
+      .ss-enter-btn {
+        margin-top: 28px;
+        padding: 14px 52px;
+        font-family: var(--ff);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 6px;
+        color: #fff;
+        background: rgba(0, 200, 255, 0.12);
+        border: 1.5px solid rgba(0, 200, 255, 0.55);
+        border-radius: 3px;
+        cursor: pointer;
+        text-shadow: 0 0 12px rgba(0, 200, 255, 0.7);
+        box-shadow:
+          0 0 24px rgba(0, 200, 255, 0.15),
+          inset 0 0 24px rgba(0, 200, 255, 0.04);
+        backdrop-filter: blur(8px);
+        transition: all 0.22s;
+        animation: ssf 1.6s 0.6s ease-in-out infinite;
+        position: relative;
+        overflow: hidden;
+      }
+      .ss-enter-btn::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(0, 200, 255, 0.08),
+          transparent
+        );
+        transform: translateX(-100%);
+        transition: transform 0.5s;
+      }
+      .ss-enter-btn:hover {
+        background: rgba(0, 200, 255, 0.22);
+        border-color: rgba(0, 200, 255, 0.9);
+        box-shadow:
+          0 0 36px rgba(0, 200, 255, 0.35),
+          inset 0 0 24px rgba(0, 200, 255, 0.08);
+        transform: translateY(-2px);
+        animation: none;
+        opacity: 1;
+      }
+      .ss-enter-btn:hover::before {
+        transform: translateX(100%);
+      }
+      .ss-enter-btn:active {
+        transform: translateY(0px);
+      }
+      .ss-sub {
+        font-family: var(--fm);
+        font-size: 9px;
+        letter-spacing: 3px;
+        color: rgba(255, 255, 255, 0.22);
+        margin-top: 10px;
+      }
       #hud-tr {
         position: fixed;
         top: 14px;
@@ -260,7 +318,7 @@
       }
       #prox {
         position: fixed;
-        bottom: 110px;
+        bottom: 120px;
         left: 50%;
         z-index: 9000;
         transform: translateX(-50%) translateY(50px);
@@ -346,7 +404,7 @@
         right: calc(min(500px, 52vw) + 14px);
       }
       body.panel-open #prox {
-        transform: translateX(calc(-50% - min(250px, 26vw)));
+        display: none !important;
       }
       #sp-inner {
         position: absolute;
@@ -1049,7 +1107,7 @@
         font-family: var(--fm);
         font-size: 7px;
         letter-spacing: 2px;
-        color: rgba(255, 255, 255, 0.22);
+        color: rgba(255, 255, 255, 0.15);
         pointer-events: none;
         line-height: 1.9;
         background: rgba(10, 5, 2, 0.5);
@@ -1287,7 +1345,7 @@
         align-items: flex-end;
         gap: 5px;
         mix-blend-mode: normal;
-        opacity: 0.92;
+        opacity: 1;
       }
       #spd-ring {
         width: 68px;
@@ -1512,9 +1570,23 @@
       <div id="ld-msg">AWAKENING THE CITY…</div>
     </div>
     <div id="start-screen">
-      <div class="ss-click">CLICK TO ENTER THE CITY</div>
-      <div class="ss-arrow">◈</div>
-      <div class="ss-hint">
+      <div class="ss-click">ADITYA SRIVASTAVA</div>
+      <div
+        class="ss-arrow"
+        style="
+          font-size: 11px;
+          letter-spacing: 5px;
+          color: rgba(255, 200, 80, 0.6);
+          margin-top: 2px;
+        "
+      >
+        BACKEND ARCHITECT · TRILASOFT · 4 YRS
+      </div>
+      <button class="ss-enter-btn" id="ss-enter-btn">
+        ◈ &nbsp; ENTER THE CITY &nbsp; ◈
+      </button>
+      <div class="ss-sub">or click anywhere · touch to explore</div>
+      <div class="ss-hint" style="margin-top: 14px">
         W/S DRIVE &nbsp;·&nbsp; A/D STEER &nbsp;·&nbsp; E ENTER TEMPLE
         &nbsp;·&nbsp; M MAP &nbsp;·&nbsp; J JOURNEY
       </div>
@@ -1776,8 +1848,26 @@
           }, 8000);
         }
       }
-      startScreen.addEventListener("click", hideStart);
-      startScreen.addEventListener("touchend", hideStart);
+      // Enter button — explicit listener, stops bubbling to parent
+      const ssBtn = document.getElementById("ss-enter-btn");
+      if (ssBtn) {
+        ssBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          hideStart();
+        });
+        ssBtn.addEventListener("touchend", function (e) {
+          e.stopPropagation();
+          e.preventDefault();
+          hideStart();
+        });
+      }
+      // Click anywhere else on the start screen also works
+      startScreen.addEventListener("click", function (e) {
+        if (!e.target.closest("#ss-enter-btn")) hideStart();
+      });
+      startScreen.addEventListener("touchend", function (e) {
+        if (!e.target.closest("#ss-enter-btn")) hideStart();
+      });
       const mmCanvas = document.getElementById("mm-canvas"),
         mmCtx = mmCanvas ? mmCanvas.getContext("2d") : null;
       function updateMinimap(cx, cz, angle) {
@@ -1848,6 +1938,11 @@
         else body.innerHTML = recPanel(b, col);
         document.getElementById("side-panel").classList.add("open");
         document.body.classList.add("panel-open");
+        // P4: check if all 12 temples now visited
+        setTimeout(() => {
+          if (typeof CityEngine !== "undefined" && CityEngine.checkCompletion)
+            CityEngine.checkCompletion();
+        }, 200);
         body.querySelectorAll(".eng-toggle").forEach((btn) =>
           btn.addEventListener("click", function () {
             const dep = this.nextElementSibling;
@@ -1864,6 +1959,9 @@
         const panel = document.getElementById("side-panel");
         panel.style.transform = "translateX(110%) rotateY(-8deg)";
         panel.style.opacity = "0";
+        // P1: collapse world panel when DOM panel closes
+        if (typeof CityEngine !== "undefined" && CityEngine.closeWorldPanel)
+          CityEngine.closeWorldPanel();
         setTimeout(() => {
           panel.classList.remove("open");
           panel.style.transform = "";
@@ -2339,7 +2437,7 @@ Mode: ${MODE}. Answer 2-4 sentences. Speak with wisdom about both the temple myt
       <div id="fullmap-sub">
         ADITYA SRIVASTAVA · BACKEND ARCHITECT · 12 SYSTEMS
       </div>
-      <canvas id="fullmap-canvas" width="900" height="560"></canvas>
+      <!-- fullmap-canvas deduped -->
       <div id="fullmap-visited-count"></div>
       <div id="fullmap-legend"></div>
     </div>

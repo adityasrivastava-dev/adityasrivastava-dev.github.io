@@ -144,7 +144,7 @@ window.CityEngine = (function () {
   const ACCEL = 0.022; // stronger acceleration so speed difference is felt
   const BRAKE = 0.038; // firmer brakes
   const DECEL = 0.012; // faster natural deceleration — car feels heavier
-  const MAX_SPD = 0.48; // higher top speed so player actually FEELS fast
+  const MAX_SPD = 0.55; // higher top speed — more perceivable velocity
   const TURN = 0.038; // same steering — already good
   const PROX = 30; // large world — show notification from further away
   const CAR_HW = 0.85;
@@ -278,10 +278,10 @@ window.CityEngine = (function () {
       // ── Scale pulse ──────────────────────────────────────────────────────
       const amps = {
         DORMANT: 0,
-        AMBIENT: 0.002,
-        HOVER: 0.006,
-        ACTIVE: 0.011,
-        SELECTED: 0.008,
+        AMBIENT: 0.003,
+        HOVER: 0.01,
+        ACTIVE: 0.016,
+        SELECTED: 0.012,
       };
       const freqs = {
         DORMANT: 0.3,
@@ -416,12 +416,17 @@ window.CityEngine = (function () {
         setTimeout(() => {
           const b = CAM.focusBuilding;
           if (b) {
-            window.CityUI?.openBuilding(b);
-            spawnConfetti(
-              carX,
-              carZ,
-              parseInt((b.glowColor || "#ffcc44").slice(1), 16),
-            );
+            // P1: Rise world panel first, then DOM panel 800ms later
+            buildWorldPanel(b);
+            setTimeout(() => {
+              window.CityUI?.openBuilding(b);
+              spawnConfetti(
+                carX,
+                carZ,
+                parseInt((b.glowColor || "#ffcc44").slice(1), 16),
+              );
+              setTimeout(() => checkCompletion(), 300);
+            }, 800);
           }
         }, 600);
       }
@@ -458,11 +463,11 @@ window.CityEngine = (function () {
     const speedRatio = Math.abs(carSpeed) / MAX_SPD;
 
     // Camera pulls back at high speed — more world visible = feels faster
-    const camDist = 22 + speedRatio * 8; // 22 at rest → 30 at top speed
-    const camH = 16 + speedRatio * 3; // rises slightly at speed
+    const camDist = 22 + speedRatio * 14; // 22 at rest → 36 at top speed (stronger pull-back)
+    const camH = 16 + speedRatio * 4; // rises more at speed
 
     // FOV widens with speed — single most effective speed perception trick
-    const targetFOV = 58 + speedRatio * 18; // 58° rest → 76° at top speed
+    const targetFOV = 58 + speedRatio * 26; // 58° rest → 84° at top speed
     camera.fov += (targetFOV - camera.fov) * 0.06;
     camera.updateProjectionMatrix();
 
@@ -542,6 +547,7 @@ window.CityEngine = (function () {
     CAM.transT = 0;
     CAM.state = "RETURN_TRANSITION";
     CAM.locked = false;
+    closeWorldPanel(); // P1: collapse world panel on camera return
   }
 
   // ── ENERGY BURST — selection acknowledgement flash ────────────────────────
@@ -1104,7 +1110,9 @@ window.CityEngine = (function () {
     });
     NARRATIVE.yatraPath = new THREE.Mesh(tubeGeo, tubeMat);
     NARRATIVE.yatraPath.userData.isYatra = true;
+    NARRATIVE.yatraCurve = curve; // P3: store curve for flow particles
     scene.add(NARRATIVE.yatraPath);
+    buildYatraFlowParticles(curve); // P3: build animated particles
   }
 
   function buildGuideArrow() {
@@ -1393,11 +1401,24 @@ window.CityEngine = (function () {
 
         const harmGain = audioCtx.createGain();
         harmGain.gain.value = 0.3;
+
+        // P2: PannerNode — true 3D stereo positioning
+        const panner = audioCtx.createPanner();
+        panner.panningModel = "HRTF";
+        panner.distanceModel = "inverse";
+        panner.refDistance = 1;
+        panner.maxDistance = 60;
+        panner.rolloffFactor = 1.4;
+        panner.positionX.value = b.pos[0];
+        panner.positionY.value = 4;
+        panner.positionZ.value = b.pos[1];
+
         harm.connect(harmGain);
         harmGain.connect(filt);
         osc.connect(filt);
         filt.connect(gain);
-        gain.connect(audioCtx.destination);
+        gain.connect(panner);
+        panner.connect(audioCtx.destination);
         osc.start();
         harm.start();
 
@@ -1406,6 +1427,7 @@ window.CityEngine = (function () {
           harm,
           gain,
           filt,
+          panner,
           bx: b.pos[0],
           bz: b.pos[1],
           baseGain: prof.gain,
@@ -1417,6 +1439,21 @@ window.CityEngine = (function () {
 
   function updateSpatialAudio() {
     if (!audioCtx || IS_MOBILE) return;
+
+    // P2: Update AudioContext listener position (= car position in world)
+    if (audioCtx.listener.positionX) {
+      audioCtx.listener.positionX.value = carX;
+      audioCtx.listener.positionY.value = 2;
+      audioCtx.listener.positionZ.value = carZ;
+      // Listener orientation: forward = -sin(angle), 0, -cos(angle)
+      audioCtx.listener.forwardX.value = -Math.sin(carAngle);
+      audioCtx.listener.forwardY.value = 0;
+      audioCtx.listener.forwardZ.value = -Math.cos(carAngle);
+      audioCtx.listener.upX.value = 0;
+      audioCtx.listener.upY.value = 1;
+      audioCtx.listener.upZ.value = 0;
+    }
+
     Object.entries(spatialAudio).forEach(([id, s]) => {
       const dist = Math.hypot(carX - s.bx, carZ - s.bz);
       const maxDist = 45;
@@ -1951,6 +1988,466 @@ window.CityEngine = (function () {
     });
   }
 
+  // ── IN-WORLD PANEL STATE ──────────────────────────────────────────────────
+  let worldPanel = null; // THREE.Mesh PlaneGeometry panel in world
+  let worldPanelGroup = null; // Group: panel + glow ring
+  let worldPanelT = 0; // 0→1 rise animation
+  let worldPanelOpen = false;
+  let worldPanelBuilding = null;
+
+  // ── YATRA FLOW STATE ──────────────────────────────────────────────────────
+  let yatraFlowParticles = null; // points flowing along yatra path
+  let yatraFlowPositions = null;
+  let yatraFlowT = []; // per-particle progress
+
+  // ── COMPLETION STATE ──────────────────────────────────────────────────────
+  let completionFired = false;
+  let completionRings = []; // expanding gold rings at central island
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // P1: IN-WORLD PANEL — PlaneGeometry that rises from the temple base
+  // ─────────────────────────────────────────────────────────────────────────
+  function buildWorldPanel(b) {
+    if (worldPanelGroup) {
+      scene.remove(worldPanelGroup);
+      worldPanelGroup = null;
+      worldPanel = null;
+    }
+
+    worldPanelBuilding = b;
+    worldPanelGroup = new THREE.Group();
+
+    const gc = parseInt((b.glowColor || "#ffcc44").slice(1), 16);
+    const gcVec = new THREE.Color(gc);
+
+    // Build canvas texture with building info
+    const W = 512,
+      H = 384;
+    const can = document.createElement("canvas");
+    can.width = W;
+    can.height = H;
+    const ctx = can.getContext("2d");
+
+    // Background — dark stone slab
+    const bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, "rgba(10,5,2,0.97)");
+    bg.addColorStop(1, "rgba(4,2,0,0.99)");
+    ctx.fillStyle = bg;
+    if (ctx.roundRect) ctx.roundRect(0, 0, W, H, 6);
+    else ctx.rect(0, 0, W, H);
+    ctx.fill();
+
+    // Glow border
+    ctx.strokeStyle = b.glowColor;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = b.glowColor;
+    ctx.shadowBlur = 14;
+    if (ctx.roundRect) ctx.roundRect(2, 2, W - 4, H - 4, 5);
+    else ctx.rect(2, 2, W - 4, H - 4);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Header line
+    const lineGrd = ctx.createLinearGradient(0, 0, W, 0);
+    lineGrd.addColorStop(0, b.glowColor);
+    lineGrd.addColorStop(1, "transparent");
+    ctx.fillStyle = lineGrd;
+    ctx.fillRect(0, 0, W, 3);
+
+    // Badge
+    ctx.fillStyle = b.glowColor + "22";
+    ctx.fillRect(14, 14, 180, 22);
+    ctx.fillStyle = b.glowColor;
+    ctx.font = "bold 10px 'Share Tech Mono', monospace";
+    ctx.fillText(
+      (b.tag || b.templeType?.toUpperCase() || "SYSTEM").slice(0, 28),
+      20,
+      29,
+    );
+
+    // Title
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 26px 'Barlow Condensed', sans-serif";
+    ctx.fillText(b.name || "Temple", 14, 66);
+
+    // Subtitle
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
+    ctx.font = "11px 'Share Tech Mono', monospace";
+    ctx.fillText((b.subtitle || "").slice(0, 50), 14, 86);
+
+    // Divider
+    ctx.fillStyle = b.glowColor + "44";
+    ctx.fillRect(14, 96, W - 28, 1);
+
+    // Metrics
+    if (b.metrics?.length) {
+      b.metrics.slice(0, 3).forEach((m, i) => {
+        const mx = 14 + i * 160;
+        ctx.fillStyle = b.glowColor;
+        ctx.font = "bold 20px 'Barlow Condensed', sans-serif";
+        ctx.fillText(m.v, mx, 126);
+        ctx.fillStyle = "rgba(255,255,255,0.35)";
+        ctx.font = "8px 'Share Tech Mono', monospace";
+        ctx.fillText(m.l.slice(0, 16).toUpperCase(), mx, 140);
+      });
+    }
+
+    // Story excerpt
+    const story = (b.story || "").replace(/<[^>]+>/g, "").slice(0, 200);
+    ctx.fillStyle = "rgba(255,255,255,0.72)";
+    ctx.font = "12px 'Segoe UI', sans-serif";
+    const words = story.split(" ");
+    let line = "",
+      y = 172;
+    words.forEach((word) => {
+      const test = line + word + " ";
+      if (ctx.measureText(test).width > W - 28 && line) {
+        ctx.fillText(line.trim(), 14, y);
+        line = word + " ";
+        y += 17;
+        if (y > 270) {
+          line = "";
+        }
+      } else line = test;
+    });
+    if (line && y <= 270) ctx.fillText(line.trim(), 14, y);
+
+    // Tech tags
+    if (b.tech?.length) {
+      ctx.fillStyle = b.glowColor + "44";
+      ctx.fillRect(14, 282, W - 28, 1);
+      let tx = 14;
+      const ty = 308;
+      b.tech.slice(0, 6).forEach((t) => {
+        const tw = ctx.measureText(t).width + 14;
+        ctx.fillStyle = b.glowColor + "18";
+        ctx.fillRect(tx, ty - 12, tw, 18);
+        ctx.fillStyle = b.glowColor + "cc";
+        ctx.font = "9px 'Share Tech Mono', monospace";
+        ctx.fillText(t, tx + 7, ty);
+        tx += tw + 6;
+      });
+    }
+
+    // Press E hint at bottom
+    ctx.fillStyle = "rgba(255,255,255,0.2)";
+    ctx.font = "9px 'Share Tech Mono', monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("PRESS  E  TO VIEW FULL STORY", W / 2, H - 14);
+
+    const tex = new THREE.CanvasTexture(can);
+    const panelGeo = new THREE.PlaneGeometry(10, 7.5);
+    const panelMat = new THREE.MeshBasicMaterial({
+      map: tex,
+      transparent: true,
+      opacity: 0,
+      depthTest: false,
+      side: THREE.DoubleSide,
+    });
+    worldPanel = new THREE.Mesh(panelGeo, panelMat);
+
+    // Position: face toward car from the building's side, at mid-height
+    const ang = Math.atan2(carX - b.pos[0], carZ - b.pos[1]);
+    const dist = Math.max(b.size[0], b.size[1]) * 0.5 + 7;
+    worldPanel.position.set(
+      b.pos[0] + Math.sin(ang) * dist,
+      (b.height || 12) * 0.5,
+      b.pos[1] + Math.cos(ang) * dist,
+    );
+    worldPanel.rotation.y = ang;
+    worldPanel.position.y = 0; // start at ground, rises up
+    worldPanel.userData.targetY = (b.height || 12) * 0.5;
+
+    // Glow ring at base of panel
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: gc,
+      transparent: true,
+      opacity: 0,
+    });
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(5.5, 0.08, 4, 28),
+      ringMat,
+    );
+    ring.rotation.x = Math.PI / 2;
+    ring.position.copy(worldPanel.position);
+    ring.position.y = 0.1;
+    ring.userData.isPanelRing = true;
+
+    // Vertical energy beam connecting building to panel
+    const beamGeo = new THREE.BoxGeometry(0.06, (b.height || 12) * 0.5, 0.06);
+    const beamMat = new THREE.MeshBasicMaterial({
+      color: gc,
+      transparent: true,
+      opacity: 0,
+    });
+    const beam = new THREE.Mesh(beamGeo, beamMat);
+    beam.position.set(
+      worldPanel.position.x,
+      (b.height || 12) * 0.25,
+      worldPanel.position.z,
+    );
+    beam.userData.isPanelBeam = true;
+
+    worldPanelGroup.add(worldPanel);
+    worldPanelGroup.add(ring);
+    worldPanelGroup.add(beam);
+    scene.add(worldPanelGroup);
+
+    worldPanelT = 0;
+    worldPanelOpen = true;
+  }
+
+  function updateWorldPanel(now, dt) {
+    if (!worldPanel || !worldPanelOpen) return;
+    const b = worldPanelBuilding;
+    if (!b) return;
+
+    worldPanelT = Math.min(1, worldPanelT + dt * 0.9); // 1.1s rise
+    const ease =
+      worldPanelT < 0.5
+        ? 2 * worldPanelT * worldPanelT
+        : 1 - Math.pow(-2 * worldPanelT + 2, 2) / 2;
+
+    const targetY = b ? (b.height || 12) * 0.5 : 6;
+    worldPanel.position.y = ease * targetY;
+
+    // Panel opacity
+    const targetOp =
+      worldPanelT > 0.2 ? Math.min(0.96, (worldPanelT - 0.2) / 0.4) : 0;
+    worldPanel.material.opacity +=
+      (targetOp - worldPanel.material.opacity) * 0.1;
+
+    // Panel always faces the car
+    const dx = carX - worldPanel.position.x;
+    const dz = carZ - worldPanel.position.z;
+    worldPanel.rotation.y = Math.atan2(dx, dz);
+
+    // Animate ring and beam
+    worldPanelGroup.children.forEach((c) => {
+      if (c.userData.isPanelRing) {
+        c.material.opacity = ease * 0.5 + Math.sin(now * 3) * 0.1 * ease;
+        const s = 1 + Math.sin(now * 1.5) * 0.04;
+        c.scale.setScalar(s);
+      }
+      if (c.userData.isPanelBeam) {
+        c.material.opacity = ease * 0.6;
+        // Shimmer
+        c.material.color.setHSL(0.1 + Math.sin(now * 4) * 0.05, 1, 0.6);
+      }
+    });
+  }
+
+  function closeWorldPanel() {
+    if (!worldPanel) return;
+    worldPanelOpen = false;
+    // Fade out
+    let t = 1.0;
+    const iv = setInterval(() => {
+      t -= 0.06;
+      if (worldPanel) {
+        worldPanel.material.opacity = Math.max(0, t);
+        worldPanel.position.y = Math.max(0, worldPanel.position.y - 0.3);
+        worldPanelGroup.children.forEach((c) => {
+          if (c.material && c !== worldPanel)
+            c.material.opacity = Math.max(0, t * 0.5);
+        });
+      }
+      if (t <= 0) {
+        clearInterval(iv);
+        if (worldPanelGroup) {
+          scene.remove(worldPanelGroup);
+          worldPanelGroup = null;
+          worldPanel = null;
+        }
+      }
+    }, 20);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // P3: YATRA PATH SHIMMER — animated particles flowing along the tube
+  // ─────────────────────────────────────────────────────────────────────────
+  function buildYatraFlowParticles(curve) {
+    if (!curve || IS_MOBILE) return;
+    const N = 60;
+    const pos = new Float32Array(N * 3);
+    const col = new Float32Array(N * 3);
+    yatraFlowT = Array.from({ length: N }, () => Math.random());
+
+    for (let i = 0; i < N; i++) {
+      const pt = curve.getPoint(yatraFlowT[i]);
+      pos[i * 3] = pt.x;
+      pos[i * 3 + 1] = pt.y + 0.3;
+      pos[i * 3 + 2] = pt.z;
+      // Gold to white shimmer
+      const t = Math.random();
+      col[i * 3] = 1;
+      col[i * 3 + 1] = 0.85 + t * 0.15;
+      col[i * 3 + 2] = t * 0.4;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+    yatraFlowParticles = new THREE.Points(
+      geo,
+      new THREE.PointsMaterial({
+        size: 0.22,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.0,
+        sizeAttenuation: true,
+      }),
+    );
+    yatraFlowPositions = pos;
+    scene.add(yatraFlowParticles);
+  }
+
+  function updateYatraFlow(dt, yatraCurve) {
+    if (!yatraFlowParticles || !yatraCurve) return;
+    const visible = NARRATIVE.yatraVisible;
+    const targetOp = visible ? 0.85 : 0;
+    yatraFlowParticles.material.opacity +=
+      (targetOp - yatraFlowParticles.material.opacity) * 0.05;
+
+    if (!visible || yatraFlowParticles.material.opacity < 0.01) return;
+
+    const N = yatraFlowT.length;
+    const speed = 0.025; // flow speed along curve
+    for (let i = 0; i < N; i++) {
+      yatraFlowT[i] = (yatraFlowT[i] + speed * dt + (i / N) * 0.001) % 1.0;
+      const pt = yatraCurve.getPoint(yatraFlowT[i]);
+      yatraFlowPositions[i * 3] = pt.x;
+      yatraFlowPositions[i * 3 + 1] =
+        pt.y + 0.35 + Math.sin(yatraFlowT[i] * Math.PI * 8) * 0.15;
+      yatraFlowPositions[i * 3 + 2] = pt.z;
+    }
+    yatraFlowParticles.geometry.attributes.position.needsUpdate = true;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // P4: TEMPLE COMPLETION CELEBRATION
+  // ─────────────────────────────────────────────────────────────────────────
+  function triggerCompletion() {
+    if (completionFired) return;
+    completionFired = true;
+
+    // 1. Large confetti burst from central island
+    spawnConfetti(0, 0, 0xffcc44);
+    spawnConfetti(0, 0, 0x00ddff);
+    setTimeout(() => spawnConfetti(2, 2, 0xff88aa), 300);
+    setTimeout(() => spawnConfetti(-2, 2, 0x7dff4f), 600);
+
+    // 2. Three expanding gold rings from center
+    [3, 5, 7].forEach((startR, i) => {
+      setTimeout(() => {
+        const mat = new THREE.MeshBasicMaterial({
+          color: 0xffcc44,
+          transparent: true,
+          opacity: 0.8,
+        });
+        const ring = new THREE.Mesh(
+          new THREE.TorusGeometry(startR, 0.15, 4, 32),
+          mat,
+        );
+        ring.rotation.x = Math.PI / 2;
+        ring.position.y = 0.2;
+        ring.userData.isCompletionRing = true;
+        ring.userData.t = 0;
+        ring.userData.speed = 0.012;
+        scene.add(ring);
+        completionRings.push(ring);
+      }, i * 400);
+    });
+
+    // 3. World-space "CITY MASTERED" text sprite
+    const W = 640,
+      H = 128;
+    const can = document.createElement("canvas");
+    can.width = W;
+    can.height = H;
+    const ctx = can.getContext("2d");
+    ctx.fillStyle = "rgba(8,4,1,0.92)";
+    if (ctx.roundRect) ctx.roundRect(0, 0, W, H, 10);
+    else ctx.rect(0, 0, W, H);
+    ctx.fill();
+    ctx.strokeStyle = "#ffcc44aa";
+    ctx.lineWidth = 2;
+    if (ctx.roundRect) ctx.roundRect(2, 2, W - 4, H - 4, 8);
+    else ctx.rect(2, 2, W - 4, H - 4);
+    ctx.stroke();
+    ctx.fillStyle = "#ffcc44";
+    ctx.font = "bold 44px 'Barlow Condensed', sans-serif";
+    ctx.textAlign = "center";
+    ctx.shadowColor = "#ffcc44";
+    ctx.shadowBlur = 20;
+    ctx.fillText("◈  CITY MASTERED  ◈", W / 2, 52);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "rgba(255,255,255,0.4)";
+    ctx.font = "11px 'Share Tech Mono', monospace";
+    ctx.letterSpacing = "4px";
+    ctx.fillText(
+      "ALL 12 TEMPLES VISITED · ADITYA SRIVASTAVA · BACKEND ARCHITECT",
+      W / 2,
+      82,
+    );
+    ctx.fillStyle = "rgba(255,200,80,0.25)";
+    ctx.font = "9px 'Share Tech Mono', monospace";
+    ctx.fillText("4 YEARS · TRILASOFT SOLUTIONS · NOIDA", W / 2, 108);
+
+    const tex = new THREE.CanvasTexture(can);
+    const sp = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: tex,
+        transparent: true,
+        opacity: 0,
+        depthTest: false,
+      }),
+    );
+    sp.scale.set(20, 4, 1);
+    sp.position.set(0, 18, 0);
+    sp.userData.isMasterText = true;
+    scene.add(sp);
+
+    // Fade in, hold, fade out
+    let op = 0,
+      phase = "in",
+      held = 0;
+    const iv = setInterval(() => {
+      if (phase === "in") {
+        op = Math.min(1, op + 0.04);
+        sp.material.opacity = op;
+        if (op >= 1) {
+          phase = "hold";
+        }
+      } else if (phase === "hold") {
+        held += 16;
+        if (held > 5000) phase = "out";
+      } else {
+        op = Math.max(0, op - 0.02);
+        sp.material.opacity = op;
+        if (op <= 0) {
+          clearInterval(iv);
+          scene.remove(sp);
+        }
+      }
+    }, 16);
+
+    // 4. Audio celebration swell
+    playCinematicSwell(6.0);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Hook: call after every building visit to check completion
+  // ─────────────────────────────────────────────────────────────────────────
+  function checkCompletion() {
+    const total = window.CITY_DATA?.buildings?.length || 12;
+    const visited =
+      document.querySelectorAll(".jb-dot.visited").length ||
+      (window.CITY_DATA?.buildings || []).filter((b) =>
+        document.getElementById("dot-" + b.id)?.classList.contains("visited"),
+      ).length;
+    if (visited >= total && !completionFired) triggerCompletion();
+  }
+
   // ── INIT ──────────────────────────────────────────────────────────────────
   function progress(pct, msg) {
     if (typeof window.onCityProgress === "function")
@@ -1972,9 +2469,10 @@ window.CityEngine = (function () {
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.setSize(W, H);
     // ── NO GPU SHADOW MAPS — replaced by fake blob shadows (Bruno Simon style)
-    renderer.shadowMap.enabled = false;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ReinhardToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    renderer.toneMappingExposure = 1.35;
 
     // Kick renderer once to avoid white flash
     renderer.render(new THREE.Scene(), camera);
@@ -2724,12 +3222,21 @@ window.CityEngine = (function () {
     scene.add(hemiLight);
 
     // Key light: golden sunset FROM THE EAST (right side of scene)
-    sunLight = new THREE.DirectionalLight(0xffdd88, 3.5);
-    sunLight.position.set(80, 45, 10); // east side, low angle = golden hour
+    // Key light: strong directional — higher position = better shadow angle
+    sunLight = new THREE.DirectionalLight(0xffe8aa, 5.5);
+    sunLight.position.set(60, 80, 20);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 2048;
+    sunLight.shadow.mapSize.height = 2048;
+    sunLight.shadow.camera.near = 0.5;
+    sunLight.shadow.camera.far = 300;
+    sunLight.shadow.camera.left = sunLight.shadow.camera.bottom = -120;
+    sunLight.shadow.camera.right = sunLight.shadow.camera.top = 120;
+    sunLight.shadow.bias = -0.0005;
     scene.add(sunLight);
 
     // Fill: cool blue-purple from the west/overhead — creates depth
-    fillLight = new THREE.DirectionalLight(0x8866dd, 0.8);
+    fillLight = new THREE.DirectionalLight(0x8866cc, 0.35); // reduced for shadow contrast
     fillLight.position.set(-60, 30, -20);
     scene.add(fillLight);
 
@@ -3018,9 +3525,18 @@ window.CityEngine = (function () {
 
     // ── TOON MATERIALS — cel-shaded, responds to directional lights ───────
     // Gives crisp illustrated depth like the Firefly reference video
-    const mLight = new THREE.MeshToonMaterial({ color: sLight });
-    const mMid = new THREE.MeshToonMaterial({ color: sMid });
-    const mDark = new THREE.MeshToonMaterial({ color: sDark });
+    const mLight = new THREE.MeshToonMaterial({
+      color: sLight,
+      gradientMap: window._toonGrad,
+    });
+    const mMid = new THREE.MeshToonMaterial({
+      color: sMid,
+      gradientMap: window._toonGrad,
+    });
+    const mDark = new THREE.MeshToonMaterial({
+      color: sDark,
+      gradientMap: window._toonGrad,
+    });
     const mGlow = new THREE.MeshBasicMaterial({ color: gc });
     const mGoldMat = new THREE.MeshToonMaterial({
       color: 0xffcc44,
@@ -3445,6 +3961,12 @@ window.CityEngine = (function () {
       body: g,
       building: b,
       bodyMat: mMid, // for proximity highlight
+    });
+    g.traverse((c) => {
+      if (c.isMesh) {
+        c.castShadow = true;
+        c.receiveShadow = true;
+      }
     });
     scene.add(g);
   }
@@ -4542,7 +5064,10 @@ window.CityEngine = (function () {
 
     // ── InstancedMesh for trunks (1 draw call for all trunks) ──────────────
     const trunkGeo = new THREE.BoxGeometry(0.22, 1.0, 0.22);
-    const trunkMat = new THREE.MeshToonMaterial({ color: P.treeTrunk });
+    const trunkMat = new THREE.MeshToonMaterial({
+      color: P.treeTrunk,
+      gradientMap: window._toonGrad,
+    });
     const trunkInst = new THREE.InstancedMesh(
       trunkGeo,
       trunkMat,
@@ -4565,7 +5090,10 @@ window.CityEngine = (function () {
 
       // Leaf — still individual (different colors/shapes need separate material)
       const lColor = leafColors[Math.floor(Math.random() * leafColors.length)];
-      const lMat = new THREE.MeshToonMaterial({ color: lColor });
+      const lMat = new THREE.MeshToonMaterial({
+        color: lColor,
+        gradientMap: window._toonGrad,
+      });
 
       const tg = new THREE.Group();
       tg.position.set(x, 0, z);
@@ -4577,7 +5105,10 @@ window.CityEngine = (function () {
         tg.add(leafMesh);
         const leaf2 = new THREE.Mesh(
           new THREE.SphereGeometry(r * 0.7, 5, 4),
-          new THREE.MeshToonMaterial({ color: lColor }),
+          new THREE.MeshToonMaterial({
+            color: lColor,
+            gradientMap: window._toonGrad,
+          }),
         );
         leaf2.position.set(r * 0.55, h * 1.3 + r * 0.9, r * 0.3);
         tg.add(leaf2);
@@ -6309,6 +6840,25 @@ window.CityEngine = (function () {
     updateNarrative(now, dt);
     updateSpatialAudio();
 
+    // P1: In-world panel animation
+    updateWorldPanel(now, dt);
+
+    // P3: Yatra flow particles
+    if (NARRATIVE.yatraCurve) updateYatraFlow(dt, NARRATIVE.yatraCurve);
+
+    // P4: Completion ring expansion
+    completionRings = completionRings.filter((ring) => {
+      ring.userData.t += ring.userData.speed;
+      const t = ring.userData.t;
+      ring.scale.setScalar(1 + t * 5);
+      ring.material.opacity = Math.max(0, 0.8 - t * 0.8);
+      if (ring.material.opacity <= 0) {
+        scene.remove(ring);
+        return false;
+      }
+      return true;
+    });
+
     // ── HOVER AUDIO — play ping when entering HOVER state ────────────────────
     const hoverEnt = buildingEntities.find(
       (e) => e.state === "HOVER" || e.state === "ACTIVE",
@@ -6875,6 +7425,19 @@ window.CityEngine = (function () {
     },
     get narrativePhase() {
       return NARRATIVE.phase;
+    },
+    // P1: close world panel from HTML closeSP()
+    closeWorldPanel() {
+      closeWorldPanel();
+    },
+    // P4: check completion (called from HTML after openBuilding)
+    checkCompletion() {
+      checkCompletion();
+    },
+    // P3: toggle yatra with flow
+    toggleYatraPath() {
+      if (!NARRATIVE.yatraPath && NARRATIVE.phase === "FREE") buildYatraPath();
+      NARRATIVE.yatraVisible = !NARRATIVE.yatraVisible;
     },
   };
 })();
