@@ -17,7 +17,7 @@ window.CityEngine = (function () {
   let motionTrail = []; // speed trail particles
   let speedLinesGroup = null; // screen-edge speed lines
   let prevCarAngle = 0;
-  let steerFeedback = 0; // camera tilt on steering
+  let steerFeedback = 0; // updated each frame from lateral velocity
 
   // ── NARRATIVE DIRECTOR ────────────────────────────────────────────────────
   const NARRATIVE = {
@@ -89,15 +89,26 @@ window.CityEngine = (function () {
   // Car
   let carGroup, carBodyMesh;
   let wheelGroups = [];
-  let carX = 0,
-    carZ = 0; // Spawn at world center — 11 temples visible, 0 prox triggers
+  let carX = 13,
+    carZ = -14; // Spawn east of center — island 86° off-axis, 0 prox triggers
   let gameStarted = false; // blocks all HUD/proximity/narrative before user clicks
-  let carAngle = Math.PI, // Face NORTH (-Z): all hero temples ahead
-    carSpeed = 0;
-  // Smooth steering — steering angle lerps toward input, never snaps
-  let steerAngle = 0; // current smooth steering value (-1 to +1)
-  let carBodyRoll = 0; // smooth body roll for visual tilt
-  let suspensionY = 0; // smooth suspension bounce
+  let carAngle = Math.PI; // Face NORTH (-Z): all hero temples ahead
+  let carSpeed = 0; // kept for compatibility (= |velocity|)
+  // ── TRUE VELOCITY VECTOR ─────────────────────────────────────────────────
+  let carVx = 0,
+    carVz = 0; // world-space velocity m/frame
+  // ── STEERING ─────────────────────────────────────────────────────────────
+  let steerAngle = 0; // wheel deflection (radians)
+  let carSinA = 0,
+    carCosA = -1; // cached trig, updated each frame
+  // ── VISUAL DERIVED (not physics) ─────────────────────────────────────────
+  let carBodyRoll = 0; // visual body lean
+  let suspensionY = 0; // visual ride height
+  let suspensionVY = 0; // spring velocity for suspension
+  // ── CAMERA SPRING STATE ───────────────────────────────────────────────────
+  let camVx = 0,
+    camVy = 0,
+    camVz = 0; // spring velocity for camera follow
   let carKeys = {}; // local alias for readability
   let keys = {},
     crashCooldown = 0,
@@ -140,13 +151,24 @@ window.CityEngine = (function () {
     musicGain,
     musicStarted = false;
 
-  // Physics — scalar, no drift
-  const ACCEL = 0.022; // stronger acceleration so speed difference is felt
-  const BRAKE = 0.038; // firmer brakes
-  const DECEL = 0.012; // faster natural deceleration — car feels heavier
-  const MAX_SPD = 0.55; // higher top speed — more perceivable velocity
-  const TURN = 0.038; // same steering — already good
-  const PROX = 30; // large world — show notification from further away
+  // ── TRUE PHYSICS CONSTANTS ────────────────────────────────────────────────
+  // Car is treated as a rigid body with velocity vector (vx, vz)
+  // All forces applied per-frame as impulses
+  const ENGINE_FORCE = 0.014; // punchy — strong acceleration feel
+  const BRAKE_FORCE = 0.028; // hard, immediate braking
+  const LONG_FRICTION = 0.009; // light rolling resistance
+  const LAT_FRICTION = 0.78; // good grip
+  const STEER_RATE = 0.28; // immediate input response
+  const STEER_RELEASE = 0.2; // fast return
+  const MAX_STEER_ANGLE = 0.055; // wider steering
+  const MAX_SPD = 0.95; // higher cap for speed feel
+  const REV_MAX_RATIO = 0.4; // reverse max = 40% of forward
+  // Camera spring-damper constants
+  const CAM_SPRING_K = 14.0; // snappy follow
+  const CAM_SPRING_D = 9.5; // well damped
+  const CAM_Y_SPRING_K = 6.5; // Y spring
+  const CAM_Y_SPRING_D = 5.5;
+  const PROX = 32; // slightly wider for earlier visual response // large world — show notification from further away
   const CAR_HW = 0.85;
   const CAR_HD = 1.3;
   let weatherGrip = 1.0; // 1.0 = dry, 0.3 = rain, 0.12 = snow
@@ -273,7 +295,7 @@ window.CityEngine = (function () {
         : { DORMANT: 0, AMBIENT: 0.3, HOVER: 0.68, ACTIVE: 1.0, SELECTED: 1.0 }[
             this.state
           ] || 0;
-      this.vfxI += (tgt - this.vfxI) * 0.07;
+      this.vfxI += (tgt - this.vfxI) * 0.09;
 
       // ── Scale pulse ──────────────────────────────────────────────────────
       const amps = {
@@ -341,8 +363,9 @@ window.CityEngine = (function () {
 
   // ── CAMERA DIRECTOR ───────────────────────────────────────────────────────
   function updateCameraDirector(t, dt) {
-    const sinA = Math.sin(carAngle),
-      cosA = Math.cos(carAngle);
+    // carSinA/carCosA are updated by updateCar each frame
+    const sinA = carSinA,
+      cosA = carCosA;
 
     // ── STATIC — pre-click loading state. Camera holds at nice overview angle ──
     if (CAM.state === "STATIC") {
@@ -351,22 +374,30 @@ window.CityEngine = (function () {
         camera.updateProjectionMatrix();
       }
       const panAngle = t * 0.05;
-      camera.position.set(Math.sin(panAngle) * 72, 48, Math.cos(panAngle) * 72);
+      camera.position.set(Math.sin(panAngle) * 65, 40, Math.cos(panAngle) * 65); // closer = more epic
       camera.lookAt(0, 3, 0); // wider orbit for mythology layout
       return;
     }
 
     if (CAM.state === "INTRO") {
-      CAM.introT = Math.min(1, CAM.introT + dt / 6.5);
+      CAM.introT = Math.min(1, CAM.introT + dt / 5.8); // slightly faster descent
       const e =
         CAM.introT < 0.5
           ? 4 * CAM.introT * CAM.introT * CAM.introT
           : 1 - Math.pow(-2 * CAM.introT + 2, 3) / 2;
 
-      const startPos = new THREE.Vector3(12, 285, 95);
-      const endPos = new THREE.Vector3(carX - sinA * 22, 16, carZ - cosA * 22);
+      const startPos = new THREE.Vector3(8, 320, 80); // sync with triggerIntro position
+      const endPos = new THREE.Vector3(
+        carX - carSinA * 14,
+        12,
+        carZ - carCosA * 14,
+      );
       const startLook = new THREE.Vector3(0, 0, 0);
-      const endLook = new THREE.Vector3(carX + sinA * 4, 1.5, carZ + cosA * 4);
+      const endLook = new THREE.Vector3(
+        carX + carSinA * 6,
+        1.5,
+        carZ + carCosA * 6,
+      );
 
       camera.position.lerpVectors(startPos, endPos, e);
       const lk = new THREE.Vector3().lerpVectors(startLook, endLook, e);
@@ -394,6 +425,10 @@ window.CityEngine = (function () {
       if (CAM.introT >= 1) {
         CAM.state = "FOLLOW";
         CAM.introDone = true;
+        // Seed camera spring at exactly where INTRO left it — prevents initial jump
+        camVx = 0;
+        camVy = 0;
+        camVz = 0;
         // Start guided narrative 1.5s after landing
         setTimeout(() => startNarrativeGuide(), 1500);
       }
@@ -444,14 +479,14 @@ window.CityEngine = (function () {
       const e = Math.min(1, CAM.transT);
       const ease = e < 0.5 ? 2 * e * e : 1 - Math.pow(-2 * e + 2, 2) / 2;
       const followPos = new THREE.Vector3(
-        carX - sinA * 22,
-        16,
-        carZ - cosA * 22,
+        carX - carSinA * 22,
+        14 + (Math.hypot(carVx, carVz) / MAX_SPD) * 7,
+        carZ - carCosA * 22,
       );
       camera.position.lerpVectors(CAM.fromPos, followPos, ease);
       const lk = new THREE.Vector3().lerpVectors(
         CAM.fromLook,
-        new THREE.Vector3(carX + sinA * 4, 1.5, carZ + cosA * 4),
+        new THREE.Vector3(carX + carSinA * 4, 1.5, carZ + carCosA * 4),
         ease,
       );
       camera.lookAt(lk);
@@ -459,56 +494,94 @@ window.CityEngine = (function () {
       return;
     }
 
-    // ── FOLLOW — normal driving camera with breathing + speed perception ──────
-    const speedRatio = Math.abs(carSpeed) / MAX_SPD;
+    // ── FOLLOW — spring-damper camera physics ────────────────────────────────
+    // Uses Hooke's Law: F = -k*displacement - c*velocity
+    // This gives natural oscillation, overshoot, and weight to the camera
+    const velMag = Math.hypot(carVx, carVz);
+    const speedRatio = velMag / MAX_SPD;
 
-    // Camera pulls back at high speed — more world visible = feels faster
-    const camDist = 22 + speedRatio * 14; // 22 at rest → 36 at top speed (stronger pull-back)
-    const camH = 16 + speedRatio * 4; // rises more at speed
+    // ── TARGET POSITION (where camera WANTS to be) ────────────────────────
+    // Pull-back scales with speed: more speed = camera farther back = wider world
+    // Dynamic height: camera rises at speed for racing perspective
+    const camDist = 8 + speedRatio * 30; // 8 REST (close) → 38 at max
+    const camH = 4 + speedRatio * 11; // 4 low/ground → 15 at max
 
-    // FOV widens with speed — single most effective speed perception trick
-    const targetFOV = 58 + speedRatio * 26; // 58° rest → 84° at top speed
-    camera.fov += (targetFOV - camera.fov) * 0.06;
+    // Offset behind car using current facing — not steering angle
+    const tgtX = carX - carSinA * camDist;
+    const tgtZ = carZ - carCosA * camDist;
+    const tgtY = camH + suspensionY * 0.4; // camera feels road bumps (40% coupling)
+
+    // ── SPRING PHYSICS XZ ─────────────────────────────────────────────────
+    // Spring stiffness: how urgently camera chases the car
+    // Damping: how quickly oscillation dies — underdamped = floaty, overdamped = rigid
+    // We want slight underdamping on acceleration for "weight" feel
+    const accelMag = Math.abs(velMag - Math.abs(prevSpeed));
+    const kXZ = CAM_SPRING_K * (1.0 + speedRatio * 0.9) + accelMag * 50;
+    const dXZ = CAM_SPRING_D;
+
+    const forceX = (tgtX - camera.position.x) * kXZ - camVx * dXZ;
+    const forceZ = (tgtZ - camera.position.z) * kXZ - camVz * dXZ;
+    camVx += forceX * dt;
+    camVz += forceZ * dt;
+    camVx = Math.max(-4, Math.min(4, camVx)); // clamp — prevent runaway spring
+    camVz = Math.max(-4, Math.min(4, camVz));
+    camera.position.x += camVx * dt;
+    camera.position.z += camVz * dt;
+
+    // ── SPRING PHYSICS Y ─────────────────────────────────────────────────
+    // Y is bouncier — road bumps propagate to camera with a lag and bounce
+    const forceY =
+      (tgtY - camera.position.y) * CAM_Y_SPRING_K - camVy * CAM_Y_SPRING_D;
+    camVy += forceY * dt;
+    camVy = Math.max(-2.5, Math.min(2.5, camVy)); // clamp spring velocity — no wild oscillation
+    camera.position.y += camVy * dt;
+    // Hard clamp — camera stays within sensible range
+    if (camera.position.y < 3.5) {
+      camera.position.y = 3.5;
+      camVy = Math.abs(camVy) * 0.1;
+    }
+    if (camera.position.y > 35) {
+      camera.position.y = 35;
+      camVy = 0;
+    } // upper limit
+
+    // ── IDLE BREATH (only at low speed) ──────────────────────────────────
+    const breathAmt = Math.max(0, 1 - speedRatio * 2.5) * 0.22;
+    camera.position.y += Math.sin(t * 0.72) * breathAmt;
+
+    // ── FOV SPRING ────────────────────────────────────────────────────────
+    // FOV widens smoothly — wider at speed feels faster without needing speed numbers
+    const targetFOV = 48 + speedRatio * 42; // 48° still → 90° at max
+    camera.fov += (targetFOV - camera.fov) * Math.min(1, dt * 7);
     camera.updateProjectionMatrix();
 
-    const tx = carX - sinA * camDist;
-    const tz = carZ - cosA * camDist;
+    // ── LOOK-AHEAD ────────────────────────────────────────────────────────
+    // At speed: look far ahead — world opens up, motion feels more dynamic
+    // At rest: look just ahead of car
+    const lookAhead = 3 + speedRatio * 22; // 3 rest → 25 at max
+    // Smooth look target with spring (avoids snapping on sharp turns)
+    const lkX = carX + carSinA * lookAhead;
+    const lkZ = carZ + carCosA * lookAhead;
+    camera.lookAt(lkX, 1.2 + speedRatio * 0.6, lkZ);
 
-    // Camera lag: faster lerp when accelerating, slower when coasting
-    // This creates the "pushed back into seat" / "thrown forward" sensation
-    const accelDelta = Math.abs(carSpeed) - Math.abs(prevSpeed);
-    const camLag = accelDelta > 0 ? 0.05 : 0.11; // slow to follow acceleration, fast to return
+    // ── TILT INTO TURNS ───────────────────────────────────────────────────
+    // Derive lateral G from lateral velocity — camera tilts like a driver's head
+    const latVelForTilt = carVx * carCosA - carVz * carSinA;
+    const tiltAmt = latVelForTilt * -0.45 * (0.8 + speedRatio * 1.2);
+    camera.rotateZ(tiltAmt * dt * 3.5); // apply fractionally each frame
 
-    camera.position.x += (tx - camera.position.x) * camLag;
-    camera.position.y += (camH - camera.position.y) * camLag;
-    camera.position.z += (tz - camera.position.z) * camLag;
-
-    // Breath — scales down at speed (driver is alert, less idle sway)
-    const breathScale = Math.max(0, 1 - speedRatio * 1.4);
-    const breath = Math.sin(t * 0.4 * Math.PI * 2) * 0.18 * breathScale;
-    camera.position.y += breath;
-
-    // Micro-shake at high speed — road vibration feel
-    // Only when actually moving fast (not just turning)
-    if (speedRatio > 0.55) {
-      const shakeMag = (speedRatio - 0.55) * 0.055;
-      camera.position.x += (Math.random() - 0.5) * shakeMag;
-      camera.position.y += (Math.random() - 0.5) * shakeMag * 0.5;
+    // ── SPEED SHAKE (road vibration) ──────────────────────────────────────
+    if (speedRatio > 0.3 && carSpeed > 0.02) {
+      const mag = (speedRatio - 0.3) * 0.1;
+      camera.position.x += (Math.random() - 0.5) * mag;
+      camera.position.y += (Math.random() - 0.5) * mag * 0.35;
     }
 
-    // Look further ahead at speed — the world opens up
-    const lookAhead = 4 + speedRatio * 8;
-    camera.lookAt(carX + sinA * lookAhead, 1.5, carZ + cosA * lookAhead);
-
-    if (CAM.state === "FOLLOW" && Math.abs(steerFeedback) > 0.0002) {
-      camera.rotateZ(steerFeedback * -0.02 * (1 + speedRatio * 0.5));
-    }
-
-    // Screen shake decay
+    // ── CRASH SHAKE DECAY ─────────────────────────────────────────────────
     if (CAM.shakeAmt > 0) {
       camera.position.x += (Math.random() - 0.5) * CAM.shakeAmt;
       camera.position.y += (Math.random() - 0.5) * CAM.shakeAmt * 0.4;
-      CAM.shakeAmt = Math.max(0, CAM.shakeAmt - dt * 3);
+      CAM.shakeAmt = Math.max(0, CAM.shakeAmt - dt * 4.5);
     }
   }
 
@@ -605,6 +678,9 @@ window.CityEngine = (function () {
         line.userData.srcId = b.id;
         line.userData.dstId = target.id;
         line.userData.animOff = Math.random() * 50;
+        // Cache positions at build time — avoids O(12) find() every frame
+        line.userData.srcPos = [b.pos[0], b.pos[1]];
+        line.userData.dstPos = [target.pos[0], target.pos[1]];
         scene.add(line);
         energyStreams.push(line);
       });
@@ -1055,9 +1131,11 @@ window.CityEngine = (function () {
       cosA = Math.cos(carAngle);
     const angleDiff = carAngle - prevCarAngle;
     prevCarAngle = carAngle;
-    steerFeedback += (angleDiff * 18 - steerFeedback) * 0.12;
-    steerFeedback *= 0.92;
-    if (CAM.state === "FOLLOW") camera.rotation.z = steerFeedback * -0.04;
+    // Steer feedback from actual lateral velocity — physically correct
+    const latVelForFeedback = carVx * carCosA - carVz * carSinA;
+    steerFeedback += (latVelForFeedback * 1.6 - steerFeedback) * 0.14;
+    steerFeedback *= 0.94;
+    if (CAM.state === "FOLLOW") camera.rotateZ(steerFeedback * -0.025);
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1203,6 +1281,7 @@ window.CityEngine = (function () {
   }
 
   function updateNarrative(now, dt) {
+    if (CAM.state === "STATIC" || CAM.state === "INTRO") return;
     if (NARRATIVE.phase !== "GUIDED") return;
     NARRATIVE.timer += dt;
 
@@ -1440,18 +1519,14 @@ window.CityEngine = (function () {
   function updateSpatialAudio() {
     if (!audioCtx || IS_MOBILE) return;
 
-    // P2: Update AudioContext listener position (= car position in world)
-    if (audioCtx.listener.positionX) {
+    // AudioContext listener — throttle to 20fps (audio doesn't need 60fps)
+    if (audioCtx.listener.positionX && animate._frame % 3 === 0) {
       audioCtx.listener.positionX.value = carX;
       audioCtx.listener.positionY.value = 2;
       audioCtx.listener.positionZ.value = carZ;
-      // Listener orientation: forward = -sin(angle), 0, -cos(angle)
-      audioCtx.listener.forwardX.value = -Math.sin(carAngle);
+      audioCtx.listener.forwardX.value = -carSinA;
       audioCtx.listener.forwardY.value = 0;
-      audioCtx.listener.forwardZ.value = -Math.cos(carAngle);
-      audioCtx.listener.upX.value = 0;
-      audioCtx.listener.upY.value = 1;
-      audioCtx.listener.upZ.value = 0;
+      audioCtx.listener.forwardZ.value = -carCosA;
     }
 
     Object.entries(spatialAudio).forEach(([id, s]) => {
@@ -1660,10 +1735,17 @@ window.CityEngine = (function () {
   }
 
   function updateWindSway(now) {
-    // Global wind direction slowly rotates — world breathes
-    const windDir = Math.sin(now * 0.04) * 0.3; // very slow wind direction change
+    const windDir = Math.sin(now * 0.04) * 0.3;
     trees.forEach((tr) => {
-      if (!tr.leaf || tr.shakeT > 0) return; // skip if being shaken
+      if (!tr.leaf || tr.shakeT > 0) return;
+      // Distance culling — skip trees > 55 units from car (not visible anyway)
+      if (!tr.pos) {
+        tr.pos = [
+          tr.group ? tr.group.position.x : 0,
+          tr.group ? tr.group.position.z : 0,
+        ];
+      }
+      if (Math.hypot(carX - tr.pos[0], carZ - tr.pos[1]) > 55) return;
       const phase = now * tr.windFreq + tr.windPhase;
       tr.leaf.rotation.x = Math.sin(phase) * tr.windAmpX + windDir * 0.01;
       tr.leaf.rotation.z = Math.sin(phase * 0.73 + 1) * tr.windAmpZ;
@@ -1774,7 +1856,7 @@ window.CityEngine = (function () {
 
   // 4. DIVINE DUST PARTICLES — floating motes throughout the world
   function buildDivineParticles() {
-    const N = IS_MOBILE ? 120 : 300;
+    const N = IS_MOBILE ? 40 : 80; // reduced 300→80 for performance
     const pos = new Float32Array(N * 3);
     const col = new Float32Array(N * 3);
     const vel = new Float32Array(N * 3);
@@ -1987,6 +2069,10 @@ window.CityEngine = (function () {
       waveLines.push(mesh); // reuse existing waveLines array for animate
     });
   }
+
+  // ── AUTO-DRIVE STATE ─────────────────────────────────────────────────────
+  let autoDriveTarget = null; // { x, z } world target
+  let autoDriveActive = false;
 
   // ── IN-WORLD PANEL STATE ──────────────────────────────────────────────────
   let worldPanel = null; // THREE.Mesh PlaneGeometry panel in world
@@ -2472,7 +2558,8 @@ window.CityEngine = (function () {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ReinhardToneMapping;
-    renderer.toneMappingExposure = 1.35;
+    renderer.toneMappingExposure = 1.15; // safe — preserves all temple colors
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 
     // Kick renderer once to avoid white flash
     renderer.render(new THREE.Scene(), camera);
@@ -3026,9 +3113,9 @@ window.CityEngine = (function () {
         exp: 1.25,
       },
       day: {
-        bg: 0xf0c898, // Firefly golden-warm sky
+        bg: 0xeabb88, // richer golden sky — more cinematic
         fog: 0xf0c898,
-        fogD: 0.0012, // very light — see temples far away
+        fogD: 0.0018, // light atmospheric haze — adds depth without blocking
         sun: 0xffe088, // warm golden east light
         sunI: 3.8, // bright golden hour
         fill: 0x8866cc, // cool purple twilight from west
@@ -3214,34 +3301,33 @@ window.CityEngine = (function () {
 
   // ── LIGHTING ─────────────────────────────────────────────────────────────
   function buildLightingObjects() {
-    // Firefly reference: golden sunset light from the RIGHT (east)
-    // Warm sky from east, cool purple-blue from west/above = depth
+    // Cinematic three-point lighting with dramatic contrast
 
-    // HemisphereLight: warm golden sky, cool twilight ground
-    hemiLight = new THREE.HemisphereLight(0xffe8aa, 0x7755aa, 1.4);
+    // Hemisphere: warm golden zenith, deep violet nadir — sky/ground gradient
+    hemiLight = new THREE.HemisphereLight(0xffe8aa, 0x7755aa, 1.2);
     scene.add(hemiLight);
 
-    // Key light: golden sunset FROM THE EAST (right side of scene)
-    // Key light: strong directional — higher position = better shadow angle
-    sunLight = new THREE.DirectionalLight(0xffe8aa, 5.5);
-    sunLight.position.set(60, 80, 20);
+    // Key light: high noon-angle strong sun — crisp hard shadows
+    sunLight = new THREE.DirectionalLight(0xffe8aa, 4.2);
+    sunLight.position.set(55, 95, 25);
     sunLight.castShadow = true;
     sunLight.shadow.mapSize.width = 2048;
     sunLight.shadow.mapSize.height = 2048;
-    sunLight.shadow.camera.near = 0.5;
-    sunLight.shadow.camera.far = 300;
-    sunLight.shadow.camera.left = sunLight.shadow.camera.bottom = -120;
-    sunLight.shadow.camera.right = sunLight.shadow.camera.top = 120;
-    sunLight.shadow.bias = -0.0005;
+    sunLight.shadow.camera.near = 1;
+    sunLight.shadow.camera.far = 350;
+    sunLight.shadow.camera.left = sunLight.shadow.camera.bottom = -130;
+    sunLight.shadow.camera.right = sunLight.shadow.camera.top = 130;
+    sunLight.shadow.bias = -0.0003;
+    sunLight.shadow.normalBias = 0.02;
     scene.add(sunLight);
 
-    // Fill: cool blue-purple from the west/overhead — creates depth
-    fillLight = new THREE.DirectionalLight(0x8866cc, 0.35); // reduced for shadow contrast
-    fillLight.position.set(-60, 30, -20);
+    // Rim light from opposite: cool violet-blue — god-ray bounce from west
+    fillLight = new THREE.DirectionalLight(0x8866cc, 0.4);
+    fillLight.position.set(-70, 40, -30);
     scene.add(fillLight);
 
-    // Warm ambient — nothing fully dark in temple city
-    ambLight = new THREE.AmbientLight(0xffcc88, 0.65);
+    // Warm ambient keeps shadows from going fully black
+    ambLight = new THREE.AmbientLight(0xffcc88, 0.55);
     scene.add(ambLight);
   }
 
@@ -5363,7 +5449,7 @@ window.CityEngine = (function () {
   // ── 3D NAME LETTERS — "ADITYA SRIVASTAVA" on the ground like Bruno Simon ─
   function build3DName() {
     // Player spawns at z=40 — name placed just behind, visible immediately
-    const nameZ = 54;
+    const nameZ = 48; // adjusted for new spawn position
 
     function makeSprite(text, font, color, W, H) {
       const can = document.createElement("canvas");
@@ -6228,6 +6314,7 @@ window.CityEngine = (function () {
     carGroup.add(shadowDisc);
 
     carGroup.position.set(carX, 0, carZ);
+    carGroup.rotation.y = carAngle; // FIX: face correct direction from first frame
     scene.add(carGroup);
   }
   function buildWaveLines() {
@@ -6557,137 +6644,185 @@ window.CityEngine = (function () {
 
   // ── CAR PHYSICS (scalar — zero drift) ────────────────────────────────────
   function updateCar() {
+    // ── FOCUS GUARD — freeze car while panel is open ──────────────────────
     if (CAM.state === "FOCUS" || CAM.state === "FOCUS_TRANSITION") {
-      carSpeed *= 0.88;
-      if (Math.abs(carSpeed) < 0.002) carSpeed = 0;
+      // Apply friction to bring velocity to zero naturally
+      carVx *= 0.82;
+      carVz *= 0.82;
+      if (Math.abs(carVx) < 0.0001) carVx = 0;
+      if (Math.abs(carVz) < 0.0001) carVz = 0;
+      carSpeed = Math.hypot(carVx, carVz);
       carGroup.position.set(carX, 0, carZ);
+      updateEngineSound(carSpeed);
       return;
     }
+
+    // ── AUTO-DRIVE — steer toward map-click target ─────────────────────────
+    if (autoDriveActive && autoDriveTarget) {
+      const dx = autoDriveTarget.x - carX;
+      const dz = autoDriveTarget.z - carZ;
+      const dist = Math.hypot(dx, dz);
+      if (dist < 3.5) {
+        autoDriveActive = false;
+        autoDriveTarget = null;
+      } else {
+        const targetAng = Math.atan2(dx, dz);
+        let diff = targetAng - carAngle;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        steerAngle +=
+          (Math.max(-1, Math.min(1, diff / 0.6)) * MAX_STEER_ANGLE -
+            steerAngle) *
+          0.18;
+        if (Math.abs(steerAngle) < 0.0005) steerAngle = 0;
+        carAngle += steerAngle;
+        carSinA = Math.sin(carAngle);
+        carCosA = Math.cos(carAngle);
+        const fwdSpd = Math.min(
+          MAX_SPD * 0.7,
+          Math.hypot(carVx, carVz) + ENGINE_FORCE * 0.8,
+        );
+        carVx = carSinA * fwdSpd;
+        carVz = carCosA * fwdSpd;
+        const nx = carX + carVx,
+          nz = carZ + carVz;
+        if (!collides(nx, nz)) {
+          carX = nx;
+          carZ = nz;
+        } else autoDriveActive = false;
+        carX = Math.max(-95, Math.min(95, carX));
+        carZ = Math.max(-88, Math.min(65, carZ));
+        carSpeed = fwdSpd;
+        _applyCarVisuals();
+        prevSpeed = carSpeed;
+        updateEngineSound(carSpeed);
+        window.CityUI?.updateHUD(carSpeed);
+        window.CityUI?.updateMinimap(carX, carZ, -carAngle);
+        checkProximity();
+        return;
+      }
+    }
+
     const tj = window._touchJoy || { ax: 0, ay: 0 };
 
-    // ── RAW INPUT ──────────────────────────────────────────────────────────
+    // ── INPUT SAMPLING ─────────────────────────────────────────────────────
     const fwd = keys["ArrowUp"] || keys["KeyW"] || tj.ay < -0.25;
     const bwd = keys["ArrowDown"] || keys["KeyS"] || tj.ay > 0.25;
     const lft = keys["ArrowLeft"] || keys["KeyA"] || tj.ax < -0.25;
     const rgt = keys["ArrowRight"] || keys["KeyD"] || tj.ax > 0.25;
     const brk = keys["Space"];
+    if ((fwd || bwd || lft || rgt || brk) && autoDriveActive)
+      autoDriveActive = false;
 
-    // Analog throttle / steer (touch has proportional input, keys are binary)
-    const throttleIn = tj.ay < 0 ? Math.min(1, -tj.ay / 0.6) : fwd ? 1 : 0;
-    const reverseIn = tj.ay > 0 ? Math.min(1, tj.ay / 0.6) : bwd ? 1 : 0;
-    const steerIn = Math.abs(tj.ax) > 0.15 ? -tj.ax : lft ? 1 : rgt ? -1 : 0;
+    const throttle = tj.ay < 0 ? Math.min(1, -tj.ay / 0.6) : fwd ? 1 : 0;
+    const reverse = tj.ay > 0 ? Math.min(1, tj.ay / 0.6) : bwd ? 1 : 0;
+    const steerRaw = Math.abs(tj.ax) > 0.15 ? -tj.ax : lft ? 1 : rgt ? -1 : 0;
 
-    // ── WEATHER GRIP ──────────────────────────────────────────────────────
-    const grip = weatherGrip;
-    const maxSpd = MAX_SPD * (0.7 + grip * 0.3);
-    const accel = ACCEL * grip;
-    const decel = DECEL * (0.5 + grip * 0.5);
-    const brkForce = BRAKE;
+    // ── WEATHER GRIP ────────────────────────────────────────────────────────
+    const grip = weatherGrip; // 1.0=dry, 0.3=rain, 0.12=snow
 
-    // ── SMOOTH STEERING — steerAngle lerps toward input, speed-dependent ──
-    // At low speed: responsive. At high speed: reduced to prevent snap turns.
-    const speedRatio = Math.min(1, Math.abs(carSpeed) / (maxSpd * 0.65));
-    const steerSensitiv = TURN * (1.0 - speedRatio * 0.35); // reduces at speed
-    const steerTarget =
-      steerIn * steerSensitiv * (Math.abs(carSpeed) > 0.005 ? 1 : 0);
-    // Lerp: fast response when applying, slower when releasing (natural feel)
-    const steerLerp = steerIn !== 0 ? 0.18 : 0.12;
+    // ── STEP 1: UPDATE STEER ANGLE ──────────────────────────────────────────
+    // Speed-sensitive steering: high speed = reduced authority (stability)
+    const velMag = Math.hypot(carVx, carVz);
+    const speedRatioForSteer = Math.min(1, velMag / MAX_SPD);
+    const steerAuthority = MAX_STEER_ANGLE * (1.0 - speedRatioForSteer * 0.45);
+    const steerTarget = steerRaw * steerAuthority;
+    const steerLerp = steerRaw !== 0 ? STEER_RATE : STEER_RELEASE;
     steerAngle += (steerTarget - steerAngle) * steerLerp;
-    if (Math.abs(steerAngle) < 0.0005) steerAngle = 0;
+    if (Math.abs(steerAngle) < 0.00035) steerAngle = 0;
 
-    // ── SMOOTH ACCELERATION — acceleration curve: slow start, faster mid-range ──
-    if (throttleIn > 0) {
-      // Acceleration curve: starts slow (feels like real car), peaks in mid-range
-      // Uses cubic ease: slow 0→0.3, fast 0.3→0.7, strong 0.7→1.0
-      const speedT = Math.abs(carSpeed) / maxSpd;
-      const accelCurve =
-        speedT < 0.3
-          ? accel * 0.6 // low speed: gentle pull-away
-          : speedT < 0.7
-            ? accel * 1.2 // mid speed: strongest torque band
-            : accel * 0.7; // high speed: tailing off (realistic)
-      carSpeed = Math.min(carSpeed + accelCurve * throttleIn, maxSpd);
-    } else if (reverseIn > 0) {
-      // Reverse: limited to 45% of max speed
-      carSpeed = Math.max(carSpeed - brkForce * 0.65 * grip, -maxSpd * 0.45);
+    // ── STEP 2: ROTATE CAR HEADING ──────────────────────────────────────────
+    // Only yaw when moving — stationary cars don't spin
+    if (velMag > 0.004) {
+      const turnRate =
+        steerAngle *
+        Math.sign(
+          // project velocity onto car forward axis — handles reverse correctly
+          carVx * Math.sin(carAngle) + carVz * Math.cos(carAngle),
+        );
+      carAngle += turnRate;
+    }
+    carSinA = Math.sin(carAngle);
+    carCosA = Math.cos(carAngle);
+
+    // ── STEP 3: APPLY ENGINE / BRAKE FORCES ─────────────────────────────────
+    // Project current velocity onto car axes
+    const fwdVel = carVx * carSinA + carVz * carCosA; // longitudinal speed
+    const latVel = carVx * carCosA - carVz * carSinA; // lateral speed (slip)
+
+    let accelForce = 0;
+    if (throttle > 0) {
+      // Torque curve: peaks in mid-range, tapers at limit (like real IC engine)
+      const t = Math.abs(fwdVel) / MAX_SPD;
+      const torque = t < 0.15 ? 1.6 : t < 0.55 ? 1.2 : 0.7; // strong launch punch
+      accelForce = ENGINE_FORCE * torque * (0.6 + grip * 0.4) * throttle;
+      if (fwdVel >= MAX_SPD) accelForce = 0;
+    } else if (reverse > 0) {
+      if (fwdVel > -MAX_SPD * REV_MAX_RATIO) {
+        accelForce = -ENGINE_FORCE * 0.55 * grip * reverse;
+      }
     } else if (brk) {
-      // Space bar handbrake — firm, immediate
-      carSpeed *= 1.0 - brkForce * 1.8;
-      if (Math.abs(carSpeed) < 0.002) carSpeed = 0;
-    } else {
-      // Natural coast-down friction — exponential falloff feels realistic
-      carSpeed *= 1.0 - decel;
-      if (Math.abs(carSpeed) < 0.0015) carSpeed = 0;
+      // Handbrake — reduces lateral grip dramatically (drift potential)
+      accelForce = -Math.sign(fwdVel) * BRAKE_FORCE * 1.5;
     }
 
-    // ── HEADING UPDATE — apply smooth steer to angle ───────────────────────
-    const dir = carSpeed >= 0 ? 1 : -1;
-    carAngle += steerAngle * dir;
+    // ── STEP 4: APPLY FRICTION FORCES ───────────────────────────────────────
+    // Longitudinal friction (rolling resistance — always opposes motion)
+    const longFric = LONG_FRICTION * (0.4 + grip * 0.6); // grip affects friction less
+    let newFwdVel = fwdVel + accelForce;
+    newFwdVel *= 1 - longFric;
+    if (Math.abs(newFwdVel) < 0.0008) newFwdVel = 0;
 
-    // ── POSITION UPDATE — velocity-based movement ─────────────────────────
-    const sinA = Math.sin(carAngle),
-      cosA = Math.cos(carAngle);
-    const slip = 1 - grip;
+    // Lateral friction (tire grip — corrects sideways sliding)
+    // Reduces proportional to braking (handbrake = slide) and weather
+    const latGrip = brk ? LAT_FRICTION * 0.18 : LAT_FRICTION;
+    const newLatVel = latVel * (1 - latGrip * grip * 0.85);
 
-    // Forward velocity + lateral slip on wet surfaces
-    const latX = cosA,
-      latZ = -sinA;
-    const nx =
-      carX +
-      sinA * carSpeed +
-      latX * -steerAngle * slip * Math.abs(carSpeed) * 0.25;
-    const nz =
-      carZ +
-      cosA * carSpeed +
-      latZ * -steerAngle * slip * Math.abs(carSpeed) * 0.25;
+    // ── STEP 5: RECONSTRUCT WORLD VELOCITY FROM CAR AXES ────────────────────
+    carVx = carSinA * newFwdVel + carCosA * newLatVel;
+    carVz = carCosA * newFwdVel - carSinA * newLatVel;
+
+    // ── STEP 6: CLAMP TO MAX SPEED ───────────────────────────────────────────
+    const newMag = Math.hypot(carVx, carVz);
+    if (newMag > MAX_SPD) {
+      const s = MAX_SPD / newMag;
+      carVx *= s;
+      carVz *= s;
+      carSpeed = MAX_SPD;
+    } else {
+      carSpeed = newMag;
+    }
+
+    // ── STEP 7: INTEGRATE POSITION ───────────────────────────────────────────
+    const nx = carX + carVx;
+    const nz = carZ + carVz;
 
     if (!collides(nx, nz)) {
       carX = nx;
       carZ = nz;
-      if (Math.abs(carSpeed) > 0.1) shakeNearbyTrees(carX, carZ, 2.5);
+      if (carSpeed > 0.08) shakeNearbyTrees(carX, carZ, 2.5);
     } else {
-      if (crashCooldown <= 0 && Math.abs(carSpeed) > 0.04) {
+      // Physics collision response: reflect velocity off the wall normal
+      // Simplified: flip component pointing into wall, kill lateral component
+      if (crashCooldown <= 0 && carSpeed > 0.04) {
         playCrash();
         shakeCam();
         shakeNearbyTrees(carX, carZ, 6);
         crashCooldown = 45;
       }
-      carSpeed *= -0.25; // softer bounce-back than before
+      // Absorb most velocity, reflect tiny amount back (wall has mass)
+      carVx *= -0.3;
+      carVz *= -0.3; // strong crash bounce
+      carSpeed = Math.hypot(carVx, carVz);
     }
     if (crashCooldown > 0) crashCooldown--;
     carX = Math.max(-95, Math.min(95, carX));
     carZ = Math.max(-88, Math.min(65, carZ));
 
-    // ── CAR VISUALS — smooth body roll + suspension ────────────────────────
-    carGroup.position.set(carX, 0, carZ);
-    carGroup.rotation.y = carAngle;
+    // ── STEP 8: APPLY VISUALS (derived from physics state) ───────────────────
+    _applyCarVisuals();
 
-    // Body roll — lerps smoothly toward steer+speed product, never snaps
-    const targetRoll = steerAngle * carSpeed * (0.09 + slip * 0.07);
-    carBodyRoll += (targetRoll - carBodyRoll) * 0.1;
-    carGroup.rotation.z = -carBodyRoll;
-
-    // Suspension bounce — smooth sine based on speed, NOT on Date.now() raw
-    // Date.now() caused jitter when tab was throttled. Use carSpeed as frequency.
-    const bounceFreq = 12 + Math.abs(carSpeed) * 40;
-    const bounceAmp = Math.abs(carSpeed) * 0.018;
-    const _t = clock ? clock.elapsedTime : Date.now() * 0.001;
-    const rawBounce = Math.abs(Math.sin(_t * bounceFreq)) * bounceAmp;
-    suspensionY += (rawBounce - suspensionY) * 0.22; // smooth the bounce
-    carGroup.position.y = suspensionY;
-
-    // Wheel spin — proportional to speed
-    const spin = Math.abs(carSpeed) * 2.4 * (carSpeed >= 0 ? 1 : -1);
-    wheelGroups.forEach((sg) => {
-      sg.rotation.x += spin;
-    });
-
-    // Camera shake (from CAM director)
-    if (CAM.shakeAmt > 0) {
-      camera.position.x += (Math.random() - 0.5) * CAM.shakeAmt;
-      camera.position.y += (Math.random() - 0.5) * CAM.shakeAmt * 0.4;
-    }
-
+    // ── AUDIO + UI ────────────────────────────────────────────────────────────
     if (prevSpeed > 0.09 && carSpeed < 0.03) playBrake();
     prevSpeed = carSpeed;
     updateEngineSound(carSpeed);
@@ -6696,8 +6831,47 @@ window.CityEngine = (function () {
     checkProximity();
   }
 
+  // ── CAR VISUALS — all cosmetic, derived from physics state each frame ─────
+  function _applyCarVisuals() {
+    carGroup.position.set(carX, 0, carZ);
+    carGroup.rotation.y = carAngle;
+
+    // Body roll — proportional to lateral acceleration (centripetal feel)
+    // Use lat velocity change as proxy for lateral G-force
+    const latAcc = carVx * carCosA - carVz * carSinA; // current lateral speed
+    const rollTarget =
+      -latAcc * 6.0 * (1.0 + (Math.abs(carSpeed) / MAX_SPD) * 1.0);
+    carBodyRoll += (rollTarget - carBodyRoll) * 0.12;
+    carGroup.rotation.z = carBodyRoll;
+
+    // Suspension — spring-damper responding to speed and terrain bumps
+    // Speed-proportional frequency so fast driving feels rougher
+    const _t = clock ? clock.elapsedTime : Date.now() * 0.001;
+    const bumpFreq = 5.0 + carSpeed * 40; // high freq at speed = road vibration
+    const bumpAmp = carSpeed * 0.028 + Math.abs(steerAngle) * carSpeed * 0.04;
+    const bumpForce = Math.sin(_t * bumpFreq) * bumpAmp;
+    // Spring: F = -k*x - c*v (Hooke's law)
+    const springK = 28,
+      springD = 8;
+    suspensionVY +=
+      (bumpForce - suspensionY * springK - suspensionVY * springD) * 0.016;
+    suspensionY += suspensionVY;
+    suspensionY = Math.max(-0.04, Math.min(0.12, suspensionY)); // tight stops
+    suspensionVY = Math.max(-0.08, Math.min(0.08, suspensionVY)); // damp velocity
+    carGroup.position.y = suspensionY;
+
+    // Wheel spin — proportional to forward velocity, not total speed
+    const fwdVelForSpin = carVx * carSinA + carVz * carCosA;
+    const spin = fwdVelForSpin * 2.8;
+    wheelGroups.forEach((sg) => {
+      sg.rotation.x += spin;
+    });
+
+    // Cam shake from crash (handled in camera director)
+  }
+
   function shakeCam() {
-    CAM.shakeAmt = 0.45;
+    CAM.shakeAmt = 0.95; // strong crash shake
   }
 
   // ── PROXIMITY ─────────────────────────────────────────────────────────────
@@ -6777,7 +6951,8 @@ window.CityEngine = (function () {
       opacity: 0.92,
     });
     const pieces = [];
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 60; i++) {
+      // more confetti
       const c = new THREE.Mesh(
         new THREE.BoxGeometry(0.18, 0.18, 0.04),
         new THREE.MeshBasicMaterial({
@@ -6830,21 +7005,46 @@ window.CityEngine = (function () {
     // ── TIMING — getDelta MUST come first, getElapsedTime internally calls it ──
     // If you call getElapsedTime() first, getDelta() returns ~0 → dt=0 → camera frozen
     const dt = Math.min(clock.getDelta(), 0.05);
-    const now = clock.elapsedTime; // read already-updated elapsed after getDelta
+    const now = clock.elapsedTime;
 
+    // ── FRAME COUNTER — throttle heavy systems ─────────────────────────────
+    if (!animate._frame) animate._frame = 0;
+    animate._frame = (animate._frame + 1) % 120;
+    const frame = animate._frame;
+    const everyOther = (frame & 1) === 0; // every 2nd frame (~30fps budget)
+    const everyFour = (frame & 3) === 0; // every 4th frame (~15fps budget)
+    const everyEight = (frame & 7) === 0; // every 8th frame (~7.5fps budget)
+
+    // ── CORE — runs every frame (physics, camera, input) ─────────────────
     updateCar();
-    updateWeatherParticles();
-    updateTrees(now);
-    updateDistrictAudio();
-    updatePlayerPresence(now, dt);
-    updateNarrative(now, dt);
-    updateSpatialAudio();
+    updateCameraDirector(now, dt);
 
-    // P1: In-world panel animation
-    updateWorldPanel(now, dt);
+    // ── MEDIUM — every 2nd frame (proximity, trail, player ring) ─────────
+    if (everyOther) {
+      updatePlayerPresence(now, dt);
+      updateNarrative(now, dt);
+    }
 
-    // P3: Yatra flow particles
-    if (NARRATIVE.yatraCurve) updateYatraFlow(dt, NARRATIVE.yatraCurve);
+    // ── SLOW — every 4th frame (trees, flags, audio) ─────────────────────
+    if (everyFour) {
+      updateWindSway(now);
+      updateFlagWave(now);
+      updateDistrictAudio();
+      if (!IS_MOBILE) updateSpatialAudio();
+    }
+
+    // ── SLOWEST — every 8th frame (weather particles, district audio) ────
+    if (everyEight) {
+      updateWeatherParticles();
+      updateWorldPanel(now, dt);
+    }
+
+    // (worldPanel update throttled to everyEight above)
+
+    // P3: Yatra flow — only when visible, throttled
+    if (NARRATIVE.yatraCurve && NARRATIVE.yatraVisible && everyOther) {
+      updateYatraFlow(dt, NARRATIVE.yatraCurve);
+    }
 
     // P4: Completion ring expansion
     completionRings = completionRings.filter((ring) => {
@@ -6859,21 +7059,22 @@ window.CityEngine = (function () {
       return true;
     });
 
-    // ── HOVER AUDIO — play ping when entering HOVER state ────────────────────
-    const hoverEnt = buildingEntities.find(
-      (e) => e.state === "HOVER" || e.state === "ACTIVE",
-    );
-    if (hoverEnt && hoverEnt.b.id !== lastHoverBuildingId) {
-      playBuildingHover(hoverEnt.b.id);
-    } else if (!hoverEnt) {
-      lastHoverBuildingId = null;
+    // ── HOVER AUDIO — throttled (audio doesn't need 60fps) ─────────────────
+    if (everyOther) {
+      const hoverEnt = buildingEntities.find(
+        (e) => e.state === "HOVER" || e.state === "ACTIVE",
+      );
+      if (hoverEnt && hoverEnt.b.id !== lastHoverBuildingId) {
+        playBuildingHover(hoverEnt.b.id);
+      } else if (!hoverEnt) {
+        lastHoverBuildingId = null;
+      }
     }
 
-    // ── CAMERA DIRECTOR ──────────────────────────────────────────────────────
-    updateCameraDirector(now, dt);
+    // (Camera director now runs first in throttled loop above)
 
-    // ── BUILDING ENTITIES — only update after game starts ────────────────────
-    if (gameStarted) {
+    // ── BUILDING ENTITIES — every 2nd frame (state machine doesn't need 60fps)
+    if (gameStarted && everyOther) {
       buildingEntities.forEach((ent) => {
         const dist = Math.hypot(carX - ent.b.pos[0], carZ - ent.b.pos[1]);
         ent.update(now, dt, dist);
@@ -6892,7 +7093,7 @@ window.CityEngine = (function () {
       burstPool = burstPool.filter((m) => {
         m.userData.burstT += dt / (m.userData.burstDur || 0.85);
         const p = Math.min(1, m.userData.burstT);
-        m.scale.setScalar(0.5 + p * 6.5);
+        m.scale.setScalar(0.3 + p * 9.0); // larger burst
         m.material.opacity = (1 - p) * 0.8;
         if (p >= 1) {
           scene.remove(m);
@@ -6901,129 +7102,133 @@ window.CityEngine = (function () {
         return true;
       });
 
-      // ── ENERGY STREAMS — animated drawRange flow ──────────────────────────────
-      energyStreams.forEach((stream) => {
-        const src = window.CITY_DATA.buildings.find(
-          (b) => b.id === stream.userData.srcId,
-        );
-        const dst = window.CITY_DATA.buildings.find(
-          (b) => b.id === stream.userData.dstId,
-        );
-        const srcDist = src
-          ? Math.hypot(carX - src.pos[0], carZ - src.pos[1])
-          : 999;
-        const dstDist = dst
-          ? Math.hypot(carX - dst.pos[0], carZ - dst.pos[1])
-          : 999;
-        const nearDist = Math.min(srcDist, dstDist);
-        const targetOp =
-          nearDist < 40 ? Math.min(0.55, (40 - nearDist) / 18) : 0;
-        stream.material.opacity += (targetOp - stream.material.opacity) * 0.04;
-        if (stream.material.opacity > 0.04) {
-          const total = stream.geometry.attributes.position.count;
-          const segLen = 14;
-          const offset = Math.floor(
-            (now * 9 + stream.userData.animOff) % total,
+      // Energy streams — positions cached at build time, no per-frame find()
+      if (everyOther) {
+        energyStreams.forEach((stream) => {
+          const srcPos = stream.userData.srcPos;
+          const dstPos = stream.userData.dstPos;
+          if (!srcPos || !dstPos) return;
+          const nearDist = Math.min(
+            Math.hypot(carX - srcPos[0], carZ - srcPos[1]),
+            Math.hypot(carX - dstPos[0], carZ - dstPos[1]),
           );
-          stream.geometry.setDrawRange(offset, segLen);
-        }
-      });
-
-      // ── PER-BUILDING VFX IDENTITY ─────────────────────────────────────────────
-      Object.entries(buildingVfx).forEach(([id, vfx]) => {
-        const ent = buildingEntities.find((e) => e.b.id === id);
-        const vi = ent ? ent.vfxI : 0;
-
-        // Solar crown — rotate + ray pulse
-        if (vfx.userData.isSolarCrown) {
-          vfx.rotation.y = now * 0.16;
-          vfx.children.forEach((c) => {
-            if (c.userData.isSolarRay) {
-              const p = 0.72 + Math.sin(now * 1.9 + c.userData.phase) * 0.22;
-              c.scale.setScalar(p * vi);
-              c.material.opacity =
-                0.55 * vi + Math.sin(now * 2.8 + c.userData.phase) * 0.18 * vi;
-            }
-          });
-        }
-
-        // Forge sparks — shoot up and reset
-        vfx.children.forEach((c) => {
-          if (c.userData.isSparks) {
-            const pos = c.geometry.attributes.position.array;
-            const vel = c.userData.vel;
-            const N = pos.length / 3;
-            const baseH = c.userData.baseH || 10;
-            for (let i = 0; i < N; i++) {
-              pos[i * 3] += vel[i * 3];
-              pos[i * 3 + 1] += vel[i * 3 + 1];
-              pos[i * 3 + 2] += vel[i * 3 + 2];
-              vel[i * 3 + 1] -= 0.003; // gravity
-              if (pos[i * 3 + 1] > baseH + 6 || pos[i * 3 + 1] < baseH - 1) {
-                pos[i * 3] = Math.random() - 0.5;
-                pos[i * 3 + 1] = baseH;
-                pos[i * 3 + 2] = Math.random() - 0.5;
-                vel[i * 3] = (Math.random() - 0.5) * 0.04;
-                vel[i * 3 + 1] = 0.04 + Math.random() * 0.06;
-                vel[i * 3 + 2] = (Math.random() - 0.5) * 0.04;
-              }
-            }
-            c.geometry.attributes.position.needsUpdate = true;
-            c.material.opacity = 0.75 * vi;
-          }
-
-          // Knowledge orbs — orbit at different speeds
-          if (c.userData.orbI !== undefined) {
-            const i = c.userData.orbI,
-              r = c.userData.orbR,
-              bh = c.userData.orbH;
-            const a = now * (0.45 + i * 0.12) + i * 1.1;
-            c.position.set(
-              Math.cos(a) * r,
-              bh + Math.sin(now * 0.8 + i) * 0.6,
-              Math.sin(a) * r,
+          const targetOp =
+            nearDist < 40 ? Math.min(0.45, (40 - nearDist) / 20) : 0;
+          stream.material.opacity +=
+            (targetOp - stream.material.opacity) * 0.06;
+          if (stream.material.opacity > 0.03) {
+            const total = stream.geometry.attributes.position.count;
+            const offset = Math.floor(
+              (now * 8 + stream.userData.animOff) % total,
             );
-            c.material.opacity = 0.55 * vi + Math.sin(now * 1.5 + i) * 0.15;
-          }
-
-          // Wind trail rings — wobble + orbit
-          if (c.userData.windRing) {
-            c.rotation.y = now * (0.55 + c.userData.phase * 0.12);
-            c.rotation.x = Math.sin(now * 0.7 + c.userData.phase) * 0.35;
-            c.material.opacity = (0.35 - c.userData.phase * 0.08) * vi;
-          }
-
-          // Cloud wisps — drift horizontally
-          if (c.userData.wisp) {
-            c.position.x =
-              c.userData.baseX + Math.sin(now * 0.18 + c.userData.phase) * 4.5;
-            c.material.opacity = 0.22 * vi;
-          }
-
-          // Gold coin drop
-          if (c.userData.coinDrop) {
-            c.position.y -= c.userData.speed;
-            c.rotation.x += 0.06;
-            c.rotation.z += 0.04;
-            if (c.position.y < 0.5) {
-              c.position.y = c.userData.baseH;
-            }
-            c.material.opacity = 0.75 * vi;
-          }
-
-          // Glyph orbits (education)
-          if (c.userData.glyphOrbit) {
-            const ang = now * (0.4 + c.userData.i * 0.15) + c.userData.i * 1.05;
-            c.position.set(
-              Math.cos(ang) * c.userData.r,
-              8 + Math.sin(ang * 0.6) * 1.5,
-              Math.sin(ang) * c.userData.r,
-            );
-            c.rotation.y = ang * 1.3;
-            c.material.opacity = 0.6 * vi;
+            stream.geometry.setDrawRange(offset, 12);
           }
         });
-      });
+      }
+
+      // ── PER-BUILDING VFX IDENTITY — only near buildings ─────────────────────────
+      if (everyOther)
+        Object.entries(buildingVfx).forEach(([id, vfx]) => {
+          // Use cached entity reference on vfx object (set at init)
+          const ent =
+            vfx._cachedEnt ||
+            (vfx._cachedEnt = buildingEntities.find((e) => e.b.id === id));
+          const vi = ent ? ent.vfxI : 0;
+          if (vi < 0.01) return; // skip entirely if dormant
+
+          // Solar crown — rotate + ray pulse
+          if (vfx.userData.isSolarCrown) {
+            vfx.rotation.y = now * 0.16;
+            vfx.children.forEach((c) => {
+              if (c.userData.isSolarRay) {
+                const p = 0.72 + Math.sin(now * 1.9 + c.userData.phase) * 0.22;
+                c.scale.setScalar(p * vi);
+                c.material.opacity =
+                  0.55 * vi +
+                  Math.sin(now * 2.8 + c.userData.phase) * 0.18 * vi;
+              }
+            });
+          }
+
+          // Forge sparks — shoot up and reset
+          vfx.children.forEach((c) => {
+            if (c.userData.isSparks) {
+              const pos = c.geometry.attributes.position.array;
+              const vel = c.userData.vel;
+              const N = pos.length / 3;
+              const baseH = c.userData.baseH || 10;
+              for (let i = 0; i < N; i++) {
+                pos[i * 3] += vel[i * 3];
+                pos[i * 3 + 1] += vel[i * 3 + 1];
+                pos[i * 3 + 2] += vel[i * 3 + 2];
+                vel[i * 3 + 1] -= 0.003; // gravity
+                if (pos[i * 3 + 1] > baseH + 6 || pos[i * 3 + 1] < baseH - 1) {
+                  pos[i * 3] = Math.random() - 0.5;
+                  pos[i * 3 + 1] = baseH;
+                  pos[i * 3 + 2] = Math.random() - 0.5;
+                  vel[i * 3] = (Math.random() - 0.5) * 0.04;
+                  vel[i * 3 + 1] = 0.04 + Math.random() * 0.06;
+                  vel[i * 3 + 2] = (Math.random() - 0.5) * 0.04;
+                }
+              }
+              c.geometry.attributes.position.needsUpdate = true;
+              c.material.opacity = 0.75 * vi;
+            }
+
+            // Knowledge orbs — orbit at different speeds
+            if (c.userData.orbI !== undefined) {
+              const i = c.userData.orbI,
+                r = c.userData.orbR,
+                bh = c.userData.orbH;
+              const a = now * (0.45 + i * 0.12) + i * 1.1;
+              c.position.set(
+                Math.cos(a) * r,
+                bh + Math.sin(now * 0.8 + i) * 0.6,
+                Math.sin(a) * r,
+              );
+              c.material.opacity = 0.55 * vi + Math.sin(now * 1.5 + i) * 0.15;
+            }
+
+            // Wind trail rings — wobble + orbit
+            if (c.userData.windRing) {
+              c.rotation.y = now * (0.55 + c.userData.phase * 0.12);
+              c.rotation.x = Math.sin(now * 0.7 + c.userData.phase) * 0.35;
+              c.material.opacity = (0.35 - c.userData.phase * 0.08) * vi;
+            }
+
+            // Cloud wisps — drift horizontally
+            if (c.userData.wisp) {
+              c.position.x =
+                c.userData.baseX +
+                Math.sin(now * 0.18 + c.userData.phase) * 4.5;
+              c.material.opacity = 0.22 * vi;
+            }
+
+            // Gold coin drop
+            if (c.userData.coinDrop) {
+              c.position.y -= c.userData.speed;
+              c.rotation.x += 0.06;
+              c.rotation.z += 0.04;
+              if (c.position.y < 0.5) {
+                c.position.y = c.userData.baseH;
+              }
+              c.material.opacity = 0.75 * vi;
+            }
+
+            // Glyph orbits (education)
+            if (c.userData.glyphOrbit) {
+              const ang =
+                now * (0.4 + c.userData.i * 0.15) + c.userData.i * 1.05;
+              c.position.set(
+                Math.cos(ang) * c.userData.r,
+                8 + Math.sin(ang * 0.6) * 1.5,
+                Math.sin(ang) * c.userData.r,
+              );
+              c.rotation.y = ang * 1.3;
+              c.material.opacity = 0.6 * vi;
+            }
+          });
+        });
 
       // ── DIVINE BEAMS (night-only gopuram spotlights) ───────────────────────────
       divineBeams.forEach((s) => {
@@ -7051,16 +7256,17 @@ window.CityEngine = (function () {
         }
         pranaParticles.geometry.attributes.position.needsUpdate = true;
       }
-      // Prana rings pulse scale + rotate
-      scene.children.forEach((c) => {
-        if (c.userData.isPranaRing) {
-          const pulse = 1 + Math.sin(now * 1.2 + c.userData.phase) * 0.04;
-          c.scale.setScalar(pulse);
-          c.rotation.z = now * (0.12 + c.userData.phase * 0.05);
-          c.material.opacity =
-            0.38 + Math.sin(now * 1.8 + c.userData.phase) * 0.1;
-        }
-      });
+      // Prana rings — throttled to everyFour
+      if (everyFour)
+        scene.children.forEach((c) => {
+          if (c.userData.isPranaRing) {
+            const pulse = 1 + Math.sin(now * 1.2 + c.userData.phase) * 0.04;
+            c.scale.setScalar(pulse);
+            c.rotation.z = now * (0.12 + c.userData.phase * 0.05);
+            c.material.opacity =
+              0.38 + Math.sin(now * 1.8 + c.userData.phase) * 0.1;
+          }
+        });
 
       // ── HELP SIGN — fades out once player drives away from spawn ─────────────
       scene.children.forEach((c) => {
@@ -7329,7 +7535,11 @@ window.CityEngine = (function () {
 
     triggerIntro() {
       gameStarted = true; // unlock proximity, audio, narrative
-      camera.position.set(12, 285, 95);
+      // Reset camera spring state — prevents oscillation from STATIC orbit position
+      camVx = 0;
+      camVy = 0;
+      camVz = 0;
+      camera.position.set(8, 320, 80); // higher start = more god-like reveal
       camera.lookAt(0, 0, 0);
       CAM.state = "INTRO";
       CAM.introT = 0;
@@ -7425,6 +7635,11 @@ window.CityEngine = (function () {
     },
     get narrativePhase() {
       return NARRATIVE.phase;
+    },
+    // Auto-drive: called when user clicks a building on the map
+    setAutoDriveTarget(x, z) {
+      autoDriveTarget = { x, z };
+      autoDriveActive = true;
     },
     // P1: close world panel from HTML closeSP()
     closeWorldPanel() {

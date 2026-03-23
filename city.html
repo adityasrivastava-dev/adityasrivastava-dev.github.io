@@ -27,41 +27,68 @@
       }
       :root {
         --orange: #e8966a;
-        --cyan: #00ddff;
-        --gold: #ffcc44;
+        --cyan: #00e5ff;
+        --gold: #ffd060;
         --green: #7dff4f;
-        --void: #1a0e06;
+        --void: #0a0506;
         --ff: "Barlow Condensed", sans-serif;
         --fm: "Share Tech Mono", monospace;
+        /* Cinematic HUD tokens */
+        --hud-bg: rgba(6, 3, 1, 0.72);
+        --hud-border: rgba(255, 200, 100, 0.14);
+        --hud-glow: rgba(255, 200, 80, 0.08);
+        --glass: rgba(8, 4, 2, 0.65);
+        --glass-b: rgba(255, 220, 120, 0.1);
+        --scan-line: rgba(255, 255, 255, 0.015);
       }
       html,
       body {
         width: 100%;
         height: 100%;
         overflow: hidden;
-        background: #e8966a;
+        background: #0a0506;
       }
+      /* Scanlines and grain removed — cause frame drops */
       * {
         cursor: none !important;
       }
       #cur {
         position: fixed;
-        z-index: 9999;
+        z-index: 99999;
         pointer-events: none;
         width: 12px;
         height: 12px;
-        border: 2px solid rgba(255, 255, 255, 0.9);
+        border: 1.5px solid rgba(255, 220, 100, 0.85);
         border-radius: 50%;
-        transform: translate(-50%, -50%);
+        /* Use top-left 0,0 and translate3d for zero-lag GPU positioning */
+        top: 0;
+        left: 0;
+        transform: translate3d(-50%, -50%, 0);
+        will-change: transform;
+        /* Only transition size/color — NOT position */
         transition:
-          width 0.12s,
-          height 0.12s,
-          background 0.12s;
+          width 0.1s ease,
+          height 0.1s ease,
+          background 0.1s ease,
+          border-color 0.1s ease;
+        box-shadow: 0 0 8px rgba(255, 200, 60, 0.3);
       }
       #cur.big {
-        width: 36px;
-        height: 36px;
-        background: rgba(255, 255, 255, 0.08);
+        width: 32px;
+        height: 32px;
+        background: rgba(255, 200, 60, 0.06);
+        border-color: rgba(255, 200, 60, 0.6);
+      }
+      /* Crosshair dot in center */
+      #cur::after {
+        content: "";
+        position: absolute;
+        inset: 50%;
+        width: 3px;
+        height: 3px;
+        transform: translate(-50%, -50%);
+        background: rgba(255, 220, 100, 0.7);
+        border-radius: 50%;
       }
       canvas {
         position: fixed;
@@ -92,7 +119,6 @@
           rgba(255, 200, 80, 0.07) 0%,
           transparent 68%
         );
-        mix-blend-mode: screen;
         transition: background 1.4s ease;
       }
       #loader {
@@ -175,20 +201,54 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 6px;
+        gap: 0;
+        /* Darker vignette — ensures text is readable over bright scene */
+        background: radial-gradient(
+          ellipse 85% 75% at 50% 55%,
+          rgba(4, 2, 0, 0.2) 0%,
+          rgba(4, 2, 0, 0.55) 55%,
+          rgba(4, 2, 0, 0.88) 100%
+        );
       }
       #start-screen.gone {
         display: none;
       }
+
+      /* Title area */
+      .ss-eyebrow {
+        font-family: var(--fm);
+        font-size: 9px;
+        letter-spacing: 8px;
+        color: var(--gold);
+        opacity: 0.6;
+        margin-bottom: 8px;
+        animation: ssf 2.5s ease-in-out infinite;
+      }
       .ss-click {
         font-family: var(--ff);
-        font-size: clamp(22px, 4vw, 36px);
-        font-weight: 700;
-        letter-spacing: 8px;
-        color: rgba(255, 255, 255, 0.92);
-        text-shadow: 0 2px 20px rgba(0, 0, 0, 0.4);
-        animation: ssf 1.6s ease-in-out infinite;
+        font-size: clamp(38px, 7vw, 72px);
+        font-weight: 900;
+        letter-spacing: 10px;
+        color: #fff;
+        text-shadow:
+          0 0 40px rgba(255, 220, 100, 0.4),
+          0 2px 0 rgba(0, 0, 0, 0.5);
+        line-height: 1;
         user-select: none;
+      }
+      .ss-role {
+        font-family: var(--fm);
+        font-size: 9px;
+        letter-spacing: 5px;
+        color: rgba(255, 210, 100, 0.5);
+        margin-top: 8px;
+        margin-bottom: 32px;
+      }
+      .ss-arrow {
+        font-size: 20px;
+        color: var(--gold);
+        animation: ssf 1.6s 0.3s ease-in-out infinite;
+        display: none;
       }
       @keyframes ssf {
         0%,
@@ -196,12 +256,21 @@
           opacity: 1;
         }
         50% {
-          opacity: 0.5;
+          opacity: 0.4;
         }
       }
-      .ss-arrow {
-        font-size: 24px;
-        animation: ssf 1.6s 0.3s ease-in-out infinite;
+      /* Horizontal rule lines */
+      .ss-rule {
+        width: clamp(180px, 30vw, 320px);
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          var(--gold),
+          transparent
+        );
+        opacity: 0.25;
+        margin: 16px 0;
       }
       .ss-hint {
         font-family: var(--fm);
@@ -212,21 +281,24 @@
       }
       .ss-enter-btn {
         margin-top: 28px;
-        padding: 14px 52px;
+        padding: 16px 56px;
         font-family: var(--ff);
-        font-size: 13px;
+        font-size: 14px;
         font-weight: 700;
         letter-spacing: 6px;
         color: #fff;
-        background: rgba(0, 200, 255, 0.12);
-        border: 1.5px solid rgba(0, 200, 255, 0.55);
+        background: rgba(0, 180, 230, 0.22);
+        border: 1.5px solid rgba(0, 200, 255, 0.75);
         border-radius: 3px;
         cursor: pointer;
-        text-shadow: 0 0 12px rgba(0, 200, 255, 0.7);
+        text-shadow:
+          0 0 16px rgba(0, 200, 255, 0.9),
+          0 1px 2px rgba(0, 0, 0, 0.8);
         box-shadow:
-          0 0 24px rgba(0, 200, 255, 0.15),
-          inset 0 0 24px rgba(0, 200, 255, 0.04);
-        backdrop-filter: blur(8px);
+          0 0 32px rgba(0, 200, 255, 0.25),
+          0 0 0 1px rgba(0, 200, 255, 0.1),
+          inset 0 0 16px rgba(0, 200, 255, 0.06);
+        backdrop-filter: blur(12px);
         transition: all 0.22s;
         animation: ssf 1.6s 0.6s ease-in-out infinite;
         position: relative;
@@ -275,25 +347,52 @@
         z-index: 400;
         display: flex;
         align-items: center;
-        gap: 8px;
-        transition: right 0.48s cubic-bezier(0.4, 0, 0.2, 1);
+        gap: 5px;
+        transition:
+          right 0.48s cubic-bezier(0.4, 0, 0.2, 1),
+          opacity 0.6s ease;
+        opacity: 0;
+      }
+      #hud-tr.hud-visible {
+        opacity: 1;
       }
       .hb {
         font-family: var(--fm);
-        font-size: 7.5px;
-        letter-spacing: 2px;
-        padding: 7px 13px;
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        background: rgba(0, 0, 0, 0.3);
-        color: rgba(255, 255, 255, 0.6);
-        backdrop-filter: blur(6px);
-        border-radius: 3px;
-        transition: all 0.2s;
+        font-size: 7px;
+        letter-spacing: 3px;
+        padding: 7px 14px;
+        border: 1px solid rgba(255, 220, 120, 0.12);
+        background: rgba(6, 3, 1, 0.7);
+        color: rgba(255, 220, 120, 0.5);
+        backdrop-filter: blur(12px) saturate(160%);
+        border-radius: 2px;
+        transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+        position: relative;
+        overflow: hidden;
+        clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+      }
+      .hb::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          135deg,
+          rgba(255, 220, 80, 0.04),
+          transparent
+        );
+        opacity: 0;
+        transition: opacity 0.22s;
       }
       .hb:hover {
-        border-color: rgba(255, 255, 255, 0.5);
-        color: #fff;
-        background: rgba(0, 0, 0, 0.48);
+        border-color: rgba(255, 220, 120, 0.35);
+        color: var(--gold);
+        background: rgba(10, 5, 1, 0.85);
+        box-shadow:
+          0 0 16px rgba(255, 200, 80, 0.12),
+          inset 0 0 8px rgba(255, 200, 80, 0.04);
+      }
+      .hb:hover::before {
+        opacity: 1;
       }
       #weather-toast {
         position: fixed;
@@ -316,71 +415,145 @@
       #weather-toast.show {
         opacity: 1;
       }
+      /* ── CINEMATIC PROXIMITY HUD ── */
       #prox {
         position: fixed;
-        bottom: 120px;
+        bottom: 132px; /* raised above game-hud (28px+110px=138px top) */
         left: 50%;
         z-index: 9000;
-        transform: translateX(-50%) translateY(50px);
-        background: rgba(10, 5, 0, 0.92);
-        border: 1px solid rgba(var(--nc-rgb, 0, 200, 255), 0.28);
-        border-radius: 4px;
-        padding: 12px 22px;
+        transform: translateX(-50%) translateY(30px) scale(0.97);
+        background: linear-gradient(
+          135deg,
+          rgba(8, 4, 1, 0.94) 0%,
+          rgba(4, 2, 0, 0.92) 100%
+        );
+        border: 1px solid rgba(var(--nc-rgb, 0, 200, 255), 0.22);
+        border-radius: 2px;
+        padding: 14px 20px 14px 18px;
         display: flex;
         align-items: center;
-        gap: 18px;
+        gap: 16px;
         opacity: 0;
         transition:
-          opacity 0.28s,
-          transform 0.28s;
+          opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+          transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
         pointer-events: none;
-        min-width: 300px;
-        backdrop-filter: blur(10px);
+        min-width: 340px;
+        backdrop-filter: blur(8px); /* reduced for cursor responsiveness */
+        /* Animated border glow */
+        box-shadow:
+          0 0 0 1px rgba(var(--nc-rgb, 0, 200, 255), 0.06),
+          0 8px 32px rgba(0, 0, 0, 0.5),
+          inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      }
+      /* Top accent line in building color */
+      #prox::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(
+          90deg,
+          rgba(var(--nc-rgb, 0, 200, 255), 0.8),
+          transparent
+        );
+        border-radius: 2px 2px 0 0;
+      }
+      /* Bottom shimmer */
+      #prox::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 10%;
+        right: 10%;
+        height: 1px;
+        background: rgba(var(--nc-rgb, 0, 200, 255), 0.12);
       }
       #prox.show {
         opacity: 1;
-        transform: translateX(-50%) translateY(0);
+        transform: translateX(-50%) translateY(0) scale(1);
         pointer-events: auto;
       }
       #prox.show * {
         pointer-events: auto;
       }
       .px-icon {
-        font-size: 22px;
+        font-size: 26px;
         flex-shrink: 0;
+        filter: drop-shadow(0 0 8px rgba(var(--nc-rgb, 0, 200, 255), 0.6));
       }
       .px-name {
         font-family: var(--ff);
-        font-size: 18px;
+        font-size: 20px;
         font-weight: 700;
         letter-spacing: 2px;
         color: #fff;
+        text-shadow: 0 0 12px rgba(var(--nc-rgb, 0, 200, 255), 0.3);
       }
       .px-sub {
         font-family: var(--fm);
         font-size: 7px;
         letter-spacing: 3px;
-        color: rgba(255, 255, 255, 0.4);
+        color: rgba(255, 255, 255, 0.35);
+        margin-top: 2px;
+      }
+      /* Metric badge beside name */
+      .px-metric {
+        font-family: var(--fm);
+        font-size: 9px;
+        letter-spacing: 2px;
+        color: rgba(var(--nc-rgb, 0, 200, 255), 0.7);
+        background: rgba(var(--nc-rgb, 0, 200, 255), 0.08);
+        border: 1px solid rgba(var(--nc-rgb, 0, 200, 255), 0.18);
+        padding: 2px 7px;
+        border-radius: 2px;
+        margin-top: 3px;
+        display: inline-block;
       }
       .px-btn {
         font-family: var(--ff);
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 900;
-        letter-spacing: 6px;
-        padding: 11px 20px;
-        border: 1px solid rgba(0, 200, 255, 0.6);
-        background: rgba(0, 0, 0, 0);
-        color: #00c8ff;
+        letter-spacing: 5px;
+        padding: 12px 22px;
+        border: 1px solid rgba(var(--nc-rgb, 0, 200, 255), 0.55);
+        background: rgba(var(--nc-rgb, 0, 200, 255), 0.06);
+        color: rgba(var(--nc-rgb, 0, 200, 255), 1);
         border-radius: 2px;
         flex-shrink: 0;
-        transition: all 0.18s;
-        text-shadow: 0 0 8px rgba(0, 200, 255, 0.5);
+        transition: all 0.16s;
+        text-shadow: 0 0 10px rgba(var(--nc-rgb, 0, 200, 255), 0.6);
         box-shadow:
-          0 0 14px rgba(0, 200, 255, 0.12),
-          inset 0 0 6px rgba(0, 200, 255, 0.04);
+          0 0 16px rgba(var(--nc-rgb, 0, 200, 255), 0.1),
+          inset 0 0 8px rgba(var(--nc-rgb, 0, 200, 255), 0.04);
+        position: relative;
+        overflow: hidden;
+      }
+      .px-btn::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(var(--nc-rgb, 0, 200, 255), 0.08),
+          transparent
+        );
+        transform: translateX(-100%);
+        transition: transform 0.4s;
       }
       .px-btn:hover {
-        background: rgba(255, 255, 255, 0.3);
+        background: rgba(var(--nc-rgb, 0, 200, 255), 0.16);
+        box-shadow: 0 0 28px rgba(var(--nc-rgb, 0, 200, 255), 0.25);
+        transform: translateY(-1px);
+      }
+      .px-btn:hover::before {
+        transform: translateX(100%);
+      }
+      .px-btn:active {
+        transform: translateY(0);
       }
       #side-panel {
         position: fixed;
@@ -389,12 +562,18 @@
         bottom: 0;
         z-index: 600;
         width: min(500px, 52vw);
-        transform: translateX(110%);
-        transition: transform 0.48s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateX(110%) rotateY(-4deg);
+        transform-origin: right center;
+        transition:
+          transform 0.52s cubic-bezier(0.22, 1, 0.36, 1),
+          opacity 0.4s ease;
+        opacity: 0;
         pointer-events: none;
+        filter: drop-shadow(-20px 0 40px rgba(0, 0, 0, 0.6));
       }
       #side-panel.open {
-        transform: translateX(0);
+        transform: translateX(0) rotateY(0deg);
+        opacity: 1;
         pointer-events: all;
       }
       body.panel-open canvas {
@@ -409,11 +588,17 @@
       #sp-inner {
         position: absolute;
         inset: 0;
-        background: rgba(12, 7, 2, 0.97);
-        border-left: 1px solid rgba(255, 200, 100, 0.12);
-        overflow-y: auto;
-        box-shadow: -28px 0 80px rgba(0, 0, 0, 0.65);
+        background: linear-gradient(
+          160deg,
+          rgba(8, 4, 2, 0.97) 0%,
+          rgba(4, 2, 0, 0.99) 60%,
+          rgba(6, 3, 1, 0.97) 100%
+        );
+        backdrop-filter: blur(20px) saturate(180%);
+        border-left: 1px solid rgba(255, 200, 80, 0.12);
+        overflow: hidden;
       }
+      /* panel scan removed for performance */
       #sp-inner::before {
         content: "";
         position: sticky;
@@ -1074,14 +1259,24 @@
       }
       #minimap {
         position: fixed;
-        bottom: 24px;
-        left: 24px;
-        z-index: 200;
-        background: rgba(10, 5, 2, 0.72);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        padding: 7px;
-        border-radius: 4px;
-        backdrop-filter: blur(4px);
+        bottom: 118px;
+        right: 24px;
+        z-index: 400;
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 1px solid rgba(255, 200, 80, 0.18);
+        box-shadow:
+          0 0 20px rgba(0, 0, 0, 0.6),
+          0 0 0 1px rgba(255, 200, 80, 0.06),
+          inset 0 0 20px rgba(0, 0, 0, 0.4);
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.6s ease 1.2s;
+      }
+      #minimap.hud-visible {
+        opacity: 1;
       }
       #mm-lbl {
         font-family: var(--fm);
@@ -1101,19 +1296,26 @@
       }
       #ctrl-hint {
         position: fixed;
-        bottom: 175px;
+        bottom: 28px;
         left: 24px;
         z-index: 200;
         font-family: var(--fm);
-        font-size: 7px;
-        letter-spacing: 2px;
-        color: rgba(255, 255, 255, 0.15);
+        font-size: 6px;
+        letter-spacing: 3px;
+        color: rgba(255, 220, 120, 0.18);
         pointer-events: none;
-        line-height: 1.9;
-        background: rgba(10, 5, 2, 0.5);
-        padding: 7px 10px;
-        border-radius: 3px;
-        backdrop-filter: blur(4px);
+        line-height: 2.2;
+        background: rgba(6, 3, 1, 0.5);
+        padding: 8px 12px;
+        border-radius: 2px;
+        backdrop-filter: blur(6px);
+        border: 1px solid rgba(255, 200, 80, 0.06);
+        border-left: 2px solid rgba(255, 200, 80, 0.15);
+        opacity: 0;
+        transition: opacity 0.6s ease 1s;
+      }
+      #ctrl-hint.hud-visible {
+        opacity: 1;
       }
       .ck {
         background: rgba(255, 255, 255, 0.1);
@@ -1334,46 +1536,60 @@
         background: rgba(255, 255, 255, 0.12);
       }
       /* ── GAME HUD — speed + gear indicator ── */
+      /* ── CINEMATIC GAME HUD ── */
       #game-hud {
         position: fixed;
-        bottom: 22px;
-        right: 20px;
+        bottom: 28px;
+        right: 24px;
         z-index: 450;
         pointer-events: none;
         display: flex;
         flex-direction: column;
         align-items: flex-end;
-        gap: 5px;
-        mix-blend-mode: normal;
+        gap: 6px;
+        opacity: 0;
+        transition: opacity 0.8s ease 0.5s; /* fade in after game starts */
+      }
+      #game-hud.hud-visible {
         opacity: 1;
       }
+
+      /* Speed ring — larger, more impactful */
       #spd-ring {
-        width: 68px;
-        height: 68px;
+        width: 82px;
+        height: 82px;
         position: relative;
+        filter: drop-shadow(0 0 12px rgba(255, 200, 80, 0.25));
       }
       #spd-ring svg {
-        width: 68px;
-        height: 68px;
+        width: 82px;
+        height: 82px;
         transform: rotate(-135deg);
       }
       #spd-ring .track {
         fill: none;
-        stroke: rgba(255, 255, 255, 0.08);
-        stroke-width: 5;
+        stroke: rgba(255, 255, 255, 0.06);
+        stroke-width: 4;
       }
       #spd-ring .fill {
         fill: none;
-        stroke: #ffcc44;
-        stroke-width: 5;
+        stroke: var(--gold);
+        stroke-width: 4;
         stroke-linecap: round;
-        stroke-dasharray: 170;
-        stroke-dashoffset: 170;
+        stroke-dasharray: 151;
+        stroke-dashoffset: 151;
         transition:
-          stroke-dashoffset 0.1s ease,
-          stroke 0.15s ease,
-          filter 0.2s ease;
-        filter: drop-shadow(0 0 3px currentColor);
+          stroke-dashoffset 0.08s ease,
+          stroke 0.2s ease;
+        filter: drop-shadow(0 0 6px currentColor);
+      }
+      /* Outer glow ring */
+      #spd-ring .glow-ring {
+        fill: none;
+        stroke: var(--gold);
+        stroke-width: 1;
+        opacity: 0.15;
+        r: 36;
       }
       #spd-num {
         position: absolute;
@@ -1384,47 +1600,64 @@
         justify-content: center;
         font-family: var(--ff);
         font-weight: 900;
-        font-size: 18px;
+        font-size: 22px;
         color: #fff;
         line-height: 1;
         letter-spacing: -1px;
+        text-shadow: 0 0 10px rgba(255, 200, 80, 0.4);
       }
       #spd-num span {
-        font-size: 7px;
+        font-size: 6px;
         font-family: var(--fm);
         letter-spacing: 3px;
-        color: rgba(255, 200, 80, 0.55);
-        margin-top: 2px;
+        color: rgba(255, 200, 80, 0.5);
+        margin-top: 3px;
+      }
+      /* Gear + weather in a single row */
+      #hud-meta {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: flex-end;
       }
       #gear-badge {
         font-family: var(--fm);
-        font-size: 8px;
+        font-size: 7px;
         letter-spacing: 4px;
-        color: rgba(255, 200, 80, 0.4);
+        color: var(--gold);
+        opacity: 0.7;
+        background: var(--hud-bg);
+        border: 1px solid var(--hud-border);
+        padding: 3px 8px;
+        border-radius: 2px;
         text-align: right;
       }
       #weather-badge {
         font-family: var(--fm);
-        font-size: 8px;
+        font-size: 7px;
         letter-spacing: 3px;
-        color: rgba(255, 255, 255, 0.25);
+        color: rgba(255, 255, 255, 0.3);
+        background: var(--hud-bg);
+        border: 1px solid var(--hud-border);
+        padding: 3px 8px;
+        border-radius: 2px;
         text-align: right;
       }
       @media (max-width: 640px) {
         #game-hud {
-          bottom: 80px;
+          bottom: 90px;
           right: 12px;
         }
         #spd-ring {
-          width: 52px;
-          height: 52px;
+          width: 60px;
+          height: 60px;
         }
         #spd-ring svg {
-          width: 52px;
-          height: 52px;
+          width: 60px;
+          height: 60px;
         }
         #spd-num {
-          font-size: 14px;
+          font-size: 16px;
         }
       }
       /* ── CINEMATIC BLOOM OVERLAY ── */
@@ -1434,126 +1667,253 @@
         z-index: 9999;
         pointer-events: none;
         background: rgba(255, 220, 120, 0);
-        transition: background 0.35s ease;
+        transition: background 0.25s ease;
+        /* mix-blend-mode: screen removed — causes cursor lag via compositing */
       }
-      /* Speed vignette — radial darkening at screen edges at high speed */
+      @keyframes bloomFlash {
+        0% {
+          opacity: 0;
+          transform: scale(1);
+        }
+        15% {
+          opacity: 1;
+          transform: scale(1.02);
+        }
+        100% {
+          opacity: 0;
+          transform: scale(1);
+        }
+      }
+      .bloom-flash {
+        position: fixed;
+        inset: 0;
+        z-index: 9998;
+        pointer-events: none;
+        animation: bloomFlash 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      }
+      /* Speed vignette — always-on subtle vignette + speed boost */
       #speed-vignette {
         position: fixed;
         inset: 0;
         z-index: 15;
         pointer-events: none;
         background: radial-gradient(
-          ellipse 70% 65% at 50% 50%,
+          ellipse 72% 68% at 50% 50%,
           transparent 0%,
-          transparent 40%,
-          rgba(0, 0, 0, 0) 100%
+          transparent 35%,
+          rgba(0, 0, 0, 0.28) 70%,
+          rgba(0, 0, 0, 0.55) 100%
         );
-        transition: background 0.15s ease;
+        transition: background 0.12s ease;
       }
-      /* Motion blur hint via CSS blur on canvas only */
       #city-canvas {
         will-change: transform;
+        /* Improve cursor response — don't intercept events when overlays are on top */
+      }
+      /* cursor optimization — ensure cursor is always responsive */
+      * {
+        cursor: inherit;
+      }
+      body {
+        cursor: default;
+      }
+      button,
+      [onclick],
+      a,
+      .px-btn,
+      .hb,
+      #fullmap-canvas,
+      #ss-enter-btn {
+        cursor: pointer;
       }
       /* ── NARRATIVE GUIDE LABEL smooth transitions ── */
       #guide-bar {
         position: fixed;
-        bottom: 80px;
+        bottom: 90px;
         left: 50%;
         transform: translateX(-50%);
         z-index: 600;
         pointer-events: none;
         font-family: var(--fm);
-        font-size: 11px;
-        letter-spacing: 5px;
-        color: #ffcc44;
-        text-shadow: 0 0 12px #ffcc44aa;
+        font-size: 10px;
+        letter-spacing: 6px;
+        color: var(--gold);
+        text-shadow:
+          0 0 20px rgba(255, 210, 60, 0.8),
+          0 0 40px rgba(255, 200, 60, 0.3);
         opacity: 0;
-        transition: opacity 0.5s ease;
+        transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1);
         text-align: center;
+        background: rgba(6, 3, 1, 0.6);
+        border: 1px solid rgba(255, 200, 60, 0.15);
+        padding: 9px 22px;
+        border-radius: 2px;
+        backdrop-filter: blur(8px);
+        white-space: nowrap;
       }
+      /* ── BRUNO SIMON STYLE MAP ── */
       #fullmap {
         position: fixed;
         inset: 0;
         z-index: 850;
-        background: rgba(6, 3, 1, 0.97);
-        backdrop-filter: blur(18px);
+        background: #050c14;
         display: none;
         flex-direction: column;
         align-items: center;
-        justify-content: flex-start;
-        padding-top: 40px;
+        justify-content: center;
+        overflow: hidden;
+        /* NO backdrop-filter — it causes GPU lag with 3D canvas behind */
       }
       #fullmap.open {
         display: flex;
       }
-      #fullmap-title {
-        font-family: var(--ff);
-        font-size: clamp(22px, 4vw, 40px);
-        font-weight: 900;
-        letter-spacing: 6px;
-        color: #fff;
-        margin-bottom: 6px;
-        text-align: center;
-      }
-      #fullmap-sub {
-        font-family: var(--fm);
-        font-size: 8px;
-        letter-spacing: 5px;
-        color: rgba(255, 200, 100, 0.4);
-        margin-bottom: 24px;
-        text-align: center;
+
+      /* Map container — centered, fills viewport */
+      #fullmap-wrap {
+        position: relative;
+        width: min(92vw, 92vh);
+        height: min(92vw, 92vh);
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow:
+          0 0 0 1px rgba(255, 200, 80, 0.06),
+          0 0 80px rgba(0, 30, 80, 0.8);
       }
       #fullmap-canvas {
-        border: 1px solid rgba(255, 200, 100, 0.15);
-        border-radius: 4px;
         display: block;
-        max-width: 90vw;
-        max-height: 62vh;
+        width: 100%;
+        height: 100%;
+        border-radius: 8px;
+        cursor: crosshair;
       }
-      #fullmap-legend {
+
+      /* Top HUD bar */
+      #fm-hud {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        padding: 14px 20px;
         display: flex;
-        gap: 14px;
-        flex-wrap: wrap;
-        justify-content: center;
-        margin-top: 12px;
+        align-items: center;
+        justify-content: space-between;
+        background: linear-gradient(
+          180deg,
+          rgba(5, 12, 20, 0.9) 0%,
+          transparent 100%
+        );
+        pointer-events: none;
+        z-index: 2;
       }
-      .fm-item {
+      #fm-title {
+        font-family: var(--ff);
+        font-size: 18px;
+        font-weight: 900;
+        letter-spacing: 6px;
+        color: rgba(255, 220, 100, 0.8);
+        text-shadow: 0 0 20px rgba(255, 200, 60, 0.4);
+      }
+      #fm-count {
+        font-family: var(--fm);
+        font-size: 8px;
+        letter-spacing: 4px;
+        color: rgba(255, 200, 80, 0.5);
+      }
+
+      /* Close button — corner */
+      #fullmap-close {
+        position: absolute;
+        top: 14px;
+        right: 16px;
+        background: rgba(5, 12, 20, 0.7);
+        border: 1px solid rgba(255, 200, 80, 0.15);
+        border-radius: 2px;
+        font-family: var(--fm);
+        font-size: 7px;
+        letter-spacing: 3px;
+        color: rgba(255, 220, 100, 0.45);
+        padding: 6px 12px;
+        cursor: pointer;
+        transition: all 0.18s;
+        z-index: 10;
+        pointer-events: auto;
+      }
+      #fullmap-close:hover {
+        color: var(--gold);
+        border-color: rgba(255, 200, 80, 0.4);
+        background: rgba(10, 20, 30, 0.9);
+      }
+
+      /* Tooltip on hover */
+      #fm-tooltip {
+        position: absolute;
+        z-index: 20;
+        pointer-events: none;
+        padding: 8px 14px;
+        background: rgba(5, 12, 20, 0.94);
+        border: 1px solid rgba(255, 220, 100, 0.2);
+        border-radius: 3px;
+        font-family: var(--fm);
+        font-size: 8px;
+        letter-spacing: 2px;
+        color: #fff;
+        white-space: nowrap;
+        display: none;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      }
+      #fm-tooltip .ft-name {
+        font-family: var(--ff);
+        font-size: 14px;
+        letter-spacing: 2px;
+        font-weight: 700;
+        margin-bottom: 3px;
+      }
+      #fm-tooltip .ft-hint {
+        color: rgba(255, 200, 80, 0.5);
+        font-size: 7px;
+        letter-spacing: 3px;
+        margin-top: 4px;
+      }
+
+      /* Bottom bar */
+      #fm-bottom {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 12px 20px;
+        background: linear-gradient(
+          0deg,
+          rgba(5, 12, 20, 0.9) 0%,
+          transparent 100%
+        );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        pointer-events: none;
+        z-index: 2;
+      }
+      .fm-legend-item {
         display: flex;
         align-items: center;
         gap: 5px;
         font-family: var(--fm);
-        font-size: 8px;
+        font-size: 7px;
         letter-spacing: 2px;
-        color: rgba(255, 255, 255, 0.5);
+        color: rgba(255, 255, 255, 0.3);
       }
-      .fm-dot {
-        width: 10px;
-        height: 10px;
+      .fm-legend-dot {
+        width: 8px;
+        height: 8px;
         border-radius: 50%;
         flex-shrink: 0;
       }
-      #fullmap-close {
-        position: absolute;
-        top: 14px;
-        right: 22px;
-        background: none;
-        border: none;
-        font-family: var(--fm);
-        font-size: 8.5px;
-        letter-spacing: 3px;
-        color: rgba(255, 255, 255, 0.35);
-        transition: color 0.15s;
-      }
-      #fullmap-close:hover {
-        color: #fff;
-      }
+      #fullmap-legend,
       #fullmap-vc {
-        font-family: var(--fm);
-        font-size: 8px;
-        letter-spacing: 4px;
-        color: rgba(255, 200, 100, 0.5);
-        margin-top: 6px;
-      }
+        display: none;
+      } /* replaced by canvas tooltips */
     </style>
   </head>
   <body>
@@ -1570,23 +1930,18 @@
       <div id="ld-msg">AWAKENING THE CITY…</div>
     </div>
     <div id="start-screen">
+      <div class="ss-eyebrow">INTERACTIVE PORTFOLIO · 2024</div>
       <div class="ss-click">ADITYA SRIVASTAVA</div>
-      <div
-        class="ss-arrow"
-        style="
-          font-size: 11px;
-          letter-spacing: 5px;
-          color: rgba(255, 200, 80, 0.6);
-          margin-top: 2px;
-        "
-      >
-        BACKEND ARCHITECT · TRILASOFT · 4 YRS
+      <div class="ss-role">
+        BACKEND ARCHITECT &nbsp;·&nbsp; TRILASOFT SOLUTIONS &nbsp;·&nbsp; 4
+        YEARS
       </div>
+      <div class="ss-rule"></div>
       <button class="ss-enter-btn" id="ss-enter-btn">
-        ◈ &nbsp; ENTER THE CITY &nbsp; ◈
+        ◈ &nbsp;&nbsp; ENTER THE CITY &nbsp;&nbsp; ◈
       </button>
-      <div class="ss-sub">or click anywhere · touch to explore</div>
-      <div class="ss-hint" style="margin-top: 14px">
+      <div class="ss-sub">or click anywhere &nbsp;·&nbsp; touch to explore</div>
+      <div class="ss-hint">
         W/S DRIVE &nbsp;·&nbsp; A/D STEER &nbsp;·&nbsp; E ENTER TEMPLE
         &nbsp;·&nbsp; M MAP &nbsp;·&nbsp; J JOURNEY
       </div>
@@ -1600,12 +1955,15 @@
     <canvas id="city-canvas"></canvas>
     <!-- ── GAME HUD ── -->
     <div id="game-hud">
-      <div id="weather-badge">DAY</div>
-      <div id="gear-badge">GEAR: D</div>
+      <div id="hud-meta">
+        <div id="weather-badge">DAY</div>
+        <div id="gear-badge">GEAR: D</div>
+      </div>
       <div id="spd-ring">
-        <svg viewBox="0 0 68 68">
-          <circle class="track" cx="34" cy="34" r="27" />
-          <circle class="fill" id="spd-arc" cx="34" cy="34" r="27" />
+        <svg viewBox="0 0 82 82">
+          <circle class="glow-ring" cx="41" cy="41" r="36" />
+          <circle class="track" cx="41" cy="41" r="32" />
+          <circle class="fill" id="spd-arc" cx="41" cy="41" r="32" />
         </svg>
         <div id="spd-num">0<span>KM/H</span></div>
       </div>
@@ -1770,14 +2128,65 @@
     </div>
     <!-- ── P8: FULL MAP OVERLAY ── -->
     <div id="fullmap">
-      <button id="fullmap-close" onclick="closeFullMap()">× CLOSE MAP</button>
-      <div id="fullmap-title">TEMPLE CITY MAP</div>
-      <div id="fullmap-sub">
-        ADITYA SRIVASTAVA · BACKEND ARCHITECT · 12 SYSTEMS
+      <button id="fullmap-close" onclick="closeFullMap()">ESC · CLOSE</button>
+      <div id="fullmap-wrap">
+        <canvas id="fullmap-canvas" width="900" height="900"></canvas>
+        <div id="fm-hud">
+          <div id="fm-title">◈ TEMPLE CITY</div>
+          <div id="fm-count">0 / 12 VISITED</div>
+        </div>
+        <div id="fm-tooltip">
+          <div class="ft-name"></div>
+          <div class="ft-sub"></div>
+          <div class="ft-hint">CLICK TO DRIVE HERE</div>
+        </div>
+        <div id="fm-bottom">
+          <div class="fm-legend-item">
+            <div
+              class="fm-legend-dot"
+              style="background: #00c8ff; box-shadow: 0 0 6px #00c8ff"
+            ></div>
+            AUTH / API
+          </div>
+          <div class="fm-legend-item">
+            <div
+              class="fm-legend-dot"
+              style="background: #ffcc44; box-shadow: 0 0 6px #ffcc44"
+            ></div>
+            DATA
+          </div>
+          <div class="fm-legend-item">
+            <div
+              class="fm-legend-dot"
+              style="background: #ff6b00; box-shadow: 0 0 6px #ff6b00"
+            ></div>
+            SYSTEMS
+          </div>
+          <div class="fm-legend-item">
+            <div
+              class="fm-legend-dot"
+              style="background: #a78bfa; box-shadow: 0 0 6px #a78bfa"
+            ></div>
+            EDUCATION
+          </div>
+          <div class="fm-legend-item">
+            <div
+              class="fm-legend-dot"
+              style="background: #888; opacity: 0.5"
+            ></div>
+            UNVISITED
+          </div>
+          <div class="fm-legend-item">
+            <div
+              class="fm-legend-dot"
+              style="background: #fff; box-shadow: 0 0 6px #fff"
+            ></div>
+            VISITED
+          </div>
+        </div>
       </div>
-      <canvas id="fullmap-canvas" width="900" height="540"></canvas>
-      <div id="fullmap-vc"></div>
-      <div id="fullmap-legend"></div>
+      <div id="fullmap-legend" style="display: none"></div>
+      <div id="fullmap-vc" style="display: none"></div>
     </div>
 
     <div id="joy-zone">
@@ -1797,10 +2206,14 @@
         chip.className = MODE;
       }
       const cur = document.getElementById("cur");
-      document.addEventListener("mousemove", (e) => {
-        cur.style.left = e.clientX + "px";
-        cur.style.top = e.clientY + "px";
-      });
+      // Cursor: use translate3d (GPU) not left/top (CPU reflow) — zero lag
+      document.addEventListener(
+        "mousemove",
+        (e) => {
+          cur.style.transform = `translate3d(calc(${e.clientX}px - 50%), calc(${e.clientY}px - 50%), 0)`;
+        },
+        { passive: true },
+      );
       document.addEventListener("mouseover", (e) => {
         if (e.target.closest("button,a,.px-btn,.hb,.jb-arr,#ob,#os"))
           cur.classList.add("big");
@@ -1822,6 +2235,13 @@
       };
       function hideStart() {
         startScreen.classList.add("gone");
+        // Reveal cinematic HUD elements
+        setTimeout(() => {
+          document.getElementById("game-hud")?.classList.add("hud-visible");
+          document.getElementById("hud-tr")?.classList.add("hud-visible");
+          document.getElementById("ctrl-hint")?.classList.add("hud-visible");
+          document.getElementById("minimap")?.classList.add("hud-visible");
+        }, 2000); // after intro starts descending
         if (typeof CityEngine !== "undefined") {
           CityEngine.initAudio();
           CityEngine.triggerIntro();
@@ -1929,6 +2349,14 @@
         if (!b) return;
         const dot = document.getElementById("dot-" + b.id);
         if (dot) dot.classList.add("visited");
+
+        // Cinematic bloom flash in the building's color
+        const flash = document.createElement("div");
+        flash.className = "bloom-flash";
+        flash.style.background = (b.glowColor || "#ffcc44") + "33";
+        document.body.appendChild(flash);
+        setTimeout(() => flash.remove(), 900);
+
         const col = pCol(b.glowColor),
           body = document.getElementById("sp-body");
         body.style.setProperty("--nc", col);
@@ -2202,11 +2630,20 @@ Mode: ${MODE}. Answer 2-4 sentences. Speak with wisdom about both the temple myt
       function openFullMap() {
         const fm = document.getElementById("fullmap");
         fm.classList.add("open");
+        _setupMapInteractions(); // idempotent — only attaches once
         drawFullMap();
-        // Live refresh while map is open (tracks car movement)
+        // Live refresh
         window._mapInterval = setInterval(() => {
           if (fm.classList.contains("open")) drawFullMap();
-        }, 200);
+        }, 80); // fast refresh — canvas is lightweight, no DOM changes
+      }
+      let _mapInteractionsSetup = false;
+      const _origSetupMap = _setupMapInteractions;
+      // Wrap to be idempotent
+      function _setupMapInteractions() {
+        if (_mapInteractionsSetup) return;
+        _mapInteractionsSetup = true;
+        _origSetupMap();
       }
       function closeFullMap() {
         document.getElementById("fullmap").classList.remove("open");
@@ -2216,44 +2653,103 @@ Mode: ${MODE}. Answer 2-4 sentences. Speak with wisdom about both the temple myt
         }
       }
 
+      // ── MAP STATE ─────────────────────────────────────────────────────────────
+      let _mapCanvas = null,
+        _mapCtx = null,
+        _mapW = 900,
+        _mapH = 900;
+      let _mapHoverBuilding = null;
+      // World bounds: X -95..95, Z -88..65
+      const _WX1 = -95,
+        _WX2 = 95,
+        _WZ1 = -88,
+        _WZ2 = 65;
+      function _wm(wx, wz) {
+        return [
+          ((wx - _WX1) / (_WX2 - _WX1)) * _mapW * 0.88 + _mapW * 0.06,
+          ((wz - _WZ1) / (_WZ2 - _WZ1)) * _mapH * 0.88 + _mapH * 0.06,
+        ];
+      }
+      function _mw(mx, my) {
+        // canvas → world
+        return [
+          ((mx / _mapW - 0.06) / 0.88) * (_WX2 - _WX1) + _WX1,
+          ((my / _mapH - 0.06) / 0.88) * (_WZ2 - _WZ1) + _WZ1,
+        ];
+      }
+      // Auto-drive target
+      let _autoDriveTarget = null;
+      // Check every frame in map interval
+      function _autoDriveStep() {
+        if (!_autoDriveTarget || typeof CityEngine === "undefined") return;
+        const dx = _autoDriveTarget.x - CityEngine.carX;
+        const dz = _autoDriveTarget.z - CityEngine.carZ;
+        const dist = Math.hypot(dx, dz);
+        if (dist < 4) {
+          _autoDriveTarget = null;
+          return;
+        }
+        // Synthesize keyboard-like input via engine public API
+        if (CityEngine._autoDrive) CityEngine._autoDrive(dx, dz);
+      }
+
       function drawFullMap() {
-        const fmc = document.getElementById("fullmap-canvas");
-        const ctx = fmc.getContext("2d");
-        const W = 900,
-          H = 560;
-        ctx.clearRect(0, 0, W, H);
-        // Background
-        ctx.fillStyle = "rgba(12,6,2,1)";
+        _mapCanvas = document.getElementById("fullmap-canvas");
+        if (!_mapCanvas) return;
+        _mapCtx = _mapCanvas.getContext("2d");
+        const ctx = _mapCtx,
+          W = _mapW,
+          H = _mapH;
+
+        // ── BACKGROUND — deep ocean dark with radial blue fog ─────────────────
+        const bgGrd = ctx.createRadialGradient(
+          W / 2,
+          H / 2,
+          W * 0.1,
+          W / 2,
+          H / 2,
+          W * 0.72,
+        );
+        bgGrd.addColorStop(0, "#0a1520");
+        bgGrd.addColorStop(0.6, "#071018");
+        bgGrd.addColorStop(1, "#030810");
+        ctx.fillStyle = bgGrd;
         ctx.fillRect(0, 0, W, H);
-        // Grid lines
-        ctx.strokeStyle = "rgba(255,200,100,.06)";
-        ctx.lineWidth = 1;
-        for (let x = 0; x < W; x += 50) {
-          ctx.beginPath();
-          ctx.moveTo(x, 0);
-          ctx.lineTo(x, H);
-          ctx.stroke();
-        }
-        for (let y = 0; y < H; y += 50) {
-          ctx.beginPath();
-          ctx.moveTo(0, y);
-          ctx.lineTo(W, y);
-          ctx.stroke();
-        }
 
-        // World to map: world is -95..95 X, -88..65 Z
-        const wx1 = -95,
-          wx2 = 95,
-          wz1 = -88,
-          wz2 = 65;
-        function wm(wx, wz) {
-          return [
-            ((wx - wx1) / (wx2 - wx1)) * W * 0.9 + W * 0.05,
-            ((wz - wz1) / (wz2 - wz1)) * H * 0.9 + H * 0.05,
-          ];
-        }
+        // Outer ocean glow (blue fog around edges)
+        const edgeFog = ctx.createRadialGradient(
+          W / 2,
+          H / 2,
+          W * 0.35,
+          W / 2,
+          H / 2,
+          W * 0.72,
+        );
+        edgeFog.addColorStop(0, "transparent");
+        edgeFog.addColorStop(0.7, "rgba(0,40,100,0.0)");
+        edgeFog.addColorStop(1, "rgba(0,20,80,0.6)");
+        ctx.fillStyle = edgeFog;
+        ctx.fillRect(0, 0, W, H);
 
-        // Roads
+        // ── LAND MASS — soft terrain shape ───────────────────────────────────
+        // Draw rounded land zone (approximating world bounds)
+        ctx.save();
+        ctx.beginPath();
+        const [lx1, ly1] = _wm(-88, -82),
+          [lx2, ly2] = _wm(88, 60);
+        const lw = lx2 - lx1,
+          lh = ly2 - ly1;
+        if (ctx.roundRect) ctx.roundRect(lx1, ly1, lw, lh, 20);
+        else ctx.rect(lx1, ly1, lw, lh);
+        const landGrd = ctx.createLinearGradient(lx1, ly1, lx2, ly2);
+        landGrd.addColorStop(0, "#1a2a1a");
+        landGrd.addColorStop(0.4, "#1e2818");
+        landGrd.addColorStop(1, "#162014");
+        ctx.fillStyle = landGrd;
+        ctx.fill();
+        ctx.restore();
+
+        // ── ROAD NETWORK — styled like Bruno Simon (thick with edge glow) ─────
         const roads = [
           [-90, 0, 90, 0],
           [-90, -14, 90, -14],
@@ -2267,112 +2763,338 @@ Mode: ${MODE}. Answer 2-4 sentences. Speak with wisdom about both the temple myt
           [-90, 24, 90, 24],
           [-90, -38, 90, -38],
         ];
-        ctx.strokeStyle = "rgba(170,90,50,.6)";
-        ctx.lineWidth = 3;
+
+        // Road glow pass
+        ctx.save();
         roads.forEach(([x1, z1, x2, z2]) => {
-          const [mx1, my1] = wm(x1, z1),
-            [mx2, my2] = wm(x2, z2);
+          const [mx1, my1] = _wm(x1, z1),
+            [mx2, my2] = _wm(x2, z2);
           ctx.beginPath();
           ctx.moveTo(mx1, my1);
           ctx.lineTo(mx2, my2);
+          ctx.strokeStyle = "rgba(180,120,60,0.08)";
+          ctx.lineWidth = 12;
           ctx.stroke();
         });
+        // Road base
+        roads.forEach(([x1, z1, x2, z2]) => {
+          const [mx1, my1] = _wm(x1, z1),
+            [mx2, my2] = _wm(x2, z2);
+          ctx.beginPath();
+          ctx.moveTo(mx1, my1);
+          ctx.lineTo(mx2, my2);
+          ctx.strokeStyle = "rgba(80,50,28,0.85)";
+          ctx.lineWidth = 5;
+          ctx.stroke();
+        });
+        // Road center dashes (main spine only)
+        ctx.setLineDash([8, 12]);
+        [[0, -80, 0, 65]].forEach(([x1, z1, x2, z2]) => {
+          const [mx1, my1] = _wm(x1, z1),
+            [mx2, my2] = _wm(x2, z2);
+          ctx.beginPath();
+          ctx.moveTo(mx1, my1);
+          ctx.lineTo(mx2, my2);
+          ctx.strokeStyle = "rgba(255,180,80,0.15)";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        });
+        ctx.setLineDash([]);
+        ctx.restore();
 
-        // Water channels
-        ctx.strokeStyle = "rgba(50,140,200,.8)";
-        ctx.lineWidth = 4;
+        // ── WATER CHANNELS ────────────────────────────────────────────────────
         [
           [-3, -70, -3, 60],
           [3, -70, 3, 60],
         ].forEach(([x1, z1, x2, z2]) => {
-          const [mx1, my1] = wm(x1, z1),
-            [mx2, my2] = wm(x2, z2);
+          const [mx1, my1] = _wm(x1, z1),
+            [mx2, my2] = _wm(x2, z2);
+          // Glow
+          ctx.shadowColor = "rgba(40,140,255,0.6)";
+          ctx.shadowBlur = 8;
+          ctx.strokeStyle = "rgba(40,120,220,0.8)";
+          ctx.lineWidth = 4;
           ctx.beginPath();
           ctx.moveTo(mx1, my1);
           ctx.lineTo(mx2, my2);
           ctx.stroke();
+          ctx.shadowBlur = 0;
         });
 
-        // Buildings
+        // ── ZONE COLOR POOLS (like Bruno Simon biome colors) ─────────────────
+        const zones = [
+          [45, -22, 0.06, "#00c8ff", 50], // Surya Dwara — cyan zone
+          [-55, -22, 0.05, "#ffcc44", 48], // Brahma Kund — gold zone
+          [0, -55, 0.05, "#4dd4ff", 44], // Jyotish — pale blue
+          [-40, 35, 0.05, "#ff6b00", 42], // Lakshmi — orange
+          [0, 55, 0.05, "#888888", 38], // Pura Stambha — grey legacy
+          [-22, -62, 0.05, "#a78bfa", 42], // Education — violet
+        ];
+        zones.forEach(([wx, wz, alpha, col, r]) => {
+          const [zx, zy] = _wm(wx, wz);
+          const zGrd = ctx.createRadialGradient(zx, zy, 0, zx, zy, r);
+          zGrd.addColorStop(
+            0,
+            col +
+              Math.round(alpha * 255)
+                .toString(16)
+                .padStart(2, "0"),
+          );
+          zGrd.addColorStop(1, "transparent");
+          ctx.fillStyle = zGrd;
+          ctx.fillRect(0, 0, W, H);
+        });
+
+        // ── BUILDINGS — clickable dots ─────────────────────────────────────────
         const blds = window.CITY_DATA ? window.CITY_DATA.buildings : [];
-        const legend = document.getElementById("fullmap-legend");
-        legend.innerHTML = "";
-        blds.forEach((b, i) => {
-          const [mx, my] = wm(b.pos[0], b.pos[1]);
+        const now = Date.now();
+        blds.forEach((b) => {
+          const [mx, my] = _wm(b.pos[0], b.pos[1]);
           const gc = b.glowColor || "#888";
           const visited = document
             .getElementById("dot-" + b.id)
             ?.classList.contains("visited");
-          // Outer glow ring
-          ctx.shadowColor = gc;
-          ctx.shadowBlur = visited ? 18 : 6;
-          ctx.fillStyle = gc + (visited ? "ff" : "66");
+          const isHovered = _mapHoverBuilding === b.id;
+          const isTarget = _autoDriveTarget?.id === b.id;
+          const pulse = isHovered ? 1 + Math.sin(now * 0.006) * 0.15 : 1;
+          const r = visited ? 10 : 7;
+
+          // Outer glow halo
+          const haloR = (r + 12) * pulse;
+          const halo = ctx.createRadialGradient(mx, my, 0, mx, my, haloR);
+          halo.addColorStop(0, gc + "44");
+          halo.addColorStop(1, "transparent");
+          ctx.fillStyle = halo;
           ctx.beginPath();
-          ctx.arc(mx, my, visited ? 9 : 6, 0, Math.PI * 2);
+          ctx.arc(mx, my, haloR, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Ring
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(mx, my, r * pulse, 0, Math.PI * 2);
+          ctx.strokeStyle = visited ? "#fff" : gc;
+          ctx.lineWidth = isHovered ? 2 : 1.5;
+          ctx.shadowColor = gc;
+          ctx.shadowBlur = isHovered ? 20 : 10;
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+          ctx.restore();
+
+          // Inner fill
+          ctx.beginPath();
+          ctx.arc(mx, my, (r - 3) * pulse, 0, Math.PI * 2);
+          ctx.fillStyle = visited ? "#ffffff" : gc;
+          ctx.shadowColor = gc;
+          ctx.shadowBlur = visited ? 12 : 6;
           ctx.fill();
           ctx.shadowBlur = 0;
-          // Inner dot
-          ctx.fillStyle = visited ? "#fff" : gc;
-          ctx.beginPath();
-          ctx.arc(mx, my, visited ? 5 : 3, 0, Math.PI * 2);
-          ctx.fill();
+
+          // Target indicator — pulsing orbit ring
+          if (isTarget) {
+            const tr = 18 + Math.sin(now * 0.008) * 4;
+            ctx.beginPath();
+            ctx.arc(mx, my, tr, 0, Math.PI * 2);
+            ctx.strokeStyle = gc + "88";
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+
           // Name label
-          ctx.fillStyle = visited ? "#ffffff" : "rgba(255,255,255,0.55)";
+          const labelAlpha = isHovered ? 1 : visited ? 0.7 : 0.4;
+          ctx.fillStyle = `rgba(255,255,255,${labelAlpha})`;
           ctx.font =
-            (visited ? "bold " : "") + "10px 'Share Tech Mono',monospace";
-          ctx.fillText(b.name, mx + 11, my + 4);
-          // Legend item
-          const li = document.createElement("div");
-          li.className = "fm-item";
-          li.innerHTML = `<span class="fm-dot" style="background:${gc}"></span>${b.name}`;
-          legend.appendChild(li);
+            (visited ? "bold " : "") + `10px 'Share Tech Mono',monospace`;
+          ctx.shadowColor = gc;
+          ctx.shadowBlur = isHovered ? 8 : 0;
+          ctx.fillText(b.name, mx + 14, my + 4);
+          ctx.shadowBlur = 0;
         });
 
-        // Car position — use real carX/carZ from engine
+        // ── CAR MARKER ────────────────────────────────────────────────────────
         if (typeof CityEngine !== "undefined" && CityEngine.carX != null) {
           const cx = CityEngine.carX,
             cz = CityEngine.carZ;
           const ang = CityEngine.carAngle || 0;
-          const [cmx, cmy] = wm(cx, cz);
-          // Draw car as arrow
+          const [cmx, cmy] = _wm(cx, cz);
+
+          // Car glow halo
+          const carHalo = ctx.createRadialGradient(cmx, cmy, 0, cmx, cmy, 28);
+          carHalo.addColorStop(0, "rgba(255,80,0,0.25)");
+          carHalo.addColorStop(1, "transparent");
+          ctx.fillStyle = carHalo;
+          ctx.fillRect(0, 0, W, H);
+
+          // Car arrow — rotate to match heading
           ctx.save();
           ctx.translate(cmx, cmy);
           ctx.rotate(ang);
+          ctx.shadowColor = "#ff4400";
+          ctx.shadowBlur = 16;
           ctx.fillStyle = "#ff3300";
-          ctx.shadowColor = "#ff6600";
-          ctx.shadowBlur = 14;
           ctx.beginPath();
-          ctx.moveTo(0, -9);
-          ctx.lineTo(6, 6);
-          ctx.lineTo(-6, 6);
+          ctx.moveTo(0, -11);
+          ctx.lineTo(7, 7);
+          ctx.lineTo(-7, 7);
+          ctx.closePath();
+          ctx.fill();
+          // White center
+          ctx.fillStyle = "#fff";
+          ctx.beginPath();
+          ctx.moveTo(0, -5);
+          ctx.lineTo(3, 3);
+          ctx.lineTo(-3, 3);
           ctx.closePath();
           ctx.fill();
           ctx.shadowBlur = 0;
           ctx.restore();
-          ctx.fillStyle = "#fff";
-          ctx.font = "bold 9px 'Share Tech Mono',monospace";
+
+          // YOU label with background
+          ctx.fillStyle = "rgba(5,12,20,0.8)";
+          const youW = 32,
+            youH = 14;
+          ctx.fillRect(cmx - youW / 2, cmy + 14, youW, youH);
+          ctx.fillStyle = "#ff6644";
+          ctx.font = "bold 8px 'Share Tech Mono',monospace";
           ctx.textAlign = "center";
-          ctx.fillText("YOU", cmx, cmy + 18);
+          ctx.fillText("YOU", cmx, cmy + 24);
           ctx.textAlign = "left";
         }
 
-        // Compass
-        const [ncx, ncy] = wm(0, -80);
-        ctx.fillStyle = "rgba(255,200,100,.6)";
-        ctx.font = "bold 13px 'Barlow Condensed',sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText("N", W * 0.05 + 10, H * 0.05 + 14);
+        // ── COMPASS ROSE ──────────────────────────────────────────────────────
+        const cx2 = 40,
+          cy2 = 40;
+        ["N", "S", "E", "W"].forEach((dir, i) => {
+          const a = [0, Math.PI, Math.PI / 2, -Math.PI / 2][i];
+          const tx = cx2 + Math.sin(a) * 18,
+            ty = cy2 - Math.cos(a) * 18;
+          ctx.fillStyle =
+            dir === "N" ? "rgba(255,200,80,0.9)" : "rgba(255,255,255,0.3)";
+          ctx.font = `bold ${dir === "N" ? 11 : 9}px 'Share Tech Mono',monospace`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(dir, tx, ty);
+        });
         ctx.textAlign = "left";
+        ctx.textBaseline = "alphabetic";
 
-        // Visited count
-        const visited = document.querySelectorAll(".mm-dot.visited").length;
-        const vc =
-          document.getElementById("fullmap-vc") ||
-          document.createElement("div");
-        vc.id = "fullmap-vc";
-        vc.textContent = visited + " / " + blds.length + " TEMPLES VISITED";
-        if (!document.getElementById("fullmap-vc"))
-          document.getElementById("fullmap").appendChild(vc);
+        // ── VISITED COUNT ─────────────────────────────────────────────────────
+        const vCount =
+          document.querySelectorAll('[id^="dot-"].visited').length ||
+          blds.filter((b) =>
+            document
+              .getElementById("dot-" + b.id)
+              ?.classList.contains("visited"),
+          ).length;
+        const countEl = document.getElementById("fm-count");
+        if (countEl)
+          countEl.textContent = vCount + " / " + blds.length + " VISITED";
+      }
+
+      // ── MAP INTERACTIONS ──────────────────────────────────────────────────────
+      function _setupMapInteractions() {
+        const canvas = document.getElementById("fullmap-canvas");
+        const tooltip = document.getElementById("fm-tooltip");
+        if (!canvas || !tooltip) return;
+
+        function getBuildingAtPos(mx, my) {
+          if (!window.CITY_DATA) return null;
+          const [wx, wz] = _mw(mx, my);
+          let closest = null,
+            closestD = 999;
+          window.CITY_DATA.buildings.forEach((b) => {
+            const d = Math.hypot(wx - b.pos[0], wz - b.pos[1]);
+            if (d < 12 && d < closestD) {
+              closest = b;
+              closestD = d;
+            }
+          });
+          return closest;
+        }
+
+        canvas.addEventListener("mousemove", (e) => {
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = _mapW / rect.width,
+            scaleY = _mapH / rect.height;
+          const mx = (e.clientX - rect.left) * scaleX;
+          const my = (e.clientY - rect.top) * scaleY;
+          const b = getBuildingAtPos(mx, my);
+
+          if (b) {
+            _mapHoverBuilding = b.id;
+            canvas.style.cursor = "pointer";
+            tooltip.style.display = "block";
+            // Position tooltip near cursor but within bounds
+            const tx = Math.min(e.clientX + 14, window.innerWidth - 200);
+            const ty = Math.max(e.clientY - 50, 10);
+            tooltip.style.left = tx + "px";
+            tooltip.style.top = ty + "px";
+            tooltip.style.borderColor = b.glowColor + "55";
+            tooltip.querySelector(".ft-name").textContent = b.name;
+            tooltip.querySelector(".ft-name").style.color = b.glowColor;
+            tooltip.querySelector(".ft-sub").textContent =
+              b.subtitle || b.tag || "";
+            const visited = document
+              .getElementById("dot-" + b.id)
+              ?.classList.contains("visited");
+            tooltip.querySelector(".ft-hint").textContent = visited
+              ? "✓ VISITED · CLICK TO REVISIT"
+              : "CLICK TO DRIVE HERE";
+            tooltip.querySelector(".ft-hint").style.color = visited
+              ? "#44ee88"
+              : "rgba(255,200,80,0.5)";
+          } else {
+            _mapHoverBuilding = null;
+            canvas.style.cursor = "crosshair";
+            tooltip.style.display = "none";
+          }
+        });
+
+        canvas.addEventListener("mouseleave", () => {
+          _mapHoverBuilding = null;
+          tooltip.style.display = "none";
+        });
+
+        // ── CLICK TO AUTO-DRIVE ────────────────────────────────────────────────
+        canvas.addEventListener("click", (e) => {
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = _mapW / rect.width,
+            scaleY = _mapH / rect.height;
+          const mx = (e.clientX - rect.left) * scaleX;
+          const my = (e.clientY - rect.top) * scaleY;
+          const b = getBuildingAtPos(mx, my);
+          if (!b || typeof CityEngine === "undefined") return;
+
+          // Set auto-drive target
+          _autoDriveTarget = {
+            x: b.roadPos ? b.roadPos[0] : b.pos[0],
+            z: b.roadPos ? b.roadPos[1] : b.pos[1],
+            id: b.id,
+          };
+
+          // Register target with engine for steering
+          if (CityEngine.setAutoDriveTarget) {
+            CityEngine.setAutoDriveTarget(
+              _autoDriveTarget.x,
+              _autoDriveTarget.z,
+            );
+          }
+
+          // Close map and flash hint
+          closeFullMap();
+          setTimeout(() => {
+            const gb = document.getElementById("guide-bar");
+            if (gb) {
+              gb.textContent = "◈  DRIVING TO  " + b.name.toUpperCase() + "  ◈";
+              gb.style.opacity = "1";
+              setTimeout(() => {
+                gb.style.opacity = "0";
+              }, 3000);
+            }
+          }, 400);
+        });
       }
 
       // ── GAME HUD UPDATE ─────────────────────────────────────────────────────
@@ -2386,8 +3108,8 @@ Mode: ${MODE}. Answer 2-4 sentences. Speak with wisdom about both the temple myt
         // Speed: map raw 0-0.48 to display 0-180 km/h
         const kmh = Math.round(Math.abs(spd) * 375);
         const pct = Math.min(1, Math.abs(spd) / 0.48);
-        // SVG arc: dashoffset 170 = empty, 0 = full
-        arc.style.strokeDashoffset = 170 - pct * 170;
+        // SVG arc: dashoffset 151 = empty, 0 = full (new r=32)
+        arc.style.strokeDashoffset = 151 - pct * 151;
         // Color: green → gold → orange-red
         arc.style.stroke =
           pct < 0.4
@@ -2406,10 +3128,12 @@ Mode: ${MODE}. Answer 2-4 sentences. Speak with wisdom about both the temple myt
         gear.textContent =
           "GEAR: " + (spd < -0.01 ? "R" : spd < 0.001 ? "N" : "D");
         if (wb && weather) wb.textContent = weather.toUpperCase();
-        // Speed vignette — darkens edges at high speed (motion tunnel effect)
+        // Cinematic vignette — always-on base + speed tunneling
         if (vig) {
-          const vigOpacity = Math.max(0, pct - 0.45) * 0.55;
-          vig.style.background = `radial-gradient(ellipse 65% 60% at 50% 50%,transparent 0%,transparent 35%,rgba(0,0,0,${vigOpacity.toFixed(3)}) 100%)`;
+          const speedBoost = Math.max(0, pct - 0.3) * 0.5;
+          const edge = (0.32 + speedBoost).toFixed(3);
+          const innerStop = Math.max(28, 55 - pct * 28).toFixed(0);
+          vig.style.background = `radial-gradient(ellipse 72% 68% at 50% 50%, transparent 0%, transparent ${innerStop}%, rgba(0,0,0,${edge}) 100%)`;
         }
       }
 
