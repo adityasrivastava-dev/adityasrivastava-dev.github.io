@@ -316,7 +316,32 @@ window.CityEngine = (function () {
         1 +
         Math.sin(t * (freqs[this.state] || 0.3) * Math.PI * 2) *
           (amps[this.state] || 0);
-      this.group.scale.setScalar(pulse);
+
+      // ── PROXIMITY PRESENCE — buildings grow and assert as you approach ───
+      // XZ scale stays flat (1.0) to avoid footprint overlap.
+      // Y scale rises: building "rises to meet you" as you get close.
+      // Feels like a destination, not a static decoration.
+      const presenceTargetY = this.forceDim ? 0.96 : 1.0 + this.vfxI * 0.065; // up to +6.5% taller at full intensity
+      if (!this._presenceY) this._presenceY = 1.0;
+      this._presenceY += (presenceTargetY - this._presenceY) * 0.04;
+
+      this.group.scale.set(pulse, pulse * this._presenceY, pulse);
+
+      // ── AMBIENT FLOAT — hero/active buildings subtly float vertically ────
+      // Gives the world a living, non-static feel without heavy animation
+      if (this.vfxI > 0.05) {
+        const floatAmp = this.vfxI * 0.08; // max 8 units at full intensity
+        const floatFreq = 0.28 + this.b.pos[0] * 0.007; // each building different phase
+        const floatY =
+          Math.sin(t * floatFreq * Math.PI * 2 + this.b.pos[1] * 0.1) *
+          floatAmp;
+        // Only float active/hover buildings — dormant ones stay planted
+        if (this.state !== "DORMANT") {
+          this.group.position.y = floatY;
+        } else {
+          this.group.position.y += (0 - this.group.position.y) * 0.05;
+        }
+      }
 
       // ── Ripple ring (ACTIVE / SELECTED) ─────────────────────────────────
       if (this.state === "ACTIVE" || this.state === "SELECTED") {
@@ -575,6 +600,40 @@ window.CityEngine = (function () {
       const mag = (speedRatio - 0.3) * 0.1;
       camera.position.x += (Math.random() - 0.5) * mag;
       camera.position.y += (Math.random() - 0.5) * mag * 0.35;
+    }
+
+    // ── MICRO-NOISE — subtle camera imperfection at medium speed ──────────
+    // Camera feels physically mounted, not mathematically locked
+    if (speedRatio > 0.08) {
+      const microMag = speedRatio * 0.018;
+      const microT = t * 23.7; // fast noise frequency
+      camera.position.x +=
+        (Math.sin(microT * 1.3) * 0.5 + Math.sin(microT * 2.9) * 0.5) *
+        microMag;
+      camera.position.y +=
+        (Math.sin(microT * 1.7) * 0.5 + Math.sin(microT * 3.1) * 0.5) *
+        microMag *
+        0.4;
+      camera.position.z +=
+        (Math.sin(microT * 2.1) * 0.5 + Math.sin(microT * 1.4) * 0.5) *
+        microMag;
+    }
+
+    // ── ACCELERATION KICK — FOV pulse on hard throttle burst ──────────────
+    const speedDelta = velMag - (CAM._prevVelMag || 0);
+    CAM._prevVelMag = velMag;
+    if (speedDelta > 0.012) {
+      // Sudden acceleration: brief FOV surge (feels like G-force push)
+      camera.fov += speedDelta * 28;
+      camera.updateProjectionMatrix();
+    }
+
+    // ── BRAKE PULL — camera pulls forward slightly during hard braking ─────
+    if (speedDelta < -0.016 && velMag > 0.05) {
+      // Hard braking: camera lurches forward (inertia)
+      const brakeShift = Math.abs(speedDelta) * 3.5;
+      camera.position.x += carSinA * brakeShift;
+      camera.position.z += carCosA * brakeShift;
     }
 
     // ── CRASH SHAKE DECAY ─────────────────────────────────────────────────
@@ -1138,6 +1197,70 @@ window.CityEngine = (function () {
     if (CAM.state === "FOLLOW") camera.rotateZ(steerFeedback * -0.025);
   }
 
+  // ── VIGNETTE OVERLAY — DOM element for input feedback (brake/turn) ────────
+  let vignetteEl = null;
+  let vignetteIntensity = 0; // 0→1, drives opacity and color
+  let vignetteTurnAmt = 0; // -1→1, drives left/right color shift
+
+  function ensureVignette() {
+    if (vignetteEl) return;
+    vignetteEl =
+      document.getElementById("city-input-vignette") ||
+      (() => {
+        const d = document.createElement("div");
+        d.id = "city-input-vignette";
+        d.style.cssText = [
+          "position:fixed",
+          "inset:0",
+          "z-index:9990",
+          "pointer-events:none",
+          "opacity:0",
+          "transition:opacity 0.06s linear",
+          "background:radial-gradient(ellipse at center,transparent 55%,rgba(10,5,30,0.85) 100%)",
+        ].join(";");
+        document.body.appendChild(d);
+        return d;
+      })();
+  }
+
+  function updateVignette(dt) {
+    if (!vignetteEl) return;
+    const spd = Math.hypot(carVx, carVz);
+    const speedRatio = spd / MAX_SPD;
+
+    // Hard brake: intense dark vignette
+    const speedDelta = spd - (updateVignette._prevSpd || 0);
+    updateVignette._prevSpd = spd;
+    if (speedDelta < -0.018 && spd > 0.04) {
+      vignetteIntensity = Math.min(
+        1,
+        vignetteIntensity + Math.abs(speedDelta) * 5.5,
+      );
+    }
+    // Speed vignette: subtle persistent darkening at high speed
+    const speedVig = speedRatio > 0.55 ? (speedRatio - 0.55) * 0.38 : 0;
+    const targetI = Math.max(speedVig, vignetteIntensity);
+    vignetteIntensity += (targetI - vignetteIntensity) * 0.04;
+    vignetteIntensity = Math.max(0, vignetteIntensity - dt * 1.8); // decay
+
+    // Lateral turn: directional tint on hard corners
+    const latVel = carVx * carCosA - carVz * carSinA;
+    vignetteTurnAmt += (latVel * 2.2 - vignetteTurnAmt) * 0.12;
+    vignetteTurnAmt = Math.max(-1, Math.min(1, vignetteTurnAmt));
+
+    if (vignetteIntensity < 0.01 && Math.abs(vignetteTurnAmt) < 0.04) {
+      vignetteEl.style.opacity = "0";
+      return;
+    }
+
+    // Build gradient direction from turn amount
+    const cx = 50 + vignetteTurnAmt * 12; // shift centre left/right
+    vignetteEl.style.background = `radial-gradient(ellipse at ${cx}% 50%, transparent 48%, rgba(8,4,24,${0.72 + vignetteIntensity * 0.28}) 100%)`;
+    vignetteEl.style.opacity = String(
+      Math.min(1, vignetteIntensity * 1.6 + Math.abs(vignetteTurnAmt) * 0.22),
+    );
+  }
+
   // ═══════════════════════════════════════════════════════════════════════════
   // 2. NARRATIVE DIRECTOR — guided first-time experience
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1155,6 +1278,50 @@ window.CityEngine = (function () {
 
     // Show first guide label
     showGuideLabel("◈  DRIVE EAST  →  SURYA DWARA  ◈");
+
+    // Build DOM compass needle — points toward first objective at all times
+    buildCompassNeedle();
+  }
+
+  function buildCompassNeedle() {
+    if (document.getElementById("city-compass")) return;
+    const el = document.createElement("div");
+    el.id = "city-compass";
+    el.style.cssText = [
+      "position:fixed",
+      "bottom:90px",
+      "left:50%",
+      "transform:translateX(-50%)",
+      "z-index:9995",
+      "pointer-events:none",
+      "display:flex",
+      "flex-direction:column",
+      "align-items:center",
+      "gap:4px",
+      "opacity:0",
+      "transition:opacity 0.6s ease",
+    ].join(";");
+    el.innerHTML = `
+      <div id="city-compass-arrow" style="
+        width:0; height:0;
+        border-left:10px solid transparent;
+        border-right:10px solid transparent;
+        border-bottom:26px solid #ffcc44;
+        filter:drop-shadow(0 0 6px #ffcc44);
+        transform-origin:50% 100%;
+        transition:transform 0.12s ease;
+      "></div>
+      <span style="
+        color:#ffcc44; font-size:10px; font-family:monospace;
+        letter-spacing:2px; text-shadow:0 0 8px #ffcc44;
+        opacity:0.85;
+      ">SURYA DWARA</span>
+    `;
+    document.body.appendChild(el);
+    // Fade in after 1s
+    setTimeout(() => {
+      el.style.opacity = "1";
+    }, 1000);
   }
 
   function buildYatraPath() {
@@ -1285,14 +1452,56 @@ window.CityEngine = (function () {
     if (NARRATIVE.phase !== "GUIDED") return;
     NARRATIVE.timer += dt;
 
-    // Guide arrow floats above Surya Dwara
+    // ── COMPASS NEEDLE — always point toward Surya Dwara ────────────────────
+    const compassEl = document.getElementById("city-compass");
+    const compassArrow = document.getElementById("city-compass-arrow");
+    if (compassEl && compassArrow && !NARRATIVE.firstVisitDone) {
+      const surya = window.CITY_DATA.buildings.find(
+        (b) => b.id === "surya-dwara",
+      );
+      if (surya) {
+        const dx = surya.pos[0] - carX;
+        const dz = surya.pos[1] - carZ;
+        const dist = Math.hypot(dx, dz);
+        // World angle toward target, then subtract car heading to get relative angle
+        const worldAng = Math.atan2(dx, dz);
+        const relAng = worldAng - carAngle;
+        const deg = relAng * (180 / Math.PI);
+        compassArrow.style.transform = `rotate(${deg}deg)`;
+        // Fade out when very close
+        if (dist < 18) {
+          compassEl.style.opacity = String(Math.max(0, (dist - 8) / 10));
+        }
+      }
+    } else if (compassEl && NARRATIVE.firstVisitDone) {
+      // Remove compass once the first temple is reached
+      compassEl.style.opacity = "0";
+      setTimeout(() => {
+        compassEl.remove();
+      }, 700);
+    }
+
+    // Guide arrow floats above Surya Dwara and fades in
     if (NARRATIVE.guideArrow) {
-      NARRATIVE.guideArrow.position.y =
-        (window.CITY_DATA.buildings.find((b) => b.id === "surya-dwara")
-          ?.height || 18) +
-        4 +
-        Math.sin(now * 2.5) * 0.4;
+      const surya = window.CITY_DATA.buildings.find(
+        (b) => b.id === "surya-dwara",
+      );
+      const bh = surya?.height || 18;
+      NARRATIVE.guideArrow.position.y = bh + 4 + Math.sin(now * 2.5) * 0.4;
       NARRATIVE.guideArrow.rotation.y = now * 1.2;
+      // Bounce gently to draw attention
+      NARRATIVE.guideArrow.position.x = surya?.pos[0] || 45;
+      NARRATIVE.guideArrow.position.z = surya?.pos[1] || -22;
+      // Fade in: bring opacity from 0 → 0.92 over first 2s of GUIDED phase
+      if (NARRATIVE.guideArrow.material.opacity < 0.9) {
+        NARRATIVE.guideArrow.material.opacity = Math.min(
+          0.92,
+          NARRATIVE.guideArrow.material.opacity + 0.018,
+        );
+      }
+      // Scale pulse so it catches the eye
+      const arrowPulse = 1 + Math.sin(now * 3.2) * 0.15;
+      NARRATIVE.guideArrow.scale.setScalar(arrowPulse);
     }
 
     // Yatra path fades in slowly
@@ -2065,6 +2274,8 @@ window.CityEngine = (function () {
       mesh.position.set(r.x, 0.14, r.z);
       mesh.userData.isRoadShimmer = true;
       mesh.userData.phase = i * 1.57;
+      mesh.userData.baseZ = r.z;
+      mesh.userData.baseX = r.x;
       scene.add(mesh);
       waveLines.push(mesh); // reuse existing waveLines array for animate
     });
@@ -6542,6 +6753,9 @@ window.CityEngine = (function () {
   function updateEngineSound(spd) {
     if (!audioCtx || !engOsc || !engGain) return;
     const abs = Math.abs(spd);
+    const speedRatio = abs / MAX_SPD; // 0→1
+
+    // ── ENGINE pitch + gain scale with speed ───────────────────────────────
     engOsc.frequency.setTargetAtTime(
       50 + abs * 320,
       audioCtx.currentTime,
@@ -6552,6 +6766,18 @@ window.CityEngine = (function () {
       audioCtx.currentTime,
       0.1,
     );
+
+    // ── WIND — rises strongly above 40% speed, peaks at max ───────────────
+    // ambientLayers.wind = { node, gain } — gain is a GainNode
+    if (ambientLayers.wind && ambientLayers.wind.gain) {
+      const windTarget =
+        speedRatio > 0.38 ? Math.min(0.14, (speedRatio - 0.38) * 0.28) : 0;
+      ambientLayers.wind.gain.gain.setTargetAtTime(
+        windTarget,
+        audioCtx.currentTime,
+        0.18, // slow attack / slow release feels natural
+      );
+    }
   }
 
   function playBrake() {
@@ -6797,22 +7023,47 @@ window.CityEngine = (function () {
     const nx = carX + carVx;
     const nz = carZ + carVz;
 
+    // ── AXIS-SEPARATED COLLISION — slide along walls, bounce off face ────────
+    // Try full move first, then each axis independently.
+    // This lets the car slide along a wall face rather than stopping dead.
+    let movedX = false,
+      movedZ = false;
     if (!collides(nx, nz)) {
       carX = nx;
       carZ = nz;
+      movedX = true;
+      movedZ = true;
       if (carSpeed > 0.08) shakeNearbyTrees(carX, carZ, 2.5);
     } else {
-      // Physics collision response: reflect velocity off the wall normal
-      // Simplified: flip component pointing into wall, kill lateral component
+      // Try sliding along X axis only
+      if (!collides(nx, carZ)) {
+        carX = nx;
+        movedX = true;
+        // Z is blocked — reflect Z velocity off the wall (wall normal = Z)
+        carVz *= -0.28;
+      }
+      // Try sliding along Z axis only
+      if (!collides(carX, nz)) {
+        carZ = nz;
+        movedZ = true;
+        if (!movedX) {
+          // X is blocked — reflect X velocity
+          carVx *= -0.28;
+        }
+      }
+      // Both axes blocked — full stop with small bounce
+      if (!movedX && !movedZ) {
+        carVx *= -0.22;
+        carVz *= -0.22;
+      }
+
+      // Trigger crash feedback once per cooldown
       if (crashCooldown <= 0 && carSpeed > 0.04) {
         playCrash();
         shakeCam();
         shakeNearbyTrees(carX, carZ, 6);
         crashCooldown = 45;
       }
-      // Absorb most velocity, reflect tiny amount back (wall has mass)
-      carVx *= -0.3;
-      carVz *= -0.3; // strong crash bounce
       carSpeed = Math.hypot(carVx, carVz);
     }
     if (crashCooldown > 0) crashCooldown--;
@@ -7018,6 +7269,7 @@ window.CityEngine = (function () {
     // ── CORE — runs every frame (physics, camera, input) ─────────────────
     updateCar();
     updateCameraDirector(now, dt);
+    if (gameStarted) updateVignette(dt);
 
     // ── MEDIUM — every 2nd frame (proximity, trail, player ring) ─────────
     if (everyOther) {
@@ -7319,8 +7571,23 @@ window.CityEngine = (function () {
       // ── WAVE LINES + ROAD SHIMMER ─────────────────────────────────────────────
       waveLines.forEach((wl) => {
         if (wl.userData.isRoadShimmer) {
-          const sweep = (now * 0.22 + (wl.userData.phase || 0)) % (Math.PI * 2);
-          wl.material.opacity = 0.04 + Math.sin(sweep) * 0.03;
+          // Speed-driven flow: shimmer plane position shifts along its axis at speed
+          // This makes road lines visually rush past proportional to car velocity
+          const flowSpeed = carSpeed * 2.8;
+          const phaseOff = wl.userData.phase || 0;
+          const sweep = (now * (0.22 + flowSpeed) + phaseOff) % (Math.PI * 2);
+          // Opacity: brighter and more visible at speed
+          const baseOp = 0.04 + carSpeed * 0.12;
+          wl.material.opacity = Math.min(0.22, baseOp + Math.sin(sweep) * 0.04);
+          // Shift the plane along its road axis to simulate motion
+          const isNS = Math.abs(wl.rotation.z) < 0.1; // N-S roads use Z offset
+          if (isNS) {
+            wl.position.z =
+              (((wl.userData.baseZ || 0) - now * flowSpeed * 3.5) % 180) - 90;
+          } else {
+            wl.position.x =
+              (((wl.userData.baseX || 0) - now * flowSpeed * 3.5) % 180) - 90;
+          }
         } else {
           const pulse =
             Math.sin(now * 1.4 + (wl.userData.wavePhase || 0)) * 0.5 + 0.5;
@@ -7535,6 +7802,7 @@ window.CityEngine = (function () {
 
     triggerIntro() {
       gameStarted = true; // unlock proximity, audio, narrative
+      ensureVignette(); // create DOM vignette overlay for input feedback
       // Reset camera spring state — prevents oscillation from STATIC orbit position
       camVx = 0;
       camVy = 0;
@@ -7601,6 +7869,11 @@ window.CityEngine = (function () {
         if (NARRATIVE.guideArrow) {
           scene.remove(NARRATIVE.guideArrow);
           NARRATIVE.guideArrow = null;
+        }
+        const compassEl = document.getElementById("city-compass");
+        if (compassEl) {
+          compassEl.style.opacity = "0";
+          setTimeout(() => compassEl.remove(), 700);
         }
         NARRATIVE.phase = "FREE";
       }
