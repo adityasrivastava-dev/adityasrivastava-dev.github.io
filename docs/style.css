@@ -50,3 +50,112 @@ canvas.webgl {
 #notice-sub {
   display: none !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE OVERRIDES
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── JOYSTICK: shown by JS on touch devices ──────────────────────────────── */
+#joy-zone {
+  /* Default hidden. JS sets display:block on touch devices. */
+  pointer-events: all !important;  /* must receive touch events */
+  touch-action: none;              /* prevent scroll hijack */
+}
+
+/* ── CANVAS: needs pointer-events so touch reaches the WebGL context ──────── */
+canvas.webgl {
+  pointer-events: all;
+  touch-action: none;  /* prevent browser scroll/zoom on canvas */
+}
+
+/* ── MOBILE HINT TEXT ─────────────────────────────────────────────────────── */
+.ss-hint-mobile {
+  display: none; /* shown by JS on touch */
+  color: rgba(255,255,255,0.45);
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  margin-top: 8px;
+}
+.ss-hint-desktop {
+  color: rgba(255,255,255,0.45);
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  margin-top: 8px;
+}
+
+/* ── HIDE CUSTOM CURSOR ON TOUCH (pure CSS fallback) ─────────────────────── */
+@media (hover: none) and (pointer: coarse) {
+  /* Touch device: hide cursor dot, show joystick, adjust layout */
+  #cur { display: none !important; }
+  * { cursor: auto !important; }
+
+  /* Joystick visible */
+  #joy-zone { display: block; }
+
+  /* ctrl-hint (keyboard) hidden */
+  #ctrl-hint { display: none !important; }
+
+  /* Minimap smaller + moved above joystick */
+  #minimap {
+    bottom: 170px !important;
+    left: 12px !important;
+    right: auto !important;
+  }
+
+  /* Header buttons: larger tap targets */
+  .hb {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    font-size: 16px !important;
+    padding: 8px !important;
+  }
+
+  /* Skip on mobile: exit button not needed */
+  .skip-desktop { display: none !important; }
+
+  /* Side panel full width on mobile */
+  #side-panel {
+    width: 100vw !important;
+    right: 0 !important;
+    left: 0 !important;
+  }
+
+  /* Proximity notification: bigger tap target */
+  #prox {
+    bottom: 170px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    right: auto !important;
+  }
+  .px-btn {
+    min-height: 44px !important;
+    font-size: 14px !important;
+    padding: 10px 16px !important;
+  }
+
+  /* Oracle button: repositioned above joystick */
+  #ob {
+    bottom: 170px !important;
+    right: 24px !important;
+    left: auto !important;
+    width: 52px !important;
+    height: 52px !important;
+    font-size: 22px !important;
+  }
+
+  /* Speed HUD: above joystick area */
+  #game-hud { bottom: 160px !important; }
+}
+
+/* ── PORTRAIT LOCK ────────────────────────────────────────────────────────── */
+/* CSS also shows portrait lock as backup (JS is primary) */
+@media (hover: none) and (pointer: coarse) and (orientation: portrait) and (max-width: 600px) {
+  #portrait-lock { display: flex; }
+}
+
+/* ── VERY SMALL SCREENS ───────────────────────────────────────────────────── */
+@media (max-width: 380px) {
+  #hud-tr .hb { min-width: 36px !important; font-size: 14px !important; }
+  #joy-outer { width: 90px; height: 90px; bottom: 20px; left: 20px; }
+  #mob-enter { width: 64px; height: 64px; bottom: 20px; right: 20px; }
+}

@@ -2,26 +2,25 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- user-scalable=no prevents double-tap zoom interfering with joystick -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0" />
   <title>Aditya Srivastava — Backend Architect</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;1,400&family=Barlow:wght@400;500&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
 
-  <!-- city-ui.css: all HUD, panel, loader, oracle, journey, fullmap styles -->
   <link rel="stylesheet" href="city-ui.css" />
-  <!-- style.css: thin supplements (bloom, vignette, canvas pointer-events) -->
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<!-- ── THE CANVAS — engine renders here ── -->
+<!-- ── CANVAS ── -->
 <canvas class="webgl"></canvas>
 
-<!-- ── CUSTOM CURSOR ── -->
+<!-- ── CUSTOM CURSOR (hidden on touch devices via CSS) ── -->
 <div id="cur"></div>
 
-<!-- ── PORTRAIT LOCK ── -->
+<!-- ── PORTRAIT LOCK — shown via JS when portrait + mobile ── -->
 <div id="portrait-lock">
   <div class="pl-icon">📱</div>
   <div class="pl-msg">ROTATE TO<br/>LANDSCAPE</div>
@@ -43,7 +42,10 @@
   <div class="ss-rule"></div>
   <button class="ss-enter-btn" id="ss-enter-btn">◈ &nbsp;&nbsp; ENTER THE CITY &nbsp;&nbsp; ◈</button>
   <div class="ss-sub">or click anywhere &nbsp;·&nbsp; touch to explore</div>
-  <div class="ss-hint">W/S DRIVE &nbsp;·&nbsp; A/D STEER &nbsp;·&nbsp; E ENTER TEMPLE &nbsp;·&nbsp; M MAP</div>
+  <!-- Desktop hint -->
+  <div class="ss-hint ss-hint-desktop">W/S DRIVE &nbsp;·&nbsp; A/D STEER &nbsp;·&nbsp; E ENTER TEMPLE &nbsp;·&nbsp; M MAP</div>
+  <!-- Mobile hint -->
+  <div class="ss-hint ss-hint-mobile">JOYSTICK = DRIVE &nbsp;·&nbsp; ENTER BUTTON = ENTER TEMPLE</div>
 </div>
 
 <!-- ── OVERLAYS ── -->
@@ -54,7 +56,7 @@
 <div id="city-input-vignette"></div>
 <div id="guide-bar"></div>
 
-<!-- ── GAME HUD (speed ring, bottom-left) ── -->
+<!-- ── GAME HUD ── -->
 <div id="game-hud">
   <div id="hud-meta">
     <div id="weather-badge">DAY</div>
@@ -75,12 +77,12 @@
   <span id="mode-chip" class="recruiter">--</span>
   <button class="hb" id="weather-btn" title="Weather (T)"><span id="weather-label">☀️</span></button>
   <button class="hb" id="mute-btn">🔊</button>
-  <button class="hb" onclick="openJourney()">📖 JOURNEY</button>
-  <button class="hb" onclick="toggleFullMap()" title="Map (M)">🗺 MAP</button>
-  <button class="hb" onclick="document.getElementById('contact').classList.add('vis')">CONTACT</button>
-  <button class="hb" onclick="location.href='index.html'">← EXIT</button>
+  <button class="hb" onclick="openJourney()">📖</button>
+  <button class="hb" onclick="toggleFullMap()">🗺</button>
+  <button class="hb" onclick="document.getElementById('contact').classList.add('vis')">✉</button>
+  <button class="hb skip-desktop" onclick="location.href='index.html'">← EXIT</button>
   <button class="hb" id="skip-guide-btn" style="display:none;border-color:rgba(255,204,68,.4);color:#ffcc44"
-    onclick="window.CityEngine?.skipGuide?.();this.style.display='none'">SKIP GUIDE</button>
+    onclick="window.CityEngine?.skipGuide?.();this.style.display='none'">SKIP</button>
 </header>
 
 <!-- ── WEATHER TOAST ── -->
@@ -92,10 +94,10 @@
   <canvas id="mm-canvas" width="110" height="110"></canvas>
 </div>
 
-<!-- ── VISITED DOTS (populated by openBuilding) ── -->
+<!-- ── VISITED DOTS ── -->
 <div id="mm-visited"></div>
 
-<!-- ── CONTROLS HINT ── -->
+<!-- ── CONTROLS HINT (desktop only) ── -->
 <div id="ctrl-hint">
   <span class="ck">W/S</span> DRIVE &nbsp;
   <span class="ck">A/D</span> STEER &nbsp;
@@ -104,7 +106,7 @@
   <span class="ck">M</span> MAP
 </div>
 
-<!-- ── WEATHER GRIP HUD ── -->
+<!-- ── GRIP HUD ── -->
 <div id="grip-hud">
   <span id="grip-icon">🌧️</span><span id="grip-label">GRIP</span>
   <div id="grip-bar-wrap"><div id="grip-bar"></div></div>
@@ -147,7 +149,7 @@
   </div>
 </div>
 
-<!-- ── ORACLE (AI assistant) ── -->
+<!-- ── ORACLE ── -->
 <button id="ob" onclick="document.getElementById('op').classList.toggle('open')">⊕</button>
 <div id="op">
   <div class="oh">
@@ -155,7 +157,7 @@
     <button id="ox" onclick="document.getElementById('op').classList.remove('open')">×</button>
   </div>
   <div id="om">
-    <div class="om b">Welcome to Aditya's City. Drive to a glowing checkpoint and press E.</div>
+    <div class="om b">Welcome to Aditya's City. Drive to a glowing checkpoint and press ENTER.</div>
   </div>
   <div class="or">
     <input id="oi" placeholder="Ask about any system…"/>
@@ -163,7 +165,7 @@
   </div>
 </div>
 
-<!-- ── CONTACT CARD ── -->
+<!-- ── CONTACT ── -->
 <div id="contact">
   <div class="cc">
     <button class="ccl" onclick="document.getElementById('contact').classList.remove('vis')">×</button>
@@ -193,92 +195,187 @@
   </div>
 </div>
 
-<!-- ── MOBILE JOYSTICK ── -->
+<!-- ── MOBILE JOYSTICK (left side) + ENTER BUTTON (right side) ── -->
 <div id="joy-zone">
   <div id="joy-outer"><div id="joy-inner"></div></div>
 </div>
-<button id="mob-enter" onclick="window.CityEngine?.enterNearestBuilding?.()">ENTER</button>
+<button id="mob-enter" onclick="window.CityEngine?.enterNearestBuilding?.()">
+  ENTER
+  <span class="mob-enter-lbl">TEMPLE</span>
+</button>
 
 
 <!-- ══════════════════════════ SCRIPTS ══════════════════════════════════════ -->
 
-<!-- 1. THREE.js r128 (must be before everything else) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-<!-- 2. Building + portfolio data -->
 <script src="city-data.js"></script>
-
-<!-- 3. HUD script: start-screen, loader, minimap, journey, oracle, fullmap,
-        weather, mute, proximity notification, side-panel content builders.
-        Also defines window.CityUI with openBuilding/showNotification/updateHUD.
-        Global shim at end exposes closeSP/openJourney/etc. to onclick= handlers. -->
 <script src="city-hud.js"></script>
 
-<!-- 4. Progress bridge — city-hud.js defines window.onCityProgress but we
-        override here so the modular engine can also drive the loader bar. -->
 <script>
+// ── PROGRESS BRIDGE ───────────────────────────────────────────────────────────
 (function() {
   const _orig = window.onCityProgress;
   window.onCityProgress = function(pct, msg) {
-    // Drive city-hud.js loader
     if (typeof _orig === 'function') _orig(pct, msg);
-    // Also drive the grip-hud visibility after load
     if (pct >= 100) {
       const gripHud = document.getElementById('grip-hud');
-      if (gripHud) gripHud.style.display = 'none'; // hidden until weather changes
+      if (gripHud) gripHud.style.display = 'none';
     }
   };
 })();
 </script>
 
-<!-- 5. Modular engine (ES module — loads asynchronously, exposes window.CityEngine) -->
 <script type="module" src="./src/main.js"></script>
 
-<!-- 6. Mobile joystick — must run after DOM ready -->
 <script>
+// ═════════════════════════════════════════════════════════════════════════════
+// MOBILE SUPPORT — detects touch device, shows joystick, handles portrait lock
+// ═════════════════════════════════════════════════════════════════════════════
 (function() {
+
+  // ── 1. DETECT MOBILE / TOUCH ──────────────────────────────────────────────
+  const IS_TOUCH = ('ontouchstart' in window)
+                || (navigator.maxTouchPoints > 0)
+                || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  window._isMobileDevice = IS_TOUCH;
+
+  // ── 2. SHOW JOYSTICK ON TOUCH DEVICES ─────────────────────────────────────
+  if (IS_TOUCH) {
+    const joyZone = document.getElementById('joy-zone');
+    if (joyZone) joyZone.style.display = 'block';
+    // Hide desktop-only elements
+    const ctrlHint = document.getElementById('ctrl-hint');
+    if (ctrlHint) ctrlHint.style.display = 'none';
+    // Hide desktop cursor
+    const cur = document.getElementById('cur');
+    if (cur) cur.style.display = 'none';
+    // Show mobile hint, hide desktop hint
+    document.querySelectorAll('.ss-hint-desktop').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.ss-hint-mobile').forEach(el => el.style.display = 'block');
+  }
+
+  // ── 3. PORTRAIT LOCK — show when portrait + narrow (phone, not tablet) ─────
+  function checkOrientation() {
+    const isPortrait  = window.innerHeight > window.innerWidth;
+    const isNarrow    = window.innerWidth < 600;
+    const lock = document.getElementById('portrait-lock');
+    if (!lock) return;
+    if (IS_TOUCH && isPortrait && isNarrow) {
+      lock.classList.add('show');
+    } else {
+      lock.classList.remove('show');
+    }
+  }
+  checkOrientation();
+  window.addEventListener('resize',             checkOrientation);
+  window.addEventListener('orientationchange',  checkOrientation);
+
+  // ── 4. JOYSTICK ───────────────────────────────────────────────────────────
   const joyOuter = document.getElementById('joy-outer');
   const joyInner = document.getElementById('joy-inner');
   if (!joyOuter || !joyInner) return;
 
   let active = false, startX = 0, startY = 0;
-  const dead = 12, maxR = 44;
+  const DEAD = 14;    // deadzone radius (px)
+  const MAX_R = 44;   // max joystick radius (px)
 
-  function onStart(e) {
-    active = true;
-    const t = e.touches ? e.touches[0] : e;
-    startX = t.clientX; startY = t.clientY;
-    joyInner.style.transition = 'none';
-  }
-  function onMove(e) {
-    if (!active) return;
-    e.preventDefault();
-    const t = e.touches ? e.touches[0] : e;
-    let dx = t.clientX - startX, dy = t.clientY - startY;
-    const dist = Math.sqrt(dx*dx + dy*dy);
-    if (dist > maxR) { dx *= maxR/dist; dy *= maxR/dist; }
-    joyInner.style.transform = `translate(${dx}px,${dy}px)`;
-    const ax = dist > dead ? dx/maxR : 0;
-    const ay = dist > dead ? dy/maxR : 0;
-    // Push to InputController via window._touchJoy (read by InputController)
+  function pushAxis(ax, ay) {
     window._touchJoy = { ax, ay };
     const ic = window._appInstance?.input;
     if (ic) ic.touchAxis = { ax, ay };
   }
-  function onEnd() {
-    active = false;
-    joyInner.style.transition = 'transform 0.15s ease';
-    joyInner.style.transform = '';
-    window._touchJoy = { ax: 0, ay: 0 };
-    const ic = window._appInstance?.input;
-    if (ic) ic.touchAxis = { ax: 0, ay: 0 };
+
+  function onStart(e) {
+    active = true;
+    const t = e.touches ? e.touches[0] : e;
+    startX = t.clientX;
+    startY = t.clientY;
+    joyInner.style.transition = 'none';
+    // Init audio on first touch (required by browsers)
+    window._appInstance?.audio?.init?.();
   }
 
-  joyOuter.addEventListener('touchstart',  onStart, { passive: true });
-  joyOuter.addEventListener('touchmove',   onMove,  { passive: false });
-  joyOuter.addEventListener('touchend',    onEnd,   { passive: true });
-  joyOuter.addEventListener('touchcancel', onEnd,   { passive: true });
+  function onMove(e) {
+    if (!active) return;
+    e.preventDefault(); // prevents page scroll while driving
+    const t = e.touches ? e.touches[0] : e;
+    let dx = t.clientX - startX;
+    let dy = t.clientY - startY;
+    const dist = Math.hypot(dx, dy);
+    // Clamp to circle
+    if (dist > MAX_R) { dx *= MAX_R / dist; dy *= MAX_R / dist; }
+    // Move thumb visual
+    joyInner.style.transform = `translate(${dx}px, ${dy}px)`;
+    // Normalize: -1 to +1 (with deadzone)
+    const ax = dist > DEAD ? dx / MAX_R : 0;
+    const ay = dist > DEAD ? dy / MAX_R : 0;
+    pushAxis(ax, ay);
+  }
+
+  function onEnd() {
+    active = false;
+    joyInner.style.transition = 'transform 0.12s ease';
+    joyInner.style.transform  = '';
+    pushAxis(0, 0);
+  }
+
+  // Use the whole joy-zone as the touch target (larger = easier to hit)
+  const zone = document.getElementById('joy-zone');
+  zone.addEventListener('touchstart',  onStart, { passive: true  });
+  zone.addEventListener('touchmove',   onMove,  { passive: false }); // must be non-passive to preventDefault
+  zone.addEventListener('touchend',    onEnd,   { passive: true  });
+  zone.addEventListener('touchcancel', onEnd,   { passive: true  });
+
+  // ── 5. SWIPE-TO-START on start screen ─────────────────────────────────────
+  // Tap anywhere on start-screen triggers entry (city-hud.js handles this,
+  // but we add an explicit touchend to the ENTER button for reliability)
+  const enterBtn = document.getElementById('ss-enter-btn');
+  if (enterBtn) {
+    enterBtn.addEventListener('touchend', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof hideStart === 'function') hideStart();
+    }, { passive: false });
+  }
+
+  // ── 6. MOBILE HUD ADJUSTMENTS ─────────────────────────────────────────────
+  // Move speed ring up above joystick so it's not overlapped
+  if (IS_TOUCH) {
+    const hud = document.getElementById('game-hud');
+    if (hud) hud.style.bottom = '160px';
+    // Make ENTER button visible (it's hidden until proximity)
+    // mob-enter visibility is managed by showNotification/hideNotification
+    // Make oracle button bigger on mobile
+    const ob = document.getElementById('ob');
+    if (ob) {
+      ob.style.width  = '52px';
+      ob.style.height = '52px';
+      ob.style.bottom = '170px';
+      ob.style.fontSize = '22px';
+    }
+  }
+
 })();
+</script>
+
+<!-- ── KEYBOARD BINDINGS (desktop only) ──────────────────────────────────────-->
+<script>
+document.addEventListener('keydown', function(e) {
+  if (e.target.tagName === 'INPUT') return;
+  const eng = window.CityEngine;
+  if (!eng) return;
+  switch (e.code) {
+    case 'KeyT':   eng.cycleWeather?.();  break;
+    case 'KeyM':   toggleFullMap?.();     break;
+    case 'KeyJ':   openJourney?.();       break;
+    case 'Escape':
+      closeSP?.();
+      closeFullMap?.();
+      eng.resetCamera?.();
+      break;
+  }
+});
 </script>
 
 </body>
