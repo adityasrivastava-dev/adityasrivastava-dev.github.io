@@ -48,18 +48,27 @@ export default class World {
   // Called by Application tick loop
   _updateAmbients(now, dt, carX, carZ) {
     this.car.updateVisuals(dt, now);
+    // Car spawns dust in its own updateVisuals via world reference
     this.objects.updateWindSway(now);
     this.objects.updateBuildingEntities(carX, carZ, now, dt);
+    this.objects.updateEntryBursts();
     this._updateAtmosphere(now, dt);
     this._updateLighting(now, dt);
+    // Dust trail — car tells world where it is each frame
+    if (this.car.speed > 0.04) {
+      this.spawnDust(carX, carZ, this.car.speed);
+    }
   }
 
   // ── LIGHTING ─────────────────────────────────────────────────────────────
   _buildLighting() {
     const s = this.scene;
+
+    // Sky/ground gradient — warm zenith, violet ground
     this.hemiLight = new THREE.HemisphereLight(0xffe8aa, 0x7755aa, 1.2);
     s.add(this.hemiLight);
 
+    // Key sun — high-angle, warm gold, strong shadows
     this.sunLight = new THREE.DirectionalLight(0xffe088, 3.8);
     this.sunLight.position.set(55, 95, 25);
     this.sunLight.castShadow = true;
@@ -72,10 +81,40 @@ export default class World {
     this.sunLight.shadow.bias = -0.0003;
     s.add(this.sunLight);
 
+    // Cool fill from opposite side — creates warm/cool contrast on all faces
     this.fillLight = new THREE.DirectionalLight(0x8866cc, 0.75);
-    this.fillLight.position.set(-70, 40, -30); s.add(this.fillLight);
+    this.fillLight.position.set(-70, 40, -30);
+    s.add(this.fillLight);
 
-    this.ambLight = new THREE.AmbientLight(0xffcc77, 0.65); s.add(this.ambLight);
+    // Rim/back light — low, warm amber, from behind the city
+    // Creates edge separation between objects and sky (key for 3D depth reading)
+    this.rimLight = new THREE.DirectionalLight(0xff9944, 0.55);
+    this.rimLight.position.set(0, 12, 120);
+    s.add(this.rimLight);
+
+    // Ground bounce — very subtle warm scatter from red earth
+    this.bounceLight = new THREE.DirectionalLight(0xcc6633, 0.18);
+    this.bounceLight.position.set(0, -1, 0);
+    s.add(this.bounceLight);
+
+    // Ambient — low so shadows have real depth
+    this.ambLight = new THREE.AmbientLight(0xffcc77, 0.65);
+    s.add(this.ambLight);
+
+    // Deity spotlight — rotates slowly around the city center
+    // Creates the "holy light sweeping the temples" effect. Dramatic.
+    this.deitySpot = new THREE.SpotLight(0xffeedd, 2.2, 220, Math.PI * 0.12, 0.5, 1.2);
+    this.deitySpot.position.set(80, 90, -20);
+    this.deitySpotTarget = new THREE.Object3D();
+    this.deitySpotTarget.position.set(0, 0, 0);
+    s.add(this.deitySpotTarget);
+    this.deitySpot.target = this.deitySpotTarget;
+    s.add(this.deitySpot);
+
+    // Central ground glow — warm pooling light at origin for the intro wow moment
+    this.originGlow = new THREE.PointLight(0xffcc88, 0, 55);
+    this.originGlow.position.set(0, 2, 0);
+    s.add(this.originGlow);
   }
 
   applyWeather(w) {
@@ -90,11 +129,13 @@ export default class World {
     const cfg = cfgs[w] || cfgs.day;
     this.scene.background = new THREE.Color(cfg.bg);
     this.scene.fog = new THREE.FogExp2(cfg.fog, cfg.fogD);
-    if (this.sunLight)  { this.sunLight.color.set(cfg.sun);   this.sunLight.intensity  = cfg.sunI;  }
-    if (this.fillLight) { this.fillLight.color.set(cfg.fill); this.fillLight.intensity = cfg.fillI; }
-    if (this.ambLight)  { this.ambLight.color.set(cfg.amb);   this.ambLight.intensity  = cfg.ambI;  }
+    if (this.sunLight)    { this.sunLight.color.set(cfg.sun);   this.sunLight.intensity  = cfg.sunI;   }
+    if (this.fillLight)   { this.fillLight.color.set(cfg.fill); this.fillLight.intensity = cfg.fillI;  }
+    if (this.ambLight)    { this.ambLight.color.set(cfg.amb);   this.ambLight.intensity  = cfg.ambI;   }
+    if (this.rimLight)    { this.rimLight.intensity   = cfg.sunI * 0.14; }
+    if (this.bounceLight) { this.bounceLight.intensity = w === 'night' ? 0 : 0.18; }
+    if (this.deitySpot)   { this.deitySpot.intensity   = w === 'night' ? 3.5 : 2.2; }
     this.isNight = (w === 'night');
-    this.car.setNightMode(this.isNight);
     this.events.emit('weatherChange', { weather: w, isNight: this.isNight });
     const grip = { day:1,night:1,sunset:1,fog:0.72,rain:0.3,snow:0.12 };
     this.car.setWeatherGrip(grip[w] ?? 1.0);
@@ -102,8 +143,46 @@ export default class World {
 
   _updateLighting(now) {
     if (!this.sunLight) return;
+    // Sun color breathes — subtly alive, not static
     const b = Math.sin(now * 0.08 * Math.PI * 2);
     this.sunLight.color.lerp(new THREE.Color(1+b*0.04, 0.87+b*0.03, 0.53-b*0.03), 0.05);
+
+    // Deity spotlight slowly orbits the city — holy light sweeping temples
+    // Radius 100, height 90, full revolution every 80 seconds
+    if (this.deitySpot) {
+      const t = now * (Math.PI * 2 / 80);
+      this.deitySpot.position.x = Math.sin(t) * 100;
+      this.deitySpot.position.z = Math.cos(t) * 100;
+      // Pulse intensity — breathing divine light
+      this.deitySpot.intensity += (
+        (this.isNight ? 3.5 : 2.2) * (1 + Math.sin(now * 0.4) * 0.12)
+        - this.deitySpot.intensity
+      ) * 0.03;
+    }
+
+    // Island center ring — rotates and pulses opacity (alive centerpiece)
+    if (this._islandRing) {
+      this._islandRing.rotation.z = now * 0.18;
+      this._islandRing.material.opacity = 0.55 + Math.sin(now * 1.4) * 0.22;
+    }
+    if (this._islandRingOuter) {
+      this._islandRingOuter.rotation.z = -now * 0.09;
+      this._islandRingOuter.material.opacity = 0.25 + Math.sin(now * 0.8 + 1) * 0.12;
+    }
+
+    // Origin glow fades in after intro then breathes — the "heart of the city"
+    if (this.originGlow && this._originGlowTarget !== undefined) {
+      this.originGlow.intensity += (this._originGlowTarget - this.originGlow.intensity) * 0.025;
+    }
+  }
+
+  // Called by Application once intro finishes — wakes up the origin light
+  pulseOriginAwake() {
+    this._originGlowTarget = this.isNight ? 1.8 : 0.85;
+    // Surge then settle
+    if (this.originGlow) {
+      this.originGlow.intensity = this.isNight ? 4.5 : 2.2;
+    }
   }
 
   // ── GROUND (large flat plane + sandy pavement) ─────────────────────────────
@@ -143,11 +222,19 @@ export default class World {
       new THREE.MeshLambertMaterial({ color: 0xdd9977 }));
     inner.position.y = 0.5; s.add(inner);
 
-    // Glowing ground ring
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(14, 0.18, 4, 48),
-      new THREE.MeshBasicMaterial({ color: 0xddaaff, transparent: true, opacity: 0.85 }));
+    // Glowing ground ring — tracked for animation in _updateLighting
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(14, 0.18, 4, 64),
+      new THREE.MeshBasicMaterial({ color: 0xddaaff, transparent: true, opacity: 0.75 }));
     ring.rotation.x = Math.PI/2; ring.position.y = 0.72;
-    ring.userData.isRing = true; ring.userData.rotSpeed = 0.35; s.add(ring);
+    this._islandRing = ring;
+    s.add(ring);
+
+    // Outer slow ring — counter-rotates, creates depth
+    const ringOuter = new THREE.Mesh(new THREE.TorusGeometry(17.5, 0.08, 4, 64),
+      new THREE.MeshBasicMaterial({ color: 0xffcc88, transparent: true, opacity: 0.25 }));
+    ringOuter.rotation.x = Math.PI/2; ringOuter.position.y = 0.5;
+    this._islandRingOuter = ringOuter;
+    s.add(ringOuter);
 
     // Bench
     const wood = new THREE.MeshToonMaterial({ color: 0xcc8844, gradientMap: tg });
@@ -182,8 +269,9 @@ export default class World {
     }
   }
 
-  // ── ATMOSPHERE ─────────────────────────────────────────────────────────────
+  // ── ATMOSPHERE — petals, fireflies, car dust trail ─────────────────────────
   _buildAtmosphere() {
+    // ── BLOSSOM PETALS (existing, unchanged) ─────────────────────────────────
     const cnt = 500;
     const pos = new Float32Array(cnt*3), col = new Float32Array(cnt*3), vel = new Float32Array(cnt*3);
     for (let i = 0; i < cnt; i++) {
@@ -198,30 +286,131 @@ export default class World {
       else if (t<0.65){ col[i*3]=1; col[i*3+1]=0.78; col[i*3+2]=0.35; }
       else            { col[i*3]=1; col[i*3+1]=0.95; col[i*3+2]=0.55; }
     }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
-    geo.setAttribute('color',    new THREE.BufferAttribute(col,3));
-    this._petals = new THREE.Points(geo,
+    const petalGeo = new THREE.BufferGeometry();
+    petalGeo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+    petalGeo.setAttribute('color',    new THREE.BufferAttribute(col,3));
+    this._petals = new THREE.Points(petalGeo,
       new THREE.PointsMaterial({ size:0.28, vertexColors:true, transparent:true, opacity:0.75 }));
     this._petals.userData.vel = vel;
     this.scene.add(this._petals);
+
+    // ── FIREFLIES — tiny bright motes clustered near temples at night ─────────
+    // They drift slowly with sine noise, creating the "living world" feel.
+    // Gold-cyan colour range, flicker via opacity in update.
+    const FC = 120;
+    const fPos = new Float32Array(FC*3), fCol = new Float32Array(FC*3);
+    const fPhase = new Float32Array(FC); // per-firefly flicker phase offset
+    const fireTempleAreas = [
+      [45,-22],[28,35],[-55,-22],[-40,35],[0,55],[-28,-38],[0,-55],[-55,8],[55,-38],[55,8],[-22,-62],[22,-62]
+    ];
+    for (let i = 0; i < FC; i++) {
+      const area = fireTempleAreas[i % fireTempleAreas.length];
+      fPos[i*3]   = area[0] + (Math.random()-0.5)*12;
+      fPos[i*3+1] = 1.5 + Math.random()*6;
+      fPos[i*3+2] = area[1] + (Math.random()-0.5)*12;
+      fPhase[i]   = Math.random()*Math.PI*2;
+      const warm = Math.random() > 0.5;
+      fCol[i*3]   = warm ? 1   : 0.5;
+      fCol[i*3+1] = warm ? 0.9 : 0.9;
+      fCol[i*3+2] = warm ? 0.3 : 1.0;
+    }
+    const fireGeo = new THREE.BufferGeometry();
+    fireGeo.setAttribute('position', new THREE.BufferAttribute(fPos,3));
+    fireGeo.setAttribute('color',    new THREE.BufferAttribute(fCol,3));
+    this._fireflies = new THREE.Points(fireGeo,
+      new THREE.PointsMaterial({ size:0.18, vertexColors:true, transparent:true, opacity:0 }));
+    this._fireflies.userData.phase = fPhase;
+    this.scene.add(this._fireflies);
+
+    // ── CAR DUST TRAIL — small sand/dirt particles spawned behind wheels ──────
+    // Pre-allocated pool of 200 particles. Active ones have life > 0.
+    const DUST_N = 200;
+    const dPos  = new Float32Array(DUST_N*3);
+    const dLife = new Float32Array(DUST_N); // 0 = dead
+    const dVel  = new Float32Array(DUST_N*3);
+    const dustGeo = new THREE.BufferGeometry();
+    dustGeo.setAttribute('position', new THREE.BufferAttribute(dPos,3));
+    this._dustTrail = new THREE.Points(dustGeo,
+      new THREE.PointsMaterial({ color:0xddaa77, size:0.35, transparent:true, opacity:0.0, depthWrite:false }));
+    this._dustTrail.userData = { life:dLife, vel:dVel, head:0, DUST_N };
+    this.scene.add(this._dustTrail);
   }
 
   _updateAtmosphere(now) {
-    if (!this._petals) return;
-    const pos = this._petals.geometry.attributes.position.array;
-    const vel = this._petals.userData.vel;
-    for (let i = 0, n = pos.length/3; i < n; i++) {
-      pos[i*3]   += vel[i*3] + Math.sin(now*0.7+i*0.4)*0.003;
-      pos[i*3+1] += vel[i*3+1];
-      pos[i*3+2] += vel[i*3+2];
-      if (pos[i*3+1] < 0) {
-        pos[i*3]   = (Math.random()-0.5)*220;
-        pos[i*3+1] = 20+Math.random()*5;
-        pos[i*3+2] = (Math.random()-0.5)*220;
+    // ── PETALS ────────────────────────────────────────────────────────────────
+    if (this._petals) {
+      const pos = this._petals.geometry.attributes.position.array;
+      const vel = this._petals.userData.vel;
+      for (let i = 0, n = pos.length/3; i < n; i++) {
+        pos[i*3]   += vel[i*3] + Math.sin(now*0.7+i*0.4)*0.003;
+        pos[i*3+1] += vel[i*3+1];
+        pos[i*3+2] += vel[i*3+2];
+        if (pos[i*3+1] < 0) {
+          pos[i*3]   = (Math.random()-0.5)*220;
+          pos[i*3+1] = 20+Math.random()*5;
+          pos[i*3+2] = (Math.random()-0.5)*220;
+        }
       }
+      this._petals.geometry.attributes.position.needsUpdate = true;
     }
-    this._petals.geometry.attributes.position.needsUpdate = true;
+
+    // ── FIREFLIES — drift + flicker. Visible at night, fade at day ───────────
+    if (this._fireflies) {
+      const pos   = this._fireflies.geometry.attributes.position.array;
+      const phase = this._fireflies.userData.phase;
+      const n     = pos.length/3;
+      // Opacity: 0 in day, up to 0.85 at night (targets set by applyWeather)
+      const targetOp = this.isNight ? 0.82 : 0.12;
+      this._fireflies.material.opacity += (targetOp - this._fireflies.material.opacity) * 0.02;
+
+      for (let i = 0; i < n; i++) {
+        // Slow 3D drift with per-particle sine noise
+        pos[i*3]   += Math.sin(now*0.22 + phase[i])     * 0.015;
+        pos[i*3+1] += Math.sin(now*0.31 + phase[i]*1.3) * 0.008;
+        pos[i*3+2] += Math.cos(now*0.19 + phase[i]*0.7) * 0.015;
+        // Gentle vertical float — rise and stay in range 1.5–8
+        if (pos[i*3+1] > 8)  pos[i*3+1] = 1.5;
+        if (pos[i*3+1] < 0.5) pos[i*3+1] = 0.5;
+      }
+      this._fireflies.geometry.attributes.position.needsUpdate = true;
+    }
+
+    // ── DUST TRAIL — tick active particles ───────────────────────────────────
+    if (this._dustTrail) {
+      const { life, vel, DUST_N } = this._dustTrail.userData;
+      const pos = this._dustTrail.geometry.attributes.position.array;
+      let maxOp = 0;
+      for (let i = 0; i < DUST_N; i++) {
+        if (life[i] <= 0) continue;
+        life[i] -= 0.025;
+        pos[i*3]   += vel[i*3];
+        pos[i*3+1] += 0.008 + vel[i*3+1]; // drift up
+        pos[i*3+2] += vel[i*3+2];
+        maxOp = Math.max(maxOp, life[i]);
+      }
+      this._dustTrail.geometry.attributes.position.needsUpdate = true;
+      this._dustTrail.material.opacity = Math.min(0.45, maxOp * 0.45);
+    }
+  }
+
+  // Called by Car.updateVisuals() to spawn dust when moving
+  spawnDust(x, z, speed) {
+    if (!this._dustTrail || speed < 0.05) return;
+    const { life, vel, DUST_N } = this._dustTrail.userData;
+    const pos = this._dustTrail.geometry.attributes.position.array;
+    // Spawn 1-2 particles per call behind the car
+    const count = speed > 0.3 ? 2 : 1;
+    for (let s = 0; s < count; s++) {
+      const i = this._dustTrail.userData.head;
+      this._dustTrail.userData.head = (i + 1) % DUST_N;
+      pos[i*3]   = x + (Math.random()-0.5)*2.5;
+      pos[i*3+1] = 0.3 + Math.random()*0.3;
+      pos[i*3+2] = z + (Math.random()-0.5)*2.5;
+      life[i]    = 0.7 + Math.random()*0.3;
+      vel[i*3]   = (Math.random()-0.5)*0.025;
+      vel[i*3+1] = Math.random()*0.008;
+      vel[i*3+2] = (Math.random()-0.5)*0.025;
+    }
   }
 
   // ── PRAYER FLAGS ────────────────────────────────────────────────────────────

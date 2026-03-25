@@ -23,7 +23,11 @@ canvas.webgl {
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.06s linear;
-  background: radial-gradient(ellipse at center, transparent 55%, rgba(10, 5, 30, 0.85) 100%);
+  background: radial-gradient(
+    ellipse at center,
+    transparent 55%,
+    rgba(10, 5, 30, 0.85) 100%
+  );
 }
 
 /* Proximity notice alias — city-hud.js uses #prox, Application uses #proximity-notice */
@@ -58,26 +62,26 @@ canvas.webgl {
 /* ── JOYSTICK: shown by JS on touch devices ──────────────────────────────── */
 #joy-zone {
   /* Default hidden. JS sets display:block on touch devices. */
-  pointer-events: all !important;  /* must receive touch events */
-  touch-action: none;              /* prevent scroll hijack */
+  pointer-events: all !important; /* must receive touch events */
+  touch-action: none; /* prevent scroll hijack */
 }
 
 /* ── CANVAS: needs pointer-events so touch reaches the WebGL context ──────── */
 canvas.webgl {
   pointer-events: all;
-  touch-action: none;  /* prevent browser scroll/zoom on canvas */
+  touch-action: none; /* prevent browser scroll/zoom on canvas */
 }
 
 /* ── MOBILE HINT TEXT ─────────────────────────────────────────────────────── */
 .ss-hint-mobile {
   display: none; /* shown by JS on touch */
-  color: rgba(255,255,255,0.45);
+  color: rgba(255, 255, 255, 0.45);
   font-size: 11px;
   letter-spacing: 1.5px;
   margin-top: 8px;
 }
 .ss-hint-desktop {
-  color: rgba(255,255,255,0.45);
+  color: rgba(255, 255, 255, 0.45);
   font-size: 11px;
   letter-spacing: 1.5px;
   margin-top: 8px;
@@ -86,14 +90,22 @@ canvas.webgl {
 /* ── HIDE CUSTOM CURSOR ON TOUCH (pure CSS fallback) ─────────────────────── */
 @media (hover: none) and (pointer: coarse) {
   /* Touch device: hide cursor dot, show joystick, adjust layout */
-  #cur { display: none !important; }
-  * { cursor: auto !important; }
+  #cur {
+    display: none !important;
+  }
+  * {
+    cursor: auto !important;
+  }
 
   /* Joystick visible */
-  #joy-zone { display: block; }
+  #joy-zone {
+    display: block;
+  }
 
   /* ctrl-hint (keyboard) hidden */
-  #ctrl-hint { display: none !important; }
+  #ctrl-hint {
+    display: none !important;
+  }
 
   /* Minimap smaller + moved above joystick */
   #minimap {
@@ -111,7 +123,9 @@ canvas.webgl {
   }
 
   /* Skip on mobile: exit button not needed */
-  .skip-desktop { display: none !important; }
+  .skip-desktop {
+    display: none !important;
+  }
 
   /* Side panel full width on mobile */
   #side-panel {
@@ -144,18 +158,158 @@ canvas.webgl {
   }
 
   /* Speed HUD: above joystick area */
-  #game-hud { bottom: 160px !important; }
+  #game-hud {
+    bottom: 160px !important;
+  }
 }
 
 /* ── PORTRAIT LOCK ────────────────────────────────────────────────────────── */
 /* CSS also shows portrait lock as backup (JS is primary) */
 @media (hover: none) and (pointer: coarse) and (orientation: portrait) and (max-width: 600px) {
-  #portrait-lock { display: flex; }
+  #portrait-lock {
+    display: flex;
+  }
 }
 
 /* ── VERY SMALL SCREENS ───────────────────────────────────────────────────── */
 @media (max-width: 380px) {
-  #hud-tr .hb { min-width: 36px !important; font-size: 14px !important; }
-  #joy-outer { width: 90px; height: 90px; bottom: 20px; left: 20px; }
-  #mob-enter { width: 64px; height: 64px; bottom: 20px; right: 20px; }
+  #hud-tr .hb {
+    min-width: 36px !important;
+    font-size: 14px !important;
+  }
+  #joy-outer {
+    width: 90px;
+    height: 90px;
+    bottom: 20px;
+    left: 20px;
+  }
+  #mob-enter {
+    width: 64px;
+    height: 64px;
+    bottom: 20px;
+    right: 20px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FEEL ENHANCEMENTS — added for Bruno Simon-level immersion
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── SPEED VIGNETTE — tunnel-vision at high speed ─────────────────────────── */
+/* Camera.js writes to opacity directly. CSS defines the gradient shape.       */
+#speed-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 9980;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    ellipse 65% 60% at 50% 50%,
+    transparent 0%,
+    rgba(0, 0, 0, 0.88) 100%
+  );
+  transition: opacity 0.1s linear;
+}
+
+/* ── CITY BLOOM — sharper flash, slower fade ──────────────────────────────── */
+#city-bloom {
+  transition: background 0.06s ease; /* overridden per-event by JS */
+}
+
+/* ── ENTRY BURST RINGS — pure 3D geometry, no CSS needed ─────────────────── */
+
+/* ── HUD FEEL — make it look like a game, not a webpage ──────────────────── */
+/* Scan line on HUD elements for CRT feel */
+#game-hud::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(0, 0, 0, 0.04) 2px,
+    rgba(0, 0, 0, 0.04) 3px
+  );
+  pointer-events: none;
+  border-radius: 50%;
+  z-index: 1;
+}
+
+/* ── PROXIMITY NOTIFICATION — pulse border when active ───────────────────── */
+#prox.show {
+  animation: proxPulse 1.8s ease-in-out infinite;
+}
+@keyframes proxPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow: 0 0 0 3px var(--nc, rgba(0, 221, 255, 0.35));
+  }
+}
+
+/* ── START SCREEN — text appears with a cinematic fade-up ────────────────── */
+#start-screen .ss-click {
+  animation: textRise 1.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+#start-screen .ss-role {
+  animation: textRise 1.2s 0.15s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+#start-screen .ss-enter-btn {
+  animation: textRise 1.2s 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes textRise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── WEATHER TOAST — slide in from top with colour ───────────────────────── */
+#weather-toast {
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.35s ease;
+}
+
+/* ── SIDE PANEL — glass morphism depth ───────────────────────────────────── */
+#side-panel {
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+}
+
+/* ── ORACLE PANEL — glass + subtle inner glow ────────────────────────────── */
+#op {
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* ── BUTTONS — micro-interaction on tap/hover ────────────────────────────── */
+.hb {
+  transition:
+    transform 0.1s ease,
+    background 0.15s ease;
+}
+.hb:active {
+  transform: scale(0.92);
+}
+
+/* ── ENTER BUTTON — pulse when temple in range ───────────────────────────── */
+#mob-enter.vis {
+  animation: enterPulse 1.4s ease-in-out infinite;
+}
+@keyframes enterPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 221, 255, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(0, 221, 255, 0.25);
+  }
 }
