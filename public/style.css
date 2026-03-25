@@ -1,0 +1,52 @@
+/* ── style.css — supplements city-ui.css, does not duplicate it ─────────── */
+
+/* Canvas class selector for the ES module engine (city-ui.css targets bare canvas) */
+canvas.webgl {
+  pointer-events: all; /* car needs pointer events for mobile touch */
+}
+
+/* Bloom overlay (engine writes to this) — city-ui.css has .bloom-flash but not #city-bloom */
+#city-bloom {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0);
+  transition: background 0.2s ease;
+}
+
+/* Speed/input vignette — Application writes to this directly */
+#city-input-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.06s linear;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(10, 5, 30, 0.85) 100%);
+}
+
+/* Proximity notice alias — city-hud.js uses #prox, Application uses #proximity-notice */
+#proximity-notice {
+  display: none !important; /* city-hud.js #prox handles this visually */
+}
+
+/* Hidden city-ui.js DOM aliases — keep offscreen so they never flash */
+#minimap-canvas,
+#minimap-visited,
+#visited-count,
+#panel-close,
+#panel-body,
+#hud-speed,
+#hud-gear,
+#oracle-panel,
+#oracle-btn,
+#oracle-close,
+#oracle-send,
+#oracle-input,
+#oracle-msgs,
+#notice-icon,
+#notice-name,
+#notice-sub {
+  display: none !important;
+}
