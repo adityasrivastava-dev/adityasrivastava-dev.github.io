@@ -24,7 +24,10 @@ export default class Car {
     this.suspY = 0;
     this._suspVY = 0;
     this._bodyRoll = 0;
+    this._bodyPitch = 0; // initialized here — falsy-safe
     this._prevSpeed = 0;
+    this._prevVisSpeed = 0; // for brake light detection
+    this._isNight = false; // updated by setNightMode
 
     this._weatherGrip = 1.0;
     this._physics = new Physics();
@@ -121,8 +124,7 @@ export default class Car {
 
     // Body pitch — nose dips on brake, lifts on throttle (juicy!)
     const pitchTarget = (this._fwdVel > 0.01 ? -1 : 1) * this.speed * 0.6;
-    if (!this._bodyPitch) this._bodyPitch = 0;
-    this._bodyPitch += (pitchTarget - this._bodyPitch) * 0.09;
+    this._bodyPitch += (pitchTarget - this._bodyPitch) * 0.09; // initialized in constructor
     this.group.rotation.x = this._bodyPitch * 0.04;
 
     // Suspension — extra squish at high speed for road-contact feel
@@ -176,6 +178,7 @@ export default class Car {
     this._weatherGrip = grip;
   }
   setNightMode(isNight) {
+    this._isNight = isNight; // used in updateVisuals for brake light base intensity
     if (this._headLight) this._headLight.intensity = isNight ? 7 : 0;
     if (this._tailLight) this._tailLight.intensity = isNight ? 2.5 : 0;
   }
