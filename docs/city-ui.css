@@ -665,25 +665,25 @@ canvas {
 
 /* ── MOBILE OVERRIDES ── */
 @media (max-width: 640px) {
-  /* ── Mobile prox card: compact left-edge pill, never blocks center ──
-           Problem: full-width top card covered ~40% of the 3D world.
-           Fix: bottom-left compact card, auto width (content-sized),
-                no footer (mob-enter circle handles entry separately),
-                no metrics (space is precious), slim padding.
-           Result: 3D world stays visible while building name is clear.     */
+  /* ROOT CAUSE FIX: The desktop rule uses left:50% + translateX(-50%).
+           On mobile we need left:12px with NO translateX offset.
+           Every positioning property needs !important here because duplicate
+           rules later in the file can override a media query at equal specificity. */
   #prox {
-    bottom: 168px; /* above joystick zone (joystick = ~150px)  */
+    bottom: 168px !important;
     top: auto !important;
-    left: 12px;
-    right: auto;
-    width: auto;
-    max-width: 58vw; /* leaves right half clear for game view    */
-    transform: translateY(16px) scale(0.95);
-    border-radius: 8px;
+    left: 12px !important;
+    right: auto !important;
+    width: auto !important;
+    max-width: 58vw !important;
+    /* Key: NO translateX(-50%) — card is left-anchored, not center */
+    transform: translateY(16px) scale(0.95) !important;
+    border-radius: 8px !important;
   }
   #prox.show {
-    transform: translateY(0) scale(1);
-    animation: prox-spring-mobile 0.44s cubic-bezier(0.18, 1.6, 0.4, 1) forwards;
+    /* Override the desktop .show rule which adds translateX(-50%) */
+    transform: translateY(0) scale(1) !important;
+    animation: prox-spring-mobile 0.44s cubic-bezier(0.18, 1.6, 0.4, 1) forwards !important;
   }
   @keyframes prox-spring-mobile {
     0% {
@@ -708,44 +708,50 @@ canvas {
   }
   /* Trim padding so card is slim */
   .px-top {
-    padding: 7px 12px 0 13px;
+    padding: 7px 12px 0 13px !important;
   }
   .px-main {
-    padding: 6px 12px 8px 13px;
-    gap: 9px;
+    padding: 6px 12px 8px 13px !important;
+    gap: 9px !important;
   }
   .px-hint {
     display: none !important;
   }
   /* Smaller icon so card stays compact */
   .px-icon-wrap {
-    font-size: 24px;
+    font-size: 24px !important;
   }
   .px-name {
-    font-size: 15px;
-    letter-spacing: 1px;
+    font-size: 15px !important;
+    letter-spacing: 1px !important;
   }
   .px-sub {
-    font-size: 6.5px;
-    letter-spacing: 2px;
+    font-size: 6.5px !important;
+    letter-spacing: 2px !important;
   }
   .px-sys {
-    font-size: 6px;
-    letter-spacing: 3px;
+    font-size: 6px !important;
+    letter-spacing: 3px !important;
   }
   .px-dot {
-    width: 5px;
-    height: 5px;
+    width: 5px !important;
+    height: 5px !important;
   }
 }
 
-/* Landscape phone — move even lower so it clears the camera bar */
+/* Landscape phone — bottom-left, extra compact */
 @media (max-width: 900px) and (orientation: landscape) and (max-height: 500px) {
   #prox {
     bottom: 12px !important;
     top: auto !important;
     left: 12px !important;
+    right: auto !important;
     max-width: 45vw !important;
+    transform: translateY(16px) scale(0.95) !important;
+  }
+  #prox.show {
+    transform: translateY(0) scale(1) !important;
+    animation: prox-spring-mobile 0.44s cubic-bezier(0.18, 1.6, 0.4, 1) forwards !important;
   }
   .px-foot {
     display: none !important;
@@ -754,10 +760,10 @@ canvas {
     display: none !important;
   }
   .px-top {
-    padding: 5px 10px 0 11px;
+    padding: 5px 10px 0 11px !important;
   }
   .px-main {
-    padding: 5px 10px 6px 11px;
+    padding: 5px 10px 6px 11px !important;
   }
 }
 #side-panel {
@@ -2283,30 +2289,7 @@ a,
   }
 }
 
-/* ── PROXIMITY NOTIFICATION — SPRING BOUNCE ─────────────────────
-         The card overshoots its resting place, bounces back. Physics!    */
-#prox.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0) scale(1);
-  pointer-events: auto;
-  animation: prox-spring 0.52s cubic-bezier(0.18, 1.6, 0.4, 1) forwards;
-}
-@keyframes prox-spring {
-  0% {
-    transform: translateX(-50%) translateY(28px) scale(0.92);
-    opacity: 0;
-  }
-  55% {
-    transform: translateX(-50%) translateY(-7px) scale(1.02);
-    opacity: 1;
-  }
-  78% {
-    transform: translateX(-50%) translateY(3px) scale(0.99);
-  }
-  100% {
-    transform: translateX(-50%) translateY(0px) scale(1);
-  }
-}
+/* ── PROXIMITY NOTIFICATION — icon pop + bar draw (non-conflicting additions) ── */
 /* Icon POP on entry — scales up then snaps to size */
 #prox.show .px-icon {
   animation: icon-pop 0.45s cubic-bezier(0.18, 1.8, 0.4, 1) 0.08s both;

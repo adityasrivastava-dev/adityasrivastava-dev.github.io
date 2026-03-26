@@ -997,53 +997,138 @@ export default class Objects {
     });
   }
 
-  updateBuildingEntities(carX, carZ, now) {
+  updateBuildingEntities(carX, carZ, now, dt) {
+    // dt may not be passed by older call sites — default to 60fps
+    const fdt = dt && dt > 0 && dt < 0.1 ? dt : 0.016;
+
     this.buildingMeshes.forEach(({ group, building, darkMat }) => {
       const dist = Math.hypot(carX - building.pos[0], carZ - building.pos[1]);
-      const isClose = dist < 45;
       const isHero = building.isHero;
 
-      // ── IMPROVEMENT 6: Phase-offset breathing ───────────────────────────────
-      // Each building breathes at its own moment. Without phase offset all 12
-      // temples expand/contract in unison — reads as a rendering artifact.
-      // _breathPhase is seeded from world position in _buildTemple.
-      if (group._breathPhase === undefined) {
-        group._breathPhase = Math.random() * Math.PI * 2; // fallback if old build
+      // ── ZONE THRESHOLDS ─────────────────────────────────────────────────────
+      // Three distinct zones, each with its own response.
+      // HOVER  (70u): building "notices" car — subtle scale/glow before proximity
+      // CLOSE  (45u): existing isClose flag — breathe amplitude increases
+      // PROX   (32u): full proximity response — snap, glow spike, energy column
+      const HOVER_DIST = 70;
+      const CLOSE_DIST = 45;
+      const PROX_DIST = 32;
+      const isHover = dist < HOVER_DIST;
+      const isClose = dist < CLOSE_DIST;
+      const isProx = dist < PROX_DIST;
+
+      // ── SPRING STATE INIT (lazy, runs only once per building) ───────────────
+      if (group._snapScale === undefined) {
+        group._snapScale = 0; // additional scale ontop of breath
+        group._snapVel = 0; // spring velocity
+        group._inHover = false;
+        group._inProx = false;
+        group._breathPhase =
+          Math.sin(building.pos[0] * 0.41 + building.pos[1] * 0.73) *
+          Math.PI *
+          2;
+        group._presY = 1.0;
       }
+
+      // ── FIX 1 & 2: SNAP EVENTS — instant velocity spike on zone-crossing ────
+      // This is the "snap response" — the building reacts IMMEDIATELY when you
+      // enter its zone, before any smooth animation has time to run.
+      // A velocity injection into the spring means: 0 → overshoot → settle.
+      // Response time is <16ms (next frame). This is what Bruno Simon's world
+      // does — objects REACT to you, they don't just respond to distance.
+      const justEnteredHover = isHover && !group._inHover;
+      const justEnteredProx = isProx && !group._inProx;
+      const justExitedHover = !isHover && group._inHover;
+
+      if (justEnteredHover) {
+        // Building "notices" you — slight excited jump
+        group._snapVel += isHero ? 0.13 : 0.09;
+      }
+      if (justEnteredProx) {
+        // You're really close — strong snap up with bigger overshoot
+        group._snapVel += isHero ? 0.2 : 0.15;
+      }
+      if (justExitedHover) {
+        // You left — small dejected retraction
+        group._snapVel -= 0.05;
+      }
+
+      group._inHover = isHover;
+      group._inProx = isProx;
+
+      // ── FIX 3: SPRING PHYSICS for scale ─────────────────────────────────────
+      // True Hooke's law spring: F = -k*displacement - d*velocity
+      // k=42 = stiff (fast response), d=7 = moderate damping (one overshoot)
+      // Target varies by zone: further = less boost.
+      const snapTarget = isProx
+        ? isHero
+          ? 0.088
+          : 0.065
+        : isHover
+          ? isHero
+            ? 0.042
+            : 0.03
+          : 0.0;
+
+      const k = 42,
+        d = 7;
+      group._snapVel +=
+        ((snapTarget - group._snapScale) * k - group._snapVel * d) * fdt;
+      group._snapScale += group._snapVel * fdt;
+      // Safety clamp — prevents explosion if dt spikes
+      group._snapScale = Math.max(-0.08, Math.min(0.3, group._snapScale));
+
+      // ── FIX 6 (buildings): Phase-offset breathing ───────────────────────────
       const breathRate = isHero ? 0.55 : 0.45;
       const breathAmp = isClose
-        ? 0.008 + (1 - dist / 45) * (isHero ? 0.018 : 0.01)
+        ? 0.008 + (1 - dist / CLOSE_DIST) * (isHero ? 0.018 : 0.01)
         : 0.003;
       const presTarget = 1.0 + Math.max(0, 1 - dist / 65) * 0.07;
-      if (!group._presY) group._presY = 1.0;
       group._presY += (presTarget - group._presY) * 0.035;
       const pulse =
         1 +
         Math.sin(now * breathRate * Math.PI * 2 + group._breathPhase) *
           breathAmp;
-      group.scale.set(pulse, pulse * group._presY, pulse);
 
-      // ── IMPROVEMENT 4: Rim mesh pulse ────────────────────────────────────────
-      // Rim opacity breathes on its OWN slower cycle, independent of scale.
-      // At rest: very faint outline. Close proximity: glows with building color.
-      // This creates an "inner fire" read — the building is lit from within.
+      // ── COMBINED SCALE: breath × spring ─────────────────────────────────────
+      // snap scale multiplies on top of the breathing pulse.
+      // This means a building at its breath-peak gets a bigger absolute snap —
+      // it feels like the building is excited AND alive, not just mechanically scaled.
+      const totalXZ = pulse * (1 + group._snapScale);
+      const totalY = totalXZ * group._presY;
+      group.scale.set(totalXZ, totalY, totalXZ);
+
+      // ── FIX 4: RIM GLOW BOOST with hover zone ───────────────────────────────
+      // Hover zone gives a dim rim hint before proximity — the building
+      // "lights up" as you approach, not just when you're already next to it.
       if (group._rimMesh) {
         const rimBase = 0.038;
         const rimBreath =
           Math.sin(now * 0.6 + group._breathPhase * 0.5) * 0.018;
-        const rimBoost = isClose ? (1 - dist / 45) * (isHero ? 0.14 : 0.1) : 0;
-        group._rimMesh.material.opacity = rimBase + rimBreath + rimBoost;
+        const rimHoverBoost =
+          isHover && !isProx
+            ? (1 - dist / HOVER_DIST) * (isHero ? 0.07 : 0.05)
+            : 0;
+        const rimProxBoost = isProx
+          ? (1 - dist / PROX_DIST) * (isHero ? 0.16 : 0.12)
+          : 0;
+        // Snap spike: when just entering proximity, rim flares bright then settles
+        const rimSnap = Math.max(0, group._snapScale) * (isHero ? 0.5 : 0.4);
+        group._rimMesh.material.opacity =
+          rimBase + rimBreath + rimHoverBoost + rimProxBoost + rimSnap;
       }
 
-      // ── IMPROVEMENT 2: Animate dark cornice emissive ─────────────────────────
-      // The dark stone bands absorb the building's color as a slow pulse.
-      // Very subtle — think "pilot light", not "neon sign."
+      // ── EMISSIVE CORNICE — breathes + hover boost ────────────────────────────
       if (darkMat && darkMat.emissive) {
-        const emBreath = 0.5 + Math.sin(now * 0.45 + group._breathPhase) * 0.5; // 0..1
-        darkMat.emissiveIntensity = 0.55 + emBreath * (isClose ? 0.9 : 0.3);
+        const emBreath = 0.5 + Math.sin(now * 0.45 + group._breathPhase) * 0.5;
+        const emHoverBoost = isHover
+          ? (1 - dist / HOVER_DIST) * (isHero ? 0.6 : 0.4)
+          : 0;
+        darkMat.emissiveIntensity =
+          0.55 + emBreath * (isClose ? 0.9 : 0.3) + emHoverBoost;
       }
 
-      // ── VERTICAL ENERGY COLUMN — glows up from base when car is VERY close ─
+      // ── VERTICAL ENERGY COLUMN ────────────────────────────────────────────────
       if (!group._energyCol) {
         const colGeo = new THREE.CylinderGeometry(
           0.08,
@@ -1077,42 +1162,51 @@ export default class Objects {
         1 + Math.sin(now * 2.8 + building.pos[0]) * 0.3;
 
       group.children.forEach((c) => {
-        // ── PROXIMITY RING ────────────────────────────────────────────────────
+        // ── PROXIMITY RING ─────────────────────────────────────────────────────
         if (c.userData.isProxRing) {
-          const targetOp = isClose ? Math.max(0, (45 - dist) / 45) * 0.5 : 0;
+          const targetOp = isClose
+            ? Math.max(0, (CLOSE_DIST - dist) / CLOSE_DIST) * 0.5
+            : 0;
           c.material.opacity += (targetOp - c.material.opacity) * 0.08;
           if (isClose) {
-            const rs = 1 + Math.sin(now * 1.8) * (isClose ? 0.06 : 0);
+            // Ring scale snaps with the spring — they pulse together
+            const rs = 1 + Math.sin(now * 1.8) * 0.06 + group._snapScale * 0.3;
             c.scale.set(rs, 1, rs);
           }
         }
 
-        // ── HERO RINGS ────────────────────────────────────────────────────────
+        // ── HERO RINGS ─────────────────────────────────────────────────────────
         if (c.userData.heroRing) {
           const ri = c.userData.ri;
           c.rotation.z = now * (0.45 + ri * 0.22);
           c.rotation.x = Math.sin(now * 0.3 + ri) * 0.3 + Math.PI / 2;
+          if (isHover) {
+            // Rings speed up even in hover zone — they "feel" your approach
+            const hoverSpin = (1 - dist / HOVER_DIST) * 0.8;
+            c.rotation.z += hoverSpin * ri * 0.15;
+          }
           if (isClose) {
             const dx = carX - building.pos[0];
             const dz = carZ - building.pos[1];
-            const tiltAmt = Math.max(0, (45 - dist) / 45) * 0.4;
+            const tiltAmt = Math.max(0, (CLOSE_DIST - dist) / CLOSE_DIST) * 0.4;
             c.rotation.x += Math.atan2(dz, dist) * tiltAmt * 0.2;
           }
         }
 
-        // ── ORB ───────────────────────────────────────────────────────────────
+        // ── ORB ────────────────────────────────────────────────────────────────
         if (c.userData.isOrb) {
-          const orbSpeed = 0.9 + Math.max(0, (45 - dist) / 45) * 1.8;
-          const orbScale =
-            1.0 +
-            Math.max(0, (45 - dist) / 45) * 0.5 +
-            Math.sin(now * 1.2) * 0.08;
+          // Orb spins faster and grows when in hover zone, not just proximity
+          const hoverEffect = isHover
+            ? Math.max(0, (HOVER_DIST - dist) / HOVER_DIST)
+            : 0;
+          const orbSpeed = 0.9 + hoverEffect * 2.2;
+          const orbScale = 1.0 + hoverEffect * 0.6 + Math.sin(now * 1.2) * 0.08;
           c.rotation.y = now * orbSpeed;
           c.rotation.x = Math.sin(now * 0.4) * 0.3;
           c.scale.setScalar(orbScale);
         }
 
-        // ── POINT LIGHTS ──────────────────────────────────────────────────────
+        // ── POINT LIGHTS ───────────────────────────────────────────────────────
         if (c.isLight && c.type === "PointLight" && !c.userData.isLampLight) {
           const baseI = isHero
             ? this._isNight
@@ -1121,9 +1215,18 @@ export default class Objects {
             : this._isNight
               ? 2.5
               : 1.0;
-          const boost = isClose ? (1 - dist / 45) * (isHero ? 3.5 : 2.0) : 0;
+          // Light also responds to hover zone — dims up from far away
+          const hoverBoost = isHover
+            ? (1 - dist / HOVER_DIST) * (isHero ? 1.2 : 0.8)
+            : 0;
+          const proxBoost = isClose
+            ? (1 - dist / CLOSE_DIST) * (isHero ? 3.5 : 2.0)
+            : 0;
           const breathI = Math.sin(now * 0.9 + building.pos[0]) * 0.15;
-          c.intensity = baseI + boost + breathI;
+          // Snap spike: light flares on zone entry then settles with spring
+          const lightSnap =
+            Math.max(0, group._snapScale) * (isHero ? 3.0 : 2.0);
+          c.intensity = baseI + hoverBoost + proxBoost + breathI + lightSnap;
         }
       });
     });

@@ -221,15 +221,30 @@ export default class Application {
       );
     }
 
-    // E key — enter nearest temple
-    if (this.input.enter && gameStarted && GameState.mode === "ROAM") {
-      if (!this._enterCooldown) {
-        this._enterCooldown = true;
-        this._enterNearestTemple();
-        setTimeout(() => {
-          this._enterCooldown = false;
-        }, 800);
-      }
+    // ── FIX 5: ENTRY TRIGGER — edge-triggered, state-guarded ─────────────────
+    // BUG: the old system used a 800ms timer cooldown. This meant:
+    //   1. Enter building (FOCUS mode, cooldown = true)
+    //   2. Timer expires at 800ms (cooldown = false, still in FOCUS)
+    //   3. Close panel → mode = ROAM
+    //   4. E still held → re-triggers immediately
+    //
+    // FIX: Two separate guards:
+    //   A) Edge-trigger: only fires on key-DOWN, not while held.
+    //      _prevEnter tracks last frame's E state.
+    //   B) _entryLocked: set true on entry, only cleared by resetCamera().
+    //      This means E can't re-trigger until the panel is fully closed
+    //      and resetCamera() is explicitly called — no timer, no race.
+    const enterEdge = this.input.enter && !this._prevEnter;
+    this._prevEnter = this.input.enter;
+
+    if (
+      enterEdge &&
+      gameStarted &&
+      GameState.mode === "ROAM" &&
+      !this._entryLocked
+    ) {
+      this._entryLocked = true;
+      this._enterNearestTemple();
     }
 
     // ── AUDIO UPDATE (every 3rd frame) ───────────────────────────────────
@@ -326,6 +341,10 @@ export default class Application {
         GameState.mode = "ROAM";
         GameState.focusedTempleId = null;
         self.camera.returnToFollow();
+        // Unlock entry — only safe here, after the panel is fully closed.
+        // Do NOT use a timer — the user may reopen immediately after closing.
+        self._entryLocked = false;
+        self._prevEnter = true; // prevent immediate re-trigger if E still held
       },
       enterNearestBuilding() {
         self._enterNearestTemple();

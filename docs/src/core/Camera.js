@@ -225,9 +225,33 @@ export default class Camera {
     cam.position.y += this._vy * dt;
     cam.position.y = clamp(cam.position.y, 3.5, 40);
 
-    // ── IDLE BREATH — subtle life when nearly stopped ─────────────────────────
+    // ── FIX 6: MULTI-HARMONIC IDLE DRIFT ─────────────────────────────────────
+    // Old: single sine wave at 0.72Hz — reads as a mechanical oscillator.
+    // New: three offset frequencies summed — reads as a human holding a camera.
+    // Weights: 55% / 30% / 15% so it stays subtle but never feels periodic.
+    // X drift is independent from Y drift — camera wanders slightly in 2D space.
     const breathAmt = Math.max(0, 1 - speedRatio * 2.5) * 0.22;
-    cam.position.y += Math.sin(now * 0.72) * breathAmt;
+    if (breathAmt > 0.001) {
+      const driftY =
+        Math.sin(now * 0.72 + 0.0) * 0.55 * breathAmt +
+        Math.sin(now * 0.41 + 1.2) * 0.3 * breathAmt +
+        Math.sin(now * 1.13 + 2.7) * 0.15 * breathAmt;
+      const driftX =
+        Math.sin(now * 0.31 + 1.7) * 0.55 * breathAmt * 0.5 +
+        Math.sin(now * 0.73 + 0.4) * 0.3 * breathAmt * 0.5 +
+        Math.sin(now * 1.47 + 3.1) * 0.15 * breathAmt * 0.5;
+      cam.position.y += driftY;
+      cam.position.x += driftX;
+    }
+
+    // ── FIX 6: STEER LEAN MICRO-FEEDBACK at low speed ────────────────────────
+    // At high speed the corner offset + tilt already handle this.
+    // At low speed (parking, slow turns) the camera feels completely disconnected.
+    // This tiny lean at 0–30% speed makes every turn feel physically weighted.
+    if (speedRatio > 0.015 && speedRatio < 0.32) {
+      const leanStrength = (1 - speedRatio / 0.32) * 0.012;
+      cam.rotateZ(car.steer * leanStrength * dt * 60);
+    }
 
     // ── FOV SPRING — smooth widening at speed ─────────────────────────────────
     const targetFOV = lerp(CC.FOV_MIN, CC.FOV_MAX, speedRatio);
@@ -385,21 +409,25 @@ export default class Camera {
       if (this._exhaustT >= 1) this._exhausting = false;
     }
 
-    // ── SPEED SHAKE — road vibration at high speed ────────────────────────────
-    if (speedRatio > 0.3 && speedNow > 0.02) {
-      const mag = (speedRatio - 0.3) * 0.1;
-      cam.position.x += (Math.random() - 0.5) * mag;
-      cam.position.y += (Math.random() - 0.5) * mag * 0.35;
-    }
-
-    // ── MICRO-NOISE — feels physically mounted, not mathematically locked ──────
-    if (speedRatio > 0.08) {
-      const mm = speedRatio * 0.018;
-      const mt = now * 23.7;
+    // ── FIX 6: SPEED SHAKE — layered harmonics + random burst ────────────────
+    // Old: pure Math.random() at > 0.3 speed — uniform white noise, reads flat.
+    // New: deterministic harmonics at low-mid speed (road texture), plus
+    //      random burst only at high speed (hitting bumps).
+    // The two layers feel like: [smooth road hum] + [occasional sharp jolt].
+    if (speedRatio > 0.08 && speedNow > 0.02) {
+      // Deterministic road hum — sinusoidal, feels like surface texture
+      const humMag = Math.max(0, speedRatio - 0.08) * 0.028;
+      const ht = now * 18.4;
       cam.position.x +=
-        (Math.sin(mt * 1.3) * 0.5 + Math.sin(mt * 2.9) * 0.5) * mm;
+        (Math.sin(ht * 1.0) * 0.6 + Math.sin(ht * 2.3) * 0.4) * humMag;
       cam.position.y +=
-        (Math.sin(mt * 1.7) * 0.5 + Math.sin(mt * 3.1) * 0.5) * mm * 0.4;
+        (Math.sin(ht * 1.5) * 0.5 + Math.sin(ht * 3.1) * 0.5) * humMag * 0.4;
+    }
+    if (speedRatio > 0.42 && speedNow > 0.02) {
+      // Random jolt burst — only at high speed, simulates hitting a bump
+      const bumpMag = (speedRatio - 0.42) * 0.065;
+      cam.position.x += (Math.random() - 0.5) * bumpMag;
+      cam.position.y += (Math.random() - 0.5) * bumpMag * 0.35;
     }
 
     // ── CRASH SHAKE DECAY ─────────────────────────────────────────────────────
