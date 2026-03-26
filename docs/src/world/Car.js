@@ -332,136 +332,181 @@ export default class Car {
   _buildMesh() {
     const g = new THREE.Group();
 
-    // ── MATERIALS — Bruno Simon dark Jeep palette ─────────────────────────────
-    // Bruno's car is almost black with deep red/orange accents.
-    // The dark body makes it read immediately against the warm orange world.
-    const mBody = this._mc("car", 0xcc1100); // deep red body
-    const mTop = this._mc("carDark", 0x1a1208); // near-black cab top
-    const mBlack = this._mc("dark", 0x0e0c0a); // deep black chassis
-    const mDark2 = this._mc("dark", 0x221510); // dark-dark body panels
-    const mChrome = this._mc("chrome", 0x998877); // warm chrome trim
-    const mTyre = this._mc("tyre", 0x100e0c); // near-black tyre
-    const mRim = this._mc("dark", 0x1a1410); // very dark rim
+    // ── MATERIALS — exact Bruno Simon palette from screenshots ────────────────
+    //
+    // Image analysis:
+    //  Body:     bright red          #cc2200
+    //  Cab top:  dark military green #2a3318  ← key difference, NOT black
+    //  Chassis:  dark olive          #1a2010
+    //  Rims:     RED matching body   #cc2200  ← rims are red, not dark
+    //  Tyres:    near-black rubber   #0e0c0a
+    //  Chrome:   warm silver         #887766
+    //  Glass:    dark tinted blue    #223344
+    //
+    const mBody = this._mc("car", 0xcc2200); // bright red body
+    const mTop = this._mc("carDark", 0x2a3318); // dark military olive GREEN cab
+    const mChassis = this._mc("dark", 0x1a2010); // dark olive chassis/underbody
+    const mBlack = this._mc("dark", 0x0e0c0a); // near-black details
+    const mRim = this._mc("car", 0xcc2200); // RED rims — matches body
+    const mTyre = this._mc("tyre", 0x0e0c0a); // near-black rubber
+    const mChrome = this._mc("chrome", 0x887766); // warm silver trim
     const mGlass = new THREE.MeshMatcapMaterial({
-      color: 0x334466,
+      color: 0x223344,
       matcap: (window._matcaps || {}).glass,
       transparent: true,
-      opacity: 0.55,
+      opacity: 0.6,
     });
-    const mAccent = new THREE.MeshBasicMaterial({ color: 0xff2200 }); // red accents
+    // Headlight glow material — amber yellow (from image 3)
+    const mHeadlight = new THREE.MeshBasicMaterial({ color: 0xffcc44 });
+    // White LED strip material for roof lights
+    const mLED = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
-    // ── DIMENSIONS — exaggerated toy proportions ──────────────────────────────
-    // Bruno's signature: wheels are HUGE (almost as tall as the car body),
-    // body is WIDE and FLAT, cabin is SHORT and pushed back.
-    // This makes the car read as a designed toy object, not a model.
-    const WR = 0.72; // wheel radius — very large (was 0.58)
-    const WW = 0.58; // wheel width — chunky (was 0.46)
-    const WTX = 1.38; // wheel track X — wider stance (was 1.22)
-    const WFZ = 1.65; // front wheel Z (was 1.55)
-    const WRZ = -1.65; // rear wheel Z (was -1.55)
-    const AXH = WR; // axle height = wheel radius
+    // ── DIMENSIONS — Hummer H1 toy proportions ────────────────────────────────
+    // From images: almost as wide as long, extremely flat body,
+    // massive wheels that are nearly as tall as the body
+    const WR = 0.75; // wheel radius — massive
+    const WW = 0.62; // wheel width — very chunky
+    const WTX = 1.45; // wheel track — extreme width stance
+    const WFZ = 1.72; // front axle Z
+    const WRZ = -1.72; // rear axle Z
+    const AXH = WR;
 
-    // Body dimensions — wider, flatter
+    // Body — extremely wide and flat (Hummer H1)
     const BY = AXH + 0.02;
-    const BH = 0.42; // body height (flatter = more toy-like)
-    const BW = 1.9; // body width — WIDE (was 1.58)
-    const BD = 3.2; // body length (was 2.95)
+    const BH = 0.4; // very flat body
+    const BW = 2.05; // extremely wide
+    const BD = 3.4; // long
 
-    // Cabin — short, pushed back, chunky
+    // Cab — short, boxy, pushed rearward
     const CY = BY + BH;
-    const CH = 0.58; // cabin height
-    const CW = 1.62; // cabin width
-    const CD = 1.5; // cabin depth (short)
-    const CZ = -0.3; // cabin offset backward
+    const CH = 0.64; // tall cabin for headroom
+    const CW = 1.7; // wide cabin
+    const CD = 1.65; // short depth
+    const CZ = -0.22; // slightly toward rear
     const RY = CY + CH;
 
-    // ── UNDERBODY ─────────────────────────────────────────────────────────────
-    g.add(this._box(BW + 0.08, 0.12, BD, mBlack, 0, AXH + 0.06, 0));
+    // ── CHASSIS / SKID PLATE ─────────────────────────────────────────────────
+    g.add(this._box(BW + 0.12, 0.14, BD + 0.06, mChassis, 0, AXH + 0.06, 0));
+    // Skid plate — visible flat plate under front
+    g.add(
+      this._box(
+        BW * 0.88,
+        0.06,
+        BD * 0.28,
+        mBlack,
+        0,
+        AXH + 0.02,
+        WFZ - BD * 0.06,
+      ),
+    );
 
     // ── MAIN BODY ─────────────────────────────────────────────────────────────
     const body = this._box(BW, BH, BD, mBody, 0, BY + BH / 2, 0);
     g.add(body);
     this.bodyMesh = body;
 
-    // Body side detail strips — dark panel lines for visual depth
+    // Body lower step — recessed sill between wheel arches
     for (const sx of [-1, 1]) {
-      // Lower side stripe — darker tone
-      g.add(
-        this._box(
-          0.06,
-          BH * 0.55,
-          BD * 0.92,
-          mDark2,
-          sx * (BW / 2 + 0.025),
-          BY + BH * 0.28,
-          0,
-        ),
-      );
-      // Upper body flare
+      // Deep side panel between wheel arches — darker inset creates depth
       g.add(
         this._box(
           0.08,
-          BH * 0.3,
-          BD * 0.7,
-          mBlack,
-          sx * (BW / 2 + 0.02),
-          BY + BH * 0.75,
+          BH * 0.62,
+          BD * 0.36,
+          mChassis,
+          sx * (BW / 2 + 0.03),
+          BY + BH * 0.32,
           0,
+        ),
+      );
+      // Upper body crease line (body color — slight protrusion)
+      g.add(
+        this._box(
+          0.05,
+          0.07,
+          BD * 0.78,
+          mBody,
+          sx * (BW / 2 + 0.02),
+          BY + BH * 0.82,
+          0,
+        ),
+      );
+      // Door handle recess (dark strip mid-height)
+      g.add(
+        this._box(
+          0.04,
+          0.08,
+          0.55,
+          mBlack,
+          sx * (BW / 2 + 0.03),
+          BY + BH * 0.55,
+          -0.1,
         ),
       );
     }
 
-    // Flat hood — slightly raised above body front
+    // Hood — flat panel, slightly raised center spine (visible in Image 3)
     g.add(
       this._box(
-        BW * 0.85,
-        0.06,
-        BD * 0.32,
-        mDark2,
+        BW * 0.82,
+        0.07,
+        BD * 0.3,
+        mBody,
         0,
-        BY + BH + 0.01,
-        WFZ - BD * 0.08,
+        BY + BH + 0.035,
+        WFZ - BD * 0.07,
+      ),
+    );
+    // Hood center spine
+    g.add(
+      this._box(
+        BW * 0.12,
+        0.11,
+        BD * 0.3,
+        mTop,
+        0,
+        BY + BH + 0.055,
+        WFZ - BD * 0.07,
       ),
     );
 
-    // Front overhang / snout
-    g.add(
-      this._box(
-        BW * 0.88,
-        BH * 0.45,
-        0.22,
-        mBlack,
-        0,
-        BY + BH * 0.22,
-        WFZ + BD / 2 + 0.08,
-      ),
-    );
-
-    // ── WHEEL ARCHES — very pronounced, Bruno style ───────────────────────────
-    // These are the big black rounded arches that make wheels look huge
+    // ── WHEEL ARCH FLARES — very square and blocky like Bruno's ─────────────
+    // Bruno's arches are thick rectangular slabs, not rounded
     for (const wz of [WFZ * 0.62, WRZ * 0.62]) {
       for (const sx of [-1, 1]) {
-        // Main arch panel
+        // Main arch slab — very wide overhanging the tyre
         g.add(
           this._box(
-            0.28,
-            WR * 1.05,
-            1.35,
-            mBlack,
-            sx * (BW / 2 + 0.12),
-            BY + WR * 0.25,
+            0.32,
+            WR * 1.08,
+            1.58,
+            mBody,
+            sx * (BW / 2 + 0.14),
+            BY + WR * 0.3,
             wz,
           ),
         );
-        // Arch lip
+        // Arch outer lip (dark trim)
         g.add(
           this._box(
-            0.12,
+            0.1,
+            0.1,
+            1.6,
+            mBlack,
+            sx * (BW / 2 + 0.28),
+            BY + WR * 1.02,
+            wz,
+          ),
+        );
+        // Arch inner structure
+        g.add(
+          this._box(
             0.08,
-            1.42,
-            mDark2,
-            sx * (BW / 2 + 0.22),
-            BY + WR * 0.95,
+            WR * 0.75,
+            1.58,
+            mChassis,
+            sx * (BW / 2 + 0.06),
+            BY + WR * 0.2,
             wz,
           ),
         );
@@ -469,169 +514,212 @@ export default class Car {
     }
 
     // ── CABIN ─────────────────────────────────────────────────────────────────
-    // Near-black top — Bruno's car has a very dark cab that reads as a solid
-    // black shape against the body color
+    // Dark military olive — clearly NOT black from all three images
     g.add(this._box(CW, CH, CD, mTop, 0, CY + CH / 2, CZ));
 
-    // Roof — flat with slight overhang
-    g.add(this._box(CW + 0.12, 0.09, CD + 0.14, mBlack, 0, RY + 0.045, CZ));
+    // Cabin lower sill (body-color band where cab meets body)
+    g.add(this._box(CW + 0.06, 0.09, CD + 0.04, mBody, 0, CY + 0.045, CZ));
 
-    // ── ROOF RACK — Bruno's car has visible roof rack bars ────────────────────
-    const rackMat = mChrome;
-    for (const rz of [-0.45, 0, 0.45]) {
-      g.add(this._box(CW * 0.78, 0.055, 0.055, rackMat, 0, RY + 0.12, CZ + rz));
-    }
+    // Roof panel — flat, same olive green
+    g.add(this._box(CW + 0.1, 0.1, CD + 0.1, mTop, 0, RY + 0.05, CZ));
+
+    // ── ROOF RACK + LED LIGHT BARS ────────────────────────────────────────────
+    // Image 3 clearly shows 4 horizontal LED bar strips across the roof
+    // with warm white glow
+    const rackY = RY + 0.14;
     // Side rails
     for (const sx of [-1, 1]) {
       g.add(
-        this._box(
-          0.055,
-          0.055,
-          CD * 0.78,
-          rackMat,
-          sx * CW * 0.36,
-          RY + 0.12,
-          CZ,
-        ),
+        this._box(0.055, 0.055, CD * 0.88, mChrome, sx * CW * 0.42, rackY, CZ),
       );
+    }
+    // 4 LED crossbars with glowing white strips
+    for (const rz of [-0.52, -0.18, 0.18, 0.52]) {
+      // Crossbar structure
+      g.add(this._box(CW * 0.84, 0.06, 0.07, mChrome, 0, rackY, CZ + rz));
+      // LED strip (white emissive)
+      g.add(this._box(CW * 0.8, 0.04, 0.05, mLED, 0, rackY + 0.04, CZ + rz));
     }
 
     // ── WINDSHIELDS ───────────────────────────────────────────────────────────
-    // Front — angled
     const wsF = this._box(
-      CW - 0.1,
-      CH * 0.8,
+      CW - 0.14,
+      CH * 0.76,
       0.07,
       mGlass,
       0,
-      CY + CH * 0.47,
+      CY + CH * 0.46,
       CZ + CD / 2 + 0.01,
     );
-    wsF.rotation.x = 0.28;
+    wsF.rotation.x = 0.3;
     g.add(wsF);
 
-    // Rear — slight angle
     const wsR = this._box(
-      CW - 0.1,
-      CH * 0.72,
+      CW - 0.14,
+      CH * 0.68,
       0.07,
       mGlass,
       0,
-      CY + CH * 0.44,
+      CY + CH * 0.42,
       CZ - CD / 2 - 0.01,
     );
-    wsR.rotation.x = -0.2;
+    wsR.rotation.x = -0.22;
     g.add(wsR);
 
-    // Side windows
+    // Side windows (2 per side — front + rear quarter)
     for (const sx of [-1, 1]) {
+      // Main side window
       g.add(
         this._box(
-          0.06,
-          CH * 0.7,
-          CD * 0.72,
+          0.065,
+          CH * 0.68,
+          CD * 0.55,
           mGlass,
-          sx * (CW / 2 + 0.02),
+          sx * (CW / 2 + 0.025),
           CY + CH * 0.5,
           CZ,
         ),
       );
-    }
-
-    // A-pillars (front window frame)
-    for (const sx of [-1, 1]) {
+      // Rear quarter window (smaller)
       g.add(
         this._box(
-          0.06,
-          CH * 0.82,
-          0.06,
-          mTop,
-          sx * (CW / 2 - 0.06),
-          CY + CH * 0.5,
-          CZ + CD / 2,
+          0.065,
+          CH * 0.54,
+          CD * 0.26,
+          mGlass,
+          sx * (CW / 2 + 0.025),
+          CY + CH * 0.46,
+          CZ - CD * 0.34,
         ),
       );
     }
 
-    // ── FRONT DETAILS ─────────────────────────────────────────────────────────
-    // Grille — wide dark panel
+    // B-pillar (dark divider between windows)
+    for (const sx of [-1, 1]) {
+      g.add(
+        this._box(
+          0.065,
+          CH * 0.68,
+          0.1,
+          mTop,
+          sx * (CW / 2 + 0.025),
+          CY + CH * 0.5,
+          CZ - CD * 0.05,
+        ),
+      );
+    }
+
+    // ── FRONT FACE — the most distinctive part of Bruno's car ─────────────────
+    // Large square headlight pods with amber glow, small LED accents
+
+    // Main front panel (dark)
     g.add(
       this._box(
-        BW * 0.72,
-        BH * 0.55,
-        0.08,
-        mBlack,
+        BW * 0.78,
+        BH * 0.68,
+        0.1,
+        mChassis,
         0,
-        BY + BH * 0.3,
+        BY + BH * 0.36,
         WFZ + BD / 2,
       ),
     );
 
-    // Headlight housings — rectangular blocks
-    for (const hx of [-0.62, 0.62]) {
-      // Housing
+    // Upper grille opening (dark mesh appearance)
+    g.add(
+      this._box(
+        BW * 0.6,
+        BH * 0.28,
+        0.09,
+        mBlack,
+        0,
+        BY + BH * 0.62,
+        WFZ + BD / 2 + 0.01,
+      ),
+    );
+
+    // TWO LARGE RECTANGULAR HEADLIGHT PODS — from Image 3, these are BIG blocks
+    for (const hx of [-0.58, 0.58]) {
+      // Housing block (dark)
       g.add(
         this._box(
-          0.32,
-          0.18,
-          0.07,
+          0.42,
+          0.24,
+          0.09,
           mBlack,
           hx,
-          BY + BH * 0.68,
+          BY + BH * 0.6,
           WFZ + BD / 2 + 0.01,
         ),
       );
-      // Light face
+      // Amber lens — glowing rectangular face
       const lens = new THREE.Mesh(
-        new THREE.BoxGeometry(0.26, 0.12, 0.03),
-        new THREE.MeshBasicMaterial({ color: 0xffeebb }),
+        new THREE.BoxGeometry(0.34, 0.17, 0.05),
+        mHeadlight,
       );
-      lens.position.set(hx, BY + BH * 0.68, WFZ + BD / 2 + 0.05);
+      lens.position.set(hx, BY + BH * 0.6, WFZ + BD / 2 + 0.07);
       g.add(lens);
     }
 
-    // Low front splitter
+    // Small LED accent dots across bumper (visible in Image 1 — row of 4 dots)
+    for (let di = 0; di < 4; di++) {
+      const dx = -0.45 + di * 0.3;
+      const dot = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.04), mLED);
+      dot.position.set(dx, BY + BH * 0.18, WFZ + BD / 2 + 0.07);
+      g.add(dot);
+    }
+
+    // Front bumper — wide low slab
     g.add(
       this._box(
         BW + 0.06,
-        0.09,
-        0.18,
-        mBlack,
+        0.26,
+        0.22,
+        mChassis,
         0,
-        AXH + 0.05,
+        BY + 0.13,
         WFZ + BD / 2 + 0.06,
       ),
     );
-
-    // ── REAR DETAILS ──────────────────────────────────────────────────────────
-    // Spare tyre mount (Bruno's Jeep has this) — circular on rear
-    const spareTyre = new THREE.Mesh(
-      new THREE.CylinderGeometry(WR * 0.62, WR * 0.62, WW * 0.55, 12),
-      mTyre,
-    );
-    spareTyre.rotation.z = Math.PI / 2;
-    spareTyre.position.set(0, BY + BH * 0.5, WRZ - BD / 2 - 0.26);
-    g.add(spareTyre);
-    // Spare tyre bracket
+    // Bumper lower guard bar
     g.add(
       this._box(
+        BW * 0.7,
+        0.07,
         0.08,
-        BH * 0.7,
-        0.08,
-        mBlack,
+        mChrome,
         0,
-        BY + BH * 0.5,
-        WRZ - BD / 2 - 0.06,
+        BY - 0.04,
+        WFZ + BD / 2 + 0.12,
       ),
     );
 
-    // Tail lights — horizontal strip
-    for (const tx of [-0.5, 0.5]) {
+    // ── REAR FACE ─────────────────────────────────────────────────────────────
+    // Spare tyre mount on rear door (Image 1)
+    const spareTyre = new THREE.Mesh(
+      new THREE.CylinderGeometry(WR * 0.6, WR * 0.6, WW * 0.45, 12),
+      mTyre,
+    );
+    spareTyre.rotation.z = Math.PI / 2;
+    spareTyre.position.set(0, BY + BH * 0.55, WRZ - BD / 2 - 0.22);
+    g.add(spareTyre);
+
+    // Spare tyre rim
+    const spareRim = new THREE.Mesh(
+      new THREE.CylinderGeometry(WR * 0.44, WR * 0.44, WW * 0.28, 10),
+      mRim,
+    );
+    spareRim.rotation.z = Math.PI / 2;
+    spareRim.position.set(0, BY + BH * 0.55, WRZ - BD / 2 - 0.22);
+    g.add(spareRim);
+
+    // Tail lights — red horizontal strip
+    for (const tx of [-0.55, 0.55]) {
       const tl = new THREE.Mesh(
-        new THREE.BoxGeometry(0.45, 0.09, 0.04),
-        new THREE.MeshBasicMaterial({ color: 0xff1800 }),
+        new THREE.BoxGeometry(0.38, 0.1, 0.04),
+        new THREE.MeshBasicMaterial({ color: 0xff1100 }),
       );
-      tl.position.set(tx, BY + BH * 0.75, WRZ - BD / 2 - 0.02);
+      tl.position.set(tx, BY + BH * 0.78, WRZ - BD / 2 - 0.02);
       g.add(tl);
     }
 
@@ -639,32 +727,38 @@ export default class Car {
     g.add(
       this._box(
         BW + 0.06,
-        0.22,
-        0.17,
-        mBlack,
+        0.24,
+        0.18,
+        mChassis,
         0,
-        BY + 0.11,
-        WRZ - BD / 2 - 0.04,
+        BY + 0.12,
+        WRZ - BD / 2 - 0.05,
       ),
     );
 
-    // ── ENGINE UNDERGLOW — magenta like Bruno's ───────────────────────────────
-    // Bruno's car has that distinctive pink/magenta light underneath
-    this._engGlow = new THREE.PointLight(0xff44aa, 0.6, 4.5);
-    this._engGlow.position.set(0, 0.2, 0);
+    // Rear tow hook
+    g.add(
+      this._box(0.24, 0.1, 0.18, mChrome, 0, BY - 0.02, WRZ - BD / 2 - 0.12),
+    );
+
+    // ── ENGINE UNDERGLOW — magenta/pink from beneath (Image 1 shows this) ─────
+    this._engGlow = new THREE.PointLight(0xff44aa, 0.75, 5.0);
+    this._engGlow.position.set(0, 0.15, 0);
     g.add(this._engGlow);
 
     // Car lights
-    this._headLight = new THREE.PointLight(0xffe8aa, 0, 16);
-    this._headLight.position.set(0, BY + BH * 0.5, WFZ + BD / 2 + 1.2);
+    this._headLight = new THREE.PointLight(0xffcc44, 0, 18);
+    this._headLight.position.set(0, BY + BH * 0.5, WFZ + BD / 2 + 1.5);
     g.add(this._headLight);
-    this._tailLight = new THREE.PointLight(0xff1800, 0, 8);
-    this._tailLight.position.set(0, BY + BH * 0.7, WRZ - BD / 2 - 1.0);
+    this._tailLight = new THREE.PointLight(0xff1100, 0, 9);
+    this._tailLight.position.set(0, BY + BH * 0.7, WRZ - BD / 2 - 1.2);
     g.add(this._tailLight);
 
-    // ── WHEELS x4 — massive, chunky, minimal spokes ───────────────────────────
-    // Bruno's wheels are the most prominent feature — nearly as wide as they
-    // are tall, with thick chunky tread. Almost no spokes visible.
+    // ── WHEELS x4 — very large, chunky, RED rims clearly visible ─────────────
+    // CRITICAL FIX: The rim must be a flat DISC at the OUTER FACE of the tyre.
+    // Old mistake: rim was a cylinder centered at wheel X=0, completely hidden
+    // inside the tyre width. Bruno's red rims are visible because they stick
+    // out as flat faces on the outside of each wheel.
     [
       [WTX, AXH, WFZ, false],
       [-WTX, AXH, WFZ, true],
@@ -678,63 +772,81 @@ export default class Car {
       wg.add(sg);
       this.wheelGroups.push(sg);
 
-      // ── TYRE — very chunky ─────────────────────────────────────────────────
+      // Outer face X position — this is where the rim face sits
+      const outerX = isLeft ? -(WW / 2) : WW / 2;
+
+      // ── TYRE — wide and chunky ───────────────────────────────────────────────
       const tyre = new THREE.Mesh(
-        new THREE.CylinderGeometry(WR, WR, WW, 16),
+        new THREE.CylinderGeometry(WR, WR, WW, 14),
         mTyre,
       );
       tyre.rotation.z = Math.PI / 2;
       sg.add(tyre);
 
-      // Tyre tread ridge (outer ring slightly larger)
+      // Tyre outer edge band (tread ridge, slightly larger ring at midline)
       const tread = new THREE.Mesh(
-        new THREE.CylinderGeometry(WR + 0.025, WR + 0.025, WW * 0.55, 16),
+        new THREE.CylinderGeometry(WR + 0.04, WR + 0.04, WW * 0.35, 14),
         mBlack,
       );
       tread.rotation.z = Math.PI / 2;
       sg.add(tread);
 
-      // ── RIM — dark and minimal ─────────────────────────────────────────────
-      // Bruno's rims are very dark, almost black — barely visible
-      const outerX = isLeft ? -(WW / 2 + 0.01) : WW / 2 + 0.01;
-
-      const rim = new THREE.Mesh(
-        new THREE.CylinderGeometry(WR * 0.68, WR * 0.68, WW * 0.48, 12),
+      // ── RIM OUTER DISC — RED, sits at outer face of tyre ─────────────────────
+      // This is what makes the rim visible. A flat disc at outerX, full radius.
+      const rimDisc = new THREE.Mesh(
+        new THREE.CylinderGeometry(WR * 0.88, WR * 0.88, 0.06, 12),
         mRim,
       );
-      rim.rotation.z = Math.PI / 2;
-      sg.add(rim);
+      rimDisc.rotation.z = Math.PI / 2;
+      rimDisc.position.x = outerX - (isLeft ? -0.01 : 0.01);
+      sg.add(rimDisc);
 
-      // Hub cap
-      const hub = new THREE.Mesh(
-        new THREE.CylinderGeometry(WR * 0.28, WR * 0.28, 0.07, 10),
-        mChrome,
+      // ── RIM INNER DISH — recessed red showing depth ───────────────────────────
+      const rimDish = new THREE.Mesh(
+        new THREE.CylinderGeometry(WR * 0.68, WR * 0.68, WW * 0.55, 12),
+        mRim,
       );
-      hub.rotation.z = Math.PI / 2;
-      hub.position.x = outerX;
-      sg.add(hub);
+      rimDish.rotation.z = Math.PI / 2;
+      sg.add(rimDish);
 
-      // 4 chunky spoke blocks — visible but simple
+      // Rim inner fill (slightly darker to show depth)
+      const rimInner = new THREE.Mesh(
+        new THREE.CylinderGeometry(WR * 0.44, WR * 0.44, WW * 0.4, 10),
+        mBody,
+      );
+      rimInner.rotation.z = Math.PI / 2;
+      sg.add(rimInner);
+
+      // ── SPOKES — 4 wide chunky (Hummer style) ─────────────────────────────────
       for (let s = 0; s < 4; s++) {
         const spoke = new THREE.Mesh(
-          new THREE.BoxGeometry(0.08, WR * 1.08, WW * 0.2),
-          mRim,
+          new THREE.BoxGeometry(0.11, WR * 1.05, WW * 0.22),
+          mBody,
         );
         spoke.rotation.x = (s / 4) * Math.PI * 2;
-        spoke.position.x = outerX;
+        spoke.position.x = outerX - (isLeft ? -0.02 : 0.02);
         sg.add(spoke);
       }
 
-      // Lug nuts
+      // ── HUB — chrome center cap ────────────────────────────────────────────────
+      const hub = new THREE.Mesh(
+        new THREE.CylinderGeometry(WR * 0.2, WR * 0.2, 0.08, 8),
+        mChrome,
+      );
+      hub.rotation.z = Math.PI / 2;
+      hub.position.x = outerX + (isLeft ? -0.02 : 0.02);
+      sg.add(hub);
+
+      // ── 5 LUG NUTS — chrome, visible on outer face ────────────────────────────
       for (let s = 0; s < 5; s++) {
         const ang = (s / 5) * Math.PI * 2;
         const lug = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.055, 0.055, 0.06, 6),
+          new THREE.CylinderGeometry(0.048, 0.048, 0.06, 6),
           mChrome,
         );
         lug.rotation.z = Math.PI / 2;
         lug.position.set(
-          outerX,
+          outerX + (isLeft ? -0.02 : 0.02),
           Math.sin(ang) * WR * 0.44,
           Math.cos(ang) * WR * 0.44,
         );
@@ -743,18 +855,17 @@ export default class Car {
     });
 
     // ── CONTACT SHADOW ────────────────────────────────────────────────────────
-    // Larger, softer shadow — Bruno's cars have prominent blob shadows
     const shadow = new THREE.Mesh(
-      new THREE.CircleGeometry(2.8, 24),
+      new THREE.CircleGeometry(3.0, 24),
       new THREE.MeshBasicMaterial({
         color: 0,
         transparent: true,
-        opacity: 0.38,
+        opacity: 0.42,
         depthWrite: false,
       }),
     );
     shadow.rotation.x = -Math.PI / 2;
-    shadow.scale.set(1.1, 0.6, 1);
+    shadow.scale.set(1.05, 0.55, 1);
     shadow.position.y = 0.02;
     g.add(shadow);
 

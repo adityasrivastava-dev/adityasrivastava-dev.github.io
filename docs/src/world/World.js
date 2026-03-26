@@ -67,15 +67,14 @@ export default class World {
   _buildLighting() {
     const s = this.scene;
 
-    // Sky/ground gradient — deep warm sky, rich terracotta ground bounce
-    // Bruno's world reads warm because the hemisphere has strong ground color
-    this.hemiLight = new THREE.HemisphereLight(0xff9944, 0xcc4411, 1.8);
+    // Hemisphere: warm sky (soft cream) vs cool violet ground shadow.
+    // Intensity 0.9 not 1.8 — was flooding everything orange.
+    this.hemiLight = new THREE.HemisphereLight(0xffeedd, 0x6644aa, 0.9);
     s.add(this.hemiLight);
 
-    // Key sun — stronger, lower angle, more dramatic shadows
-    // Bruno's shadows are long and visible — sun at lower angle = longer shadows
-    this.sunLight = new THREE.DirectionalLight(0xffaa44, 5.5);
-    this.sunLight.position.set(80, 75, 45); // lower angle = longer shadows
+    // Sun: white-gold not orange-amber. Intensity 3.8 not 5.5.
+    this.sunLight = new THREE.DirectionalLight(0xfff0cc, 3.8);
+    this.sunLight.position.set(80, 75, 45);
     this.sunLight.castShadow = true;
     this.sunLight.shadow.mapSize.set(2048, 2048);
     this.sunLight.shadow.camera.left = -220;
@@ -86,30 +85,28 @@ export default class World {
     this.sunLight.shadow.bias = -0.0004;
     s.add(this.sunLight);
 
-    // Cool purple fill — creates warm/cool contrast like Bruno's world
-    this.fillLight = new THREE.DirectionalLight(0x9966ff, 1.2);
+    // Cool blue-purple fill — essential contrast against warm sun
+    this.fillLight = new THREE.DirectionalLight(0x8899ff, 1.0);
     this.fillLight.position.set(-90, 55, -40);
     s.add(this.fillLight);
 
-    // Strong warm rim/back light — edge separation is what gives Bruno's
-    // objects their distinct silhouettes against the background
-    this.rimLight = new THREE.DirectionalLight(0xff7722, 1.1);
+    // Rim: warm gold, gentle
+    this.rimLight = new THREE.DirectionalLight(0xffcc88, 0.65);
     this.rimLight.position.set(-20, 18, 140);
     s.add(this.rimLight);
 
-    // Ground bounce — strong warm orange scatter from the red earth
-    this.bounceLight = new THREE.DirectionalLight(0xff5522, 0.45);
+    // Ground bounce: subtle
+    this.bounceLight = new THREE.DirectionalLight(0xcc8855, 0.2);
     this.bounceLight.position.set(0, -1, 0);
     s.add(this.bounceLight);
 
-    // Ambient — kept lower so shadows read deep and rich
-    this.ambLight = new THREE.AmbientLight(0xff8833, 0.5);
+    // Ambient: near-white, very low — shadows need depth
+    this.ambLight = new THREE.AmbientLight(0xfff5ee, 0.35);
     s.add(this.ambLight);
 
-    // Deity spotlight — sweeps slowly, creating dramatic pools of light
     this.deitySpot = new THREE.SpotLight(
-      0xffdd99,
-      3.5,
+      0xfff0cc,
+      2.8,
       280,
       Math.PI * 0.14,
       0.6,
@@ -122,7 +119,6 @@ export default class World {
     this.deitySpot.target = this.deitySpotTarget;
     s.add(this.deitySpot);
 
-    // Central ground glow — warm pooling light at origin for the intro wow moment
     this.originGlow = new THREE.PointLight(0xffcc88, 0, 55);
     this.originGlow.position.set(0, 2, 0);
     s.add(this.originGlow);
@@ -131,16 +127,16 @@ export default class World {
   applyWeather(w) {
     const cfgs = {
       day: {
-        bg: 0xe86030,
-        fog: 0xee7733,
-        fogD: 0.003,
-        sun: 0xffaa44,
-        sunI: 5.5,
-        fill: 0x9966ff,
-        fillI: 1.2,
-        amb: 0xff8833,
-        ambI: 0.5,
-        exp: 1.12,
+        bg: 0xd4956a, // warm peach-terracotta, not deep orange
+        fog: 0xc8845a, // hazy warm afternoon
+        fogD: 0.0025,
+        sun: 0xfff0cc,
+        sunI: 3.8,
+        fill: 0x8899ff,
+        fillI: 1.0,
+        amb: 0xfff5ee,
+        ambI: 0.35,
+        exp: 1.05,
       },
       night: {
         bg: 0x0a0820,
@@ -375,7 +371,7 @@ export default class World {
     // Large ground — deep saturated terracotta like Bruno's orange earth
     const ground = new THREE.Mesh(
       new THREE.BoxGeometry(1000, 0.4, 1000),
-      new THREE.MeshLambertMaterial({ color: 0xcc5522 }), // rich brick-orange
+      new THREE.MeshLambertMaterial({ color: 0xb07848 }), // earthy sandy-brown
     );
     ground.position.y = -0.2;
     ground.receiveShadow = true;
@@ -406,7 +402,7 @@ export default class World {
 
     // Ground tile grid — gives the plaza that Bruno-style paved look
     // Large 10×10 unit tiles create subtle variation without texture
-    const tileMat = new THREE.MeshLambertMaterial({ color: 0xc44f1e }); // slightly darker
+    const tileMat = new THREE.MeshLambertMaterial({ color: 0x9e6840 }); // darker earth tone
     const tileSpacing = 10;
     const tileCount = 40;
     for (let tx = -tileCount / 2; tx < tileCount / 2; tx++) {
@@ -425,7 +421,7 @@ export default class World {
     }
 
     // Pavement blocks around central island (scaled up) — lighter to contrast
-    const paveMat = new THREE.MeshLambertMaterial({ color: 0xe08860 });
+    const paveMat = new THREE.MeshLambertMaterial({ color: 0xc8a882 });
     [
       [-35, 0, 40, 50],
       [35, 0, 40, 50],
@@ -443,7 +439,7 @@ export default class World {
     });
 
     // Beach/sand border strips — the transition between orange ground and cyan water
-    const sandMat = new THREE.MeshLambertMaterial({ color: 0xeebb88 });
+    const sandMat = new THREE.MeshLambertMaterial({ color: 0xddcc99 });
     for (const [x, z, w, d] of [
       [0, -220, 600, 18],
       [0, 220, 600, 18],
@@ -464,7 +460,7 @@ export default class World {
     // Raised island — bigger at 2.5x scale
     const island = new THREE.Mesh(
       new THREE.CylinderGeometry(18, 20, 0.55, 18),
-      new THREE.MeshLambertMaterial({ color: 0xcc7755 }),
+      new THREE.MeshLambertMaterial({ color: 0xb88860 }),
     );
     island.position.y = 0.28;
     s.add(island);
@@ -687,6 +683,9 @@ export default class World {
   }
 
   _updateAtmosphere(now) {
+    // ── PRAYER FLAGS — wave in the wind ──────────────────────────────────────
+    this._updatePrayerFlags(now);
+
     // ── PETALS ────────────────────────────────────────────────────────────────
     if (this._petals) {
       const pos = this._petals.geometry.attributes.position.array;
@@ -704,23 +703,26 @@ export default class World {
       this._petals.geometry.attributes.position.needsUpdate = true;
     }
 
-    // ── FIREFLIES — drift + flicker. Visible at night, fade at day ───────────
+    // ── FIREFLIES — drift + flicker ───────────────────────────────────────────
+    // Previously opacity 0 in daylight — invisible all day.
+    // Now they're subtle golden motes during the day (0.18 opacity) and bright
+    // fireflies at night (0.82). The world needs constant visible particles
+    // to feel alive even in full daylight — like dust motes in sunbeams.
     if (this._fireflies) {
       const pos = this._fireflies.geometry.attributes.position.array;
       const phase = this._fireflies.userData.phase;
       const n = pos.length / 3;
-      // Opacity: 0 in day, up to 0.85 at night (targets set by applyWeather)
-      const targetOp = this.isNight ? 0.82 : 0.12;
+      // Daytime: subtle gold motes. Night: bright fireflies. Always visible.
+      const targetOp = this.isNight ? 0.82 : 0.22;
       this._fireflies.material.opacity +=
         (targetOp - this._fireflies.material.opacity) * 0.02;
 
       for (let i = 0; i < n; i++) {
-        // Slow 3D drift with per-particle sine noise
-        pos[i * 3] += Math.sin(now * 0.22 + phase[i]) * 0.015;
-        pos[i * 3 + 1] += Math.sin(now * 0.31 + phase[i] * 1.3) * 0.008;
-        pos[i * 3 + 2] += Math.cos(now * 0.19 + phase[i] * 0.7) * 0.015;
-        // Gentle vertical float — rise and stay in range 1.5–8
-        if (pos[i * 3 + 1] > 8) pos[i * 3 + 1] = 1.5;
+        // Amplified drift — visible from camera height
+        pos[i * 3] += Math.sin(now * 0.28 + phase[i]) * 0.025;
+        pos[i * 3 + 1] += Math.sin(now * 0.41 + phase[i] * 1.3) * 0.012;
+        pos[i * 3 + 2] += Math.cos(now * 0.23 + phase[i] * 0.7) * 0.025;
+        if (pos[i * 3 + 1] > 9) pos[i * 3 + 1] = 1.5;
         if (pos[i * 3 + 1] < 0.5) pos[i * 3 + 1] = 0.5;
       }
       this._fireflies.geometry.attributes.position.needsUpdate = true;
@@ -839,6 +841,8 @@ export default class World {
   // ── PRAYER FLAGS ────────────────────────────────────────────────────────────
   _buildPrayerFlags() {
     const colors = [0xff3333, 0xff9900, 0xffdd00, 0x33cc44, 0x3388ff, 0xcc44cc];
+    this._prayerFlags = []; // store refs for animation
+
     const string = (x1, y, z1, x2, z2, n) => {
       for (let i = 0; i < n; i++) {
         const t = (i + 0.5) / n;
@@ -851,14 +855,30 @@ export default class World {
           y - Math.sin(t * Math.PI) * 1.2,
           z1 + (z2 - z1) * t,
         );
+        // Store base position + unique phase for each flag
+        f.userData.baseY = f.position.y;
+        f.userData.baseRotX = 0;
+        f.userData.phase = t * Math.PI * 4 + Math.random() * Math.PI;
+        f.userData.speed = 1.2 + Math.random() * 0.8;
         this.scene.add(f);
+        this._prayerFlags.push(f);
       }
     };
-    // Scale flag positions 2.5x
     string(-55, 14, -10, 55, -10, 18);
     string(-55, 14, 5, 55, 5, 18);
     string(-35, 14, 80, 35, 80, 12);
     string(-45, 14, -138, 45, -138, 14);
+  }
+
+  _updatePrayerFlags(now) {
+    if (!this._prayerFlags) return;
+    this._prayerFlags.forEach((f) => {
+      const ph = now * f.userData.speed + f.userData.phase;
+      // Flap around X axis — billowing in wind
+      f.rotation.x = Math.sin(ph * 2.2) * 0.22 + Math.sin(ph) * 0.12;
+      // Slight Y bob — string sags more when flag is full
+      f.position.y = f.userData.baseY + Math.sin(ph * 1.5) * 0.06;
+    });
   }
 
   // ── GATEWAY ARCHES ──────────────────────────────────────────────────────────

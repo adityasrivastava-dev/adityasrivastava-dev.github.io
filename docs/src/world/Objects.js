@@ -596,27 +596,27 @@ export default class Objects {
     const tg = window._toonGrad;
     const S = 2.5; // world scale
 
-    // Bruno's world has rich autumn variety — yellows, golds, reds, deep greens
-    // This is the single biggest visual difference from basic green cones
+    // Tree palette: majority GREENS for natural variety, selective warm accents.
+    // Previous palette had 7/13 warm colors causing yellow wash against orange world.
+    // Rule: 60% greens, 25% autumn accent, 15% special (pink blossom handled separately).
     const leafColors = [
-      // Autumn yellows/golds (most prominent in Bruno)
-      0xddbb22, // bright gold
-      0xeeaa00, // deep gold
-      0xcc9900, // amber gold
-      0xffcc33, // light gold
-      // Rich autumn oranges
-      0xee6622, // burnt orange
-      0xdd5511, // deep orange-red
-      // Deep greens (for variety + contrast)
-      0x336633, // forest green
-      0x447722, // olive green
-      0x558833, // mid green
-      // Red autumn
-      0xbb3311, // dark red
-      0xcc4422, // warm red
-      // Chartreuse (Bruno's bright accent)
+      // Deep rich greens — the dominant color
+      0x2d6622, // deep forest green
+      0x3a7a2a, // mid forest green
+      0x4a8833, // natural green
+      0x336644, // blue-green
+      0x558844, // light forest green
+      0x447733, // olive green
+      0x226633, // dark emerald
+      // Autumn accents — just enough for interest, not dominance
+      0xcc8822, // amber gold (autumn)
+      0xdd6611, // burnt orange (autumn)
+      0xaa3311, // dark autumn red
+      // Bright chartreuse — the pop color Bruno uses sparingly
       0x88cc22, // bright chartreuse
-      0x99dd44, // light green-yellow
+      0x6aaa22, // yellow-green
+      // Pink blossom — rare accent (handled by isBlossom separately)
+      0xdd88aa, // sakura pink
     ];
 
     // Dense tree placement around each temple + along roads (scaled positions)
@@ -1265,16 +1265,28 @@ export default class Objects {
 
   // ── AMBIENT UPDATES ────────────────────────────────────────────────────────
   updateWindSway(now) {
+    // Bruno's trees lean dramatically in the wind — it reads from across the city.
+    // Amplitude 0.022 is imperceptible. We need 0.08–0.12 to be felt.
+    // We animate BOTH the whole group (gentle lean) and the leaf (faster flutter)
+    // to create the layered motion of real wind through foliage.
     this.trees.forEach((tr) => {
       if (tr.shakeT > 0) {
-        const shake = Math.sin(now * 22) * tr.shakeT * 0.22;
+        // Car-proximity shake — rapid high-frequency
+        const shake = Math.sin(now * 22) * tr.shakeT * 0.35;
         tr.leaf.rotation.x = shake;
         tr.leaf.rotation.z = shake * 0.7;
-        tr.shakeT = Math.max(0, tr.shakeT - 0.025);
+        tr.shakeT = Math.max(0, tr.shakeT - 0.022);
       } else {
         const ph = now * tr.windFreq + tr.windPhase;
-        tr.leaf.rotation.x = Math.sin(ph) * tr.windAmpX;
-        tr.leaf.rotation.z = Math.sin(ph * 0.73 + 1) * tr.windAmpZ;
+
+        // Leaf flutter — fast, small (rustling sound visualized)
+        tr.leaf.rotation.x = Math.sin(ph * 1.8) * tr.windAmpX * 3.5;
+        tr.leaf.rotation.z = Math.sin(ph * 1.4 + 1) * tr.windAmpZ * 3.5;
+
+        // Whole tree lean — slow, large (trunk bending in breeze)
+        // Phase offset by 0.5 so lean leads the flutter slightly
+        tr.group.rotation.x = Math.sin(ph * 0.55 + 0.5) * 0.06;
+        tr.group.rotation.z = Math.sin(ph * 0.42 + 1.8) * 0.05;
       }
     });
   }

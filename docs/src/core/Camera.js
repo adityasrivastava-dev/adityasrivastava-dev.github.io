@@ -227,11 +227,9 @@ export default class Camera {
     cam.position.y = clamp(cam.position.y, 8.0, 50);
 
     // ── FIX 6: MULTI-HARMONIC IDLE DRIFT ─────────────────────────────────────
-    // Old: single sine wave at 0.72Hz — reads as a mechanical oscillator.
-    // New: three offset frequencies summed — reads as a human holding a camera.
-    // Weights: 55% / 30% / 15% so it stays subtle but never feels periodic.
-    // X drift is independent from Y drift — camera wanders slightly in 2D space.
-    const breathAmt = Math.max(0, 1 - speedRatio * 2.5) * 0.22;
+    // Amplitude raised 0.22 → 0.38 so it's actually perceptible as camera breath.
+    // The old value was invisible. This makes the world look alive even when parked.
+    const breathAmt = Math.max(0, 1 - speedRatio * 2.5) * 0.38;
     if (breathAmt > 0.001) {
       const driftY =
         Math.sin(now * 0.72 + 0.0) * 0.55 * breathAmt +
@@ -245,13 +243,19 @@ export default class Camera {
       cam.position.x += driftX;
     }
 
-    // ── FIX 6: STEER LEAN MICRO-FEEDBACK at low speed ────────────────────────
-    // At high speed the corner offset + tilt already handle this.
-    // At low speed (parking, slow turns) the camera feels completely disconnected.
-    // This tiny lean at 0–30% speed makes every turn feel physically weighted.
-    if (speedRatio > 0.015 && speedRatio < 0.32) {
-      const leanStrength = (1 - speedRatio / 0.32) * 0.012;
-      cam.rotateZ(car.steer * leanStrength * dt * 60);
+    // ── CAR BODY ROLL → CAMERA LEAN ───────────────────────────────────────────
+    // Bruno's camera leans with the car on every turn — it's the single most
+    // noticeable thing that makes his camera feel connected to the vehicle.
+    // We read the car's steer and lateral velocity directly.
+    // At low speed (parking) the lean is subtle. At driving speed it's strong.
+    // This is separate from the roll-kick system — that's for collisions only.
+    // This is for every single turn, every moment of movement.
+    if (speedRatio > 0.05 && car.steer !== undefined) {
+      // Compute how much lean based on speed + steer input
+      const leanAmt = car.steer * speedRatio * 0.018;
+      if (Math.abs(leanAmt) > 0.0001) {
+        cam.rotateZ(-leanAmt); // lean INTO the turn (car tilts right → camera tilts right)
+      }
     }
 
     // ── FOV SPRING — smooth widening at speed ─────────────────────────────────
