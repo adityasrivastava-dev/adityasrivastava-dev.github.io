@@ -436,12 +436,12 @@ function closeJourney() {
   document.getElementById("journey").classList.remove("open");
 }
 const WX_ICONS = {
-  night: "🌙",
-  day: "☀️",
-  sunset: "🌅",
-  fog: "🌫️",
-  rain: "🌧️",
-  snow: "❄️",
+  night: "NIGHT",
+  day: "SUN",
+  sunset: "DUSK",
+  fog: "FOG",
+  rain: "RAIN",
+  snow: "SNOW",
 };
 const WX_NAMES = {
   night: "NIGHT",
@@ -455,9 +455,9 @@ function doWeather() {
   if (typeof CityEngine !== "undefined") CityEngine.cycleWeather();
 }
 function onWeatherChange(w) {
-  document.getElementById("weather-label").textContent = WX_ICONS[w] || "☀️";
+  document.getElementById("weather-label").textContent = WX_ICONS[w] || "SUN";
   const t = document.getElementById("weather-toast");
-  t.textContent = (WX_ICONS[w] || "") + "  " + (WX_NAMES[w] || w.toUpperCase());
+  t.textContent = "// " + (WX_NAMES[w] || w.toUpperCase()) + " MODE";
   t.classList.add("show");
   setTimeout(() => t.classList.remove("show"), 2000);
 }
@@ -466,7 +466,7 @@ function doMute() {
   muted = !muted;
   if (typeof CityEngine !== "undefined")
     CityEngine.setMusicVolume(muted ? 0 : 1);
-  document.getElementById("mute-btn").textContent = muted ? "🔇" : "🔊";
+  document.getElementById("mute-btn").textContent = muted ? "MUTE" : "SFX";
 }
 window.addEventListener("keydown", (e) => {
   if (document.getElementById("journey").classList.contains("open")) {

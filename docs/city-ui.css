@@ -3720,3 +3720,255 @@ a,
     0 1px 0 rgba(255, 255, 255, 0.04) inset,
     0 0 0 1px rgba(255, 255, 255, 0.03) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+         FINAL POLISH LAYER — every remaining static element upgraded
+         ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. MODE CHIP — active pulse ────────────────────────────────────────
+         The RECRUITER/ENGINEER chip currently just sits there.
+         A slow box-shadow pulse makes it feel like an active system indicator
+         — it's broadcasting your mode, not just labelling it.                   */
+#mode-chip {
+  animation: chip-pulse 3s ease-in-out infinite !important;
+  letter-spacing: 4px !important;
+  font-size: 7.5px !important;
+}
+#mode-chip.recruiter {
+  animation: chip-pulse-gold 3s ease-in-out infinite !important;
+}
+@keyframes chip-pulse-gold {
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(255, 204, 68, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 18px rgba(255, 204, 68, 0.35),
+      0 0 32px rgba(255, 180, 40, 0.1);
+  }
+}
+#mode-chip.engineer {
+  animation: chip-pulse-cyan 3s ease-in-out infinite !important;
+}
+@keyframes chip-pulse-cyan {
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(0, 221, 255, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 18px rgba(0, 221, 255, 0.35),
+      0 0 32px rgba(0, 200, 255, 0.1);
+  }
+}
+
+/* ── 2. PANEL — p-num system number ─────────────────────────────────────
+         // SYSTEM 01 is currently 8.5px at 25% opacity — invisible.
+         Raising it to a readable size with the building color makes it read
+         as a record identifier, not a footnote.                                  */
+.p-num {
+  font-size: 9px !important;
+  letter-spacing: 5px !important;
+  color: rgba(var(--nc-rgb, 255, 200, 80), 0.5) !important;
+  margin-bottom: 4px !important;
+  font-family: var(--fm) !important;
+}
+
+/* ── 3. PANEL — p-name title sizing and depth ───────────────────────────
+         28px at 1440px wide is fine. At 1200px it reads small.
+         Clamping it larger at minimum makes the name dominate the panel
+         as it should — this is the most important text in the entire UI.         */
+.p-name {
+  font-size: clamp(26px, 3.2vw, 36px) !important;
+  letter-spacing: 3px !important;
+  line-height: 1 !important;
+  margin-bottom: 8px !important;
+}
+
+/* ── 4. PANEL — p-sub subtitle treatment ───────────────────────────────
+         Currently just pale text. Making it all-caps with tighter spacing and
+         a subtle glow gives it the "system descriptor" quality.                  */
+.p-sub {
+  font-size: 7.5px !important;
+  letter-spacing: 4px !important;
+  color: rgba(var(--nc-rgb, 255, 200, 80), 0.45) !important;
+  margin-bottom: 16px !important;
+  text-transform: uppercase !important;
+}
+
+/* ── 5. PANEL — metric numbers larger ──────────────────────────────────
+         30px numbers are hard to read at the panel width.
+         Making them 36px with stronger glow and the metric label more distinct
+         transforms a text block into an actual data display.                     */
+.mv {
+  font-size: 36px !important;
+  line-height: 0.95 !important;
+  font-weight: 900 !important;
+  letter-spacing: -1px !important;
+}
+.ml {
+  font-size: 7px !important;
+  letter-spacing: 3px !important;
+  color: rgba(255, 255, 255, 0.32) !important;
+  margin-top: 3px !important;
+  text-transform: uppercase !important;
+}
+
+/* ── 6. PANEL — story text readability ─────────────────────────────────
+         Dense 13.5px with 1.7 line height feels like reading documentation.
+         Increasing to 14px with 1.9 line height makes it feel like a brief.     */
+.story {
+  font-size: 14px !important;
+  line-height: 1.9 !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* ── 7. PANEL — section labels (MISSION LOG etc.) ───────────────────────
+         Currently 8px mono all-caps. Making them slightly larger with more
+         letter-spacing gives each section a strong header anchor.               */
+.sl {
+  font-size: 8.5px !important;
+  letter-spacing: 5px !important;
+  margin-bottom: 12px !important;
+  margin-top: 4px !important;
+}
+
+/* ── 8. PANEL — outcome and connect boxes ───────────────────────────────
+         These have plain text with minimal styling. Adding a subtle background
+         tint and increasing text clarity makes them feel like flagged records.   */
+.out-t,
+.ed-txt {
+  font-size: 13.5px !important;
+  line-height: 1.75 !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+.conn-i {
+  font-size: 13px !important;
+  line-height: 1.65 !important;
+  color: rgba(255, 255, 255, 0.65) !important;
+  align-items: flex-start !important;
+  gap: 10px !important;
+}
+
+/* ── 9. SPEED RING — number contrast ────────────────────────────────────
+         The `0` inside the ring is the same dim white as the track.
+         Making it pure white with a stronger shadow makes it readable at
+         any speed, especially when the ring is near-empty.                       */
+#spd-num {
+  font-size: 24px !important;
+  color: #fff !important;
+  text-shadow:
+    0 0 16px rgba(255, 200, 80, 0.6),
+    0 1px 0 rgba(0, 0, 0, 0.8) !important;
+}
+#spd-num span {
+  font-size: 7px !important;
+  letter-spacing: 4px !important;
+  color: rgba(255, 200, 80, 0.6) !important;
+}
+
+/* ── 10. GEAR + WEATHER BADGE — more readable ───────────────────────────
+         They read as metadata, not labels. Larger letter-spacing and slightly
+         stronger color makes them purposeful.                                    */
+#gear-badge,
+#weather-badge {
+  letter-spacing: 3px !important;
+  font-size: 7.5px !important;
+  color: rgba(255, 200, 80, 0.7) !important;
+  border-color: rgba(255, 200, 80, 0.18) !important;
+}
+#weather-badge {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+/* ── 11. HB BUTTONS — text label style ─────────────────────────────────
+         Now that they're text codes instead of emoji, they need tighter
+         spacing and slightly smaller to fit as a row.                            */
+.hb {
+  font-size: 7.5px !important;
+  letter-spacing: 2.5px !important;
+  padding: 6px 11px !important;
+  text-transform: uppercase !important;
+}
+
+/* ── 12. PANEL CLOSE BUTTON — clearer ──────────────────────────────────
+         The × is 22px but nearly invisible at 40% opacity.
+         Making it a proper close indicator with border.                          */
+#sp-x {
+  font-size: 16px !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 50% !important;
+  width: 28px !important;
+  height: 28px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  transition: all 0.18s !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+#sp-x:hover {
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  transform: rotate(90deg) scale(1.1) !important;
+}
+
+/* ── 13. ENG-TOGGLE — accordion feel ────────────────────────────────────
+         The "WHAT I REJECTED" accordion header is too plain.
+         A colored left border on hover makes it interactive.                     */
+.eng-toggle {
+  color: rgba(var(--nc-rgb, 255, 200, 80), 0.45) !important;
+  font-size: 8px !important;
+  letter-spacing: 3px !important;
+  padding: 12px 0 !important;
+  border-top: 1px solid rgba(var(--nc-rgb, 255, 200, 80), 0.08) !important;
+  border-bottom: none !important;
+  transition:
+    color 0.18s,
+    padding-left 0.18s !important;
+}
+.eng-toggle:hover {
+  color: rgba(var(--nc-rgb, 255, 200, 80), 0.9) !important;
+  padding-left: 6px !important;
+}
+
+/* ── 14. PANEL SCROLLBAR — match panel width ────────────────────────────
+         The 3px scrollbar is correct but #sp-inner is overflow:hidden.
+         The scrollable area is #sp-body — ensure it scrolls.                    */
+#sp-body {
+  overflow-y: auto !important;
+  max-height: calc(100vh - 60px) !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(var(--nc-rgb, 255, 200, 80), 0.35) rgba(0, 0, 0, 0.2) !important;
+}
+
+/* ── 15. PROX CARD — p-name larger ─────────────────────────────────────
+         At 15px (mobile) or 22px (desktop) the building name in the prox card
+         is correct but the font-weight could be heavier for instant readability. */
+.px-name {
+  font-weight: 900 !important;
+  letter-spacing: 2px !important;
+}
+
+/* ── 16. WEATHER TOAST — game terminal style ────────────────────────────
+         Currently just fades opacity. Adding a slide + clip-path reveal makes
+         it feel like a system notification.                                      */
+#weather-toast {
+  font-size: 8px !important;
+  letter-spacing: 5px !important;
+  border-left: 2px solid rgba(255, 200, 80, 0.5) !important;
+  border-radius: 0 2px 2px 0 !important;
+  padding: 10px 18px 10px 14px !important;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 100%, 0 100%) !important;
+}
+
+/* ── 17. START SCREEN — eyebrow letter-spacing tighter ─────────────────
+         INTERACTIVE PORTFOLIO · 2024 with 10px letter-spacing can overflow
+         on smaller screens. Clamping it keeps it elegant.                        */
+.ss-eyebrow {
+  font-size: clamp(7px, 1.2vw, 10px) !important;
+  letter-spacing: clamp(4px, 1vw, 10px) !important;
+}
