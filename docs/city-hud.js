@@ -258,6 +258,15 @@ function openBuilding(b) {
   body.style.setProperty("--nc", col);
   if (spInner) spInner.style.setProperty("--nc", col);
 
+  // ── UI DETAILING: coordinate display in panel header ──────────────────
+  // Shows building position as coordinates — panel feels like a data
+  // terminal retrieving a record, not a web page loading content.
+  const spLbl = document.getElementById("sp-lbl");
+  if (spLbl) {
+    spLbl.textContent = "// SYSTEM FILE";
+    spLbl.dataset.coord = `POS ${b.pos[0].toFixed(0)}.${Math.abs(b.pos[1]).toFixed(0)} · ${(b.templeType || "TEMPLE").toUpperCase()}`;
+  }
+
   // Populate content BEFORE opening so clip-path reveals fully built DOM
   body.classList.remove("stagger-in");
   if (b.isEducation) body.innerHTML = eduPanel(b, col);

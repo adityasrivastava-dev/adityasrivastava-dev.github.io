@@ -15,20 +15,20 @@ export const Car = {
 };
 
 export const CameraC = {
-  FOV_MIN: 48,
-  FOV_MAX: 82, // was 90 — tighter max FOV at lower speed cap
-  CAMERA_DISTANCE_MIN: 8,
-  CAMERA_DISTANCE_MAX: 32, // was 38 — proportional to new MAX_SPEED
-  CAMERA_HEIGHT_MIN: 4,
-  CAMERA_HEIGHT_MAX: 14,
-  LOOK_AHEAD_MIN: 3,
-  LOOK_AHEAD_MAX: 20,
-  SPRING_K: 14.0,
-  SPRING_D: 9.5,
-  Y_SPRING_K: 6.5,
-  Y_SPRING_D: 5.5,
-  TILT_FACTOR: -0.45,
-  FOCUS_DIST: 22,
+  FOV_MIN: 42, // tighter at rest = more "toy world" read
+  FOV_MAX: 72, // less extreme at speed (was 82)
+  CAMERA_DISTANCE_MIN: 14, // further back at rest = more world visible
+  CAMERA_DISTANCE_MAX: 38, // further at speed (proportional)
+  CAMERA_HEIGHT_MIN: 10, // higher at rest — isometric diorama feel (was 4)
+  CAMERA_HEIGHT_MAX: 20, // higher at speed (was 14)
+  LOOK_AHEAD_MIN: 4,
+  LOOK_AHEAD_MAX: 18,
+  SPRING_K: 12.0, // slightly softer spring at higher height
+  SPRING_D: 9.0,
+  Y_SPRING_K: 5.5, // softer Y so high camera doesn't bounce
+  Y_SPRING_D: 5.0,
+  TILT_FACTOR: -0.35, // less tilt at high camera (less noticeable)
+  FOCUS_DIST: 18,
   TRANS_DUR: 1.4,
 };
 

@@ -424,6 +424,9 @@ export default class Application {
     // Ground burst rings expand outward from temple base
     this.world.objects.spawnEntryBurst(building);
 
+    // Confetti explosion — colored rectangles burst from building (Bruno Simon style)
+    this.world.objects.spawnConfetti(building);
+
     // Camera shake — the "impact" of entering a sacred space
     this.camera.shakeAmt = 0.45;
 

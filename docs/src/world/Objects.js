@@ -105,6 +105,7 @@ export default class Objects {
     this._buildLamps();
     this._buildGrass();
     this._buildRoadDecorations();
+    this._buildBillboardLabels(); // floating 3D name labels above buildings
   }
 
   // ── HELPERS ────────────────────────────────────────────────────────────────
@@ -958,6 +959,243 @@ export default class Objects {
     });
   }
 
+  // ── BILLBOARD LABELS — floating 3D name tags above buildings ──────────────
+  // Bruno Simon's signature: zone names float in 3D world space beside the car.
+  // Each building gets a Sprite with a canvas texture showing its name.
+  // Implementation: canvas → CanvasTexture → SpriteMaterial → Sprite.
+  //
+  // WHY sprites not HTML: HTML overlays sit on top of everything, can't have
+  // world-space positioning, and break depth perception. Sprites live in the
+  // scene, occlude correctly, and can fade/scale with distance.
+  //
+  // Each label:
+  //   - Floats at (building_apex + 2 units) Y
+  //   - Faces camera always (billboard behavior is automatic with Sprite)
+  //   - Fades in when car enters hover zone (70u), fades out beyond
+  //   - Scales slightly up when in proximity zone (like Bruno's PROJECTS label)
+  //   - Hero buildings have a ◆ diamond prefix (same as Bruno's marker)
+  _buildBillboardLabels() {
+    this._billboards = [];
+
+    (window.CITY_DATA?.buildings || []).forEach((b) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 512;
+      canvas.height = 128;
+      const ctx = canvas.getContext("2d");
+
+      // Parse glow color for the label accent
+      const hex = (b.glowColor || "#ffcc44").replace("#", "");
+      const lr = parseInt(hex.slice(0, 2), 16);
+      const lg = parseInt(hex.slice(2, 4), 16);
+      const lbv = parseInt(hex.slice(4, 6), 16);
+
+      this._drawLabelCanvas(ctx, canvas.width, canvas.height, b, lr, lg, lbv);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const mat = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        depthTest: false, // always on top of buildings when visible
+        sizeAttenuation: true, // shrinks with distance
+      });
+
+      const sprite = new THREE.Sprite(mat);
+      // Position: above the building's apex. Height = building height + 3 units
+      sprite.position.set(b.pos[0], b.height + 4, b.pos[1]);
+      // Scale: 512×128 canvas at world units. ~12 units wide = readable at 70u
+      sprite.scale.set(14, 3.5, 1);
+      sprite.userData.buildingId = b.id;
+      sprite.userData.isLabel = true;
+
+      this.scene.add(sprite);
+      this._billboards.push({ sprite, building: b });
+    });
+  }
+
+  _drawLabelCanvas(ctx, W, H, b, r, g, bv) {
+    ctx.clearRect(0, 0, W, H);
+
+    // Background pill — dark glass
+    const pad = 12;
+    const rr = H / 2 - pad; // corner radius
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(pad, pad, W - pad * 2, H - pad * 2, rr);
+    ctx.fillStyle = `rgba(6,3,1,0.82)`;
+    ctx.fill();
+    // Colored border stroke
+    ctx.strokeStyle = `rgba(${r},${g},${bv},0.7)`;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.restore();
+
+    // Diamond marker prefix (hero) or dot (normal)
+    const prefix = b.isHero ? "◆ " : "· ";
+    const label = prefix + b.name.toUpperCase();
+
+    ctx.font = `bold 44px "Arial Narrow", Arial, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    // Glow layer
+    ctx.shadowColor = `rgba(${r},${g},${bv},0.9)`;
+    ctx.shadowBlur = 18;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(label, W / 2, H / 2, W - 48);
+
+    // Crisp top layer
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = `rgb(${Math.min(255, r + 180)},${Math.min(255, g + 180)},${Math.min(255, bv + 180)})`;
+    ctx.fillText(label, W / 2, H / 2, W - 48);
+  }
+
+  // Called every frame from updateBuildingEntities — keep in sync with hover zones
+  _updateBillboards(carX, carZ, now) {
+    if (!this._billboards) return;
+    const HOVER_DIST = 70;
+    const PROX_DIST = 32;
+
+    this._billboards.forEach(({ sprite, building }) => {
+      const dist = Math.hypot(carX - building.pos[0], carZ - building.pos[1]);
+      const mat = sprite.material;
+
+      // Target opacity: invisible far away, full at hover zone, extra visible at prox
+      let targetOp;
+      if (dist > HOVER_DIST) {
+        targetOp = 0;
+      } else if (dist > PROX_DIST) {
+        // Fade in across hover zone: 0 at 70u → 0.92 at 32u
+        targetOp = ((HOVER_DIST - dist) / (HOVER_DIST - PROX_DIST)) * 0.92;
+      } else {
+        targetOp = 0.92;
+      }
+
+      // Smooth fade — fast in (responsive), slow out (lingers pleasantly)
+      const faderate = targetOp > mat.opacity ? 0.12 : 0.04;
+      mat.opacity += (targetOp - mat.opacity) * faderate;
+
+      // Scale pulse at proximity: label grows slightly when you're right next to it
+      // Same as how Bruno's "PROJECTS" label pops slightly as you get close
+      const scaleBoost =
+        dist < PROX_DIST ? 1.0 + (1 - dist / PROX_DIST) * 0.22 : 1.0;
+      sprite.scale.set(14 * scaleBoost, 3.5 * scaleBoost, 1);
+
+      // Gentle float — label bobs up/down slowly, making it feel alive
+      // Phase-seeded per building so they don't all bob in sync
+      const floatPhase = building.pos[0] * 0.13 + building.pos[1] * 0.27;
+      sprite.position.y =
+        building.height + 4 + Math.sin(now * 0.6 + floatPhase) * 0.35;
+    });
+  }
+
+  // ── CONFETTI BURST — fired on building entry (Bruno Simon completion moment) ─
+  // Spawns N flat rectangles with random initial velocities, gravity, and
+  // random rotation. Each has a distinct hue from the building's glow color.
+  //
+  // WHY confetti: It is the most unambiguous "reward" signal in games.
+  // Entering a new temple should feel like an achievement, not a page load.
+  // The colored rectangles reference Bruno's completion explosion (frame 6.8)
+  // and ground the digital action in a physical, joyful moment.
+  spawnConfetti(building) {
+    const COUNT = 80;
+    const gc = parseInt((building.glowColor || "#ffcc44").replace("#", ""), 16);
+
+    // Confetti palette: building color + complementary tones
+    const hex = (building.glowColor || "#ffcc44").replace("#", "");
+    const br = parseInt(hex.slice(0, 2), 16);
+    const bg = parseInt(hex.slice(2, 4), 16);
+    const bb = parseInt(hex.slice(4, 6), 16);
+
+    const palette = [
+      gc,
+      0xffffff,
+      new THREE.Color(br / 255, bg / 255, bb / 255)
+        .offsetHSL(0.15, 0, 0)
+        .getHex(),
+      new THREE.Color(br / 255, bg / 255, bb / 255)
+        .offsetHSL(-0.15, 0, 0.1)
+        .getHex(),
+      0xffe066,
+      0xff88cc,
+      0x88ffcc,
+    ];
+
+    if (!this._confettiList) this._confettiList = [];
+
+    const cx = building.pos[0];
+    const cz = building.pos[1];
+    const launchY = building.height * 0.5 + 2;
+
+    for (let i = 0; i < COUNT; i++) {
+      const w = 0.28 + Math.random() * 0.44;
+      const h = 0.18 + Math.random() * 0.28;
+      const piece = new THREE.Mesh(
+        new THREE.PlaneGeometry(w, h),
+        new THREE.MeshBasicMaterial({
+          color: palette[Math.floor(Math.random() * palette.length)],
+          side: THREE.DoubleSide,
+          depthWrite: false,
+        }),
+      );
+
+      // Spawn at building center, slight random offset
+      piece.position.set(
+        cx + (Math.random() - 0.5) * 3,
+        launchY + Math.random() * 4,
+        cz + (Math.random() - 0.5) * 3,
+      );
+
+      // Random velocity: burst outward in a hemisphere
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 4 + Math.random() * 8;
+      const upward = 5 + Math.random() * 9;
+      piece.userData.vx = Math.cos(angle) * speed;
+      piece.userData.vy = upward;
+      piece.userData.vz = Math.sin(angle) * speed;
+      piece.userData.rx = (Math.random() - 0.5) * 4; // tumble X
+      piece.userData.ry = (Math.random() - 0.5) * 4; // tumble Y
+      piece.userData.rz = (Math.random() - 0.5) * 4; // tumble Z
+      piece.userData.life = 1.0;
+      piece.userData.drag = 0.92 + Math.random() * 0.05;
+
+      this.scene.add(piece);
+      this._confettiList.push(piece);
+    }
+  }
+
+  updateConfetti(dt) {
+    if (!this._confettiList || this._confettiList.length === 0) return;
+    const GRAVITY = -9.8;
+
+    this._confettiList = this._confettiList.filter((p) => {
+      p.userData.vy += GRAVITY * dt;
+      p.userData.vx *= p.userData.drag;
+      p.userData.vz *= p.userData.drag;
+
+      p.position.x += p.userData.vx * dt;
+      p.position.y += p.userData.vy * dt;
+      p.position.z += p.userData.vz * dt;
+
+      p.rotation.x += p.userData.rx * dt;
+      p.rotation.y += p.userData.ry * dt;
+      p.rotation.z += p.userData.rz * dt;
+
+      p.userData.life -= dt * 0.38;
+      p.material.opacity = Math.max(0, p.userData.life);
+
+      // Remove when fallen below ground or fully faded
+      if (p.userData.life <= 0 || p.position.y < -2) {
+        this.scene.remove(p);
+        p.geometry.dispose();
+        p.material.dispose();
+        return false;
+      }
+      return true;
+    });
+  }
+
   // ── PROXIMITY DETECTION ────────────────────────────────────────────────────
   checkProximity(carX, carZ) {
     const PROX = 32;
@@ -998,6 +1236,9 @@ export default class Objects {
   }
 
   updateBuildingEntities(carX, carZ, now, dt) {
+    // Update floating billboard labels (Bruno Simon style zone names)
+    this._updateBillboards(carX, carZ, now);
+
     // dt may not be passed by older call sites — default to 60fps
     const fdt = dt && dt > 0 && dt < 0.1 ? dt : 0.016;
 

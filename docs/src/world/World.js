@@ -53,6 +53,7 @@ export default class World {
     this.objects.updateWindSway(now);
     this.objects.updateBuildingEntities(carX, carZ, now, dt);
     this.objects.updateEntryBursts();
+    this.objects.updateConfetti(dt);
     this._updateAtmosphere(now, dt);
     this._updateLighting(now, dt);
     this._updateHeartbeat(now);

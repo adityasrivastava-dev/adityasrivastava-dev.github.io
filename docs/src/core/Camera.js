@@ -105,13 +105,14 @@ export default class Camera {
       const e = easeInOut(this._introT);
       cam.position.lerpVectors(
         new THREE.Vector3(8, 320, 80),
-        new THREE.Vector3(car.x - car.sinA * 14, 12, car.z - car.cosA * 14),
+        // Land at the new raised isometric height (18) not old low height (12)
+        new THREE.Vector3(car.x - car.sinA * 18, 18, car.z - car.cosA * 18),
         e,
       );
       cam.lookAt(
         new THREE.Vector3().lerpVectors(
           new THREE.Vector3(0, 0, 0),
-          new THREE.Vector3(car.x + car.sinA * 6, 1.5, car.z + car.cosA * 6),
+          new THREE.Vector3(car.x + car.sinA * 5, 1.5, car.z + car.cosA * 5),
           e,
         ),
       );
@@ -223,7 +224,7 @@ export default class Camera {
     // FIX: Y clamp at 120 units/sec (was 2.5 — far too tight for 2.5x world)
     this._vy = clamp(this._vy, -120, 120);
     cam.position.y += this._vy * dt;
-    cam.position.y = clamp(cam.position.y, 3.5, 40);
+    cam.position.y = clamp(cam.position.y, 8.0, 50);
 
     // ── FIX 6: MULTI-HARMONIC IDLE DRIFT ─────────────────────────────────────
     // Old: single sine wave at 0.72Hz — reads as a mechanical oscillator.
