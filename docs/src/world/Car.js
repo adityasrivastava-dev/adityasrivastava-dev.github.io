@@ -44,6 +44,7 @@ export default class Car {
     this.wheelGroups = [];
     this._buildMesh();
     this._buildGroundRing();
+    this._buildWheelTrails(); // 4 per-wheel ground ribbons
   }
 
   // ── PHYSICS STEP (called by Application tick loop) ─────────────────────────
@@ -227,24 +228,61 @@ export default class Car {
       );
     }
 
-    // ── DIRECTIONAL SPEED TRAIL — comet tail that elongates with velocity ────
-    // Reads as "the car is cutting through space" — directional, not just a circle
-    if (this._speedTrail) {
-      this._speedTrail.position.set(this.x, 0.05, this.z);
-      this._speedTrail.rotation.y = this.angle;
+    // ── 4-WHEEL GROUND TRAILS — per-wheel tire mark ribbons ─────────────────
+    // Each trail sits at its wheel's world position, faces the wheel's heading,
+    // and elongates proportional to speed. Front wheels use their steered angle
+    // so the marks correctly represent the actual path driven.
+    //
+    // The wheel positions in world space are computed from:
+    //   group.position (the car body) + rotated wheel offsets
+    //
+    // Wheel layout: [0]=FR, [1]=FL, [2]=RR, [3]=RL
+    // Each wheelGroups[i].parent has the per-wheel offset baked into its position.
+    if (this._wheelTrails && this.wheelGroups.length === 4) {
       const speedRatio = Math.min(1, this.speed / C.MAX_SPEED);
-      // Elongate backward — trail is 2..12 units long at max speed
-      const trailLen = 2 + speedRatio * 10;
-      this._speedTrail.scale.set(0.6 + speedRatio * 0.6, 1, trailLen);
-      // Opacity ramps in above 25% speed
-      const trailOp = Math.max(0, (speedRatio - 0.25) / 0.75) * 0.38;
-      this._speedTrail.material.opacity = trailOp;
-      // Color shifts warm amber→white at high speed (like heated metal)
-      this._speedTrail.material.color.setRGB(
-        1.0,
-        0.72 + speedRatio * 0.28,
-        0.25 + speedRatio * 0.55,
-      );
+      // Trails visible on acceleration/cornering above 20% speed
+      const trailOp = Math.max(0, (speedRatio - 0.2) / 0.8) * 0.55;
+      // Extra opacity on hard cornering — lateral slip creates visible marks
+      const slipBoost = Math.min(1, Math.abs(this._latVel) * 4.0) * 0.3;
+      const finalOp = Math.min(0.72, trailOp + slipBoost);
+
+      // Trail length: short at low speed, longer when sliding/fast
+      const trailLen = 1.2 + speedRatio * 6.0 + Math.abs(this._latVel) * 3.0;
+
+      this._wheelTrails.forEach((trail, i) => {
+        const wg = this.wheelGroups[i];
+        if (!wg) return;
+
+        // Get wheel world position from parent group
+        const wParent = wg.parent;
+        const wx =
+          this.x +
+          Math.sin(this.angle) * wParent.position.z +
+          Math.cos(this.angle) * wParent.position.x;
+        const wz =
+          this.z +
+          Math.cos(this.angle) * wParent.position.z -
+          Math.sin(this.angle) * wParent.position.x;
+
+        // Front wheels (0,1) have steered angle — rotate trail by steer
+        const wheelAngle =
+          i < 2 ? this.angle + this.steerAngle * 10 : this.angle;
+
+        // Position trail at wheel, elongate backward
+        trail.mesh.position.set(wx, 0.018, wz);
+        trail.mesh.rotation.y = wheelAngle;
+        trail.mesh.scale.set(1, trailLen, 1);
+        trail.mesh.material.opacity = finalOp;
+
+        // Color: warm amber → near-black depending on slip
+        // Amber = wheelspin, dark = normal rolling marks
+        const spinColor = Math.min(1, Math.abs(this._latVel) * 2.0);
+        trail.mesh.material.color.setRGB(
+          0.15 + spinColor * 0.55,
+          0.08 + spinColor * 0.22,
+          0.03,
+        );
+      });
     }
 
     // Headlight cone — widens on speed
@@ -739,6 +777,41 @@ export default class Car {
     this._groundRing.rotation.x = -Math.PI / 2;
     this._groundRing.position.y = 0.08;
     this.scene.add(this._groundRing);
+  }
+
+  // ── WHEEL TRAILS — 4 per-wheel ground ribbons ─────────────────────────────
+  // Bruno's Trails.js uses DataTexture + cylinder geometry for smooth ribbons.
+  // We use a simpler approach: 4 flat PlaneGeometry strips, one per wheel,
+  // each positioned at the wheel's world position and elongated along heading.
+  //
+  // Key: each trail tracks its wheel's WORLD position each frame.
+  // On cornering the front wheels steer, so their trails curve naturally.
+  // On hard acceleration all 4 trails appear simultaneously — like tire smoke.
+  //
+  // Result: tire marks that read correctly from the high camera angle.
+  _buildWheelTrails() {
+    this._wheelTrails = [];
+    for (let i = 0; i < 4; i++) {
+      const mesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.28, 1),
+        new THREE.MeshBasicMaterial({
+          color: 0x221100,
+          transparent: true,
+          opacity: 0,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+        }),
+      );
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.y = 0.018;
+      this.scene.add(mesh);
+      this._wheelTrails.push({
+        mesh,
+        px: 0,
+        pz: 0, // previous world position of this wheel
+        initialized: false,
+      });
+    }
   }
 
   // ── SPARKS — 8 bright flecks that arc outward from collision point ──────────

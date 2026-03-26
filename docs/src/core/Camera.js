@@ -439,6 +439,40 @@ export default class Camera {
       cam.rotateZ((Math.random() - 0.5) * this.shakeAmt * 0.008);
       cam.rotateX((Math.random() - 0.5) * this.shakeAmt * 0.004);
       this.shakeAmt = Math.max(0, this.shakeAmt - dt * 4.5);
+
+      // ── ROLL KICK — from Bruno's View.js setRoll() ─────────────────────────
+      // On collision, inject a random roll speed (left or right).
+      // Spring physics: velocity decays with damping, value springs back to 0.
+      // Stronger impact = bigger shake = bigger roll kick.
+      if (!this._rollValue) {
+        this._rollValue = 0;
+      }
+      if (!this._rollSpeed) {
+        this._rollSpeed = 0;
+      }
+      if (this.shakeAmt > 0.25 && !this._rollKicked) {
+        // Kick in a random direction proportional to impact strength
+        this._rollSpeed +=
+          this.shakeAmt * 0.35 * (Math.random() < 0.5 ? 1 : -1);
+        this._rollKicked = true;
+      }
+    } else {
+      this._rollKicked = false;
+    }
+
+    // ── ROLL SPRING DECAY ─────────────────────────────────────────────────────
+    // Pull back toward 0 (pullStrength=80), damp velocity (damping=5).
+    // Values from Bruno's View.js: roll.pullStrength=100, roll.damping=4.
+    if (this._rollValue === undefined) {
+      this._rollValue = 0;
+      this._rollSpeed = 0;
+    }
+    this._rollSpeed += -this._rollValue * 80 * dt; // spring pull toward 0
+    this._rollValue += this._rollSpeed * dt; // integrate
+    this._rollSpeed *= 1 - 5 * dt; // damping
+    // Apply roll to camera Z rotation — small but visible
+    if (Math.abs(this._rollValue) > 0.0001) {
+      cam.rotateZ(this._rollValue);
     }
   }
 }

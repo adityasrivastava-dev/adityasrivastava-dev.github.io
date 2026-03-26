@@ -131,8 +131,8 @@ export default class World {
   applyWeather(w) {
     const cfgs = {
       day: {
-        bg: 0xe86030, // deep warm orange sky — Bruno's signature
-        fog: 0xee7733, // rich amber fog that blends ground to sky
+        bg: 0xe86030,
+        fog: 0xee7733,
         fogD: 0.003,
         sun: 0xffaa44,
         sunI: 5.5,
@@ -203,33 +203,39 @@ export default class World {
         exp: 0.95,
       },
     };
+
     const cfg = cfgs[w] || cfgs.day;
-    this.scene.background = new THREE.Color(cfg.bg);
-    this.scene.fog = new THREE.FogExp2(cfg.fog, cfg.fogD);
-    if (this.sunLight) {
-      this.sunLight.color.set(cfg.sun);
-      this.sunLight.intensity = cfg.sunI;
+
+    // ── STORE TARGET — _updateAtmosphere lerps toward this every frame ─────────
+    // Bruno Simon's DayCycles.js interpolates between presets over time.
+    // Instead of instant color snaps we store the target and let the tick
+    // loop smoothly lerp fog, sky, and lights toward it over ~2.5 seconds.
+    // This makes weather transitions feel like the sky is actually changing,
+    // not just a palette swap.
+    this._weatherTarget = cfg;
+
+    // First call (no existing fog) — set immediately, no transition
+    if (!this.scene.fog) {
+      this.scene.background = new THREE.Color(cfg.bg);
+      this.scene.fog = new THREE.FogExp2(cfg.fog, cfg.fogD);
+      if (this.sunLight) {
+        this.sunLight.color.set(cfg.sun);
+        this.sunLight.intensity = cfg.sunI;
+      }
+      if (this.fillLight) {
+        this.fillLight.color.set(cfg.fill);
+        this.fillLight.intensity = cfg.fillI;
+      }
+      if (this.ambLight) {
+        this.ambLight.color.set(cfg.amb);
+        this.ambLight.intensity = cfg.ambI;
+      }
     }
-    if (this.fillLight) {
-      this.fillLight.color.set(cfg.fill);
-      this.fillLight.intensity = cfg.fillI;
-    }
-    if (this.ambLight) {
-      this.ambLight.color.set(cfg.amb);
-      this.ambLight.intensity = cfg.ambI;
-    }
-    if (this.rimLight) {
-      this.rimLight.intensity = cfg.sunI * 0.14;
-    }
-    if (this.bounceLight) {
-      this.bounceLight.intensity = w === "night" ? 0 : 0.18;
-    }
-    if (this.deitySpot) {
-      this.deitySpot.intensity = w === "night" ? 3.5 : 2.2;
-    }
+
+    // Instant non-visual state changes — grip, night mode, car lights
     this.isNight = w === "night";
     this.car.setNightMode(this.isNight);
-    if (this.objects) this.objects._isNight = this.isNight; // keeps temple light logic in sync
+    if (this.objects) this.objects._isNight = this.isNight;
     this.events.emit("weatherChange", { weather: w, isNight: this.isNight });
     const grip = {
       day: 1,
@@ -242,8 +248,57 @@ export default class World {
     this.car.setWeatherGrip(grip[w] ?? 1.0);
   }
 
-  _updateLighting(now) {
+  _updateLighting(now, dt) {
     if (!this.sunLight) return;
+
+    // ── SMOOTH WEATHER TRANSITION — lerp toward _weatherTarget every frame ────
+    // From Bruno's DayCycles.js: presets are blended over time, never instant.
+    // Rate t = dt * 0.55 → ~2.5s full transition at 60fps.
+    // Creates the feeling that the sky is actually changing, not palette-swapped.
+    if (this._weatherTarget) {
+      const tgt = this._weatherTarget;
+      const t = Math.min(1, (dt || 0.016) * 0.55);
+
+      // Fog color + density
+      if (this.scene.fog) {
+        this.scene.fog.color.lerp(new THREE.Color(tgt.fog), t);
+        this.scene.fog.density += (tgt.fogD - this.scene.fog.density) * t;
+      }
+
+      // Sky background
+      if (this.scene.background?.isColor) {
+        this.scene.background.lerp(new THREE.Color(tgt.bg), t);
+      }
+
+      // Sun — color + intensity
+      this.sunLight.color.lerp(new THREE.Color(tgt.sun), t);
+      this.sunLight.intensity += (tgt.sunI - this.sunLight.intensity) * t;
+
+      // Fill light
+      if (this.fillLight) {
+        this.fillLight.color.lerp(new THREE.Color(tgt.fill), t);
+        this.fillLight.intensity += (tgt.fillI - this.fillLight.intensity) * t;
+      }
+
+      // Ambient
+      if (this.ambLight) {
+        this.ambLight.color.lerp(new THREE.Color(tgt.amb), t);
+        this.ambLight.intensity += (tgt.ambI - this.ambLight.intensity) * t;
+      }
+
+      // Rim (derived from sun)
+      if (this.rimLight) {
+        this.rimLight.intensity +=
+          (tgt.sunI * 0.14 - this.rimLight.intensity) * t;
+      }
+
+      // Bounce
+      if (this.bounceLight) {
+        const tgtB = this.isNight ? 0 : 0.45;
+        this.bounceLight.intensity += (tgtB - this.bounceLight.intensity) * t;
+      }
+    }
+
     // Sun color breathes — subtly alive, not static
     const b = Math.sin(now * 0.08 * Math.PI * 2);
     this.sunLight.color.lerp(
