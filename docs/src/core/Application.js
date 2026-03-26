@@ -420,18 +420,47 @@ export default class Application {
 
   _triggerBloom(glowColor) {
     const bloom = document.getElementById("city-bloom");
-    if (!bloom) return;
     const hex = (glowColor || "#ffcc44").replace("#", "");
     const r = parseInt(hex.slice(0, 2), 16),
       g = parseInt(hex.slice(2, 4), 16),
       b = parseInt(hex.slice(4, 6), 16);
-    // Sharp flash in — slow fade out
-    bloom.style.transition = "background 0.06s ease";
-    bloom.style.background = `rgba(${r},${g},${b},0.55)`;
-    setTimeout(() => {
-      bloom.style.transition = "background 0.9s ease";
-      bloom.style.background = "rgba(0,0,0,0)";
-    }, 80);
+
+    // ── RADIAL IRIS BLOOM — blooms from center outward, not flat fill ─────
+    // Peak: strong radial at center → transparent at edges (feels like
+    // the building is emitting light toward you, not a color overlay)
+    if (bloom) {
+      bloom.style.transition = "background 0.07s ease";
+      bloom.style.background = `radial-gradient(
+        ellipse 58% 52% at 50% 55%,
+        rgba(${r},${g},${b},0.62) 0%,
+        rgba(${r},${g},${b},0.22) 45%,
+        transparent 72%
+      )`;
+      setTimeout(() => {
+        bloom.style.transition = "background 1.1s ease";
+        bloom.style.background = `radial-gradient(
+          ellipse 58% 52% at 50% 55%,
+          rgba(${r},${g},${b},0) 0%,
+          rgba(${r},${g},${b},0) 100%
+        )`;
+      }, 90);
+    }
+
+    // ── SHOCKWAVE — radial ring expands from screen center ────────────────
+    // Separate from bloom: bloom = brightness, shockwave = spatial impact
+    const shock = document.getElementById("shockwave");
+    if (shock) {
+      shock.classList.remove("fire");
+      void shock.offsetWidth; // reflow restarts animation
+      shock.style.setProperty("--sw-rgb", `${r},${g},${b}`);
+      shock.classList.add("fire");
+      shock.addEventListener(
+        "animationend",
+        () => shock.classList.remove("fire"),
+        { once: true },
+      );
+    }
+
     this.camera.shakeAmt = 0.3;
   }
 

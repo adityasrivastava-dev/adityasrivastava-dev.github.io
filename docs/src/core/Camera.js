@@ -284,8 +284,35 @@ export default class Camera {
     // Gives tunnel-vision feel, pure CSS — zero GPU cost
     const vig = document.getElementById("speed-vignette");
     if (vig) {
+      // At low speed: deep black edges (cinema depth)
+      // At high speed: shift to amber-red (burning through air feel)
+      // The CSS radial gradient reads these CSS custom properties in real-time
       const vigAmt = Math.max(0, speedRatio - 0.35) * 0.7;
       vig.style.opacity = vigAmt.toFixed(3);
+
+      // Color tint: lerp from pure black (0,0,0) to deep amber (80,20,0)
+      const r = Math.round(speedRatio * speedRatio * 80);
+      const g = Math.round(speedRatio * speedRatio * 18);
+      const bC = 0;
+      // Only update CSS vars at high speed to avoid paint thrash at idle
+      if (speedRatio > 0.4) {
+        const root = document.documentElement;
+        root.style.setProperty("--vignette-color", `${r},${g},${bC}`);
+        // Also narrow the transparent center — tunnel vision
+        const inner = Math.max(18, 35 - speedRatio * 18).toFixed(0);
+        root.style.setProperty("--vignette-inner", inner + "%");
+        // Deepen opacity at max speed
+        const op = (0.52 + speedRatio * 0.18).toFixed(3);
+        root.style.setProperty("--vignette-opacity", op);
+      } else if (speedRatio < 0.15) {
+        // Reset to black when nearly stopped
+        document.documentElement.style.setProperty("--vignette-color", "0,0,0");
+        document.documentElement.style.setProperty("--vignette-inner", "35%");
+        document.documentElement.style.setProperty(
+          "--vignette-opacity",
+          "0.52",
+        );
+      }
     }
 
     // ── SPEED STREAKS — horizontal motion lines, JS-driven via inline style ───

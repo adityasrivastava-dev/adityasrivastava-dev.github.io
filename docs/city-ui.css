@@ -665,52 +665,99 @@ canvas {
 
 /* ── MOBILE OVERRIDES ── */
 @media (max-width: 640px) {
+  /* ── Mobile prox card: compact left-edge pill, never blocks center ──
+           Problem: full-width top card covered ~40% of the 3D world.
+           Fix: bottom-left compact card, auto width (content-sized),
+                no footer (mob-enter circle handles entry separately),
+                no metrics (space is precious), slim padding.
+           Result: 3D world stays visible while building name is clear.     */
   #prox {
-    bottom: auto;
-    top: 16px; /* move to top of screen on mobile        */
-    width: calc(100vw - 24px);
+    bottom: 168px; /* above joystick zone (joystick = ~150px)  */
+    top: auto !important;
     left: 12px;
-    transform: translateY(-20px) scale(0.96);
-    border-radius: 6px;
+    right: auto;
+    width: auto;
+    max-width: 58vw; /* leaves right half clear for game view    */
+    transform: translateY(16px) scale(0.95);
+    border-radius: 8px;
   }
   #prox.show {
     transform: translateY(0) scale(1);
-    animation: prox-spring-mobile 0.48s cubic-bezier(0.18, 1.6, 0.4, 1) forwards;
+    animation: prox-spring-mobile 0.44s cubic-bezier(0.18, 1.6, 0.4, 1) forwards;
   }
   @keyframes prox-spring-mobile {
     0% {
-      transform: translateY(-24px) scale(0.93);
+      transform: translateY(20px) scale(0.9);
       opacity: 0;
     }
-    55% {
-      transform: translateY(5px) scale(1.01);
+    60% {
+      transform: translateY(-4px) scale(1.02);
       opacity: 1;
     }
     100% {
       transform: translateY(0) scale(1);
     }
   }
-  .px-hint {
-    display: none;
-  } /* no room for hint on mobile  */
-  .px-name {
-    font-size: 18px;
+  /* Hide footer completely — mob-enter circle button handles entry */
+  .px-foot {
+    display: none !important;
   }
-  .px-met {
-    font-size: 7px;
-  }
+  /* Hide metrics badges — keep only name + icon */
   .px-metrics {
-    gap: 5px;
+    display: none !important;
+  }
+  /* Trim padding so card is slim */
+  .px-top {
+    padding: 7px 12px 0 13px;
   }
   .px-main {
-    padding: 8px 12px 8px 16px;
-    gap: 10px;
+    padding: 6px 12px 8px 13px;
+    gap: 9px;
   }
-  .px-top {
-    padding: 8px 12px 0 16px;
+  .px-hint {
+    display: none !important;
+  }
+  /* Smaller icon so card stays compact */
+  .px-icon-wrap {
+    font-size: 24px;
+  }
+  .px-name {
+    font-size: 15px;
+    letter-spacing: 1px;
+  }
+  .px-sub {
+    font-size: 6.5px;
+    letter-spacing: 2px;
+  }
+  .px-sys {
+    font-size: 6px;
+    letter-spacing: 3px;
+  }
+  .px-dot {
+    width: 5px;
+    height: 5px;
+  }
+}
+
+/* Landscape phone — move even lower so it clears the camera bar */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 500px) {
+  #prox {
+    bottom: 12px !important;
+    top: auto !important;
+    left: 12px !important;
+    max-width: 45vw !important;
   }
   .px-foot {
-    padding: 7px 12px 10px 16px;
+    display: none !important;
+  }
+  .px-metrics {
+    display: none !important;
+  }
+  .px-top {
+    padding: 5px 10px 0 11px;
+  }
+  .px-main {
+    padding: 5px 10px 6px 11px;
   }
 }
 #side-panel {
@@ -2962,5 +3009,143 @@ a,
       0 0 28px rgba(255, 220, 60, 1),
       0 0 56px rgba(255, 200, 60, 0.45),
       0 0 90px rgba(255, 180, 40, 0.15);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+         CINEMATIC WORLD LAYER — Noise, Shockwave, Vignette enhancements
+         ═══════════════════════════════════════════════════════════════════ */
+
+/* ──────────────────────────────────────────────────────────────────
+         SCREEN NOISE — SVG fractalNoise turbulence, zero assets, zero JS.
+         Tiled 256×256 SVG with feTurbulence creates organic film-grain.
+         opacity 0.038 + mix-blend-mode overlay adds texture without color.
+         Disabled on touch devices (battery / GPU budget).
+         WHY: Perfect digital rendering reads as fake. Grain says "filmed."
+         ────────────────────────────────────────────────────────────────── */
+#noise-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  opacity: 0.038;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+  will-change: opacity;
+}
+/* Disable on touch to preserve GPU budget */
+.is-touch #noise-layer {
+  display: none;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+         ENTRY SHOCKWAVE — radial burst from screen center on building entry.
+         Triggered by JS adding .fire class. CSS custom property --nc-rgb
+         makes it match the building's color.
+         WHY: The bloom (flat fill) tells eyes "something changed."
+              The shockwave (radial expansion) tells eyes "I crossed a threshold."
+              Two different signals — one for brightness, one for space.
+         ────────────────────────────────────────────────────────────────── */
+#shockwave {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 9500;
+  opacity: 0;
+}
+#shockwave.fire {
+  animation: shockwave-burst 0.75s cubic-bezier(0.12, 0.8, 0.2, 1) forwards;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(var(--sw-rgb, 255, 200, 80), 0.4) 0%,
+    rgba(var(--sw-rgb, 255, 200, 80), 0.12) 40%,
+    transparent 72%
+  );
+}
+@keyframes shockwave-burst {
+  0% {
+    width: 0vmax;
+    height: 0vmax;
+    opacity: 1;
+  }
+  35% {
+    opacity: 0.85;
+  }
+  100% {
+    width: 220vmax;
+    height: 220vmax;
+    opacity: 0;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────
+         ENHANCED SPEED VIGNETTE — dynamic color tint at high speed.
+         At low speed: black edges (atmospheric depth).
+         At high speed: JS sets --vignette-color so edges become deep amber
+         making the screen feel like it's burning through air.
+         WHY: Black vignette = cinema. Amber vignette = velocity.
+              Different colors communicate different information.
+         ────────────────────────────────────────────────────────────────── */
+:root {
+  --vignette-color: 0, 0, 0; /* JS overrides this at speed */
+  --vignette-inner: 35%;
+  --vignette-opacity: 0.52;
+}
+#speed-vignette {
+  background: radial-gradient(
+    ellipse 72% 68% at 50% 50%,
+    transparent 0%,
+    transparent var(--vignette-inner),
+    rgba(var(--vignette-color), 0.3) 68%,
+    rgba(var(--vignette-color), var(--vignette-opacity)) 100%
+  ) !important;
+  transition: background 0.18s ease !important;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+         ENHANCED CITY BLOOM — radial iris (not flat fill)
+         Instead of flooding the entire screen with flat color, a radial
+         gradient blooms from center, making it feel like the world is
+         actually emitting light rather than a color overlay.
+         ────────────────────────────────────────────────────────────────── */
+#city-bloom {
+  background: radial-gradient(
+    ellipse 55% 50% at 50% 55%,
+    rgba(255, 220, 120, 0) 0%,
+    rgba(255, 220, 120, 0) 100%
+  ) !important;
+  transition: background 0.08s ease !important;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+         ALWAYS-ON CINEMATIC VIGNETTE — base layer (independent of speed)
+         The #vig element gives constant depth regardless of movement.
+         Enhanced to be slightly more pronounced than original.
+         ────────────────────────────────────────────────────────────────── */
+#vig {
+  background: radial-gradient(
+    ellipse 90% 80% at 50% 50%,
+    transparent 30%,
+    rgba(6, 3, 0, 0.28) 62%,
+    rgba(4, 2, 0, 0.55) 100%
+  ) !important;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+         MOB-ENTER BUTTON — hide when prox card is visible on mobile.
+         The compact prox card no longer has an enter button in its footer,
+         so mob-enter must always be visible when a building is in proximity.
+         Already handled by show/hide in JS — just ensure z-index is clear.
+         ────────────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  #mob-enter {
+    bottom: 24px !important; /* sits at bottom-right, not overlapping card */
+    right: 24px !important;
   }
 }
