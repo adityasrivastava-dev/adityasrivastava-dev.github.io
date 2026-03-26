@@ -33,6 +33,11 @@ export default class Camera {
 
     // Store previous speed ONCE per frame (not overwritten mid-frame)
     this._prevSpeed = 0;
+
+    // ── STOP EXHALE — camera breathes out when car goes from fast→still ──
+    this._wasMoving = false; // were we moving last frame?
+    this._exhaustT = 0; // 0..1 exhale progress
+    this._exhausting = false; // exhale currently playing
   }
 
   onResize(w, h) {
@@ -281,6 +286,76 @@ export default class Camera {
     if (vig) {
       const vigAmt = Math.max(0, speedRatio - 0.35) * 0.7;
       vig.style.opacity = vigAmt.toFixed(3);
+    }
+
+    // ── SPEED STREAKS — horizontal motion lines, JS-driven via inline style ───
+    // Appear above 55% speed. Each streak has an independent phase so they
+    // flash at different times — random, not synchronized. Pure CSS transform,
+    // zero reflow cost. Makes the world feel like it's tearing past the car.
+    if (!this._streakPhases) {
+      // Init once: random per-streak phase offsets 0..1
+      this._streakPhases = Array.from({ length: 10 }, () => Math.random());
+      this._streakT = 0;
+    }
+    this._streakT += dt;
+    const streakEl = document.getElementById("speed-streaks");
+    if (streakEl) {
+      const intensity = Math.max(0, (speedRatio - 0.55) / 0.45); // 0..1
+      const streaks = streakEl.children;
+      for (let i = 0; i < streaks.length; i++) {
+        if (intensity <= 0) {
+          streaks[i].style.opacity = "0";
+          continue;
+        }
+        // Each streak cycles at a slightly different rate
+        const rate = 0.9 + i * 0.22;
+        const phase = (this._streakT * rate + this._streakPhases[i]) % 1;
+        // Active 55% of cycle, then invisible for 45%
+        if (phase > 0.55) {
+          streaks[i].style.opacity = "0";
+          continue;
+        }
+        const t = phase / 0.55; // 0→1 over the active window
+        // Streak travels right→left: starts at 100%, ends at −20%
+        const tx = 100 - t * 120;
+        const op = intensity * (1 - t * 0.65) * (0.45 + (i % 4) * 0.12);
+        streaks[i].style.transform = `translateX(${tx.toFixed(1)}%)`;
+        streaks[i].style.opacity = op.toFixed(3);
+      }
+    }
+
+    // ── STOP EXHALE — detect transition from moving → still ──────────────────
+    // When the car drops below 0.07 after being above 0.12, the camera
+    // does a gentle "sigh": Y rises slightly, FOV dips, then both return.
+    // Mirrors the physiological feeling of catching your breath after speed.
+    const isMovingNow = speedNow > 0.07;
+    if (this._wasMoving === undefined) this._wasMoving = false;
+    if (this._exhaustT === undefined) {
+      this._exhaustT = 0;
+      this._exhausting = false;
+    }
+
+    const justStopped = this._wasMoving && !isMovingNow && prevSpeed > 0.12;
+    this._wasMoving = isMovingNow;
+
+    if (justStopped) {
+      this._exhausting = true;
+      this._exhaustT = 0;
+      // DOM exhale ring — expanding CSS circle at center of screen
+      const er = document.getElementById("exhale-ring");
+      if (er) {
+        er.classList.remove("exhale");
+        void er.offsetWidth;
+        er.classList.add("exhale");
+        setTimeout(() => er.classList.remove("exhale"), 950);
+      }
+    }
+    if (this._exhausting) {
+      this._exhaustT = Math.min(1, this._exhaustT + dt / 0.65);
+      const arc = Math.sin(this._exhaustT * Math.PI); // peaks at t=0.5
+      cam.position.y += arc * 0.3; // gentle Y rise
+      this._currentFOV -= arc * 3.5; // slight FOV dip (breath-out)
+      if (this._exhaustT >= 1) this._exhausting = false;
     }
 
     // ── SPEED SHAKE — road vibration at high speed ────────────────────────────

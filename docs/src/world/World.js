@@ -27,6 +27,7 @@ export default class World {
     this._buildGatewayArches();
     this._buildWorldName();
     this._buildAtmosphere();
+    this._buildHeartbeat();
   }
 
   // ── MAIN UPDATE — called by Application every render frame ─────────────────
@@ -54,6 +55,7 @@ export default class World {
     this.objects.updateEntryBursts();
     this._updateAtmosphere(now, dt);
     this._updateLighting(now, dt);
+    this._updateHeartbeat(now);
     // Dust trail — car tells world where it is each frame
     if (this.car.speed > 0.04) {
       this.spawnDust(carX, carZ, this.car.speed);
@@ -247,12 +249,34 @@ export default class World {
       0.05,
     );
 
-    // Deity spotlight slowly orbits the city — holy light sweeping temples
-    // Radius 100, height 90, full revolution every 80 seconds
+    // ── DEITY SPOTLIGHT — hunts between buildings, pauses, moves on ──────────
+    // Orbit base + occasional "lock" onto a temple for 1.8s. Much more alive
+    // than pure orbit — feels like there's an intelligence above the city.
     if (this.deitySpot) {
-      const t = now * ((Math.PI * 2) / 80);
-      this.deitySpot.position.x = Math.sin(t) * 100;
-      this.deitySpot.position.z = Math.cos(t) * 100;
+      if (!this._deityHunt) {
+        this._deityHunt = { lockUntil: 0, tx: 80, tz: -20 };
+      }
+      const dh = this._deityHunt;
+      if (now > dh.lockUntil) {
+        // Pick a new random building to lock onto (or return to orbit)
+        const buildings = window.CITY_DATA?.buildings || [];
+        if (buildings.length && Math.random() < 0.3) {
+          const b2 = buildings[Math.floor(Math.random() * buildings.length)];
+          dh.tx = b2.pos[0];
+          dh.tz = b2.pos[1];
+          dh.lockUntil = now + 1.6 + Math.random() * 1.2;
+        } else {
+          // Resume slow orbit
+          const t = now * ((Math.PI * 2) / 80);
+          dh.tx = Math.sin(t) * 100;
+          dh.tz = Math.cos(t) * 100;
+        }
+      }
+      // Smooth position toward target
+      this.deitySpot.position.x += (dh.tx - this.deitySpot.position.x) * 0.018;
+      this.deitySpot.position.z += (dh.tz - this.deitySpot.position.z) * 0.018;
+      this.deitySpot.position.y = 90;
+
       // Pulse intensity — breathing divine light
       this.deitySpot.intensity +=
         ((this.isNight ? 3.5 : 2.2) * (1 + Math.sin(now * 0.4) * 0.12) -
@@ -631,6 +655,78 @@ export default class World {
       vel[i * 3] = (Math.random() - 0.5) * 0.025;
       vel[i * 3 + 1] = Math.random() * 0.008;
       vel[i * 3 + 2] = (Math.random() - 0.5) * 0.025;
+    }
+  }
+
+  // ── WORLD HEARTBEAT ──────────────────────────────────────────────────────────
+  // Every 4 seconds a pulse ring expands from the city's origin (0, 0, 0).
+  // This single ring IS the city's heartbeat — it makes the world feel alive
+  // in a way no amount of static props can achieve.
+  //
+  // The ring lives in a pool of 3 so we can have multiple rings in flight
+  // at different expansion stages (like rings in water after a stone drop).
+  //
+  // The deity spotlight "hunting" system is handled in _updateLighting above.
+  _buildHeartbeat() {
+    this._heartbeatRings = [];
+    this._heartbeatNext = 0;
+    this._heartbeatPhase = 0; // sub-phase for staggered rings
+
+    // Pre-allocate 3 ring meshes — reuse by resetting them
+    for (let i = 0; i < 3; i++) {
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(1, 1.8, 48),
+        new THREE.MeshBasicMaterial({
+          color: 0xffcc66,
+          transparent: true,
+          opacity: 0,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+        }),
+      );
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.18;
+      ring.userData.life = 0; // 0 = inactive
+      ring.userData.maxLife = 1;
+      ring.userData.speed = 1;
+      this.scene.add(ring);
+      this._heartbeatRings.push(ring);
+    }
+  }
+
+  _updateHeartbeat(now) {
+    if (!this._heartbeatRings) return;
+
+    // Spawn a new pulse every 4 seconds. Three rings stagger with 0.22s gaps
+    // to create a "thump" feel rather than a single thin ring.
+    if (now >= this._heartbeatNext) {
+      this._heartbeatNext = now + 4.0;
+      this._heartbeatPhase = 0;
+    }
+    // Stagger: emit ring 0 at t=0, ring 1 at +0.22s, ring 2 at +0.44s
+    if (this._heartbeatPhase < 3) {
+      const nextEmit = this._heartbeatNext - 4.0 + this._heartbeatPhase * 0.22;
+      if (now >= nextEmit) {
+        const ring = this._heartbeatRings[this._heartbeatPhase];
+        ring.userData.life = 1.0;
+        ring.userData.speed = 0.8 + this._heartbeatPhase * 0.15;
+        ring.scale.set(1, 1, 1);
+        ring.material.opacity = this.isNight ? 0.35 : 0.18;
+        this._heartbeatPhase++;
+      }
+    }
+
+    // Animate active rings: expand outward, fade to zero
+    for (const ring of this._heartbeatRings) {
+      if (ring.userData.life <= 0) continue;
+      ring.userData.life -= 0.004 * ring.userData.speed;
+      // Max radius ~220 units (full world width) over 4s
+      const t = 1 - ring.userData.life;
+      const radius = t * 220;
+      ring.scale.set(radius, 1, radius);
+      // Opacity: strong at birth, fades to 0 as it reaches world edge
+      ring.material.opacity = ring.userData.life * (this.isNight ? 0.22 : 0.1);
+      if (ring.userData.life <= 0) ring.material.opacity = 0;
     }
   }
 

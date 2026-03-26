@@ -1,382 +1,521 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <!-- user-scalable=no prevents double-tap zoom interfering with joystick -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0" />
-  <title>Aditya Srivastava — Backend Architect</title>
+  <head>
+    <meta charset="UTF-8" />
+    <!-- user-scalable=no prevents double-tap zoom interfering with joystick -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0"
+    />
+    <title>Aditya Srivastava — Backend Architect</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;1,400&family=Barlow:wght@400;500&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;1,400&family=Barlow:wght@400;500&family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
 
-  <link rel="stylesheet" href="city-ui.css" />
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
+    <link rel="stylesheet" href="city-ui.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- ── CANVAS ── -->
+    <canvas class="webgl"></canvas>
 
-<!-- ── CANVAS ── -->
-<canvas class="webgl"></canvas>
+    <!-- ── CUSTOM CURSOR (hidden on touch devices via CSS) ── -->
+    <div id="cur"></div>
 
-<!-- ── CUSTOM CURSOR (hidden on touch devices via CSS) ── -->
-<div id="cur"></div>
-
-<!-- ── PORTRAIT LOCK — shown via JS when portrait + mobile ── -->
-<div id="portrait-lock">
-  <div class="pl-icon">📱</div>
-  <div class="pl-msg">ROTATE TO<br/>LANDSCAPE</div>
-</div>
-
-<!-- ── LOADER ── -->
-<div id="loader">
-  <div class="ld-name">ADITYA<br/>SRIVASTAVA</div>
-  <div class="ld-sub">BACKEND ARCHITECT · TEMPLE CITY PORTFOLIO · TRILASOFT SOLUTIONS</div>
-  <div class="ld-pw"><div id="ld-bar"></div></div>
-  <div id="ld-msg">AWAKENING THE CITY…</div>
-</div>
-
-<!-- ── START SCREEN ── -->
-<div id="start-screen">
-  <div class="ss-eyebrow">INTERACTIVE PORTFOLIO · 2024</div>
-  <div class="ss-click">ADITYA SRIVASTAVA</div>
-  <div class="ss-role">BACKEND ARCHITECT &nbsp;·&nbsp; TRILASOFT SOLUTIONS &nbsp;·&nbsp; 4 YEARS</div>
-  <div class="ss-rule"></div>
-  <button class="ss-enter-btn" id="ss-enter-btn">◈ &nbsp;&nbsp; ENTER THE CITY &nbsp;&nbsp; ◈</button>
-  <div class="ss-sub">or click anywhere &nbsp;·&nbsp; touch to explore</div>
-  <!-- Desktop hint -->
-  <div class="ss-hint ss-hint-desktop">W/S DRIVE &nbsp;·&nbsp; A/D STEER &nbsp;·&nbsp; E ENTER TEMPLE &nbsp;·&nbsp; M MAP</div>
-  <!-- Mobile hint -->
-  <div class="ss-hint ss-hint-mobile">JOYSTICK = DRIVE &nbsp;·&nbsp; ENTER BUTTON = ENTER TEMPLE</div>
-</div>
-
-<!-- ── OVERLAYS ── -->
-<div id="pp-glow"></div>
-<div id="vig"></div>
-<div id="city-bloom"></div>
-<div id="speed-vignette"></div>
-<div id="city-input-vignette"></div>
-<div id="guide-bar"></div>
-
-<!-- ── GAME HUD ── -->
-<div id="game-hud">
-  <div id="hud-meta">
-    <div id="weather-badge">DAY</div>
-    <div id="gear-badge">GEAR: D</div>
-  </div>
-  <div id="spd-ring">
-    <svg viewBox="0 0 82 82">
-      <circle class="glow-ring" cx="41" cy="41" r="36"/>
-      <circle class="track"     cx="41" cy="41" r="32"/>
-      <circle class="fill"   id="spd-arc" cx="41" cy="41" r="32"/>
-    </svg>
-    <div id="spd-num">0<span>KM/H</span></div>
-  </div>
-</div>
-
-<!-- ── TOP-RIGHT HEADER ── -->
-<header id="hud-tr">
-  <span id="mode-chip" class="recruiter">--</span>
-  <button class="hb" id="weather-btn" title="Weather (T)"><span id="weather-label">☀️</span></button>
-  <button class="hb" id="mute-btn">🔊</button>
-  <button class="hb" onclick="openJourney()">📖</button>
-  <button class="hb" onclick="toggleFullMap()">🗺</button>
-  <button class="hb" onclick="document.getElementById('contact').classList.add('vis')">✉</button>
-  <button class="hb skip-desktop" onclick="location.href='index.html'">← EXIT</button>
-  <button class="hb" id="skip-guide-btn" style="display:none;border-color:rgba(255,204,68,.4);color:#ffcc44"
-    onclick="window.CityEngine?.skipGuide?.();this.style.display='none'">SKIP</button>
-</header>
-
-<!-- ── WEATHER TOAST ── -->
-<div id="weather-toast"></div>
-
-<!-- ── MINIMAP ── -->
-<div id="minimap">
-  <div id="mm-lbl">MAP</div>
-  <canvas id="mm-canvas" width="110" height="110"></canvas>
-</div>
-
-<!-- ── VISITED DOTS ── -->
-<div id="mm-visited"></div>
-
-<!-- ── CONTROLS HINT (desktop only) ── -->
-<div id="ctrl-hint">
-  <span class="ck">W/S</span> DRIVE &nbsp;
-  <span class="ck">A/D</span> STEER &nbsp;
-  <span class="ck">E</span> ENTER &nbsp;
-  <span class="ck">T</span> WEATHER &nbsp;
-  <span class="ck">M</span> MAP
-</div>
-
-<!-- ── GRIP HUD ── -->
-<div id="grip-hud">
-  <span id="grip-icon">🌧️</span><span id="grip-label">GRIP</span>
-  <div id="grip-bar-wrap"><div id="grip-bar"></div></div>
-</div>
-
-<!-- ── PROXIMITY NOTIFICATION ── -->
-<div id="prox">
-  <div class="px-icon" id="px-icon">🏢</div>
-  <div>
-    <div class="px-name" id="px-name">Building</div>
-    <div class="px-sub"  id="px-sub">TAG</div>
-  </div>
-  <button class="px-btn" id="px-btn">ENTER [E]</button>
-</div>
-
-<!-- ── SIDE PANEL ── -->
-<div id="side-panel">
-  <div id="sp-inner">
-    <div id="sp-head">
-      <div id="sp-lbl">// SYSTEM FILE</div>
-      <button id="sp-x" onclick="closeSP()">×</button>
+    <!-- ── PORTRAIT LOCK — shown via JS when portrait + mobile ── -->
+    <div id="portrait-lock">
+      <div class="pl-icon">📱</div>
+      <div class="pl-msg">ROTATE TO<br />LANDSCAPE</div>
     </div>
-    <div id="sp-body"></div>
-  </div>
-</div>
 
-<!-- ── CAREER JOURNEY ── -->
-<div id="journey">
-  <button id="jb-x" onclick="closeJourney()">× CLOSE</button>
-  <div class="jb-hd">ADITYA SRIVASTAVA</div>
-  <div class="jb-sh">CAREER &amp; EDUCATION · ← → TO NAVIGATE</div>
-  <div id="jb-slide"><div class="jb-card" id="jb-card"></div></div>
-  <div id="jb-nav">
-    <button class="jb-arr" id="jb-p" onclick="jNav(-1)">←</button>
-    <div>
-      <div id="jb-ctr"></div>
-      <div id="jb-dots"></div>
+    <!-- ── LOADER ── -->
+    <div id="loader">
+      <div class="ld-name">ADITYA<br />SRIVASTAVA</div>
+      <div class="ld-sub">
+        BACKEND ARCHITECT · TEMPLE CITY PORTFOLIO · TRILASOFT SOLUTIONS
+      </div>
+      <div class="ld-pw"><div id="ld-bar"></div></div>
+      <div id="ld-msg">AWAKENING THE CITY…</div>
     </div>
-    <button class="jb-arr" id="jb-n" onclick="jNav(1)">→</button>
-  </div>
-</div>
 
-<!-- ── ORACLE ── -->
-<button id="ob" onclick="document.getElementById('op').classList.toggle('open')">⊕</button>
-<div id="op">
-  <div class="oh">
-    <span>// ORACLE · ASK ME ANYTHING</span>
-    <button id="ox" onclick="document.getElementById('op').classList.remove('open')">×</button>
-  </div>
-  <div id="om">
-    <div class="om b">Welcome to Aditya's City. Drive to a glowing checkpoint and press ENTER.</div>
-  </div>
-  <div class="or">
-    <input id="oi" placeholder="Ask about any system…"/>
-    <button id="os">SEND</button>
-  </div>
-</div>
-
-<!-- ── CONTACT ── -->
-<div id="contact">
-  <div class="cc">
-    <button class="ccl" onclick="document.getElementById('contact').classList.remove('vis')">×</button>
-    <div class="cu">// CLEARANCE GRANTED</div>
-    <div class="cn">ADITYA SRIVASTAVA</div>
-    <div class="cco">TRILASOFT SOLUTIONS PVT. LTD.</div>
-    <div class="crr">BACKEND ARCHITECT · 4 YEARS · NOIDA, INDIA</div>
-    <div class="cls">
-      <a class="cl" href="mailto:adityasrivastava.dev@gmail.com"><span class="cll">MAIL</span>adityasrivastava.dev@gmail.com</a>
-      <a class="cl" href="https://github.com/adityasrivastava" target="_blank" rel="noopener"><span class="cll">GH</span>github.com/adityasrivastava</a>
-      <a class="cl" href="https://linkedin.com/in/adityasrivastava" target="_blank" rel="noopener"><span class="cll">LI</span>linkedin.com/in/adityasrivastava</a>
+    <!-- ── START SCREEN ── -->
+    <div id="start-screen">
+      <div class="ss-eyebrow">INTERACTIVE PORTFOLIO · 2024</div>
+      <div class="ss-click">ADITYA SRIVASTAVA</div>
+      <div class="ss-role">
+        BACKEND ARCHITECT &nbsp;·&nbsp; TRILASOFT SOLUTIONS &nbsp;·&nbsp; 4
+        YEARS
+      </div>
+      <div class="ss-rule"></div>
+      <button class="ss-enter-btn" id="ss-enter-btn">
+        ◈ &nbsp;&nbsp; ENTER THE CITY &nbsp;&nbsp; ◈
+      </button>
+      <div class="ss-sub">or click anywhere &nbsp;·&nbsp; touch to explore</div>
+      <!-- Desktop hint -->
+      <div class="ss-hint ss-hint-desktop">
+        W/S DRIVE &nbsp;·&nbsp; A/D STEER &nbsp;·&nbsp; E ENTER TEMPLE
+        &nbsp;·&nbsp; M MAP
+      </div>
+      <!-- Mobile hint -->
+      <div class="ss-hint ss-hint-mobile">
+        JOYSTICK = DRIVE &nbsp;·&nbsp; ENTER BUTTON = ENTER TEMPLE
+      </div>
     </div>
-    <div class="cav">AVAILABLE FOR OPPORTUNITIES</div>
-  </div>
-</div>
 
-<!-- ── FULL MAP ── -->
-<div id="fullmap">
-  <button id="fullmap-close" onclick="closeFullMap()">ESC · CLOSE</button>
-  <div id="fullmap-wrap">
-    <canvas id="fullmap-canvas" width="900" height="900"></canvas>
-    <div id="fm-hud">
-      <div id="fm-title">◈ TEMPLE CITY</div>
-      <div id="fm-count">0 / 12 VISITED</div>
+    <!-- ── OVERLAYS ── -->
+    <div id="pp-glow"></div>
+    <div id="vig"></div>
+    <div id="city-bloom"></div>
+    <div id="speed-vignette"></div>
+    <div id="city-input-vignette"></div>
+    <div id="guide-bar"></div>
+
+    <!-- ── SPEED STREAKS — JS-driven motion lines at high velocity ── -->
+    <div id="speed-streaks" aria-hidden="true">
+      <div class="streak s1"></div>
+      <div class="streak s2"></div>
+      <div class="streak s3"></div>
+      <div class="streak s4"></div>
+      <div class="streak s5"></div>
+      <div class="streak s6"></div>
+      <div class="streak s7"></div>
+      <div class="streak s8"></div>
+      <div class="streak s9"></div>
+      <div class="streak s10"></div>
     </div>
-    <div id="fm-tooltip"></div>
-  </div>
-</div>
 
-<!-- ── MOBILE JOYSTICK (left side) + ENTER BUTTON (right side) ── -->
-<div id="joy-zone">
-  <div id="joy-outer"><div id="joy-inner"></div></div>
-</div>
-<button id="mob-enter" onclick="window.CityEngine?.enterNearestBuilding?.()">
-  ENTER
-  <span class="mob-enter-lbl">TEMPLE</span>
-</button>
+    <!-- ── COLLISION FLASH — brief white/color hit feedback ── -->
+    <div id="hit-flash" aria-hidden="true"></div>
 
+    <!-- ── STOP EXHALE RING — single expanding ring when car stops ── -->
+    <div id="exhale-ring" aria-hidden="true"></div>
 
-<!-- ══════════════════════════ SCRIPTS ══════════════════════════════════════ -->
+    <!-- ── HEARTBEAT HALO — CSS pulse ripple synced with world heartbeat ── -->
+    <div id="heartbeat-halo" aria-hidden="true"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="city-data.js"></script>
-<script src="city-hud.js"></script>
+    <!-- ── GAME HUD ── -->
+    <div id="game-hud">
+      <div id="hud-meta">
+        <div id="weather-badge">DAY</div>
+        <div id="gear-badge">GEAR: D</div>
+      </div>
+      <div id="spd-ring">
+        <svg viewBox="0 0 82 82">
+          <circle class="glow-ring" cx="41" cy="41" r="36" />
+          <circle class="track" cx="41" cy="41" r="32" />
+          <circle class="fill" id="spd-arc" cx="41" cy="41" r="32" />
+        </svg>
+        <div id="spd-num">0<span>KM/H</span></div>
+      </div>
+    </div>
 
-<script>
-// ── PROGRESS BRIDGE ───────────────────────────────────────────────────────────
-(function() {
-  const _orig = window.onCityProgress;
-  window.onCityProgress = function(pct, msg) {
-    if (typeof _orig === 'function') _orig(pct, msg);
-    if (pct >= 100) {
-      const gripHud = document.getElementById('grip-hud');
-      if (gripHud) gripHud.style.display = 'none';
-    }
-  };
-})();
-</script>
+    <!-- ── TOP-RIGHT HEADER ── -->
+    <header id="hud-tr">
+      <span id="mode-chip" class="recruiter">--</span>
+      <button class="hb" id="weather-btn" title="Weather (T)">
+        <span id="weather-label">☀️</span>
+      </button>
+      <button class="hb" id="mute-btn">🔊</button>
+      <button class="hb" onclick="openJourney()">📖</button>
+      <button class="hb" onclick="toggleFullMap()">🗺</button>
+      <button
+        class="hb"
+        onclick="document.getElementById('contact').classList.add('vis')"
+      >
+        ✉
+      </button>
+      <button class="hb skip-desktop" onclick="location.href = 'index.html'">
+        ← EXIT
+      </button>
+      <button
+        class="hb"
+        id="skip-guide-btn"
+        style="
+          display: none;
+          border-color: rgba(255, 204, 68, 0.4);
+          color: #ffcc44;
+        "
+        onclick="
+          window.CityEngine?.skipGuide?.();
+          this.style.display = 'none';
+        "
+      >
+        SKIP
+      </button>
+    </header>
 
-<script type="module" src="./src/main.js"></script>
+    <!-- ── WEATHER TOAST ── -->
+    <div id="weather-toast"></div>
 
-<script>
-// ═════════════════════════════════════════════════════════════════════════════
-// MOBILE SUPPORT — detects touch device, shows joystick, handles portrait lock
-// ═════════════════════════════════════════════════════════════════════════════
-(function() {
+    <!-- ── MINIMAP ── -->
+    <div id="minimap">
+      <div id="mm-lbl">MAP</div>
+      <canvas id="mm-canvas" width="110" height="110"></canvas>
+    </div>
 
-  // ── 1. DETECT MOBILE / TOUCH ──────────────────────────────────────────────
-  const IS_TOUCH = ('ontouchstart' in window)
-                || (navigator.maxTouchPoints > 0)
-                || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    <!-- ── VISITED DOTS ── -->
+    <div id="mm-visited"></div>
 
-  window._isMobileDevice = IS_TOUCH;
+    <!-- ── CONTROLS HINT (desktop only) ── -->
+    <div id="ctrl-hint">
+      <span class="ck">W/S</span> DRIVE &nbsp; <span class="ck">A/D</span> STEER
+      &nbsp; <span class="ck">E</span> ENTER &nbsp;
+      <span class="ck">T</span> WEATHER &nbsp; <span class="ck">M</span> MAP
+    </div>
 
-  // ── 2. SHOW JOYSTICK ON TOUCH DEVICES ─────────────────────────────────────
-  if (IS_TOUCH) {
-    const joyZone = document.getElementById('joy-zone');
-    if (joyZone) joyZone.style.display = 'block';
-    // Hide desktop-only elements
-    const ctrlHint = document.getElementById('ctrl-hint');
-    if (ctrlHint) ctrlHint.style.display = 'none';
-    // Hide desktop cursor
-    const cur = document.getElementById('cur');
-    if (cur) cur.style.display = 'none';
-    // Show mobile hint, hide desktop hint
-    document.querySelectorAll('.ss-hint-desktop').forEach(el => el.style.display = 'none');
-    document.querySelectorAll('.ss-hint-mobile').forEach(el => el.style.display = 'block');
-  }
+    <!-- ── GRIP HUD ── -->
+    <div id="grip-hud">
+      <span id="grip-icon">🌧️</span><span id="grip-label">GRIP</span>
+      <div id="grip-bar-wrap"><div id="grip-bar"></div></div>
+    </div>
 
-  // ── 3. PORTRAIT LOCK — show when portrait + narrow (phone, not tablet) ─────
-  function checkOrientation() {
-    const isPortrait  = window.innerHeight > window.innerWidth;
-    const isNarrow    = window.innerWidth < 600;
-    const lock = document.getElementById('portrait-lock');
-    if (!lock) return;
-    if (IS_TOUCH && isPortrait && isNarrow) {
-      lock.classList.add('show');
-    } else {
-      lock.classList.remove('show');
-    }
-  }
-  checkOrientation();
-  window.addEventListener('resize',             checkOrientation);
-  window.addEventListener('orientationchange',  checkOrientation);
+    <!-- ── PROXIMITY NOTIFICATION — Building Nameplate Card ── -->
+    <div id="prox" role="complementary" aria-label="Nearby building">
+      <!-- Top: icon + glow dot + system label -->
+      <div class="px-top">
+        <div class="px-dot" id="px-dot"></div>
+        <div class="px-sys" id="px-sys">NEARBY</div>
+      </div>
+      <!-- Center: big building name -->
+      <div class="px-main">
+        <div class="px-icon-wrap">
+          <span class="px-icon" id="px-icon">🏢</span>
+        </div>
+        <div class="px-info">
+          <div class="px-name" id="px-name">Building</div>
+          <div class="px-sub" id="px-sub">TAG</div>
+          <div class="px-metrics" id="px-metrics"></div>
+        </div>
+      </div>
+      <!-- Bottom: CTA -->
+      <div class="px-foot">
+        <button
+          class="px-btn"
+          id="px-btn"
+          onclick="window.CityEngine?.enterNearestBuilding?.()"
+          ontouchend="event.preventDefault();window.CityEngine?.enterNearestBuilding?.()"
+        >
+          <span class="px-btn-key">E</span>
+          <span class="px-btn-txt">ENTER</span>
+        </button>
+        <div class="px-hint" id="px-hint">DRIVE CLOSER TO ENTER</div>
+      </div>
+      <!-- Colored left bar -->
+      <div class="px-bar" id="px-bar"></div>
+    </div>
 
-  // ── 4. JOYSTICK ───────────────────────────────────────────────────────────
-  const joyOuter = document.getElementById('joy-outer');
-  const joyInner = document.getElementById('joy-inner');
-  if (!joyOuter || !joyInner) return;
+    <!-- ── SIDE PANEL ── -->
+    <div id="side-panel">
+      <div id="sp-inner">
+        <div id="sp-head">
+          <div id="sp-lbl">// SYSTEM FILE</div>
+          <button id="sp-x" onclick="closeSP()">×</button>
+        </div>
+        <div id="sp-body"></div>
+      </div>
+    </div>
 
-  let active = false, startX = 0, startY = 0;
-  const DEAD = 14;    // deadzone radius (px)
-  const MAX_R = 44;   // max joystick radius (px)
+    <!-- ── CAREER JOURNEY ── -->
+    <div id="journey">
+      <button id="jb-x" onclick="closeJourney()">× CLOSE</button>
+      <div class="jb-hd">ADITYA SRIVASTAVA</div>
+      <div class="jb-sh">CAREER &amp; EDUCATION · ← → TO NAVIGATE</div>
+      <div id="jb-slide"><div class="jb-card" id="jb-card"></div></div>
+      <div id="jb-nav">
+        <button class="jb-arr" id="jb-p" onclick="jNav(-1)">←</button>
+        <div>
+          <div id="jb-ctr"></div>
+          <div id="jb-dots"></div>
+        </div>
+        <button class="jb-arr" id="jb-n" onclick="jNav(1)">→</button>
+      </div>
+    </div>
 
-  function pushAxis(ax, ay) {
-    window._touchJoy = { ax, ay };
-    const ic = window._appInstance?.input;
-    if (ic) ic.touchAxis = { ax, ay };
-  }
+    <!-- ── ORACLE ── -->
+    <button
+      id="ob"
+      onclick="document.getElementById('op').classList.toggle('open')"
+    >
+      ⊕
+    </button>
+    <div id="op">
+      <div class="oh">
+        <span>// ORACLE · ASK ME ANYTHING</span>
+        <button
+          id="ox"
+          onclick="document.getElementById('op').classList.remove('open')"
+        >
+          ×
+        </button>
+      </div>
+      <div id="om">
+        <div class="om b">
+          Welcome to Aditya's City. Drive to a glowing checkpoint and press
+          ENTER.
+        </div>
+      </div>
+      <div class="or">
+        <input id="oi" placeholder="Ask about any system…" />
+        <button id="os">SEND</button>
+      </div>
+    </div>
 
-  function onStart(e) {
-    active = true;
-    const t = e.touches ? e.touches[0] : e;
-    startX = t.clientX;
-    startY = t.clientY;
-    joyInner.style.transition = 'none';
-    // Init audio on first touch (required by browsers)
-    window._appInstance?.audio?.init?.();
-  }
+    <!-- ── CONTACT ── -->
+    <div id="contact">
+      <div class="cc">
+        <button
+          class="ccl"
+          onclick="document.getElementById('contact').classList.remove('vis')"
+        >
+          ×
+        </button>
+        <div class="cu">// CLEARANCE GRANTED</div>
+        <div class="cn">ADITYA SRIVASTAVA</div>
+        <div class="cco">TRILASOFT SOLUTIONS PVT. LTD.</div>
+        <div class="crr">BACKEND ARCHITECT · 4 YEARS · NOIDA, INDIA</div>
+        <div class="cls">
+          <a class="cl" href="mailto:adityasrivastava.dev@gmail.com"
+            ><span class="cll">MAIL</span>adityasrivastava.dev@gmail.com</a
+          >
+          <a
+            class="cl"
+            href="https://github.com/adityasrivastava"
+            target="_blank"
+            rel="noopener"
+            ><span class="cll">GH</span>github.com/adityasrivastava</a
+          >
+          <a
+            class="cl"
+            href="https://linkedin.com/in/adityasrivastava"
+            target="_blank"
+            rel="noopener"
+            ><span class="cll">LI</span>linkedin.com/in/adityasrivastava</a
+          >
+        </div>
+        <div class="cav">AVAILABLE FOR OPPORTUNITIES</div>
+      </div>
+    </div>
 
-  function onMove(e) {
-    if (!active) return;
-    e.preventDefault(); // prevents page scroll while driving
-    const t = e.touches ? e.touches[0] : e;
-    let dx = t.clientX - startX;
-    let dy = t.clientY - startY;
-    const dist = Math.hypot(dx, dy);
-    // Clamp to circle
-    if (dist > MAX_R) { dx *= MAX_R / dist; dy *= MAX_R / dist; }
-    // Move thumb visual
-    joyInner.style.transform = `translate(${dx}px, ${dy}px)`;
-    // Normalize: -1 to +1 (with deadzone)
-    const ax = dist > DEAD ? dx / MAX_R : 0;
-    const ay = dist > DEAD ? dy / MAX_R : 0;
-    pushAxis(ax, ay);
-  }
+    <!-- ── FULL MAP ── -->
+    <div id="fullmap">
+      <button id="fullmap-close" onclick="closeFullMap()">ESC · CLOSE</button>
+      <div id="fullmap-wrap">
+        <canvas id="fullmap-canvas" width="900" height="900"></canvas>
+        <div id="fm-hud">
+          <div id="fm-title">◈ TEMPLE CITY</div>
+          <div id="fm-count">0 / 12 VISITED</div>
+        </div>
+        <div id="fm-tooltip"></div>
+      </div>
+    </div>
 
-  function onEnd() {
-    active = false;
-    joyInner.style.transition = 'transform 0.12s ease';
-    joyInner.style.transform  = '';
-    pushAxis(0, 0);
-  }
+    <!-- ── MOBILE JOYSTICK (left side) + ENTER BUTTON (right side) ── -->
+    <div id="joy-zone">
+      <div id="joy-outer"><div id="joy-inner"></div></div>
+    </div>
+    <button
+      id="mob-enter"
+      onclick="window.CityEngine?.enterNearestBuilding?.()"
+    >
+      ENTER
+      <span class="mob-enter-lbl">TEMPLE</span>
+    </button>
 
-  // Use the whole joy-zone as the touch target (larger = easier to hit)
-  const zone = document.getElementById('joy-zone');
-  zone.addEventListener('touchstart',  onStart, { passive: true  });
-  zone.addEventListener('touchmove',   onMove,  { passive: false }); // must be non-passive to preventDefault
-  zone.addEventListener('touchend',    onEnd,   { passive: true  });
-  zone.addEventListener('touchcancel', onEnd,   { passive: true  });
+    <!-- ══════════════════════════ SCRIPTS ══════════════════════════════════════ -->
 
-  // ── 5. SWIPE-TO-START on start screen ─────────────────────────────────────
-  // Tap anywhere on start-screen triggers entry (city-hud.js handles this,
-  // but we add an explicit touchend to the ENTER button for reliability)
-  const enterBtn = document.getElementById('ss-enter-btn');
-  if (enterBtn) {
-    enterBtn.addEventListener('touchend', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      if (typeof hideStart === 'function') hideStart();
-    }, { passive: false });
-  }
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="city-data.js"></script>
+    <script src="city-hud.js"></script>
 
-  // ── 6. MOBILE HUD ADJUSTMENTS ─────────────────────────────────────────────
-  // Move speed ring up above joystick so it's not overlapped
-  if (IS_TOUCH) {
-    const hud = document.getElementById('game-hud');
-    if (hud) hud.style.bottom = '160px';
-    // Make ENTER button visible (it's hidden until proximity)
-    // mob-enter visibility is managed by showNotification/hideNotification
-    // Make oracle button bigger on mobile
-    const ob = document.getElementById('ob');
-    if (ob) {
-      ob.style.width  = '52px';
-      ob.style.height = '52px';
-      ob.style.bottom = '170px';
-      ob.style.fontSize = '22px';
-    }
-  }
+    <script>
+      // ── PROGRESS BRIDGE ───────────────────────────────────────────────────────────
+      (function () {
+        const _orig = window.onCityProgress;
+        window.onCityProgress = function (pct, msg) {
+          if (typeof _orig === "function") _orig(pct, msg);
+          if (pct >= 100) {
+            const gripHud = document.getElementById("grip-hud");
+            if (gripHud) gripHud.style.display = "none";
+          }
+        };
+      })();
+    </script>
 
-})();
-</script>
+    <script type="module" src="./src/main.js"></script>
 
-<!-- ── KEYBOARD BINDINGS (desktop only) ──────────────────────────────────────-->
-<script>
-document.addEventListener('keydown', function(e) {
-  if (e.target.tagName === 'INPUT') return;
-  const eng = window.CityEngine;
-  if (!eng) return;
-  switch (e.code) {
-    case 'KeyT':   eng.cycleWeather?.();  break;
-    case 'KeyM':   toggleFullMap?.();     break;
-    case 'KeyJ':   openJourney?.();       break;
-    case 'Escape':
-      closeSP?.();
-      closeFullMap?.();
-      eng.resetCamera?.();
-      break;
-  }
-});
-</script>
+    <script>
+      // ═════════════════════════════════════════════════════════════════════════════
+      // MOBILE SUPPORT — detects touch device, shows joystick, handles portrait lock
+      // ═════════════════════════════════════════════════════════════════════════════
+      (function () {
+        // ── 1. DETECT MOBILE / TOUCH ──────────────────────────────────────────────
+        const IS_TOUCH =
+          "ontouchstart" in window ||
+          navigator.maxTouchPoints > 0 ||
+          /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-</body>
+        window._isMobileDevice = IS_TOUCH;
+
+        // Mark body so CSS can target touch devices with .is-touch selector
+        if (IS_TOUCH) document.body.classList.add("is-touch");
+
+        // ── 2. SHOW JOYSTICK ON TOUCH DEVICES ─────────────────────────────────────
+        if (IS_TOUCH) {
+          const joyZone = document.getElementById("joy-zone");
+          if (joyZone) joyZone.style.display = "block";
+          // Hide desktop-only elements
+          const ctrlHint = document.getElementById("ctrl-hint");
+          if (ctrlHint) ctrlHint.style.display = "none";
+          // Hide desktop cursor
+          const cur = document.getElementById("cur");
+          if (cur) cur.style.display = "none";
+          // Show mobile hint, hide desktop hint
+          document
+            .querySelectorAll(".ss-hint-desktop")
+            .forEach((el) => (el.style.display = "none"));
+          document
+            .querySelectorAll(".ss-hint-mobile")
+            .forEach((el) => (el.style.display = "block"));
+        }
+
+        // ── 3. PORTRAIT LOCK — show when portrait + narrow (phone, not tablet) ─────
+        function checkOrientation() {
+          const isPortrait = window.innerHeight > window.innerWidth;
+          const isNarrow = window.innerWidth < 600;
+          const lock = document.getElementById("portrait-lock");
+          if (!lock) return;
+          if (IS_TOUCH && isPortrait && isNarrow) {
+            lock.classList.add("show");
+          } else {
+            lock.classList.remove("show");
+          }
+        }
+        checkOrientation();
+        window.addEventListener("resize", checkOrientation);
+        window.addEventListener("orientationchange", checkOrientation);
+
+        // ── 4. JOYSTICK ───────────────────────────────────────────────────────────
+        const joyOuter = document.getElementById("joy-outer");
+        const joyInner = document.getElementById("joy-inner");
+        if (!joyOuter || !joyInner) return;
+
+        let active = false,
+          startX = 0,
+          startY = 0;
+        const DEAD = 14; // deadzone radius (px)
+        const MAX_R = 44; // max joystick radius (px)
+
+        function pushAxis(ax, ay) {
+          window._touchJoy = { ax, ay };
+          const ic = window._appInstance?.input;
+          if (ic) ic.touchAxis = { ax, ay };
+        }
+
+        function onStart(e) {
+          active = true;
+          const t = e.touches ? e.touches[0] : e;
+          startX = t.clientX;
+          startY = t.clientY;
+          joyInner.style.transition = "none";
+          // Init audio on first touch (required by browsers)
+          window._appInstance?.audio?.init?.();
+        }
+
+        function onMove(e) {
+          if (!active) return;
+          e.preventDefault(); // prevents page scroll while driving
+          const t = e.touches ? e.touches[0] : e;
+          let dx = t.clientX - startX;
+          let dy = t.clientY - startY;
+          const dist = Math.hypot(dx, dy);
+          // Clamp to circle
+          if (dist > MAX_R) {
+            dx *= MAX_R / dist;
+            dy *= MAX_R / dist;
+          }
+          // Move thumb visual
+          joyInner.style.transform = `translate(${dx}px, ${dy}px)`;
+          // Normalize: -1 to +1 (with deadzone)
+          const ax = dist > DEAD ? dx / MAX_R : 0;
+          const ay = dist > DEAD ? dy / MAX_R : 0;
+          pushAxis(ax, ay);
+        }
+
+        function onEnd() {
+          active = false;
+          joyInner.style.transition = "transform 0.12s ease";
+          joyInner.style.transform = "";
+          pushAxis(0, 0);
+        }
+
+        // Use the whole joy-zone as the touch target (larger = easier to hit)
+        const zone = document.getElementById("joy-zone");
+        zone.addEventListener("touchstart", onStart, { passive: true });
+        zone.addEventListener("touchmove", onMove, { passive: false }); // must be non-passive to preventDefault
+        zone.addEventListener("touchend", onEnd, { passive: true });
+        zone.addEventListener("touchcancel", onEnd, { passive: true });
+
+        // ── 5. SWIPE-TO-START on start screen ─────────────────────────────────────
+        // Tap anywhere on start-screen triggers entry (city-hud.js handles this,
+        // but we add an explicit touchend to the ENTER button for reliability)
+        const enterBtn = document.getElementById("ss-enter-btn");
+        if (enterBtn) {
+          enterBtn.addEventListener(
+            "touchend",
+            function (e) {
+              e.preventDefault();
+              e.stopPropagation();
+              if (typeof hideStart === "function") hideStart();
+            },
+            { passive: false },
+          );
+        }
+
+        // ── 6. MOBILE HUD ADJUSTMENTS ─────────────────────────────────────────────
+        // Move speed ring up above joystick so it's not overlapped
+        if (IS_TOUCH) {
+          const hud = document.getElementById("game-hud");
+          if (hud) hud.style.bottom = "160px";
+          // Make ENTER button visible (it's hidden until proximity)
+          // mob-enter visibility is managed by showNotification/hideNotification
+          // Make oracle button bigger on mobile
+          const ob = document.getElementById("ob");
+          if (ob) {
+            ob.style.width = "52px";
+            ob.style.height = "52px";
+            ob.style.bottom = "170px";
+            ob.style.fontSize = "22px";
+          }
+        }
+      })();
+    </script>
+
+    <!-- ── KEYBOARD BINDINGS (desktop only) ──────────────────────────────────────-->
+    <script>
+      document.addEventListener("keydown", function (e) {
+        if (e.target.tagName === "INPUT") return;
+        const eng = window.CityEngine;
+        if (!eng) return;
+        switch (e.code) {
+          case "KeyT":
+            eng.cycleWeather?.();
+            break;
+          case "KeyM":
+            toggleFullMap?.();
+            break;
+          case "KeyJ":
+            openJourney?.();
+            break;
+          case "Escape":
+            closeSP?.();
+            closeFullMap?.();
+            eng.resetCamera?.();
+            break;
+        }
+      });
+    </script>
+  </body>
 </html>

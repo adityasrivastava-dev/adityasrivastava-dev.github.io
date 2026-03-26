@@ -29,6 +29,12 @@ export default class Car {
     this._prevVisSpeed = 0; // for brake light detection
     this._isNight = false; // updated by setNightMode
 
+    // ── GAME FEEL STATE ────────────────────────────────────────────────────
+    this._impactSquash = 0; // 0..1 — drives body squash on collision
+    this._impactVel = 0; // spring velocity for squash recovery
+    this._sparks = []; // active spark meshes [{mesh,vx,vy,vz,life}]
+    this._trailScaleZ = 1; // directional speed trail Z elongation
+
     this._weatherGrip = 1.0;
     this._physics = new Physics();
 
@@ -80,18 +86,45 @@ export default class Car {
     const nx = this.x + this.vx;
     const nz = this.z + this.vz;
 
+    let collided = false;
     if (!this._collides(nx, nz, boxes)) {
       this.x = nx;
       this.z = nz;
     } else if (!this._collides(nx, this.z, boxes)) {
       this.x = nx;
       this.vz *= -0.25;
+      collided = true;
     } else if (!this._collides(this.x, nz, boxes)) {
       this.z = nz;
       this.vx *= -0.25;
+      collided = true;
     } else {
       this.vx *= -0.2;
       this.vz *= -0.2;
+      collided = true;
+    }
+
+    // ── COLLISION FEEDBACK — squash + sparks + DOM flash ─────────────────
+    if (collided && this.speed > 0.06) {
+      const impactMag = Math.min(1.0, this.speed / 0.3);
+      this._impactSquash = 0.85 + impactMag * 0.15; // 0.85..1.0 squash
+      this._impactVel = -impactMag * 18; // spring launch
+      this._spawnSparks(this.x, this.z, impactMag);
+
+      // DOM flash — brief amber hit-flash overlay
+      const hf = document.getElementById("hit-flash");
+      if (hf) {
+        hf.classList.remove("pop", "fade");
+        void hf.offsetWidth; // reflow to restart animation
+        hf.classList.add("pop");
+        setTimeout(() => {
+          hf.classList.remove("pop");
+          hf.classList.add("fade");
+        }, 60);
+        setTimeout(() => {
+          hf.classList.remove("fade");
+        }, 400);
+      }
     }
 
     // World boundary clamp (2.5x world scale)
@@ -126,6 +159,32 @@ export default class Car {
     const pitchTarget = (this._fwdVel > 0.01 ? -1 : 1) * this.speed * 0.6;
     this._bodyPitch += (pitchTarget - this._bodyPitch) * 0.09; // initialized in constructor
     this.group.rotation.x = this._bodyPitch * 0.04;
+
+    // ── COLLISION SQUASH — body deforms on impact then springs back ─────────
+    // Spring equation: squash overshoots 1.0, bounces twice, settles.
+    if (this._impactSquash !== 0 || this._impactVel !== 0) {
+      const rest = 1.0;
+      const k = 32,
+        d = 5.5;
+      this._impactVel +=
+        ((rest - this._impactSquash) * k - this._impactVel * d) * dt;
+      this._impactSquash += this._impactVel * dt;
+      if (
+        Math.abs(this._impactSquash - rest) < 0.001 &&
+        Math.abs(this._impactVel) < 0.01
+      ) {
+        this._impactSquash = rest;
+        this._impactVel = 0;
+      }
+      // XZ squash + Y counter-stretch (volume conservation like a rubber ball)
+      const sq = this._impactSquash;
+      const stretch = 1.0 + (1.0 - sq) * 0.8;
+      if (this.bodyMesh) {
+        this.bodyMesh.scale.set(stretch, sq, sq);
+      }
+    } else if (this.bodyMesh) {
+      this.bodyMesh.scale.set(1, 1, 1);
+    }
 
     // Suspension — extra squish at high speed for road-contact feel
     const bumpFreq = 5.0 + this.speed * 45;
@@ -168,10 +227,47 @@ export default class Car {
       );
     }
 
+    // ── DIRECTIONAL SPEED TRAIL — comet tail that elongates with velocity ────
+    // Reads as "the car is cutting through space" — directional, not just a circle
+    if (this._speedTrail) {
+      this._speedTrail.position.set(this.x, 0.05, this.z);
+      this._speedTrail.rotation.y = this.angle;
+      const speedRatio = Math.min(1, this.speed / C.MAX_SPEED);
+      // Elongate backward — trail is 2..12 units long at max speed
+      const trailLen = 2 + speedRatio * 10;
+      this._speedTrail.scale.set(0.6 + speedRatio * 0.6, 1, trailLen);
+      // Opacity ramps in above 25% speed
+      const trailOp = Math.max(0, (speedRatio - 0.25) / 0.75) * 0.38;
+      this._speedTrail.material.opacity = trailOp;
+      // Color shifts warm amber→white at high speed (like heated metal)
+      this._speedTrail.material.color.setRGB(
+        1.0,
+        0.72 + speedRatio * 0.28,
+        0.25 + speedRatio * 0.55,
+      );
+    }
+
     // Headlight cone — widens on speed
     if (this._headLight) {
       this._headLight.distance = 16 + this.speed * 20;
     }
+
+    // ── SPARK UPDATE — arc upward, fade, auto-remove ─────────────────────
+    this._sparks = this._sparks.filter((s) => {
+      s.mesh.userData.life -= dt * 2.8;
+      s.vy -= 9.8 * dt; // gravity pulls sparks down
+      s.mesh.position.x += s.vx * dt;
+      s.mesh.position.y += s.vy * dt;
+      s.mesh.position.z += s.vz * dt;
+      s.mesh.material.opacity = Math.max(0, s.mesh.userData.life);
+      if (s.mesh.userData.life <= 0) {
+        this.scene.remove(s.mesh);
+        s.mesh.geometry.dispose();
+        s.mesh.material.dispose();
+        return false;
+      }
+      return true;
+    });
   }
 
   setWeatherGrip(grip) {
@@ -408,6 +504,24 @@ export default class Car {
     g.rotation.y = this.angle;
     this.scene.add(g);
     this.group = g;
+
+    // ── DIRECTIONAL SPEED TRAIL — flat oval disc behind the car ───────────
+    // Sits flat on ground, elongates backward with speed. Like a comet tail.
+    // Lives in scene-space (not parented to car group) so it stays on ground.
+    this._speedTrail = new THREE.Mesh(
+      new THREE.CircleGeometry(1.4, 16),
+      new THREE.MeshBasicMaterial({
+        color: 0xffcc66,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }),
+    );
+    this._speedTrail.rotation.x = -Math.PI / 2;
+    // Offset backward in car-local Z (trail is BEHIND the car)
+    this._speedTrail.position.y = 0.05;
+    this.scene.add(this._speedTrail);
   }
 
   _buildGroundRing() {
@@ -423,5 +537,37 @@ export default class Car {
     this._groundRing.rotation.x = -Math.PI / 2;
     this._groundRing.position.y = 0.08;
     this.scene.add(this._groundRing);
+  }
+
+  // ── SPARKS — 8 bright flecks that arc outward from collision point ──────────
+  // Each spark is a tiny box mesh with random velocity + gravity. Lives ~0.35s.
+  _spawnSparks(x, z, impactMag) {
+    const count = Math.floor(6 + impactMag * 6);
+    for (let i = 0; i < count; i++) {
+      const spark = new THREE.Mesh(
+        new THREE.BoxGeometry(0.06, 0.06, 0.22),
+        new THREE.MeshBasicMaterial({
+          color: new THREE.Color().setHSL(0.1 + Math.random() * 0.05, 1, 0.75),
+          transparent: true,
+          opacity: 1.0,
+        }),
+      );
+      spark.position.set(
+        x + (Math.random() - 0.5) * 1.5,
+        0.5 + Math.random() * 0.8,
+        z + (Math.random() - 0.5) * 1.5,
+      );
+      const speed = (0.6 + Math.random() * 0.8) * impactMag;
+      const angle = Math.random() * Math.PI * 2;
+      spark.userData.life = 1.0;
+      spark.userData.vy = 0;
+      this.scene.add(spark);
+      this._sparks.push({
+        mesh: spark,
+        vx: Math.cos(angle) * speed * 12,
+        vy: (3.5 + Math.random() * 4) * impactMag,
+        vz: Math.sin(angle) * speed * 12,
+      });
+    }
   }
 }
