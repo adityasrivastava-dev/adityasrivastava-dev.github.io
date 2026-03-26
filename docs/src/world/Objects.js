@@ -595,8 +595,28 @@ export default class Objects {
   _buildTrees() {
     const tg = window._toonGrad;
     const S = 2.5; // world scale
+
+    // Bruno's world has rich autumn variety — yellows, golds, reds, deep greens
+    // This is the single biggest visual difference from basic green cones
     const leafColors = [
-      0x336633, 0x447744, 0x558844, 0x66aa33, 0x228833, 0x4a8833,
+      // Autumn yellows/golds (most prominent in Bruno)
+      0xddbb22, // bright gold
+      0xeeaa00, // deep gold
+      0xcc9900, // amber gold
+      0xffcc33, // light gold
+      // Rich autumn oranges
+      0xee6622, // burnt orange
+      0xdd5511, // deep orange-red
+      // Deep greens (for variety + contrast)
+      0x336633, // forest green
+      0x447722, // olive green
+      0x558833, // mid green
+      // Red autumn
+      0xbb3311, // dark red
+      0xcc4422, // warm red
+      // Chartreuse (Bruno's bright accent)
+      0x88cc22, // bright chartreuse
+      0x99dd44, // light green-yellow
     ];
 
     // Dense tree placement around each temple + along roads (scaled positions)
@@ -743,9 +763,11 @@ export default class Objects {
 
     positions.forEach(([x, z]) => {
       if (!x || !z) return;
-      const h = 1.5 + Math.random() * 1.5;
-      const r = 1.2 + Math.random() * 0.8;
-      const isBlossom = Math.random() > 0.4;
+      // Taller trees — Bruno's foliage towers above buildings
+      const h = 2.8 + Math.random() * 2.2;
+      const r = 2.0 + Math.random() * 1.4;
+      // 30% blossom (pink), 70% foliage — more leafy than blossom
+      const isBlossom = Math.random() > 0.7;
       const lColor = leafColors[Math.floor(Math.random() * leafColors.length)];
       const lMat = new THREE.MeshToonMaterial({
         color: lColor,
@@ -754,26 +776,48 @@ export default class Objects {
 
       const tg2 = new THREE.Group();
       tg2.position.set(x, 0, z);
+
+      // Thicker trunk — brunos trees have visible trunks
+      const trunkH = h * 1.4;
+      const trunkW = 0.35 + Math.random() * 0.15;
       const trunk = new THREE.Mesh(
-        new THREE.BoxGeometry(0.3, h * 1.3, 0.3),
-        new THREE.MeshToonMaterial({ color: 0x6a4422, gradientMap: tg }),
+        new THREE.BoxGeometry(trunkW, trunkH, trunkW),
+        new THREE.MeshToonMaterial({ color: 0x7a4d2a, gradientMap: tg }),
       );
-      trunk.position.y = h * 0.65;
+      trunk.position.y = trunkH * 0.5;
       tg2.add(trunk);
 
       let leafMesh;
       if (isBlossom) {
-        leafMesh = new THREE.Mesh(new THREE.SphereGeometry(r, 6, 5), lMat);
-        leafMesh.position.y = h * 1.3 + r * 0.7;
-      } else {
         leafMesh = new THREE.Mesh(
-          new THREE.ConeGeometry(r * 0.8, r * 2.2, 6),
+          new THREE.SphereGeometry(r * 0.9, 7, 6),
           lMat,
         );
-        leafMesh.position.y = h * 1.3 + r * 0.9;
+        leafMesh.position.y = h * 1.4 + r * 0.7;
+        leafMesh.scale.y = 0.85; // flatten slightly
+      } else {
+        // Use ConeGeometry for most — but vary the shape more
+        const useRound = Math.random() > 0.55;
+        if (useRound) {
+          // Rounded tree like Bruno's broad-canopy trees
+          leafMesh = new THREE.Mesh(new THREE.SphereGeometry(r, 7, 6), lMat);
+          leafMesh.position.y = h * 1.4 + r * 0.5;
+          leafMesh.scale.y = 0.75;
+        } else {
+          // Tall cone tree
+          leafMesh = new THREE.Mesh(
+            new THREE.ConeGeometry(r * 0.85, r * 2.6, 7),
+            lMat,
+          );
+          leafMesh.position.y = h * 1.4 + r * 0.95;
+        }
       }
       leafMesh.userData.baseY = leafMesh.position.y;
       tg2.add(leafMesh);
+
+      // Random slight Y rotation — no two trees face same way
+      tg2.rotation.y = Math.random() * Math.PI * 2;
+
       this.scene.add(tg2);
       this.trees.push({
         group: tg2,
@@ -783,9 +827,9 @@ export default class Objects {
         baseZ: z,
         r: r + 0.5,
         windPhase: Math.random() * Math.PI * 2,
-        windAmpX: 0.02 + Math.random() * 0.015,
-        windAmpZ: 0.015 + Math.random() * 0.01,
-        windFreq: 0.4 + Math.random() * 0.2,
+        windAmpX: 0.022 + Math.random() * 0.018,
+        windAmpZ: 0.016 + Math.random() * 0.012,
+        windFreq: 0.35 + Math.random() * 0.25,
       });
     });
   }

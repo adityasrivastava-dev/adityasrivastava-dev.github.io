@@ -440,17 +440,17 @@ canvas {
 /* ── CINEMATIC PROXIMITY HUD ── */
 /* ════════════════════════════════════════════════════════════════
          BUILDING NAMEPLATE CARD  (#prox)
-         Shows when car enters proximity radius of any building.
-         Designed to feel like a game's "location title card" —
-         cinematic, colored by the building, springy entrance.
+         Positioned bottom-right so it never covers the car or the road
+         ahead. The player always sees where they're going.
          ════════════════════════════════════════════════════════════════ */
 #prox {
   position: fixed;
-  bottom: 148px; /* above game-hud ring on desktop        */
-  left: 50%;
+  bottom: 148px; /* above speed ring HUD                  */
+  right: 24px; /* right edge — never blocks center view */
+  left: auto; /* override any inherited left:50%       */
   z-index: 9000;
-  width: min(400px, calc(100vw - 32px)); /* never overflows mobile */
-  transform: translateX(-50%) translateY(24px) scale(0.95);
+  width: 310px; /* compact — enough for name + 2 badges  */
+  transform: translateY(20px) scale(0.95);
   background: rgba(6, 3, 1, 0.92);
   border: 1px solid rgba(var(--nc-rgb, 0, 200, 255), 0.28);
   border-radius: 4px;
@@ -469,27 +469,27 @@ canvas {
   overflow: hidden;
 }
 
-/* ── SPRING ENTRANCE ── */
+/* ── SPRING ENTRANCE — rises from below on right side ── */
 #prox.show {
   opacity: 1;
-  transform: translateX(-50%) translateY(0) scale(1);
+  transform: translateY(0) scale(1);
   pointer-events: auto;
   animation: prox-spring 0.52s cubic-bezier(0.18, 1.6, 0.4, 1) forwards;
 }
 @keyframes prox-spring {
   0% {
-    transform: translateX(-50%) translateY(22px) scale(0.93);
+    transform: translateY(22px) scale(0.93);
     opacity: 0;
   }
   55% {
-    transform: translateX(-50%) translateY(-6px) scale(1.02);
+    transform: translateY(-6px) scale(1.02);
     opacity: 1;
   }
   78% {
-    transform: translateX(-50%) translateY(3px) scale(0.99);
+    transform: translateY(3px) scale(0.99);
   }
   100% {
-    transform: translateX(-50%) translateY(0px) scale(1);
+    transform: translateY(0px) scale(1);
   }
 }
 
@@ -515,7 +515,7 @@ canvas {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px 0 20px;
+  padding: 8px 14px 0 16px;
 }
 .px-dot {
   width: 6px;
@@ -548,11 +548,11 @@ canvas {
 .px-main {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 10px 16px 10px 20px;
+  gap: 12px;
+  padding: 8px 14px 10px 16px;
 }
 .px-icon-wrap {
-  font-size: 32px;
+  font-size: 26px;
   line-height: 1;
   flex-shrink: 0;
   filter: drop-shadow(0 0 10px rgba(var(--nc-rgb, 0, 200, 255), 0.7));
@@ -582,9 +582,9 @@ canvas {
 
 .px-name {
   font-family: var(--ff);
-  font-size: clamp(17px, 4.5vw, 22px);
+  font-size: clamp(15px, 2.5vw, 19px);
   font-weight: 800;
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
   color: #fff;
   line-height: 1.1;
   text-shadow: 0 0 14px rgba(var(--nc-rgb, 0, 200, 255), 0.4);
@@ -632,7 +632,7 @@ canvas {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 16px 12px 20px;
+  padding: 7px 14px 10px 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
   background: rgba(0, 0, 0, 0.2);
   gap: 12px;

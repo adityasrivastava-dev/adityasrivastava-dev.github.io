@@ -67,52 +67,53 @@ export default class World {
   _buildLighting() {
     const s = this.scene;
 
-    // Sky/ground gradient — warm zenith, violet ground
-    this.hemiLight = new THREE.HemisphereLight(0xffe8aa, 0x7755aa, 1.2);
+    // Sky/ground gradient — deep warm sky, rich terracotta ground bounce
+    // Bruno's world reads warm because the hemisphere has strong ground color
+    this.hemiLight = new THREE.HemisphereLight(0xff9944, 0xcc4411, 1.8);
     s.add(this.hemiLight);
 
-    // Key sun — high-angle, warm gold, strong shadows
-    this.sunLight = new THREE.DirectionalLight(0xffe088, 3.8);
-    this.sunLight.position.set(55, 95, 25);
+    // Key sun — stronger, lower angle, more dramatic shadows
+    // Bruno's shadows are long and visible — sun at lower angle = longer shadows
+    this.sunLight = new THREE.DirectionalLight(0xffaa44, 5.5);
+    this.sunLight.position.set(80, 75, 45); // lower angle = longer shadows
     this.sunLight.castShadow = true;
     this.sunLight.shadow.mapSize.set(2048, 2048);
-    this.sunLight.shadow.camera.left = -180;
-    this.sunLight.shadow.camera.right = 180;
-    this.sunLight.shadow.camera.top = 180;
-    this.sunLight.shadow.camera.bottom = -180;
+    this.sunLight.shadow.camera.left = -220;
+    this.sunLight.shadow.camera.right = 220;
+    this.sunLight.shadow.camera.top = 220;
+    this.sunLight.shadow.camera.bottom = -220;
     this.sunLight.shadow.camera.far = 600;
-    this.sunLight.shadow.bias = -0.0003;
+    this.sunLight.shadow.bias = -0.0004;
     s.add(this.sunLight);
 
-    // Cool fill from opposite side — creates warm/cool contrast on all faces
-    this.fillLight = new THREE.DirectionalLight(0x8866cc, 0.75);
-    this.fillLight.position.set(-70, 40, -30);
+    // Cool purple fill — creates warm/cool contrast like Bruno's world
+    this.fillLight = new THREE.DirectionalLight(0x9966ff, 1.2);
+    this.fillLight.position.set(-90, 55, -40);
     s.add(this.fillLight);
 
-    // Rim/back light — low, warm amber, from behind the city
-    // Creates edge separation between objects and sky (key for 3D depth reading)
-    this.rimLight = new THREE.DirectionalLight(0xff9944, 0.55);
-    this.rimLight.position.set(0, 12, 120);
+    // Strong warm rim/back light — edge separation is what gives Bruno's
+    // objects their distinct silhouettes against the background
+    this.rimLight = new THREE.DirectionalLight(0xff7722, 1.1);
+    this.rimLight.position.set(-20, 18, 140);
     s.add(this.rimLight);
 
-    // Ground bounce — very subtle warm scatter from red earth
-    this.bounceLight = new THREE.DirectionalLight(0xcc6633, 0.18);
+    // Ground bounce — strong warm orange scatter from the red earth
+    this.bounceLight = new THREE.DirectionalLight(0xff5522, 0.45);
     this.bounceLight.position.set(0, -1, 0);
     s.add(this.bounceLight);
 
-    // Ambient — low so shadows have real depth
-    this.ambLight = new THREE.AmbientLight(0xffcc77, 0.65);
+    // Ambient — kept lower so shadows read deep and rich
+    this.ambLight = new THREE.AmbientLight(0xff8833, 0.5);
     s.add(this.ambLight);
 
-    // Deity spotlight — rotates slowly around the city center
-    // Creates the "holy light sweeping the temples" effect. Dramatic.
+    // Deity spotlight — sweeps slowly, creating dramatic pools of light
     this.deitySpot = new THREE.SpotLight(
-      0xffeedd,
-      2.2,
-      220,
-      Math.PI * 0.12,
-      0.5,
-      1.2,
+      0xffdd99,
+      3.5,
+      280,
+      Math.PI * 0.14,
+      0.6,
+      1.0,
     );
     this.deitySpot.position.set(80, 90, -20);
     this.deitySpotTarget = new THREE.Object3D();
@@ -130,16 +131,16 @@ export default class World {
   applyWeather(w) {
     const cfgs = {
       day: {
-        bg: 0xeabb88,
-        fog: 0xf0c898,
-        fogD: 0.0035,
-        sun: 0xffe088,
-        sunI: 3.8,
-        fill: 0x8866cc,
-        fillI: 0.75,
-        amb: 0xffcc77,
-        ambI: 0.65,
-        exp: 1.08,
+        bg: 0xe86030, // deep warm orange sky — Bruno's signature
+        fog: 0xee7733, // rich amber fog that blends ground to sky
+        fogD: 0.003,
+        sun: 0xffaa44,
+        sunI: 5.5,
+        fill: 0x9966ff,
+        fillI: 1.2,
+        amb: 0xff8833,
+        ambI: 0.5,
+        exp: 1.12,
       },
       night: {
         bg: 0x0a0820,
@@ -315,25 +316,61 @@ export default class World {
   // ── GROUND (large flat plane + sandy pavement) ─────────────────────────────
   _buildGround() {
     const s = this.scene;
-    // Large ground — 2.5x scale = 1000 units across
+
+    // Large ground — deep saturated terracotta like Bruno's orange earth
     const ground = new THREE.Mesh(
       new THREE.BoxGeometry(1000, 0.4, 1000),
-      new THREE.MeshLambertMaterial({ color: 0xc86a44 }),
+      new THREE.MeshLambertMaterial({ color: 0xcc5522 }), // rich brick-orange
     );
     ground.position.y = -0.2;
     ground.receiveShadow = true;
     s.add(ground);
 
+    // Water — vivid cyan-teal like Bruno's ocean border
     const water = new THREE.Mesh(
       new THREE.PlaneGeometry(1200, 1200),
-      new THREE.MeshLambertMaterial({ color: 0x44aacc }),
+      new THREE.MeshLambertMaterial({ color: 0x22bbdd }), // vivid teal
     );
     water.rotation.x = -Math.PI / 2;
     water.position.y = -0.5;
     s.add(water);
 
-    // Pavement blocks around central island (scaled up)
-    const paveMat = new THREE.MeshLambertMaterial({ color: 0xd47a55 });
+    // Water shimmer layer
+    const waterTop = new THREE.Mesh(
+      new THREE.PlaneGeometry(1200, 1200),
+      new THREE.MeshBasicMaterial({
+        color: 0x44ddff,
+        transparent: true,
+        opacity: 0.25,
+        depthWrite: false,
+      }),
+    );
+    waterTop.rotation.x = -Math.PI / 2;
+    waterTop.position.y = -0.45;
+    s.add(waterTop);
+
+    // Ground tile grid — gives the plaza that Bruno-style paved look
+    // Large 10×10 unit tiles create subtle variation without texture
+    const tileMat = new THREE.MeshLambertMaterial({ color: 0xc44f1e }); // slightly darker
+    const tileSpacing = 10;
+    const tileCount = 40;
+    for (let tx = -tileCount / 2; tx < tileCount / 2; tx++) {
+      for (let tz = -tileCount / 2; tz < tileCount / 2; tz++) {
+        // Only place tiles in the main plaza area, skip far edges
+        if (Math.abs(tx) > 18 || Math.abs(tz) > 16) continue;
+        if ((tx + tz) % 2 !== 0) continue; // checkerboard skip = every other tile
+        const tile = new THREE.Mesh(
+          new THREE.BoxGeometry(tileSpacing - 0.15, 0.02, tileSpacing - 0.15),
+          tileMat,
+        );
+        tile.position.set(tx * tileSpacing + 5, 0.01, tz * tileSpacing + 5);
+        tile.receiveShadow = true;
+        s.add(tile);
+      }
+    }
+
+    // Pavement blocks around central island (scaled up) — lighter to contrast
+    const paveMat = new THREE.MeshLambertMaterial({ color: 0xe08860 });
     [
       [-35, 0, 40, 50],
       [35, 0, 40, 50],
@@ -349,6 +386,19 @@ export default class World {
       blk.receiveShadow = true;
       s.add(blk);
     });
+
+    // Beach/sand border strips — the transition between orange ground and cyan water
+    const sandMat = new THREE.MeshLambertMaterial({ color: 0xeebb88 });
+    for (const [x, z, w, d] of [
+      [0, -220, 600, 18],
+      [0, 220, 600, 18],
+      [-220, 0, 18, 440],
+      [220, 0, 18, 440],
+    ]) {
+      const strip = new THREE.Mesh(new THREE.BoxGeometry(w, 0.1, d), sandMat);
+      strip.position.set(x, -0.35, z);
+      s.add(strip);
+    }
   }
 
   // ── CENTERPIECE ────────────────────────────────────────────────────────────
