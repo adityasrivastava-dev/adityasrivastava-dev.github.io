@@ -401,8 +401,23 @@ function renderJourney() {
   });
 }
 function jNav(d) {
-  jIdx = Math.max(0, Math.min(JD.length - 1, jIdx + d));
-  renderJourney();
+  const card = document.getElementById("jb-card");
+  const dir = d > 0 ? "left" : "right";
+  // Slide current card out
+  card.classList.add(`slide-out-${dir}`);
+  setTimeout(() => {
+    card.classList.remove(`slide-out-${dir}`);
+    jIdx = Math.max(0, Math.min(JD.length - 1, jIdx + d));
+    renderJourney();
+    // Slide new card in from opposite direction
+    const inDir = d > 0 ? "right" : "left";
+    card.classList.add(`slide-in-${inDir}`);
+    card.addEventListener(
+      "animationend",
+      () => card.classList.remove(`slide-in-${inDir}`),
+      { once: true },
+    );
+  }, 140);
 }
 function openJourney() {
   document.getElementById("journey").classList.add("open");
@@ -476,11 +491,25 @@ async function sendO() {
   const q = inp.value.trim();
   if (!q) return;
   inp.value = "";
-  msgs.innerHTML += `<div class="om u">${q}</div>`;
+  // Create user message with pop-in animation
+  const uMsg = document.createElement("div");
+  uMsg.className = "om u om-enter";
+  uMsg.textContent = q;
+  msgs.appendChild(uMsg);
+  // Remove animation class after it completes (keeps DOM clean)
+  uMsg.addEventListener(
+    "animationend",
+    () => uMsg.classList.remove("om-enter"),
+    { once: true },
+  );
+
   const th = document.createElement("div");
-  th.className = "om t";
+  th.className = "om t om-enter";
   th.textContent = "// processing · · ·";
   msgs.appendChild(th);
+  th.addEventListener("animationend", () => th.classList.remove("om-enter"), {
+    once: true,
+  });
   msgs.scrollTop = msgs.scrollHeight;
   oH.push({ role: "user", content: q });
   const sys = `You are the Oracle of Aditya's Temple City — a sacred AI guide who speaks with wisdom and context about each temple and the system it represents.
@@ -521,8 +550,13 @@ Mode: ${MODE}. Answer 2-4 sentences. Speak with wisdom about both the temple myt
     });
     const d = await r.json();
     const rep = d.content?.[0]?.text || "Oracle offline.";
-    th.className = "om b";
+    th.classList.remove("om-enter");
+    th.className = "om b om-enter";
     th.textContent = rep;
+    th.addEventListener("animationend", () => th.classList.remove("om-enter"), {
+      once: true,
+    });
+    msgs.scrollTop = msgs.scrollHeight;
     oH.push({ role: "assistant", content: rep });
   } catch {
     th.className = "om b";
