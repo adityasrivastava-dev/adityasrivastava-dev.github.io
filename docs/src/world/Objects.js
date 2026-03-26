@@ -17,10 +17,22 @@ export default class Objects {
   _initToonGrad() {
     if (window._toonGrad) return;
     const gc = document.createElement("canvas");
-    gc.width = 4;
+    // 8 stops instead of 4 — doubles sculpted quality on curved/tiered surfaces.
+    // Finer gradation near midtones is where stone "turns" from light to shadow.
+    // The visual jump from 4→8 bands is the single highest-ROI change here.
+    gc.width = 8;
     gc.height = 1;
     const gx = gc.getContext("2d");
-    ["#110800", "#664422", "#ddaa66", "#fff8ee"].forEach((c, i) => {
+    [
+      "#060300", // deepest shadow — crevices, underhangs
+      "#2e1208", // dark shadow — recessed stone faces
+      "#573018", // shadow-mid — shaded side of tier
+      "#88503a", // mid-dark  — turning point from shadow
+      "#b07a55", // mid       — ambient face
+      "#cca070", // mid-light — slight diffuse
+      "#ddc899", // light     — facing sun
+      "#fff5e8", // highlight — top stone edge catch
+    ].forEach((c, i) => {
       gx.fillStyle = c;
       gx.fillRect(i, 0, 1, 1);
     });
@@ -70,6 +82,9 @@ export default class Objects {
       cool: mk("#ddeeff", "#6699cc", "#224466"),
       stone: mk("#ffffff", "#f5e0c0", "#cc9966"),
       gold: mk("#ffe566", "#ddaa00", "#553300"),
+      // gold_rich: brilliant specular hotspot makes kalash pots / finials read as
+      // actual metal. The near-white sp param concentrates light into a tight point.
+      gold_rich: mk("#fffce0", "#ffcc33", "#5a3800", "rgba(255,255,220,0.99)"),
       tree: mk("#77cc44", "#336622", "#0a1a04"),
       car: mk("#ff9977", "#dd2200", "#440000", "rgba(255,230,220,0.95)"),
       carDark: mk("#ee5533", "#991100", "#220000"),
@@ -142,19 +157,36 @@ export default class Objects {
     const mL = new THREE.MeshToonMaterial({ color: sL, gradientMap: tg });
     const mM = new THREE.MeshToonMaterial({ color: sM, gradientMap: tg });
     const mD = new THREE.MeshToonMaterial({ color: sD, gradientMap: tg });
-    const mG = new THREE.MeshToonMaterial({ color: 0xffcc44, gradientMap: tg });
 
-    // Foundation steps
+    // ── IMPROVEMENT 2: Emissive trim on dark cornice material ────────────────
+    // Dark cornices absorb a whisper of the building's glow color — like
+    // gilded inlay or painted carvings catching interior temple light.
+    // MeshToonMaterial supports emissive; we dim it to ~6% of the glow color.
+    mD.emissive = new THREE.Color(gc).multiplyScalar(0.06);
+
+    // ── IMPROVEMENT 2: Gold → matcap with specular hotspot ───────────────────
+    // Kalash pots and finials now read as actual brass/gold, not flat yellow.
+    // The gold_rich matcap has a near-white concentrated specular highlight.
+    const mG = new THREE.MeshMatcapMaterial({
+      color: 0xffdd55,
+      matcap: mc.gold_rich || mc.gold || mc.warm,
+    });
+
+    // Foundation steps — IMPROVEMENT 3: lowest step uses dark material (fake AO)
+    // The bottom-most step sits in shadow from all steps above it.
+    // Using mD instead of mM/mL grounds the building visually.
     const steps = b.isHero ? 4 : 3;
     for (let s = 0; s < steps; s++) {
       const sw = w + (steps - s) * 1.8,
         sd = d + (steps - s) * 1.8,
         sh = 0.38;
-      const slab = new THREE.Mesh(
-        new THREE.BoxGeometry(sw, sh, sd),
-        s % 2 === 0 ? mM : mL,
-      );
+      // s=0 is the lowest step — darkest (in shadow from those above)
+      // s=1 receives partial shadow — mid tone
+      // s=2+ are lit — light tone
+      const stepMat = s === 0 ? mD : s === 1 ? mM : mL;
+      const slab = new THREE.Mesh(new THREE.BoxGeometry(sw, sh, sd), stepMat);
       slab.position.y = s * sh + sh / 2;
+      slab.userData.isFoundation = true;
       g.add(slab);
     }
     const baseH = steps * 0.38;
@@ -168,6 +200,10 @@ export default class Objects {
       this._mandapa(g, w, d, h, baseH, mL, mM, mD, mG, gc, b, mc, sL);
     else if (type === "stupa")
       this._stupa(g, w, d, h, baseH, mL, mM, mD, mG, gc, b);
+
+    // ── IMPROVEMENT 5: Micro-imperfection — hand-built, not extruded ─────────
+    // Must run AFTER the building type method populates the group.
+    this._imperfectify(g, baseH);
 
     // Torana gateway for hero/education
     if (b.isHero || b.isEducation) {
@@ -225,18 +261,74 @@ export default class Objects {
       g.add(this._ptLight(gc, this._isNight ? 2.5 : 1.0, 22, [0, h * 0.7, 0]));
     }
 
-    // Blob shadow (scaled to building footprint)
-    const shadowMat = new THREE.MeshBasicMaterial({
-      color: new THREE.Color(0.03, 0.02, 0.04),
-      transparent: true,
-      opacity: 0.6,
-      depthWrite: false,
-    });
-    const shad = new THREE.Mesh(new THREE.CircleGeometry(1, 18), shadowMat);
-    shad.rotation.x = -Math.PI / 2;
-    shad.scale.set(w * 0.8, d * 0.72, 1);
-    shad.position.y = 0.025;
-    g.add(shad);
+    // ── IMPROVEMENT 3: Soft gradient contact shadow ───────────────────────────
+    // Canvas radial gradient: dense black center → transparent edge.
+    // Two layers: wide soft outer + tight dark inner (fake contact AO).
+    // This is how every good game engine fakes AO for static objects.
+    if (!window._softShadowTex) {
+      const sc = document.createElement("canvas");
+      sc.width = sc.height = 64;
+      const sx = sc.getContext("2d");
+      const sg = sx.createRadialGradient(32, 32, 0, 32, 32, 32);
+      sg.addColorStop(0, "rgba(0,0,0,0.88)");
+      sg.addColorStop(0.28, "rgba(0,0,0,0.65)");
+      sg.addColorStop(0.55, "rgba(0,0,0,0.32)");
+      sg.addColorStop(0.8, "rgba(0,0,0,0.10)");
+      sg.addColorStop(1, "rgba(0,0,0,0)");
+      sx.fillStyle = sg;
+      sx.fillRect(0, 0, 64, 64);
+      window._softShadowTex = new THREE.CanvasTexture(sc);
+    }
+    // Wide soft outer shadow — the "ambient shadow" bleeding across the ground
+    const shadOuter = new THREE.Mesh(
+      new THREE.PlaneGeometry(1, 1),
+      new THREE.MeshBasicMaterial({
+        map: window._softShadowTex,
+        transparent: true,
+        opacity: 0.68,
+        depthWrite: false,
+      }),
+    );
+    shadOuter.rotation.x = -Math.PI / 2;
+    shadOuter.scale.set(w * 2.6, d * 2.4, 1);
+    shadOuter.position.y = 0.022;
+    g.add(shadOuter);
+
+    // Tight inner shadow — the "contact AO" directly under the base
+    const shadInner = new THREE.Mesh(
+      new THREE.PlaneGeometry(1, 1),
+      new THREE.MeshBasicMaterial({
+        map: window._softShadowTex,
+        transparent: true,
+        opacity: 0.55,
+        depthWrite: false,
+      }),
+    );
+    shadInner.rotation.x = -Math.PI / 2;
+    shadInner.scale.set(w * 1.05, d * 0.98, 1);
+    shadInner.position.y = 0.035;
+    g.add(shadInner);
+
+    // ── IMPROVEMENT 4: BackSide rim / edge highlight ──────────────────────────
+    // An inverted-normals mesh slightly larger than the building body.
+    // BackSide = inner faces render outward, visible only at the silhouette.
+    // Creates a colored edge that reads as "this object has physical thickness."
+    // Used in every cel-shaded game (Wind Waker, Jet Set Radio, Bruno Simon).
+    const rimH = h + baseH;
+    const rimMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(w * 1.028, rimH, d * 1.028),
+      new THREE.MeshBasicMaterial({
+        color: new THREE.Color(gc).multiplyScalar(1.6),
+        side: THREE.BackSide,
+        transparent: true,
+        opacity: 0.055,
+        depthWrite: false,
+      }),
+    );
+    rimMesh.position.y = rimH / 2;
+    rimMesh.userData.isRim = true;
+    g.add(rimMesh);
+    g._rimMesh = rimMesh; // store ref for animation
 
     // Proximity glow ring
     const glowRing = new THREE.Mesh(
@@ -263,7 +355,19 @@ export default class Objects {
       }
     });
     this.scene.add(g);
-    this.buildingMeshes.push({ group: g, building: b, bodyMat: mM });
+
+    // ── IMPROVEMENT 6: per-building breath phase (seeded from world position) ─
+    // Deterministic: same result every reload. Range 0..2π.
+    // Without this, all 12 temples breathe perfectly in sync — uncanny.
+    g._breathPhase = Math.sin(b.pos[0] * 0.41 + b.pos[1] * 0.73) * Math.PI * 2;
+    g._rimMesh = rimMesh;
+
+    this.buildingMeshes.push({
+      group: g,
+      building: b,
+      bodyMat: mM,
+      darkMat: mD,
+    });
   }
 
   _gopuram(g, w, d, h, baseH, mL, mM, mD, mG, gc, b) {
@@ -439,6 +543,51 @@ export default class Objects {
     const fin = new THREE.Mesh(new THREE.SphereGeometry(dR2 * 1.2, 8, 6), mG);
     fin.position.y = dY + 0.18;
     g.add(fin);
+  }
+
+  // ── IMPROVEMENT 5: MICRO-IMPERFECTION ──────────────────────────────────────
+  // Post-pass over the group after building type is fully constructed.
+  // Adds deterministic micro-jitter to every tier mesh above the foundation.
+  //
+  // WHY: Mathematically perfect geometry reads as "computer generated."
+  // Real stone temples have settling, uneven courses, slight rotational drift
+  // from centuries of thermal expansion. These imperceptible individual
+  // offsets COLLECTIVELY create the "hand-built" vs "extruded" distinction.
+  //
+  // Uses a deterministic sine RNG seeded from mesh position so the result
+  // is identical every reload — it's not random noise, it's baked character.
+  _imperfectify(group, baseH) {
+    const rng = (s) => Math.sin(s * 127.1 + 43.7) * 0.5 + 0.5; // → 0..1
+    let idx = 0;
+    group.children.forEach((c) => {
+      if (!c.isMesh) return;
+      // Skip foundation slabs, rings, rim, orb, lights
+      if (c.userData.isFoundation) return;
+      if (c.userData.isRim || c.userData.isProxRing) return;
+      if (c.userData.heroRing || c.userData.isOrb) return;
+      if (c.position.y < baseH + 0.1) return; // anything at ground level
+      if (c.isLight) return;
+
+      // Seed from geometry + iteration so same building always jitters same way
+      const seed = c.position.y * 6.1 + c.position.x * 3.7 + idx * 2.3;
+
+      // Micro rotation Y — stone was placed by a person, not a CNC machine
+      c.rotation.y += (rng(seed) - 0.5) * 0.013;
+
+      // Micro X/Z drift — each course settled slightly differently
+      c.position.x += (rng(seed * 2.1) - 0.5) * 0.038;
+      c.position.z += (rng(seed * 3.7) - 0.5) * 0.038;
+
+      // Micro scale variation — no two stones are exactly the same size
+      const sv = 1 + (rng(seed * 5.3) - 0.5) * 0.022;
+      c.scale.x *= sv;
+      c.scale.z *= sv;
+
+      // Store a unique phase for any per-mesh animation later
+      c.userData.jitterPhase = rng(seed * 8.9) * Math.PI * 2;
+
+      idx++;
+    });
   }
 
   // ── TREES — scaled 2.5x positions ─────────────────────────────────────────
@@ -849,13 +998,18 @@ export default class Objects {
   }
 
   updateBuildingEntities(carX, carZ, now) {
-    this.buildingMeshes.forEach(({ group, building }) => {
+    this.buildingMeshes.forEach(({ group, building, darkMat }) => {
       const dist = Math.hypot(carX - building.pos[0], carZ - building.pos[1]);
       const isClose = dist < 45;
       const isHero = building.isHero;
 
-      // ── PRESENCE SCALE — temple breathes faster as you get close ─────────
-      // Rate of breath scales with proximity (2x faster when near)
+      // ── IMPROVEMENT 6: Phase-offset breathing ───────────────────────────────
+      // Each building breathes at its own moment. Without phase offset all 12
+      // temples expand/contract in unison — reads as a rendering artifact.
+      // _breathPhase is seeded from world position in _buildTemple.
+      if (group._breathPhase === undefined) {
+        group._breathPhase = Math.random() * Math.PI * 2; // fallback if old build
+      }
       const breathRate = isHero ? 0.55 : 0.45;
       const breathAmp = isClose
         ? 0.008 + (1 - dist / 45) * (isHero ? 0.018 : 0.01)
@@ -863,11 +1017,33 @@ export default class Objects {
       const presTarget = 1.0 + Math.max(0, 1 - dist / 65) * 0.07;
       if (!group._presY) group._presY = 1.0;
       group._presY += (presTarget - group._presY) * 0.035;
-      const pulse = 1 + Math.sin(now * breathRate * Math.PI * 2) * breathAmp;
+      const pulse =
+        1 +
+        Math.sin(now * breathRate * Math.PI * 2 + group._breathPhase) *
+          breathAmp;
       group.scale.set(pulse, pulse * group._presY, pulse);
 
+      // ── IMPROVEMENT 4: Rim mesh pulse ────────────────────────────────────────
+      // Rim opacity breathes on its OWN slower cycle, independent of scale.
+      // At rest: very faint outline. Close proximity: glows with building color.
+      // This creates an "inner fire" read — the building is lit from within.
+      if (group._rimMesh) {
+        const rimBase = 0.038;
+        const rimBreath =
+          Math.sin(now * 0.6 + group._breathPhase * 0.5) * 0.018;
+        const rimBoost = isClose ? (1 - dist / 45) * (isHero ? 0.14 : 0.1) : 0;
+        group._rimMesh.material.opacity = rimBase + rimBreath + rimBoost;
+      }
+
+      // ── IMPROVEMENT 2: Animate dark cornice emissive ─────────────────────────
+      // The dark stone bands absorb the building's color as a slow pulse.
+      // Very subtle — think "pilot light", not "neon sign."
+      if (darkMat && darkMat.emissive) {
+        const emBreath = 0.5 + Math.sin(now * 0.45 + group._breathPhase) * 0.5; // 0..1
+        darkMat.emissiveIntensity = 0.55 + emBreath * (isClose ? 0.9 : 0.3);
+      }
+
       // ── VERTICAL ENERGY COLUMN — glows up from base when car is VERY close ─
-      // This is a visual "you're almost there" cue, not just ring brightness.
       if (!group._energyCol) {
         const colGeo = new THREE.CylinderGeometry(
           0.08,
@@ -895,30 +1071,27 @@ export default class Objects {
         dist < 22 ? ((22 - dist) / 22) * (isHero ? 0.35 : 0.22) : 0;
       group._energyCol.material.opacity +=
         (colTarget - group._energyCol.material.opacity) * 0.06;
-      // Column pulses independently
       group._energyCol.scale.x =
         1 + Math.sin(now * 2.8 + building.pos[0]) * 0.3;
       group._energyCol.scale.z =
         1 + Math.sin(now * 2.8 + building.pos[0]) * 0.3;
 
       group.children.forEach((c) => {
-        // ── PROXIMITY RING — ripple pulse, not just fade ──────────────────────
+        // ── PROXIMITY RING ────────────────────────────────────────────────────
         if (c.userData.isProxRing) {
           const targetOp = isClose ? Math.max(0, (45 - dist) / 45) * 0.5 : 0;
           c.material.opacity += (targetOp - c.material.opacity) * 0.08;
-          // Ring breathes larger when close (like a heartbeat)
           if (isClose) {
             const rs = 1 + Math.sin(now * 1.8) * (isClose ? 0.06 : 0);
             c.scale.set(rs, 1, rs);
           }
         }
 
-        // ── HERO RINGS — tilt + counter-rotate ───────────────────────────────
+        // ── HERO RINGS ────────────────────────────────────────────────────────
         if (c.userData.heroRing) {
           const ri = c.userData.ri;
           c.rotation.z = now * (0.45 + ri * 0.22);
           c.rotation.x = Math.sin(now * 0.3 + ri) * 0.3 + Math.PI / 2;
-          // Rings tilt toward car when close — they "notice" you
           if (isClose) {
             const dx = carX - building.pos[0];
             const dz = carZ - building.pos[1];
@@ -927,7 +1100,7 @@ export default class Objects {
           }
         }
 
-        // ── ORB — speed up + grow when close ─────────────────────────────────
+        // ── ORB ───────────────────────────────────────────────────────────────
         if (c.userData.isOrb) {
           const orbSpeed = 0.9 + Math.max(0, (45 - dist) / 45) * 1.8;
           const orbScale =
@@ -939,7 +1112,7 @@ export default class Objects {
           c.scale.setScalar(orbScale);
         }
 
-        // ── POINT LIGHTS on temples — intensity breathes ───────────────────
+        // ── POINT LIGHTS ──────────────────────────────────────────────────────
         if (c.isLight && c.type === "PointLight" && !c.userData.isLampLight) {
           const baseI = isHero
             ? this._isNight
