@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Tumhare liye ❤️</title>
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&family=Caveat:wght@400;600;700&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: #1c0e06;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── ambient background ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 40%, rgba(120,40,20,0.35) 0%, transparent 55%),
+    radial-gradient(ellipse at 75% 65%, rgba(80,20,50,0.2) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* ══════════════════════════════
+   BOOK CONTAINER
+══════════════════════════════ */
+.scene {
+  perspective: 1800px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+}
+
+.book-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.book {
+  position: relative;
+  width: min(340px, 88vw);
+  height: min(480px, 72vh);
+  transform-style: preserve-3d;
+}
+
+/* ── page stack shadow (makes book look thick) ── */
+.book-stack {
+  position: absolute;
+  bottom: -2px; right: -5px;
+  width: 100%; height: 100%;
+  background: #e8d8c0;
+  border-radius: 2px 6px 6px 2px;
+  z-index: 0;
+}
+.book-stack::before {
+  content: '';
+  position: absolute;
+  bottom: -2px; right: -4px;
+  width: 100%; height: 100%;
+  background: #dcc8ac;
+  border-radius: 2px 6px 6px 2px;
+}
+.book-stack::after {
+  content: '';
+  position: absolute;
+  bottom: -4px; right: -8px;
+  width: 100%; height: 100%;
+  background: #ceb89a;
+  border-radius: 2px 6px 6px 2px;
+}
+
+/* spine */
+.book-spine {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 18px;
+  background: linear-gradient(to right, #3a0808, #6b1515, #3a0808);
+  border-radius: 3px 0 0 3px;
+  z-index: 10;
+  box-shadow: inset -2px 0 6px rgba(0,0,0,0.4);
+}
+
+/* ── pages ── */
+.page {
+  position: absolute;
+  inset: 0;
+  border-radius: 2px 6px 6px 2px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  z-index: 5;
+  transform-origin: left center;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+}
+
+.page.hidden { display: none; }
+
+/* ── COVER ── */
+.page-cover {
+  background: linear-gradient(160deg, #5a0d0d 0%, #3a0808 50%, #280505 100%);
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem 2rem 2rem 2.5rem;
+  cursor: pointer;
+  border: 1px solid rgba(200,150,80,0.2);
+}
+
+.cover-ornament {
+  font-size: 1.8rem;
+  margin-bottom: 1.2rem;
+  opacity: 0.85;
+  animation: gentle-pulse 3s ease-in-out infinite;
+}
+@keyframes gentle-pulse {
+  0%,100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+
+.cover-line-top {
+  width: 60px; height: 1px;
+  background: linear-gradient(to right, transparent, rgba(212,168,67,0.6), transparent);
+  margin: 0 auto 1.2rem;
+}
+
+.cover-title {
+  font-family: 'Caveat', cursive;
+  font-size: clamp(1.5rem, 6vw, 2rem);
+  font-weight: 700;
+  color: #f5d78e;
+  line-height: 1.25;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+  margin-bottom: 0.6rem;
+}
+
+.cover-sub {
+  font-family: 'Kalam', cursive;
+  font-size: 0.95rem;
+  font-weight: 300;
+  color: rgba(240,210,170,0.7);
+  margin-bottom: 1.5rem;
+}
+
+.cover-date {
+  font-family: 'Caveat', cursive;
+  font-size: 0.85rem;
+  color: rgba(212,168,67,0.5);
+  letter-spacing: 0.12em;
+}
+
+.cover-tap-hint {
+  position: absolute;
+  bottom: 1.2rem; right: 1.2rem;
+  font-family: 'Kalam', cursive;
+  font-size: 0.75rem;
+  color: rgba(240,210,170,0.4);
+  animation: blink 2.5s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:0.4;} 50%{opacity:1;} }
+
+/* ── inner pages ── */
+.page-inner {
+  background: #fffbf2;
+  padding: 1.5rem 1.4rem 1.2rem 2.2rem;
+  justify-content: space-between;
+  border-left: 18px solid transparent; /* spine space */
+}
+
+.page-top-bar {
+  height: 5px;
+  border-radius: 0 2px 0 0;
+  flex-shrink: 0;
+  margin-bottom: 1.2rem;
+}
+.bar-red    { background: #c0392b; }
+.bar-purple { background: #7d3c98; }
+.bar-blue   { background: #1a5276; }
+.bar-black  { background: #555; }
+.bar-gold   { background: #c0952b; }
+
+/* lined paper */
+.page-inner::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 2rem; right: 0; bottom: 0;
+  background-image: repeating-linear-gradient(
+    transparent, transparent 31px,
+    rgba(160,130,100,0.1) 31px, rgba(160,130,100,0.1) 32px
+  );
+  pointer-events: none;
+}
+.page-inner::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 2.8rem; bottom: 0; width: 1px;
+  background: rgba(180,100,100,0.12);
+}
+
+.page-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0.5rem 0.5rem 0;
+  position: relative;
+  z-index: 1;
+}
+
+.page-quote {
+  font-family: 'Kalam', cursive;
+  font-size: clamp(1rem, 3.5vw, 1.22rem);
+  font-weight: 400;
+  line-height: 1.65;
+  color: #2a1a0e;
+}
+
+/* intro page special */
+.page-intro .page-quote {
+  font-size: clamp(0.88rem, 3vw, 1.05rem);
+  line-height: 1.8;
+  text-align: left;
+  color: #2a1a0e;
+  white-space: pre-wrap;
+}
+
+.page-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.8rem;
+  border-top: 1px solid rgba(160,130,100,0.15);
+  flex-shrink: 0;
+  position: relative; z-index: 1;
+}
+
+.page-num {
+  font-family: 'Caveat', cursive;
+  font-size: 0.75rem;
+  color: rgba(100,80,60,0.45);
+}
+
+.page-turn-hint {
+  font-family: 'Kalam', cursive;
+  font-size: 0.72rem;
+  color: rgba(100,80,60,0.4);
+  animation: blink 3s ease-in-out infinite;
+}
+
+/* color dot */
+.color-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-red    { background: #c0392b; }
+.dot-purple { background: #7d3c98; }
+.dot-blue   { background: #1a5276; }
+.dot-black  { background: #888; }
+
+/* ── scrollable letter/calc pages ── */
+.page-letter .page-body,
+.page-calc .page-body {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  align-items: flex-start;
+  justify-content: flex-start;
+  text-align: left;
+  padding-right: 0.3rem;
+  gap: 0;
+}
+.page-letter .page-body::-webkit-scrollbar,
+.page-calc .page-body::-webkit-scrollbar { width: 3px; }
+.page-letter .page-body::-webkit-scrollbar-thumb,
+.page-calc .page-body::-webkit-scrollbar-thumb { background: rgba(160,110,80,0.3); border-radius: 2px; }
+
+.letter-salute {
+  font-family: 'Kalam', cursive;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #8b1a1a;
+  margin-bottom: 0.8rem;
+}
+.letter-text {
+  font-family: 'Kalam', cursive;
+  font-size: clamp(0.82rem, 2.6vw, 0.94rem);
+  line-height: 1.85;
+  color: #2a1a0e;
+}
+.letter-sign {
+  font-family: 'Caveat', cursive;
+  font-size: 0.95rem;
+  color: #8b6347;
+  font-style: italic;
+  margin-top: 0.7rem;
+}
+
+.calc-pin {
+  font-size: 0.9rem;
+  margin-bottom: 0.4rem;
+  display: block;
+}
+.calc-box {
+  background: rgba(255,230,100,0.18);
+  border-left: 3px solid #c0a020;
+  border-radius: 0 4px 4px 0;
+  padding: 0.5rem 0.7rem;
+  margin: 0.6rem 0;
+  font-family: 'Kalam', cursive;
+  font-size: clamp(0.82rem, 2.5vw, 0.92rem);
+  color: #3a2800;
+  line-height: 1.7;
+}
+.calc-highlight {
+  font-weight: 700;
+  color: #7a4800;
+}
+.calc-ending {
+  font-family: 'Kalam', cursive;
+  font-size: clamp(0.82rem, 2.5vw, 0.93rem);
+  line-height: 1.8;
+  color: #2a1a0e;
+  margin-top: 0.5rem;
+}
+
+/* ══ FLIP ANIMATIONS ══ */
+@keyframes flipOut {
+  0%   { transform: rotateY(0deg); }
+  100% { transform: rotateY(-90deg); }
+}
+@keyframes flipIn {
+  0%   { transform: rotateY(90deg); }
+  100% { transform: rotateY(0deg); }
+}
+@keyframes flipOutBack {
+  0%   { transform: rotateY(0deg); }
+  100% { transform: rotateY(90deg); }
+}
+@keyframes flipInBack {
+  0%   { transform: rotateY(-90deg); }
+  100% { transform: rotateY(0deg); }
+}
+
+.anim-flip-out      { animation: flipOut 0.22s ease-in forwards; }
+.anim-flip-in       { animation: flipIn 0.22s ease-out forwards; }
+.anim-flip-out-back { animation: flipOutBack 0.22s ease-in forwards; }
+.anim-flip-in-back  { animation: flipInBack 0.22s ease-out forwards; }
+
+/* ══ NAV BUTTONS ══ */
+.nav-row {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+  position: relative;
+  z-index: 20;
+}
+
+.nav-btn {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(212,168,67,0.25);
+  color: rgba(240,210,170,0.75);
+  font-family: 'Kalam', cursive;
+  font-size: 1rem;
+  padding: 0.5rem 1.4rem;
+  border-radius: 40px;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.03em;
+}
+.nav-btn:hover { background: rgba(212,168,67,0.15); color: #f5d78e; }
+.nav-btn:active { transform: scale(0.96); }
+.nav-btn:disabled { opacity: 0.2; cursor: default; }
+
+.page-counter {
+  font-family: 'Caveat', cursive;
+  font-size: 0.9rem;
+  color: rgba(240,210,170,0.45);
+  min-width: 60px;
+  text-align: center;
+}
+
+/* left/right tap zones on page */
+.tap-left, .tap-right {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 40%;
+  z-index: 20;
+  cursor: pointer;
+}
+.tap-left  { left: 0; }
+.tap-right { right: 0; }
+</style>
+</head>
+<body>
+
+<div class="scene">
+  <div class="book-wrap">
+
+    <div class="book" id="book">
+      <div class="book-stack"></div>
+      <div class="book-spine"></div>
+      <!-- pages injected by JS -->
+    </div>
+
+    <div class="nav-row">
+      <button class="nav-btn" id="btnPrev" onclick="turnPage(-1)" disabled>← peeche</button>
+      <span class="page-counter" id="counter"></span>
+      <button class="nav-btn" id="btnNext" onclick="turnPage(1)">aage →</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const notes = [
+  ['red','Bas tum'],['black','Tum + main = trouble 😏'],['purple','Tumhari bahut yaad aati hai'],
+  ['red','Tum meri ho… bas'],['blue','Mujhe tumpe proud hai'],['purple','Tumhare bina sab adhoora'],
+  ['red','Tum meri peace ho'],['black','Tum meri weakness ho'],['blue','Tum enough ho'],
+  ['purple','Distance irritate karta hai'],['red','Tum meri life ho'],['purple','Har din tumse milne ka wait'],
+  ['blue','Tum strong ho'],['black','Tumhe dekh ke control loose ho jata hai 😏'],['red','Tum meri comfort ho'],
+  ['purple','Tumhare bina din incomplete'],['blue','Tum sab kar sakti ho'],['black','Tum dangerously attractive ho'],
+  ['red','Tum meri jagah ho'],['purple','Raat me tum zyada yaad aati ho'],['red','Bas tum ❤️'],
+  ['blue','Tum meri support system ho'],['purple','Tumhe paas chahiye hota hai kabhi kabhi'],
+  ['black','Tum meri distraction ho'],['red','Tum meri constant ho'],['purple','Tumhare bina boring lagta hai'],
+  ['blue','Tum amazing ho'],['black','Tum meri ho 😏'],['red','Tum meri story ho'],
+  ['purple','Tumhari presence hi kaafi hai'],['red','Tum meri ho… bas ❤️'],['blue','Tum solid ho'],
+  ['purple','Tumhare saath hona miss karta hoon'],['black','Tum ho toh sab intense lagta hai'],
+  ['red','Tum meri reality ho'],['purple','Tumhare bina sab slow lagta hai'],['blue','Tum genuine ho'],
+  ['black','Tumhe dekh ke thoughts dangerous ho jate hain 😉'],['red','Tum meri priority ho'],
+  ['purple','Tum door ho… phir bhi paas ho'],['red','Bas tum'],['blue','Tum real ho'],
+  ['purple','Tumhe paas rakhna hai bas'],['black','Tum ho toh focus shift ho jata hai'],
+  ['red','Tum meri safe jagah ho'],['purple','Tumhare bina sab off track'],['blue','Tum important ho'],
+  ['black','Tum meri favourite trouble ho'],['red','Tum meri life ka best feeling ho'],
+  ['purple','Tumhare bina kuch bhi same nahi'],['red','Tum meri ho… bas'],['blue','Tum powerful ho'],
+  ['purple','Tumhari yaad strong hai'],['black','Tum meri aadat ban rahi ho'],['red','Tum meri peace ho'],
+  ['purple','Distance tough hai'],['blue','Tum meri strength ho'],['black','Tum paas hoti ho toh sab bhool jata hoon'],
+  ['red','Tum meri comfort ho'],['purple','Tumhare saath sab complete'],['red','Bas tum ❤️'],
+  ['blue','Tum meri team ho'],['purple','Missing you is daily routine'],['black','Tum meri problem bhi ho solution bhi'],
+  ['red','Tum meri jagah ho'],['purple','Tumhare bina sab slow lagta hai'],['blue','Tum dependable ho'],
+  ['black','Tumhe ignore karna mushkil hai'],['red','Tum meri life ho'],['purple','Tumhare bina din incomplete'],
+  ['red','Tum meri ho… bas ❤️'],['blue','Tum reliable ho'],['purple','Tumhari presence miss karta hoon'],
+  ['black','Tum ho toh sab exciting lagta hai'],['red','Tum meri constant ho'],['purple','Tumhe feel karna hai'],
+  ['blue','Tum meri clarity ho'],['black','Tum meri limit cross kara deti ho'],['red','Tum meri story ho'],
+  ['purple','Tumhare bina boring lagta hai'],['red','Bas tum'],['blue','Tum meri energy ho'],
+  ['purple','Har din tumse milne ka wait'],['black','Tum meri control test ho'],['red','Tum meri reality ho'],
+  ['purple','Raat me tum zyada yaad aati ho'],['blue','Tum meri support ho'],
+  ['black','Tum ho toh sab heat feel hota hai'],['red','Tum meri priority ho'],
+  ['purple','Tumhari bahut yaad aati hai'],['red','Tum meri ho… bas'],['blue','Tum meri backbone ho'],
+  ['purple','Tum door ho par dil ke paas ho'],['black','Tum meri weakness ho'],['red','Tum meri peace ho'],
+  ['purple','Tumhare bina sab adhoora'],['blue','Tum strong backbone ho'],['black','Tum ho toh sab addictive lagta hai'],
+  ['red','Tum meri comfort ho'],['purple','Tumhe paas chahiye hota hai'],['red','Bas tum ❤️'],
+  ['blue','Tum meri partner ho'],['purple','Distance irritate karta hai'],['black','Tum ho toh sab risky lagta hai'],
+  ['red','Tum meri jagah ho'],['purple','Tumhare bina sab off track'],['blue','Tum meri confidence ho'],
+  ['black','Tum ho toh sab wild lagta hai'],['red','Tum meri life ho'],['purple','Tumhare bina sab slow lagta hai'],
+  ['red','Tum meri ho… bas ❤️'],['blue','Tum meri support system ho'],['purple','Tumhare bina kuch same nahi'],
+  ['black','Tum ho toh sab shift ho jata hai'],['red','Tum meri reality ho'],['purple','Tumhari yaad strong hai'],
+  ['blue','Tum amazing ho'],['black','Tum + main = trouble 😏'],['red','Bas tum'],
+  ['purple','Bas tum hi chahiye']
+];
+
+// build pages array: 0=cover, 1=intro, 2..121=notes, 122=ending
+const pages = [];
+const book  = document.getElementById('book');
+
+function makePage(cls) {
+  const d = document.createElement('div');
+  d.className = 'page hidden ' + cls;
+  book.appendChild(d);
+  pages.push(d);
+  return d;
+}
+
+// COVER
+const cover = makePage('page-cover');
+cover.innerHTML = `
+  <div class="cover-ornament">❤️</div>
+  <div class="cover-line-top"></div>
+  <div class="cover-title">Tumhare liye…<br>ek chhoti si kitaab</div>
+  <div class="cover-sub">jo dil ne likhi hai</div>
+  <div class="cover-line-top" style="margin-top:1rem"></div>
+  <div class="cover-date">18 April 2026</div>
+  <div class="cover-tap-hint">tap karke kholo →</div>
+  <div class="tap-right" onclick="turnPage(1)"></div>
+`;
+
+// HOME PAGE 1 — Birthday Message
+const home1 = makePage('page-inner page-letter');
+home1.innerHTML = `
+  <div class="page-top-bar bar-red"></div>
+  <div class="page-body">
+    <div class="letter-salute">जन्मदिन मुबारक हो ❤️</div>
+    <div class="letter-text">सच बोलें तो तुम्हारे बिना सब अधूरा लगता है, और तुम्हारे साथ सब पूरा। तुम हो तो हर चीज़ आसान लगती है, हर दिन manageable लगता है।
+
+तुम्हारी आदत सी हो गई है हमें… और अब बस तुम ही चाहिए।
+
+Distance हो या situation कुछ भी हो, तुम हमेशा हमारे साथ रहती हो — दिमाग में, दिल में, हर जगह। और सच बताएं… कभी-कभी तुम्हें इतना पास रखने का मन करता है कि कहीं जाने ही ना दूँ 😏
+
+हम शायद हर बार सही तरीके से express नहीं कर पाते, पर सच में… तुम हमारी life का best part हो।
+
+आज का दिन तुम्हारा है, और honestly, तुम ही हमारी सबसे बड़ी खुशी हो।
+
+आज थोड़ा ज़्यादा प्यार मिलने वाला है तुम्हें… ready रहना 😉</div>
+    <div class="letter-sign">बस ऐसे ही हमारी रहना… हमेशा ❤️</div>
+  </div>
+  <div class="page-footer">
+    <span class="page-num">❤️</span>
+    <span class="page-turn-hint">aage palatna →</span>
+  </div>
+  <div class="tap-left" onclick="turnPage(-1)"></div>
+  <div class="tap-right" onclick="turnPage(1)"></div>
+`;
+
+// HOME PAGE 2 — Fun Calculation
+const home2 = makePage('page-inner page-calc');
+home2.innerHTML = `
+  <div class="page-top-bar bar-gold"></div>
+  <div class="page-body">
+    <span class="calc-pin">📌</span>
+    <div class="calc-box">
+      Ek chhota sa calculation kiya… 😄<br>
+      <span class="calc-highlight">18 April 1998 → aaj tak</span><br>
+      = 27 years, 11 months, 30 days<br>
+      Matlab… <span class="calc-highlight">335 months aur 30 days</span><br>
+      (almost 336 months)
+    </div>
+    <div class="calc-ending">Aur itne time me duniya me bahut kuch hua hoga… par sabse best cheez jo hui —<br><br>
+      <span style="font-weight:700;color:#8b1a1a;">wo tum ho ❤️</span><br><br>
+      Aur honestly… ab bas <span style="font-weight:700;">lifetime subscription</span> chahiye tumhari 😉
+    </div>
+  </div>
+  <div class="page-footer">
+    <span class="page-num">😄</span>
+    <span class="page-turn-hint">notes dekhna → →</span>
+  </div>
+  <div class="tap-left" onclick="turnPage(-1)"></div>
+  <div class="tap-right" onclick="turnPage(1)"></div>
+`;
+
+// NOTE PAGES
+notes.forEach(([color, text], i) => {
+  const p = makePage('page-inner');
+  const barClass  = { red:'bar-red', purple:'bar-purple', blue:'bar-blue', black:'bar-black' }[color];
+  const dotClass  = { red:'dot-red', purple:'dot-purple', blue:'dot-blue', black:'dot-black' }[color];
+  const isLast = i === notes.length - 1;
+  p.innerHTML = `
+    <div class="page-top-bar ${barClass}"></div>
+    <div class="page-body">
+      <div class="page-quote">${text}</div>
+    </div>
+    <div class="page-footer">
+      <span class="page-num">${i+1} / ${notes.length}</span>
+      <span class="color-dot ${dotClass}"></span>
+      <span class="page-turn-hint">${isLast ? '← wapas' : 'aage palatna →'}</span>
+    </div>
+    <div class="tap-left" onclick="turnPage(-1)"></div>
+    <div class="tap-right" onclick="turnPage(1)"></div>
+  `;
+});
+
+// ENDING PAGE
+const ending = makePage('page-inner');
+ending.innerHTML = `
+  <div class="page-top-bar bar-red"></div>
+  <div class="page-body" style="gap:0.8rem">
+    <div style="font-size:2rem">❤️</div>
+    <div class="page-quote" style="font-size:1.3rem;font-weight:700;font-family:'Caveat',cursive;">bas tum…</div>
+    <div class="page-quote" style="font-size:0.95rem;opacity:0.6;margin-top:0.4rem">hamesha ❤️</div>
+  </div>
+  <div class="page-footer">
+    <span class="page-num">— aakhir</span>
+    <span class="page-turn-hint"></span>
+  </div>
+  <div class="tap-left" onclick="turnPage(-1)"></div>
+`;
+
+// ── STATE ──
+let cur = 0;
+let flipping = false;
+pages[0].classList.remove('hidden');
+
+updateUI();
+
+function updateUI() {
+  document.getElementById('counter').textContent =
+    cur === 0 ? '' :
+    cur === 1 ? '❤️' :
+    cur === 2 ? '😄' :
+    cur === pages.length - 1 ? 'khatam ❤️' :
+    `${cur - 2} / ${notes.length}`;
+
+  document.getElementById('btnPrev').disabled = (cur === 0);
+  document.getElementById('btnNext').disabled = (cur === pages.length - 1);
+}
+
+function turnPage(dir) {
+  if (flipping) return;
+  const next = cur + dir;
+  if (next < 0 || next >= pages.length) return;
+
+  flipping = true;
+  const outPage = pages[cur];
+  const inPage  = pages[next];
+
+  const outAnim = dir > 0 ? 'anim-flip-out' : 'anim-flip-out-back';
+  const inAnim  = dir > 0 ? 'anim-flip-in'  : 'anim-flip-in-back';
+
+  outPage.classList.add(outAnim);
+
+  setTimeout(() => {
+    outPage.classList.remove(outAnim);
+    outPage.classList.add('hidden');
+
+    inPage.classList.remove('hidden');
+    inPage.classList.add(inAnim);
+
+    setTimeout(() => {
+      inPage.classList.remove(inAnim);
+      cur = next;
+      flipping = false;
+      updateUI();
+    }, 220);
+  }, 220);
+}
+
+// keyboard nav
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') turnPage(1);
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   turnPage(-1);
+});
+
+// swipe
+let touchX = null;
+document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, { passive: true });
+document.addEventListener('touchend', e => {
+  if (touchX === null) return;
+  const dx = e.changedTouches[0].clientX - touchX;
+  if (Math.abs(dx) > 40) turnPage(dx < 0 ? 1 : -1);
+  touchX = null;
+}, { passive: true });
+</script>
+</body>
+</html>
