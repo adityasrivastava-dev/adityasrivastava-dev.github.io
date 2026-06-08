@@ -2,6 +2,8 @@
 import Car from "./Car.js";
 import Objects from "./Objects.js";
 import Roads from "./Roads.js";
+import River from "./River.js";
+import Bridges from "./Bridges.js";
 
 // World is 2.5x the original — same building positions, much more breathing room
 const SCALE = 2.5;
@@ -15,13 +17,17 @@ export default class World {
     this.car = new Car(scene, events);
     this.objects = new Objects(scene, events);
     this.roads = new Roads(scene);
+    this.river = new River(scene);
+    this.bridges = new Bridges(scene);
   }
 
   buildWorld() {
     this._buildLighting();
     this._buildGround();
     this.roads.build();
+    this.river.build();
     this.objects.buildAll(this.isNight);
+    this.bridges.build(); // after objects so _toonGrad is ready
     this._buildCenterpiece();
     this._buildPrayerFlags();
     this._buildGatewayArches();
@@ -42,6 +48,7 @@ export default class World {
       this.objects.updateBuildingEntities(this.car.x, this.car.z, now, dt);
     }
 
+    this.river.update(now);
     this._updateAtmosphere(now, dt);
     this._updateLighting(now, dt);
   }

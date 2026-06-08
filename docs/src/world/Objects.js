@@ -591,192 +591,278 @@ export default class Objects {
     });
   }
 
-  // ── TREES — scaled 2.5x positions ─────────────────────────────────────────
+  // ── TREES — 4 seasonal species + willow placement near river banks ──────────
   _buildTrees() {
     const tg = window._toonGrad;
-    const S = 2.5; // world scale
 
-    // Tree palette: majority GREENS for natural variety, selective warm accents.
-    // Previous palette had 7/13 warm colors causing yellow wash against orange world.
-    // Rule: 60% greens, 25% autumn accent, 15% special (pink blossom handled separately).
-    const leafColors = [
-      // Deep rich greens — the dominant color
-      0x2d6622, // deep forest green
-      0x3a7a2a, // mid forest green
-      0x4a8833, // natural green
-      0x336644, // blue-green
-      0x558844, // light forest green
-      0x447733, // olive green
-      0x226633, // dark emerald
-      // Autumn accents — just enough for interest, not dominance
-      0xcc8822, // amber gold (autumn)
-      0xdd6611, // burnt orange (autumn)
-      0xaa3311, // dark autumn red
-      // Bright chartreuse — the pop color Bruno uses sparingly
-      0x88cc22, // bright chartreuse
-      0x6aaa22, // yellow-green
-      // Pink blossom — rare accent (handled by isBlossom separately)
-      0xdd88aa, // sakura pink
-    ];
-
-    // Dense tree placement around each temple + along roads (scaled positions)
-    const positions = [
+    // ── REGULAR POSITIONS — mix of broad/birch/pine species ──────────────────
+    const regularPositions = [
       // Around central island
-      ...[
-        7, 7, -7, 7, 7, -7, -7, -7, 11, 0, -11, 0, 0, 11, 0, -11, 14, 5, -14, 5,
-        14, -5, -14, -5,
-      ]
-        .reduce(
-          (a, v, i) =>
-            i % 2 === 0
-              ? a.concat([[v, null]])
-              : a.map((p, j) => (j === a.length - 1 ? [p[0], v] : p)),
-          [],
-        )
-        .filter(([x, z]) => x !== null && z !== null)
-        .map(([x, z]) => [x * S, z * S]),
+      [17, 17], [-17, 17], [17, -17], [-17, -17],
+      [27, 0], [-27, 0], [0, 27], [0, -27],
+      [35, 12], [-35, 12], [35, -12], [-35, -12],
 
-      // Main boulevards (scaled)
-      ...[
-        [50, 12],
-        [-50, 12],
-        [50, -12],
-        [-50, -12],
-        [87, 12],
-        [-87, 12],
-        [87, -12],
-        [-87, -12],
-        [125, 12],
-        [-125, 12],
-        [125, -12],
-        [-125, -12],
-        [165, 12],
-        [-165, 12],
-        [165, -12],
-        [-165, -12],
-        [50, -47],
-        [-50, -47],
-        [50, -23],
-        [-50, -23],
-        [50, 155],
-        [-50, 155],
-        [100, 155],
-        [-100, 155],
-        [20, -155],
-        [-20, -155],
-        [87, -155],
-        [-87, -155],
-      ],
+      // Main boulevards
+      [50, 12], [-50, 12], [50, -12], [-50, -12],
+      [87, 12], [-87, 12], [87, -12], [-87, -12],
+      [125, 12], [-125, 12], [125, -12], [-125, -12],
+      [165, 12], [-165, 12], [165, -12], [-165, -12],
 
-      // Hero zone
-      ...[
-        [55, -35],
-        [-55, -35],
-        [110, -45],
-        [-110, -45],
-        [110, -22],
-        [-110, -22],
-      ],
+      // South/north of hero zone
+      [50, -47], [-50, -47], [50, -23], [-50, -23],
+      [55, -35], [-55, -35], [110, -45], [-110, -45], [110, -22], [-110, -22],
 
-      // Temple surrounds — flat [x,z,x,z,...] pairs converted to [[x,z],...]
-      // Positions updated to match 1.6× expanded building layout
-      ...(() => {
-        const flat = [
-          72, -50,  87, -35,  57, -35,   // surya-dwara [72,-35]
-          45,  71,  60,  56,  30,  56,   // vishwakarma [45,56]
-          88, -76, 103, -61,  73, -61,   // akasha-mandapa [88,-61]
-          88,  28, 103,  13,  73,  13,   // setu-nagara [88,13]
-         -88, -50, -73, -35,-103, -35,   // brahma-kund [-88,-35]
-         -64,  71, -49,  56, -79,  56,   // lakshmi-prasad [-64,56]
-           0, 103,  15,  88, -15,  88,   // pura-stambha [0,88]
-         -45, -76, -30, -61, -60, -61,   // maya-sabha [-45,-61]
-           0,-103,  15, -88, -15, -88,   // jyotish-vedha [0,-88]
-         -88,  28, -73,  13,-103,  13,   // vayu-rath [-88,13]
-         -35,-114, -20, -99, -50, -99,   // saraswati-vihar [-35,-99]
-          35,-114,  50, -99,  20, -99,   // gurukul-ashram [35,-99]
-         131, -50, 146, -35, 116, -35,   // vaishya-griha [131,-35]
-         131,  28, 146,  13, 116,  13,   // agni-vedha [131,13]
-          45, -92,  60, -77,  30, -77,   // darpana-shala [45,-77]
-        -131, -50,-116, -35,-146, -35,   // vidya-ashram [-131,-35]
-          15, 115, -15, 115, 0, 130, // sutra-dhara [0,115]
-        ];
-        const pairs = [];
-        for (let i = 0; i < flat.length; i += 2)
-          pairs.push([flat[i], flat[i + 1]]);
-        return pairs;
-      })(),
+      // Education / far south
+      [50, -155], [-50, -155], [100, -155], [-100, -155],
+      [20, -155], [-20, -155], [87, -155], [-87, -155],
+
+      // Far north (south boulevard area)
+      [50, 155], [-50, 155], [100, 155], [-100, 155],
+
+      // Temple surrounds
+      [72, -50],  [87, -35],  [57, -35],
+      [45,  71],  [60,  56],  [30,  56],
+      [88, -76],  [103,-61],  [73, -61],
+      [88,  28],  [103, 13],  [73,  13],
+     [-88, -50],  [-73,-35], [-103,-35],
+     [-64,  71],  [-49, 56],  [-79, 56],
+      [0,  103],  [15,  88],  [-15, 88],
+     [-45, -76],  [-30,-61],  [-60,-61],
+      [0, -103],  [15, -88],  [-15,-88],
+     [-88,  28],  [-73, 13], [-103, 13],
+     [-35,-114],  [-20,-99],  [-50,-99],
+      [35,-114],  [50, -99],  [20, -99],
+      [131,-50],  [146,-35],  [116,-35],
+      [131, 28],  [146, 13],  [116, 13],
+      [45, -92],  [60, -77],  [30, -77],
+     [-131,-50], [-116,-35], [-146,-35],
+      [15,  115],  [-15,115],  [0, 130],
     ];
 
-    positions.forEach(([x, z]) => {
-      if (!x || !z) return;
-      // Taller trees — Bruno's foliage towers above buildings
-      const h = 2.8 + Math.random() * 2.2;
-      const r = 2.0 + Math.random() * 1.4;
-      // 30% blossom (pink), 70% foliage — more leafy than blossom
-      const isBlossom = Math.random() > 0.7;
-      const lColor = leafColors[Math.floor(Math.random() * leafColors.length)];
-      const lMat = new THREE.MeshToonMaterial({
-        color: lColor,
-        gradientMap: tg,
-      });
+    // ── WILLOW POSITIONS — along river banks and tributary ────────────────────
+    // Main river north bank (z ≈ +2 to +6)
+    // Main river south bank (z ≈ -16 to -24)
+    // Tributary banks (x ≈ -25 to -40)
+    const willowPositions = [
+      // North bank of main river
+      [-175, 4], [-140, 5], [-100, 3], [-65, 2], [-30, 0],
+      [0, -4], [40, -1], [85, 3], [135, -2], [178, -3],
+      // South bank of main river
+      [-170, -20], [-125, -16], [-75, -20], [-38, -17],
+      [12, -22], [58, -16], [108, -14], [160, -22],
+      // Near tributary (west side)
+      [-40, 10], [-36, 28], [-30, 50], [-22, 72], [-14, 90],
+    ];
 
-      const tg2 = new THREE.Group();
-      tg2.position.set(x, 0, z);
+    // Build regular trees with species mix
+    regularPositions.forEach(([x, z]) => {
+      if (x == null || z == null) return;
+      // Deterministic species selection from position
+      const r = Math.sin(x * 2.31 + z * 4.73) * 0.5 + 0.5;
+      if (r < 0.25)      this._treeBirch(x, z, tg);
+      else if (r < 0.52) this._treePine(x, z, tg);
+      else               this._treeBroad(x, z, tg);
+    });
 
-      // Thicker trunk — brunos trees have visible trunks
-      const trunkH = h * 1.4;
-      const trunkW = 0.35 + Math.random() * 0.15;
-      const trunk = new THREE.Mesh(
-        new THREE.BoxGeometry(trunkW, trunkH, trunkW),
-        new THREE.MeshToonMaterial({ color: 0x7a4d2a, gradientMap: tg }),
+    // Build willow trees near water
+    willowPositions.forEach(([x, z]) => this._treeWillow(x, z, tg));
+  }
+
+  // ── BROAD CANOPY (Bruno-style multi-sphere) — most common ──────────────────
+  _treeBroad(x, z, tg) {
+    const greens = [0x2d6622, 0x3a7a2a, 0x4a8833, 0x336644, 0x447733, 0xdd88aa];
+    const rng = (s) => Math.sin(s * 127.1 + 43.7) * 0.5 + 0.5;
+    const seed = x * 2.1 + z * 3.7;
+    const h = 2.8 + rng(seed) * 2.0;
+    const r = 2.0 + rng(seed * 1.3) * 1.2;
+    const col = greens[Math.floor(rng(seed * 5.1) * greens.length)];
+    const lMat = new THREE.MeshToonMaterial({ color: col, gradientMap: tg });
+    const tMat = new THREE.MeshToonMaterial({ color: 0x7a4d2a, gradientMap: tg });
+
+    const grp = new THREE.Group();
+    grp.position.set(x, 0, z);
+    grp.rotation.y = rng(seed * 9.1) * Math.PI * 2;
+
+    const trunkH = h * 1.4;
+    const trunk = new THREE.Mesh(new THREE.BoxGeometry(0.35, trunkH, 0.35), tMat);
+    trunk.position.y = trunkH * 0.5;
+    grp.add(trunk);
+
+    // 2-3 overlapping spheres at slightly different heights and XZ offsets
+    const numBalls = 2 + (rng(seed * 7.3) > 0.5 ? 1 : 0);
+    let mainLeaf;
+    for (let i = 0; i < numBalls; i++) {
+      const br = r * (0.75 + rng(seed + i * 2.9) * 0.35);
+      const bx = (rng(seed + i * 1.1) - 0.5) * r * 0.7;
+      const bz = (rng(seed + i * 4.3) - 0.5) * r * 0.7;
+      const by = trunkH + r * (0.4 + i * 0.22) + (rng(seed + i) - 0.5) * 0.4;
+      const ball = new THREE.Mesh(new THREE.SphereGeometry(br, 7, 6), lMat);
+      ball.position.set(bx, by, bz);
+      ball.scale.y = 0.8;
+      grp.add(ball);
+      if (i === 0) mainLeaf = ball;
+    }
+
+    this.scene.add(grp);
+    this.trees.push({
+      group: grp, leaf: mainLeaf, shakeT: 0,
+      baseX: x, baseZ: z, r: r + 0.5,
+      windPhase: rng(seed * 13.1) * Math.PI * 2,
+      windAmpX: 0.022 + rng(seed * 6.7) * 0.016,
+      windAmpZ: 0.016 + rng(seed * 8.2) * 0.012,
+      windFreq: 0.32 + rng(seed * 11.3) * 0.22,
+    });
+  }
+
+  // ── BIRCH (white trunk, sparse small leaf clusters) ─────────────────────────
+  _treeBirch(x, z, tg) {
+    const rng = (s) => Math.sin(s * 127.1 + 43.7) * 0.5 + 0.5;
+    const seed = x * 2.1 + z * 3.7;
+    const h = 3.5 + rng(seed) * 2.5;
+    // Birch leaf colours: light yellow-greens and autumn yellows
+    const cols = [0x99cc44, 0xddaa33, 0xccdd66, 0xaabb44, 0xeedd88];
+    const col = cols[Math.floor(rng(seed * 5.1) * cols.length)];
+    const lMat = new THREE.MeshToonMaterial({ color: col, gradientMap: tg });
+    // White-silver birch trunk
+    const tMat = new THREE.MeshToonMaterial({ color: 0xe8e0d0, gradientMap: tg });
+
+    const grp = new THREE.Group();
+    grp.position.set(x, 0, z);
+    grp.rotation.y = rng(seed * 9.1) * Math.PI * 2;
+
+    // Tall thin trunk with slight taper (top slightly narrower)
+    const trunkH = h * 1.5;
+    const trunk = new THREE.Mesh(new THREE.BoxGeometry(0.22, trunkH, 0.22), tMat);
+    trunk.position.y = trunkH * 0.5;
+    grp.add(trunk);
+
+    // 3-5 small sparse sphere clusters at different heights and offsets
+    let mainLeaf;
+    const numClusters = 3 + Math.floor(rng(seed * 3.1) * 3);
+    for (let i = 0; i < numClusters; i++) {
+      const br = 0.8 + rng(seed + i * 2.3) * 0.9;
+      const bx = (rng(seed + i * 1.7) - 0.5) * 1.8;
+      const bz = (rng(seed + i * 5.1) - 0.5) * 1.8;
+      const by = trunkH * (0.55 + i * 0.12) + rng(seed + i) * 0.5;
+      const ball = new THREE.Mesh(new THREE.SphereGeometry(br, 6, 5), lMat);
+      ball.position.set(bx, by, bz);
+      grp.add(ball);
+      if (i === 0) mainLeaf = ball;
+    }
+
+    this.scene.add(grp);
+    this.trees.push({
+      group: grp, leaf: mainLeaf, shakeT: 0,
+      baseX: x, baseZ: z, r: 1.8,
+      windPhase: rng(seed * 13.1) * Math.PI * 2,
+      windAmpX: 0.028 + rng(seed * 6.7) * 0.018, // birches sway more (flexible)
+      windAmpZ: 0.020 + rng(seed * 8.2) * 0.014,
+      windFreq: 0.42 + rng(seed * 11.3) * 0.28,
+    });
+  }
+
+  // ── PINE (stacked 3-tier cones — Christmas tree silhouette) ─────────────────
+  _treePine(x, z, tg) {
+    const rng = (s) => Math.sin(s * 127.1 + 43.7) * 0.5 + 0.5;
+    const seed = x * 2.1 + z * 3.7;
+    const h = 2.2 + rng(seed) * 1.8;
+    const r = 1.8 + rng(seed * 1.3) * 0.8;
+    const pineGreen = new THREE.MeshToonMaterial({ color: 0x1d5c1d, gradientMap: tg });
+    const tMat = new THREE.MeshToonMaterial({ color: 0x4a2810, gradientMap: tg });
+
+    const grp = new THREE.Group();
+    grp.position.set(x, 0, z);
+    grp.rotation.y = rng(seed * 9.1) * Math.PI * 2;
+
+    // Thin dark trunk
+    const trunkH = h * 1.2;
+    const trunk = new THREE.Mesh(new THREE.BoxGeometry(0.2, trunkH, 0.2), tMat);
+    trunk.position.y = trunkH * 0.5;
+    grp.add(trunk);
+
+    // 3 stacked cone tiers — each smaller and higher
+    const tiers = [
+      { r: r,       th: r * 1.3, y: h * 0.35 },
+      { r: r * 0.7, th: r * 1.0, y: h * 0.75 + r * 0.2 },
+      { r: r * 0.42, th: r * 0.8, y: h * 1.15 + r * 0.3 },
+    ];
+    let mainLeaf;
+    tiers.forEach(({ r: tr, th, y }, i) => {
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(tr, th, 7), pineGreen);
+      cone.position.y = y;
+      grp.add(cone);
+      if (i === 0) mainLeaf = cone;
+    });
+
+    this.scene.add(grp);
+    this.trees.push({
+      group: grp, leaf: mainLeaf, shakeT: 0,
+      baseX: x, baseZ: z, r: r * 0.9,
+      windPhase: rng(seed * 13.1) * Math.PI * 2,
+      windAmpX: 0.012 + rng(seed * 6.7) * 0.008, // pines sway less (stiff)
+      windAmpZ: 0.009 + rng(seed * 8.2) * 0.006,
+      windFreq: 0.22 + rng(seed * 11.3) * 0.15,
+    });
+  }
+
+  // ── WEEPING WILLOW (near water — drooping frond canopy) ────────────────────
+  _treeWillow(x, z, tg) {
+    const rng = (s) => Math.sin(s * 127.1 + 43.7) * 0.5 + 0.5;
+    const seed = x * 2.1 + z * 3.7;
+    const h = 3.8 + rng(seed) * 2.2;
+    const r = 2.4 + rng(seed * 1.3) * 1.2;
+    const willowGreen = new THREE.MeshToonMaterial({
+      color: 0x88bb3a,
+      gradientMap: tg,
+    });
+    const tMat = new THREE.MeshToonMaterial({ color: 0x6a4820, gradientMap: tg });
+
+    const grp = new THREE.Group();
+    grp.position.set(x, 0, z);
+    grp.rotation.y = rng(seed * 9.1) * Math.PI * 2;
+
+    // Tall thin trunk
+    const trunkH = h * 1.4;
+    const trunk = new THREE.Mesh(new THREE.BoxGeometry(0.28, trunkH, 0.28), tMat);
+    trunk.position.y = trunkH * 0.5;
+    grp.add(trunk);
+
+    // Wide flat canopy base (squashed sphere = umbrella shape)
+    const canopy = new THREE.Mesh(new THREE.SphereGeometry(r, 8, 7), willowGreen);
+    canopy.position.y = trunkH + r * 0.3;
+    canopy.scale.y = 0.45; // squash to weeping umbrella
+    canopy.scale.x = 1.3;
+    canopy.scale.z = 1.3;
+    grp.add(canopy);
+
+    // Drooping fronds — thin boxes angled downward from canopy edge
+    const frondMat = new THREE.MeshToonMaterial({ color: 0x9acc44, gradientMap: tg });
+    const numFronds = 5 + Math.floor(rng(seed * 3.1) * 3);
+    for (let i = 0; i < numFronds; i++) {
+      const angle = (i / numFronds) * Math.PI * 2 + rng(seed + i) * 0.5;
+      const fLen = r * (0.8 + rng(seed + i * 2.3) * 0.6);
+      const frond = new THREE.Mesh(
+        new THREE.BoxGeometry(0.12, fLen, 0.08),
+        frondMat,
       );
-      trunk.position.y = trunkH * 0.5;
-      tg2.add(trunk);
+      // Position at canopy edge, angled 40-60° downward
+      const fx = Math.cos(angle) * r * 0.9;
+      const fz = Math.sin(angle) * r * 0.9;
+      const fy = trunkH + r * 0.3 * 0.45 - 0.5;
+      frond.position.set(fx, fy - fLen * 0.3, fz);
+      frond.rotation.z = Math.cos(angle) * 0.55;  // tilt outward
+      frond.rotation.x = -Math.sin(angle) * 0.55;
+      grp.add(frond);
+    }
 
-      let leafMesh;
-      if (isBlossom) {
-        leafMesh = new THREE.Mesh(
-          new THREE.SphereGeometry(r * 0.9, 7, 6),
-          lMat,
-        );
-        leafMesh.position.y = h * 1.4 + r * 0.7;
-        leafMesh.scale.y = 0.85; // flatten slightly
-      } else {
-        // Use ConeGeometry for most — but vary the shape more
-        const useRound = Math.random() > 0.55;
-        if (useRound) {
-          // Rounded tree like Bruno's broad-canopy trees
-          leafMesh = new THREE.Mesh(new THREE.SphereGeometry(r, 7, 6), lMat);
-          leafMesh.position.y = h * 1.4 + r * 0.5;
-          leafMesh.scale.y = 0.75;
-        } else {
-          // Tall cone tree
-          leafMesh = new THREE.Mesh(
-            new THREE.ConeGeometry(r * 0.85, r * 2.6, 7),
-            lMat,
-          );
-          leafMesh.position.y = h * 1.4 + r * 0.95;
-        }
-      }
-      leafMesh.userData.baseY = leafMesh.position.y;
-      tg2.add(leafMesh);
-
-      // Random slight Y rotation — no two trees face same way
-      tg2.rotation.y = Math.random() * Math.PI * 2;
-
-      this.scene.add(tg2);
-      this.trees.push({
-        group: tg2,
-        leaf: leafMesh,
-        shakeT: 0,
-        baseX: x,
-        baseZ: z,
-        r: r + 0.5,
-        windPhase: Math.random() * Math.PI * 2,
-        windAmpX: 0.022 + Math.random() * 0.018,
-        windAmpZ: 0.016 + Math.random() * 0.012,
-        windFreq: 0.35 + Math.random() * 0.25,
-      });
+    this.scene.add(grp);
+    this.trees.push({
+      group: grp, leaf: canopy, shakeT: 0,
+      baseX: x, baseZ: z, r: r * 1.3,
+      windPhase: rng(seed * 13.1) * Math.PI * 2,
+      windAmpX: 0.030 + rng(seed * 6.7) * 0.020, // willows sway dramatically
+      windAmpZ: 0.024 + rng(seed * 8.2) * 0.016,
+      windFreq: 0.28 + rng(seed * 11.3) * 0.18,
     });
   }
 
