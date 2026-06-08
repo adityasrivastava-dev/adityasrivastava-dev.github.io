@@ -240,35 +240,6 @@
       </div>
     </div>
 
-    <!-- ── ORACLE ── -->
-    <button
-      id="ob"
-      onclick="document.getElementById('op').classList.toggle('open')"
-    >
-      ⊕
-    </button>
-    <div id="op">
-      <div class="oh">
-        <span>// ORACLE · ASK ME ANYTHING</span>
-        <button
-          id="ox"
-          onclick="document.getElementById('op').classList.remove('open')"
-        >
-          ×
-        </button>
-      </div>
-      <div id="om">
-        <div class="om b">
-          Welcome to Aditya's City. Drive to a glowing checkpoint and press
-          ENTER.
-        </div>
-      </div>
-      <div class="or">
-        <input id="oi" placeholder="Ask about any system…" />
-        <button id="os">SEND</button>
-      </div>
-    </div>
-
     <!-- ── CONTACT ── -->
     <div id="contact">
       <div class="cc">
@@ -488,14 +459,6 @@
           if (hud) hud.style.bottom = "160px";
           // Make ENTER button visible (it's hidden until proximity)
           // mob-enter visibility is managed by showNotification/hideNotification
-          // Make oracle button bigger on mobile
-          const ob = document.getElementById("ob");
-          if (ob) {
-            ob.style.width = "52px";
-            ob.style.height = "52px";
-            ob.style.bottom = "170px";
-            ob.style.fontSize = "22px";
-          }
         }
       })();
     </script>
