@@ -167,7 +167,7 @@ export default class Application {
     const gameStarted = GameState.mode !== "IDLE";
 
     // ── STEP 1: PROCESS PLAYER INPUT ─────────────────────────────────────
-    this.input.update();
+    this.input.update(rawDt);
 
     // ── DYNAMIC TICK RATE UPDATE ──────────────────────────────────────────
     if (gameStarted) {

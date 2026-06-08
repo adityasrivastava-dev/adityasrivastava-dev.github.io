@@ -15,6 +15,9 @@ export default class InputController {
     // Touch joystick support (populated by mobile UI if present)
     this.touchAxis = { ax: 0, ay: 0 };
 
+    // Smoothed steer — lerped each frame so keyboard doesn't snap to ±1 instantly
+    this._steerSmooth = 0;
+
     this._bindListeners();
   }
 
@@ -33,7 +36,7 @@ export default class InputController {
   }
 
   /** Called once per frame — converts raw key state to named flags */
-  update() {
+  update(dt = 0.016) {
     const k = this._keys;
     const tj = this.touchAxis;
 
@@ -43,6 +46,17 @@ export default class InputController {
     this.right   = !!(k['ArrowRight'] || k['KeyD'] || tj.ax > 0.25);
     this.enter   = !!(k['KeyE']);
     this.map     = !!(k['KeyM']);
+
+    // Smooth keyboard steer so it doesn't snap to ±1 digitally.
+    // Analog joystick bypasses smoothing — it's already continuous.
+    if (Math.abs(tj.ax) > 0.15) {
+      this._steerSmooth = -tj.ax;
+    } else {
+      const rawSteer = this.left ? 1 : this.right ? -1 : 0;
+      // Attack: 0.12s to full steer (6 frames at 60fps); release: 0.08s
+      const rate = rawSteer !== 0 ? dt / 0.12 : dt / 0.08;
+      this._steerSmooth += (rawSteer - this._steerSmooth) * Math.min(1, rate * 60);
+    }
   }
 
   /** Throttle value 0-1 for analog joystick support */
@@ -57,9 +71,6 @@ export default class InputController {
   }
 
   get steerAxis() {
-    if (Math.abs(this.touchAxis.ax) > 0.15) return -this.touchAxis.ax;
-    if (this.left)  return  1;
-    if (this.right) return -1;
-    return 0;
+    return this._steerSmooth;
   }
 }

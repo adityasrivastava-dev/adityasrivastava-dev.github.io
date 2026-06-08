@@ -304,7 +304,6 @@
 
     <!-- ══════════════════════════ SCRIPTS ══════════════════════════════════════ -->
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="city-data.js"></script>
     <script src="city-hud.js"></script>
 
@@ -320,6 +319,20 @@
           }
         };
       })();
+    </script>
+
+    <!-- importmap: resolves bare 'three' and postprocessing paths to CDN ES modules -->
+    <!-- Must come BEFORE the module script. Three.js r128 ES module build. -->
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js",
+        "three/examples/jsm/postprocessing/EffectComposer.js": "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/postprocessing/EffectComposer.js",
+        "three/examples/jsm/postprocessing/RenderPass.js": "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/postprocessing/RenderPass.js",
+        "three/examples/jsm/postprocessing/UnrealBloomPass.js": "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/postprocessing/UnrealBloomPass.js",
+        "three/examples/jsm/postprocessing/ShaderPass.js": "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/postprocessing/ShaderPass.js"
+      }
+    }
     </script>
 
     <script type="module" src="./src/main.js"></script>

@@ -1,5 +1,5 @@
 // ── CAMERA — cinematic spring-damper follow camera ────────────────────────────
-import { CameraC as CC } from "../utils/constants.js";
+import { CameraC as CC, Car as C } from "../utils/constants.js";
 import { lerp, clamp, easeInOut } from "../utils/math.js";
 
 export default class Camera {
@@ -26,9 +26,12 @@ export default class Camera {
     this._toPos = new THREE.Vector3();
     this._toLook = new THREE.Vector3();
 
+    // Store renderer ref for post-processing feedback (chromatic aberration)
+    this._renderer = renderer;
+
     // Game feel
     this.shakeAmt = 0;
-    this._currentFOV = 58;
+    this._currentFOV = CC.FOV_MIN;
     this._fovVel = 0;
 
     // Store previous speed ONCE per frame (not overwritten mid-frame)
@@ -90,7 +93,7 @@ export default class Camera {
 
     // ── STATIC — cinematic orbit before user clicks ────────────────────────
     if (this.state === "STATIC") {
-      cam.fov = 58;
+      cam.fov = 50;
       cam.updateProjectionMatrix();
       const pan = now * 0.04;
       // Orbit radius 120 to show full 2.5x world without clipping temples
@@ -103,6 +106,9 @@ export default class Camera {
     if (this.state === "INTRO") {
       this._introT = Math.min(1, this._introT + dt / 5.8);
       const e = easeInOut(this._introT);
+      // Cinematic: start wide (50°) and land at the tight diorama FOV
+      cam.fov = lerp(50, CC.FOV_MIN, e);
+      cam.updateProjectionMatrix();
       cam.position.lerpVectors(
         new THREE.Vector3(8, 320, 80),
         // Land at the new raised isometric height (18) not old low height (12)
@@ -118,6 +124,7 @@ export default class Camera {
       );
       if (this._introT >= 1) {
         this.state = "FOLLOW";
+        this._currentFOV = CC.FOV_MIN; // seed FOV spring at the landed value
         // Seed spring velocity from car's current velocity so there's no jump
         this._vx = car.vx * 60; // convert per-frame to per-second
         this._vy = 0;
@@ -186,7 +193,7 @@ export default class Camera {
     const speedDelta = speedNow - prevSpeed; // used for FOV kick + brake pull
     this._prevSpeed = speedNow;
 
-    const speedRatio = clamp(speedNow / 0.95, 0, 1);
+    const speedRatio = clamp(speedNow / C.MAX_SPEED, 0, 1);
 
     // ── TARGET POSITION ────────────────────────────────────────────────────────
     const camDist = lerp(
@@ -286,7 +293,10 @@ export default class Camera {
     cam.updateProjectionMatrix();
 
     // ── LOOK-AHEAD — world opens in front of car at speed ─────────────────────
-    const lookAhead = lerp(CC.LOOK_AHEAD_MIN, CC.LOOK_AHEAD_MAX, speedRatio);
+    // Tighten on cornering so hard turns don't feel floaty
+    const latVel = car.vx * car.cosA - car.vz * car.sinA;
+    const lookAhead = lerp(CC.LOOK_AHEAD_MIN, CC.LOOK_AHEAD_MAX, speedRatio)
+      * (1 - clamp(Math.abs(latVel) * 3.5, 0, 0.42));
     cam.lookAt(
       car.x + car.sinA * lookAhead,
       1.2 + speedRatio * 0.6,
@@ -294,7 +304,6 @@ export default class Camera {
     );
 
     // ── TURN TILT — leans into corners like a driver's head ───────────────────
-    const latVel = car.vx * car.cosA - car.vz * car.sinA;
     const tiltAmt = latVel * CC.TILT_FACTOR * (0.8 + speedRatio * 1.2);
     cam.rotateZ(tiltAmt * dt * 3.5);
 
@@ -309,75 +318,10 @@ export default class Camera {
     cam.position.x += this._cornerOffset.x;
     cam.position.z += this._cornerOffset.z;
 
-    // ── SPEED VIGNETTE — DOM element darkens edges at high speed ─────────────
-    // Gives tunnel-vision feel, pure CSS — zero GPU cost
-    const vig = document.getElementById("speed-vignette");
-    if (vig) {
-      // At low speed: deep black edges (cinema depth)
-      // At high speed: shift to amber-red (burning through air feel)
-      // The CSS radial gradient reads these CSS custom properties in real-time
-      const vigAmt = Math.max(0, speedRatio - 0.35) * 0.7;
-      vig.style.opacity = vigAmt.toFixed(3);
-
-      // Color tint: lerp from pure black (0,0,0) to deep amber (80,20,0)
-      const r = Math.round(speedRatio * speedRatio * 80);
-      const g = Math.round(speedRatio * speedRatio * 18);
-      const bC = 0;
-      // Only update CSS vars at high speed to avoid paint thrash at idle
-      if (speedRatio > 0.4) {
-        const root = document.documentElement;
-        root.style.setProperty("--vignette-color", `${r},${g},${bC}`);
-        // Also narrow the transparent center — tunnel vision
-        const inner = Math.max(18, 35 - speedRatio * 18).toFixed(0);
-        root.style.setProperty("--vignette-inner", inner + "%");
-        // Deepen opacity at max speed
-        const op = (0.52 + speedRatio * 0.18).toFixed(3);
-        root.style.setProperty("--vignette-opacity", op);
-      } else if (speedRatio < 0.15) {
-        // Reset to black when nearly stopped
-        document.documentElement.style.setProperty("--vignette-color", "0,0,0");
-        document.documentElement.style.setProperty("--vignette-inner", "35%");
-        document.documentElement.style.setProperty(
-          "--vignette-opacity",
-          "0.52",
-        );
-      }
-    }
-
-    // ── SPEED STREAKS — horizontal motion lines, JS-driven via inline style ───
-    // Appear above 55% speed. Each streak has an independent phase so they
-    // flash at different times — random, not synchronized. Pure CSS transform,
-    // zero reflow cost. Makes the world feel like it's tearing past the car.
-    if (!this._streakPhases) {
-      // Init once: random per-streak phase offsets 0..1
-      this._streakPhases = Array.from({ length: 10 }, () => Math.random());
-      this._streakT = 0;
-    }
-    this._streakT += dt;
-    const streakEl = document.getElementById("speed-streaks");
-    if (streakEl) {
-      const intensity = Math.max(0, (speedRatio - 0.55) / 0.45); // 0..1
-      const streaks = streakEl.children;
-      for (let i = 0; i < streaks.length; i++) {
-        if (intensity <= 0) {
-          streaks[i].style.opacity = "0";
-          continue;
-        }
-        // Each streak cycles at a slightly different rate
-        const rate = 0.9 + i * 0.22;
-        const phase = (this._streakT * rate + this._streakPhases[i]) % 1;
-        // Active 55% of cycle, then invisible for 45%
-        if (phase > 0.55) {
-          streaks[i].style.opacity = "0";
-          continue;
-        }
-        const t = phase / 0.55; // 0→1 over the active window
-        // Streak travels right→left: starts at 100%, ends at −20%
-        const tx = 100 - t * 120;
-        const op = intensity * (1 - t * 0.65) * (0.45 + (i % 4) * 0.12);
-        streaks[i].style.transform = `translateX(${tx.toFixed(1)}%)`;
-        streaks[i].style.opacity = op.toFixed(3);
-      }
+    // ── CHROMATIC ABERRATION — speed feedback through post-processing ─────────
+    // Replaces DOM vignette and speed streaks. In-world GPU effect, zero DOM cost.
+    if (this._renderer) {
+      this._renderer.setChromaticIntensity(Math.max(0, speedRatio - 0.25) * 0.008);
     }
 
     // ── STOP EXHALE — detect transition from moving → still ──────────────────
