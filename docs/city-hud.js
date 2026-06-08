@@ -97,9 +97,11 @@ function updateMinimap(cx, cz, angle) {
   mmCtx.clearRect(0, 0, W, H);
   mmCtx.fillStyle = "rgba(10,5,2,.8)";
   mmCtx.fillRect(0, 0, W, H);
+  // Map world bounds → minimap canvas (matches full-map projection)
+  const MM_X1 = -95, MM_X2 = 95, MM_Z1 = -88, MM_Z2 = 80;
   window.CITY_DATA.buildings.forEach((b) => {
-    const mx = (b.pos[0] / 100 + 0.5) * W,
-      mz = (b.pos[1] / 100 + 0.5) * H;
+    const mx = ((b.pos[0] - MM_X1) / (MM_X2 - MM_X1)) * W,
+      mz = ((b.pos[1] - MM_Z1) / (MM_Z2 - MM_Z1)) * H;
     mmCtx.fillStyle = (b.glowColor || "#888") + "cc";
     mmCtx.fillRect(mx - 3, mz - 3, 6, 6);
     // Building name dot glow
@@ -108,8 +110,8 @@ function updateMinimap(cx, cz, angle) {
     mmCtx.arc(mx, mz, 5, 0, Math.PI * 2);
     mmCtx.fill();
   });
-  const cmx = (cx / 100 + 0.5) * W,
-    cmz = (cz / 100 + 0.5) * H;
+  const cmx = ((cx - MM_X1) / (MM_X2 - MM_X1)) * W,
+    cmz = ((cz - MM_Z1) / (MM_Z2 - MM_Z1)) * H;
   mmCtx.save();
   mmCtx.translate(cmx, cmz);
   mmCtx.rotate(angle);
@@ -286,7 +288,7 @@ function openBuilding(b) {
     body.classList.add("stagger-in");
   }, 280);
 
-  // P4: check if all 12 temples now visited
+  // P4: check if all 17 temples now visited
   setTimeout(() => {
     if (typeof CityEngine !== "undefined" && CityEngine.checkCompletion)
       CityEngine.checkCompletion();
@@ -391,8 +393,12 @@ let jIdx = 0;
 function renderJourney() {
   const s = JD[jIdx],
     col = s.color;
+  const isWorkEntry = ["JAN 2022","SEP 2022","2023","2024"].includes(s.year);
+  const orgLine = isWorkEntry
+    ? `<div class="jb-stl" style="color:${col}66">TRILASOFT SOLUTIONS · NOIDA, INDIA</div>`
+    : `<div class="jb-stl" style="color:${col}66">EDUCATION</div>`;
   document.getElementById("jb-card").innerHTML =
-    `<span class="jb-year" style="color:${col};text-shadow:0 0 40px ${col}44">${s.year}</span><div class="jb-ttl">${s.subtitle}</div><div class="jb-stl" style="color:${col}66">TRILASOFT SOLUTIONS · NOIDA, INDIA</div><div class="jb-bdy">${s.content}</div>`;
+    `<span class="jb-year" style="color:${col};text-shadow:0 0 40px ${col}44">${s.year}</span><div class="jb-ttl">${s.subtitle}</div>${orgLine}<div class="jb-bdy">${s.content}</div>`;
   document.getElementById("jb-ctr").textContent = `${jIdx + 1} / ${JD.length}`;
   document.getElementById("jb-p").disabled = jIdx === 0;
   document.getElementById("jb-n").disabled = jIdx === JD.length - 1;
@@ -460,6 +466,23 @@ function onWeatherChange(w) {
   t.textContent = "// " + (WX_NAMES[w] || w.toUpperCase()) + " MODE";
   t.classList.add("show");
   setTimeout(() => t.classList.remove("show"), 2000);
+  // Show GRIP HUD only for grip-reducing weather
+  const gripMap = { rain: 0.3, snow: 0.12, fog: 0.72 };
+  const gripHud = document.getElementById("grip-hud");
+  const gripBar = document.getElementById("grip-bar");
+  const gripIcon = document.getElementById("grip-icon");
+  const gripLabel = document.getElementById("grip-label");
+  if (gripHud) {
+    const grip = gripMap[w];
+    if (grip !== undefined) {
+      gripHud.style.display = "";
+      if (gripBar) gripBar.style.width = (grip * 100).toFixed(0) + "%";
+      if (gripIcon) gripIcon.textContent = w === "snow" ? "❄️" : w === "fog" ? "🌫️" : "🌧️";
+      if (gripLabel) gripLabel.textContent = "GRIP " + Math.round(grip * 100) + "%";
+    } else {
+      gripHud.style.display = "none";
+    }
+  }
 }
 let muted = false;
 function doMute() {
@@ -499,6 +522,16 @@ async function sendO() {
     msgs = document.getElementById("om");
   const q = inp.value.trim();
   if (!q) return;
+  // Require API key — stored in sessionStorage, never sent anywhere except Anthropic
+  let apiKey = sessionStorage.getItem("_oracle_key");
+  if (!apiKey) {
+    apiKey = window.prompt(
+      "Enter your Anthropic API key to power the Oracle:\n(Stored in this browser session only — never sent to any server except api.anthropic.com)"
+    );
+    if (!apiKey || !apiKey.trim()) return;
+    sessionStorage.setItem("_oracle_key", apiKey.trim());
+    apiKey = apiKey.trim();
+  }
   inp.value = "";
   // Create user message with pop-in animation
   const uMsg = document.createElement("div");
@@ -529,7 +562,7 @@ EDUCATION: B.Sc. Math+Stats+CS from M.P.P.G. College, Gorakhpur (2015–2019) �
 
 CAREER PATH: Trainee Engineer (Jan 2022) → Junior Software Engineer (Sep 2022) → Backend Architect (2024).
 
-THE 12 TEMPLES AND THEIR SYSTEMS:
+THE 17 TEMPLES AND THEIR SYSTEMS:
 • Surya Dwara (Gopuram) = SSO Platform. Like the Sun Gate — one source of identity illuminates all 10+ internal apps. JWT RS256, WebAuthn PassKey, Single Logout. Zero breaches.
 • Vishwakarma Shala (Gopuram) = API Testing Platform. Divine architect's workshop — built beyond Postman. Swagger auto-discovery, DAG flow chaining, DB console, PDF reports.
 • Akasha Mandapa (Mandapa) = AWS Cloud Migration. The sky pavilion, infinite and unbound — 80+ Mule ESB apps migrated to AWS Lambda. Eliminated single point of failure.
@@ -542,6 +575,11 @@ THE 12 TEMPLES AND THEIR SYSTEMS:
 • Vayu Rath (Shikhara) = MovePulse B2B Tracking. Wind chariot — real-time status with READ UNCOMMITTED, zero locks, zero impact on write performance.
 • Saraswati Vihar (Gopuram) = University of Allahabad, M.Sc. CS (2019–2021). Goddess of knowledge.
 • Gurukul Ashram (Gopuram) = M.P.P.G. College, B.Sc. Math+CS (2015–2019). Ancient teaching tradition.
+• Vaishya Griha (Gopuram) = BizSuite — offline-first desktop ERP built with Tauri + Next.js + Dexie.js/IndexedDB. Double-entry accounting, inventory, GST invoicing that works without internet. Packaged as a Windows .exe.
+• Agni Vedha (Shikhara) = TestForge — plugin-based API testing framework. OpenAPI/Spring/FastAPI analyzers produce a universal EndpointModel; tests run cross-framework. Fills the gap Postman cannot.
+• Darpana Shala (Mandapa) = API Studio — Angular 19 signals SPA + Spring Boot backend that serves itself as compiled static assets from a JAR. No separate frontend server needed.
+• Vidya Ashram (Gopuram) = DevLearner — SM-2 spaced-repetition flashcard engine. Cards scheduled by performance history using the same algorithm Anki uses. Built to actually retain knowledge.
+• Sutra Dhara (Stupa) = Portfolio API — the REST backbone powering this very city. Node.js/Express, serves project metadata, handles Oracle queries, bridges GitHub data to the frontend.
 
 PHILOSOPHY: "I build systems that work at 3am — not systems that work in demos."
 
@@ -549,10 +587,15 @@ Mode: ${MODE}. Answer 2-4 sentences. Speak with wisdom about both the temple myt
   try {
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+      },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1000,
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 600,
         system: sys,
         messages: oH,
       }),
@@ -593,14 +636,6 @@ function openFullMap() {
     if (fm.classList.contains("open")) drawFullMap();
   }, 80); // fast refresh — canvas is lightweight, no DOM changes
 }
-let _mapInteractionsSetup = false;
-const _origSetupMap = _setupMapInteractions;
-// Wrap to be idempotent
-function _setupMapInteractions() {
-  if (_mapInteractionsSetup) return;
-  _mapInteractionsSetup = true;
-  _origSetupMap();
-}
 function closeFullMap() {
   document.getElementById("fullmap").classList.remove("open");
   if (window._mapInterval) {
@@ -615,11 +650,11 @@ let _mapCanvas = null,
   _mapW = 900,
   _mapH = 900;
 let _mapHoverBuilding = null;
-// World bounds: X -95..95, Z -88..65
+// World bounds: X -95..95, Z -88..80
 const _WX1 = -95,
   _WX2 = 95,
   _WZ1 = -88,
-  _WZ2 = 65;
+  _WZ2 = 80;
 function _wm(wx, wz) {
   return [
     ((wx - _WX1) / (_WX2 - _WX1)) * _mapW * 0.88 + _mapW * 0.06,
@@ -779,12 +814,17 @@ function drawFullMap() {
 
   // ── ZONE COLOR POOLS (like Bruno Simon biome colors) ─────────────────
   const zones = [
-    [45, -22, 0.06, "#00c8ff", 50], // Surya Dwara — cyan zone
+    [45, -22, 0.06, "#00c8ff", 50],  // Surya Dwara — cyan zone
     [-55, -22, 0.05, "#ffcc44", 48], // Brahma Kund — gold zone
-    [0, -55, 0.05, "#4dd4ff", 44], // Jyotish — pale blue
-    [-40, 35, 0.05, "#ff6b00", 42], // Lakshmi — orange
-    [0, 55, 0.05, "#888888", 38], // Pura Stambha — grey legacy
+    [0, -55, 0.05, "#4dd4ff", 44],   // Jyotish — pale blue
+    [-40, 35, 0.05, "#ff6b00", 42],  // Lakshmi — orange
+    [0, 55, 0.05, "#888888", 38],    // Pura Stambha — grey legacy
     [-22, -62, 0.05, "#a78bfa", 42], // Education — violet
+    [82, -22, 0.05, "#4f9cf9", 44],  // Vaishya Griha — blue (BizSuite)
+    [82, 8, 0.04, "#f97316", 38],    // Agni Vedha — orange (TestForge)
+    [28, -48, 0.04, "#22d3ee", 36],  // Darpana Shala — cyan (API Studio)
+    [-82, -22, 0.05, "#a3e635", 42], // Vidya Ashram — lime (DevLearner)
+    [0, 72, 0.04, "#f43f5e", 36],    // Sutra Dhara — rose (Portfolio API)
   ];
   zones.forEach(([wx, wz, alpha, col, r]) => {
     const [zx, zy] = _wm(wx, wz);
@@ -947,6 +987,8 @@ function drawFullMap() {
 
 // ── MAP INTERACTIONS ──────────────────────────────────────────────────────
 function _setupMapInteractions() {
+  if (_setupMapInteractions._done) return;
+  _setupMapInteractions._done = true;
   const canvas = document.getElementById("fullmap-canvas");
   const tooltip = document.getElementById("fm-tooltip");
   if (!canvas || !tooltip) return;
@@ -1096,7 +1138,9 @@ window.CityUI = {
   },
   updateMinimap,
   onWeatherChange(w) {
-    updateGameHUD(0, w);
+    const spd = typeof CityEngine !== "undefined" ? CityEngine.carSpeed : 0;
+    updateGameHUD(spd, w);
+    onWeatherChange(w);
   },
 };
 

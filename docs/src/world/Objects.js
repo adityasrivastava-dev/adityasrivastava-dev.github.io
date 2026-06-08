@@ -753,6 +753,36 @@ export default class Objects {
           -72,
           22,
           -82, // gurukul-ashram
+          97,
+          -22,
+          82,
+          -37,
+          67,
+          -22, // vaishya-griha (BizSuite)
+          97,
+          8,
+          82,
+          23,
+          67,
+          8, // agni-vedha (TestForge)
+          43,
+          -48,
+          28,
+          -63,
+          13,
+          -48, // darpana-shala (API Studio)
+          -97,
+          -22,
+          -82,
+          -37,
+          -67,
+          -22, // vidya-ashram (DevLearner)
+          15,
+          72,
+          -15,
+          72,
+          0,
+          87, // sutra-dhara (Portfolio API)
         ];
         const pairs = [];
         for (let i = 0; i < flat.length; i += 2)

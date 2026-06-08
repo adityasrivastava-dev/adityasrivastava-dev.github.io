@@ -669,5 +669,217 @@ window.CITY_DATA = {
       ],
       engineerDetail: null,
     },
+
+    // ═══════════ OPEN SOURCE PROJECTS ══════════════════════════════════════
+    {
+      id: "vaishya-griha",
+      name: "Vaishya Griha",
+      subtitle: "BIZSUITE · OFFLINE BUSINESS SUITE",
+      pos: [82, -22],
+      roadPos: [65, -22],
+      size: [9, 9],
+      height: 16,
+      glowColor: "#4f9cf9",
+      templeType: "gopuram",
+      isHero: true,
+      icon: "🏪",
+      tag: "NEXT.JS 14 · TAURI · INDEXEDDB · GST",
+      status: "ACTIVE",
+      year: "2025",
+      metrics: [
+        { v: "ZERO", l: "BACKEND" },
+        { v: "TAURI", l: "DESKTOP APP" },
+        { v: "MULTI", l: "TENANT" },
+      ],
+      story:
+        "Every shop in India runs on three notebooks. One for inventory, one for suppliers, one for clients. Three notebooks, three chances for error, three things to lose.\n\n<em>Vaishya Griha — the merchant's house. Built for the people who build commerce.</em> BizSuite runs entirely on-device — no server, no internet required. Full GST invoicing, POS, inventory, purchase orders, delivery challans. One app. Zero monthly cost.",
+      outcome:
+        "Offline-first business suite deployable on any Windows PC. Zero backend dependency. Full Indian retail workflow in one app.",
+      connects: [
+        { to: "Vishwakarma Shala", how: "Both built around the idea that teams deserve purpose-built tools, not repurposed generic software" },
+      ],
+      tech: ["Next.js 14", "TypeScript", "Tauri", "Dexie.js", "IndexedDB", "Zustand", "shadcn/ui", "Tailwind CSS"],
+      engineerDetail: {
+        problem:
+          "Indian retail shops have unreliable internet but need a full ERP stack. Cloud tools (Tally, Zoho) require constant connectivity and charge per-user monthly fees that are prohibitive for small traders.",
+        rejected: [
+          { w: "Firebase Firestore", r: "Requires internet. Unacceptable for a shop where the router is down 30% of the time." },
+          { w: "SQLite via Tauri native", r: "IndexedDB via Dexie.js is already battle-tested in browsers, transactional, and needs no native bridge for basic operations." },
+        ],
+        decision:
+          "Offline-first via IndexedDB (Dexie.js). Next.js 14 static export for Tauri builds. Every table enforces tenantId — same binary, different data per client onboarded by the developer.",
+        impl: "<code>DB layer:</code> Dexie.js strict tenantId on every table — zero cross-tenant leakage\n<code>Auth:</code> PIN-locked roles (Owner/Staff) — session-based, no server tokens\n<code>Build:</code> next build → static export → Tauri bundles as .exe installer\n<code>Locale:</code> next-intl for English/Hindi bilingual UI",
+        lesson:
+          "Offline-first forces correct data model design. You cannot rely on the server to resolve conflicts — the local model must be authoritative.",
+      },
+    },
+
+    {
+      id: "agni-vedha",
+      name: "Agni Vedha",
+      subtitle: "TESTFORGE · API TEST AUTOMATION",
+      pos: [82, 8],
+      roadPos: [65, 8],
+      size: [8, 8],
+      height: 13,
+      glowColor: "#f97316",
+      templeType: "shikhara",
+      icon: "🔥",
+      tag: "OPENAPI · 7 RULES · CI/CD · ZERO AI",
+      status: "ACTIVE",
+      year: "2025",
+      metrics: [
+        { v: "7", l: "TEST RULES" },
+        { v: "ZERO", l: "AI — DETERMINISTIC" },
+        { v: "CI", l: "READY" },
+      ],
+      story:
+        "AI-generated tests are non-deterministic. You can't review them, can't reproduce them, can't trust them in CI.\n\n<em>Agni Vedha — proof by fire. The ancient way to verify truth with no room for ambiguity.</em> TestForge reads your OpenAPI spec and applies 7 deterministic rules — happy path, missing fields, invalid auth, CRUD chaining, schema validation, not-found, bad query params. Same spec, same tests, every run.",
+      outcome:
+        "Generate, run, and report on API test suites from any OpenAPI spec. Zero manual test writing. Full CI/CD integration.",
+      connects: [
+        { to: "Vishwakarma Shala", how: "Vishwakarma Shala solves the internal testing problem. TestForge is the open-source, framework-agnostic evolution of that same idea." },
+      ],
+      tech: ["TypeScript", "pnpm Workspaces", "Turbo", "OpenAPI 3.0", "axios", "Commander", "Inquirer", "Chalk"],
+      engineerDetail: {
+        problem:
+          "AI-generated test suites produce different tests on every run — unverifiable in code review and unreliable in CI. Existing tools (Postman, RestAssured) require engineers to write test code, which most teams don't sustain.",
+        rejected: [
+          { w: "AI test generation", r: "Non-deterministic. Cannot be reviewed. CI breaks randomly. Not a substitute for a deterministic spec-driven suite." },
+          { w: "Recorder-style tools", r: "Only capture flows you've already manually run. Can't generate edge cases from the spec alone." },
+        ],
+        decision:
+          "7 deterministic rule-based generators on a universal EndpointModel. Same OpenAPI spec always produces same tests. Plugin-based so Spring, FastAPI, and Django analyzers all feed the same generator pipeline.",
+        impl: "<code>Analyzer:</code> OpenAPI/Spring/FastAPI → universal EndpointModel\n<code>7 Rules:</code> happy-path, missing-required-field, invalid-auth, crud-chain, schema-validate, not-found, bad-query-param\n<code>Runner:</code> axios with concurrency, retries, stop-on-fail\n<code>Reporter:</code> interactive HTML dashboard + JUnit XML for CI",
+        lesson:
+          "Determinism is a feature, not a limitation. A test suite that produces the same results every time is worth 10× a suite that might find something new.",
+      },
+    },
+
+    {
+      id: "darpana-shala",
+      name: "Darpana Shala",
+      subtitle: "API STUDIO · IN-BROWSER TESTING",
+      pos: [28, -48],
+      roadPos: [28, -38],
+      size: [8, 8],
+      height: 12,
+      glowColor: "#22d3ee",
+      templeType: "mandapa",
+      icon: "🪞",
+      tag: "ANGULAR 19 · SPRING BOOT · ONE JAR",
+      status: "ACTIVE",
+      year: "2025",
+      metrics: [
+        { v: "ONE", l: "JAR DEPLOY" },
+        { v: "MOCK", l: "SERVER BUILT-IN" },
+        { v: "ZERO", l: "CORS ISSUES" },
+      ],
+      story:
+        "Postman is owned by a company with a pricing page. API Studio is owned by no one.\n\n<em>Darpana Shala — the hall of mirrors. It shows your API exactly as it is, not as you hope it is.</em> Request builder, mock server with templating, load tester, GraphQL editor, WebSocket/SSE support, TLS inspector, fuzzer, DB console. All bundled into one deployable JAR.",
+      outcome:
+        "Full Postman-equivalent that deploys as a single JAR. Zero CORS, zero separate deploy, zero monthly cost.",
+      connects: [
+        { to: "Vishwakarma Shala", how: "Vishwakarma Shala is the internal Trilasoft tool. API Studio is the open-source personal version — more features, no constraints." },
+      ],
+      tech: ["Angular 19", "TypeScript 5.7", "Spring Boot 3.0", "Java 17", "Spring Security", "RxJS 7.8", "Flying Saucer", "OpenPDF"],
+      engineerDetail: {
+        problem:
+          "Postman has become bloated and subscription-gated. Lightweight alternatives lack mock servers, load testing, or WebSocket support. Running a separate dev server adds CORS and auth complexity.",
+        rejected: [
+          { w: "React + separate backend", r: "Two processes, CORS headers, two deploys. Every developer needs both running simultaneously." },
+          { w: "Electron wrapper", r: "Just to serve a web app locally — significant packaging overhead for no real benefit over a JAR." },
+        ],
+        decision:
+          "Angular 19 standalone components with signals (no NgRx) + Spring Boot that serves the compiled Angular app as static assets in the same JAR. One process, one deploy, zero CORS.",
+        impl: "<code>State:</code> Angular 19 signals — no external library, zero RxJS for component state\n<code>Build:</code> ng build → Angular dist → Spring Boot /static/ → single JAR\n<code>Mock server:</code> Handlebars-style dynamic template variables in response bodies\n<code>Auth:</code> stateless HTTP Basic — no session state needed",
+        lesson:
+          "Bundle your frontend into your backend JAR. One process eliminates an entire class of deployment and CORS problems permanently.",
+      },
+    },
+
+    {
+      id: "vidya-ashram",
+      name: "Vidya Ashram",
+      subtitle: "DEVLEARNER · INTERVIEW PREP AI",
+      pos: [-82, -22],
+      roadPos: [-65, -22],
+      size: [9, 9],
+      height: 14,
+      glowColor: "#a3e635",
+      templeType: "gopuram",
+      icon: "🧠",
+      tag: "SM-2 · AI INTERVIEWER · DOCKER RUNNER",
+      status: "ACTIVE",
+      year: "2025",
+      metrics: [
+        { v: "SM-2", l: "SPACED REPETITION" },
+        { v: "3-TIER", l: "AI FALLBACK" },
+        { v: "DOCKER", l: "CODE RUNNER" },
+      ],
+      story:
+        "Most interview prep is passive. You read. You forget. You read again. Ebbinghaus proved this 140 years ago.\n\n<em>Vidya Ashram — the hermitage of knowledge. Where learning happens in silence, repeatedly, until it becomes reflex.</em> DevLearner uses SM-2 spaced repetition to schedule each concept to appear just as it's about to be forgotten. Combined with an AI interviewer, 70+ algorithm visualizations, and Docker-isolated code execution.",
+      outcome:
+        "Full interview prep platform with spaced repetition, AI mock interviews, and live code execution. Built for backend engineers targeting MAANG.",
+      connects: [
+        { to: "Surya Dwara", how: "DevLearner uses JWT RS256 auth — the same pattern designed and proven at Surya Dwara" },
+      ],
+      tech: ["Spring Boot 3.2", "Java 17", "MySQL 8.0", "React 19", "Vite", "Zustand", "Monaco Editor", "Docker", "Groq API", "SM-2"],
+      engineerDetail: {
+        problem:
+          "Generic platforms (LeetCode, InterviewBit) optimize for quantity over retention. Engineers solve 200 problems, forget 180 of them, and fail the interview anyway. The learning algorithm matters more than the content.",
+        rejected: [
+          { w: "Redis/Kafka for execution queue", r: "Over-engineering for a side project. MySQL polling at 400ms is sufficient and eliminates an entire infrastructure dependency." },
+          { w: "GPT-4 as primary AI", r: "Cost: GPT-4 at $15/1M tokens vs Groq (free tier) for 95% of prompts. 3-tier fallback handles the remaining 5%." },
+        ],
+        decision:
+          "SM-2 algorithm for spaced repetition (each card tracks ease_factor and interval). Async MySQL queue for code execution. 3-tier AI fallback: Groq → Gemini → OpenAI. Each tier activates only on failure of the previous.",
+        impl: "<code>SM-2:</code> ease_factor + interval per card, adjusted on each review (1=again → 5=easy)\n<code>Execution:</code> async MySQL queue → child JVM or Docker container → result callback\n<code>AI fallback:</code> try Groq → on error try Gemini → on error try OpenAI\n<code>Voice:</code> Web Speech API for voice-enabled mock interview mode",
+        lesson:
+          "The learning algorithm matters more than the content. SM-2 is 40 years old and still the best algorithm for long-term recall.",
+      },
+    },
+
+    {
+      id: "sutra-dhara",
+      name: "Sutra Dhara",
+      subtitle: "PORTFOLIO API · VISITOR ANALYTICS",
+      pos: [0, 72],
+      roadPos: [0, 60],
+      size: [7, 7],
+      height: 11,
+      glowColor: "#f43f5e",
+      templeType: "stupa",
+      icon: "📡",
+      tag: "SPRING BOOT · TELEGRAM · SESSION EVENTS",
+      status: "OPERATIONAL",
+      year: "2025",
+      metrics: [
+        { v: "4", l: "ENDPOINTS" },
+        { v: "ZERO", l: "THIRD-PARTY SDK" },
+        { v: "LIVE", l: "TELEGRAM ALERTS" },
+      ],
+      story:
+        "A portfolio without analytics is a message in a bottle. You never know if anyone read it.\n\n<em>Sutra Dhara — the thread-holder. The sutra connects every bead. Aditya holds the thread of every visitor who walked this city.</em> Four endpoints: session ping, event log (which temple you entered, how long you stayed), duration update every 30s, and JS error capture. Every unique visitor sends a Telegram notification.",
+      outcome:
+        "Lightweight self-hosted analytics backend. No third-party SDK. Real-time Telegram notification on every unique portfolio visit.",
+      connects: [
+        { to: "Surya Dwara", how: "Portfolio API uses the same JWT + Spring Security pattern proven at Surya Dwara" },
+      ],
+      tech: ["Spring Boot 3.2", "Java 17", "MySQL", "Spring Security", "Spring Data JPA", "Hibernate", "Telegram Bot API"],
+      engineerDetail: {
+        problem:
+          "Google Analytics tracks page views. It can't track 'player entered the Brahma Kund temple at 2:14am'. Custom game events for a portfolio require a custom backend — no existing analytics SDK speaks game state.",
+        rejected: [
+          { w: "Google Analytics", r: "No custom game events. Privacy-invasive. Adds a cookie consent banner to a portfolio. Not acceptable." },
+          { w: "Self-hosted Plausible", r: "Still no game events. Running a full Docker stack for 4 simple endpoints is severe overkill." },
+        ],
+        decision:
+          "4-endpoint Spring Boot API. Session on first ping, event logging per user action, rolling duration updates, JS error capture. Telegram bot sends a message on every unique session.",
+        impl: "<code>POST /ping:</code> create session, return total visitor count\n<code>POST /event:</code> log {type, metadata} — types: district_entered, temple_visited, oracle_asked, contact_clicked\n<code>PATCH /session/:id/duration:</code> called every 30s while user is active\n<code>POST /error:</code> captures frontend JS exceptions with stack trace + browser info",
+        lesson:
+          "Analytics should answer questions you actually have, not questions analytics vendors invented. Build exactly what you need to know.",
+      },
+    },
   ],
 };

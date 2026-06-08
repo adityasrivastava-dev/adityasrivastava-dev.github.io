@@ -633,6 +633,11 @@ export default class World {
       [55, 8],
       [-22, -62],
       [22, -62],
+      [82, -22],  // vaishya-griha (BizSuite)
+      [82, 8],    // agni-vedha (TestForge)
+      [28, -48],  // darpana-shala (API Studio)
+      [-82, -22], // vidya-ashram (DevLearner)
+      [0, 72],    // sutra-dhara (Portfolio API)
     ];
     for (let i = 0; i < FC; i++) {
       const area = fireTempleAreas[i % fireTempleAreas.length];
