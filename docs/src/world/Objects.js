@@ -679,110 +679,26 @@ export default class Objects {
       ],
 
       // Temple surrounds — flat [x,z,x,z,...] pairs converted to [[x,z],...]
+      // Positions updated to match 1.6× expanded building layout
       ...(() => {
         const flat = [
-          45,
-          -35,
-          60,
-          -22,
-          30,
-          -22, // surya-dwara
-          28,
-          50,
-          15,
-          40,
-          40,
-          40, // vishwakarma
-          65,
-          -48,
-          50,
-          -50,
-          70,
-          -28, // akasha-mandapa
-          65,
-          18,
-          45,
-          18,
-          70,
-          0, // setu-nagara
-          -65,
-          -32,
-          -45,
-          -32,
-          -70,
-          -12, // brahma-kund
-          -50,
-          45,
-          -30,
-          45,
-          -55,
-          25, // lakshmi-prasad
-          0,
-          65,
-          15,
-          60,
-          -15,
-          60, // pura-stambha
-          -38,
-          -48,
-          -18,
-          -48,
-          -38,
-          -28, // maya-sabha
-          0,
-          -65,
-          15,
-          -65,
-          -15,
-          -65, // jyotish-vedha
-          -65,
-          18,
-          -45,
-          18,
-          -70,
-          0, // vayu-rath
-          -32,
-          -72,
-          -12,
-          -72,
-          -22,
-          -82, // saraswati-vihar
-          32,
-          -72,
-          12,
-          -72,
-          22,
-          -82, // gurukul-ashram
-          97,
-          -22,
-          82,
-          -37,
-          67,
-          -22, // vaishya-griha (BizSuite)
-          97,
-          8,
-          82,
-          23,
-          67,
-          8, // agni-vedha (TestForge)
-          43,
-          -48,
-          28,
-          -63,
-          13,
-          -48, // darpana-shala (API Studio)
-          -97,
-          -22,
-          -82,
-          -37,
-          -67,
-          -22, // vidya-ashram (DevLearner)
-          15,
-          72,
-          -15,
-          72,
-          0,
-          87, // sutra-dhara (Portfolio API)
+          72, -50,  87, -35,  57, -35,   // surya-dwara [72,-35]
+          45,  71,  60,  56,  30,  56,   // vishwakarma [45,56]
+          88, -76, 103, -61,  73, -61,   // akasha-mandapa [88,-61]
+          88,  28, 103,  13,  73,  13,   // setu-nagara [88,13]
+         -88, -50, -73, -35,-103, -35,   // brahma-kund [-88,-35]
+         -64,  71, -49,  56, -79,  56,   // lakshmi-prasad [-64,56]
+           0, 103,  15,  88, -15,  88,   // pura-stambha [0,88]
+         -45, -76, -30, -61, -60, -61,   // maya-sabha [-45,-61]
+           0,-103,  15, -88, -15, -88,   // jyotish-vedha [0,-88]
+         -88,  28, -73,  13,-103,  13,   // vayu-rath [-88,13]
+         -35,-114, -20, -99, -50, -99,   // saraswati-vihar [-35,-99]
+          35,-114,  50, -99,  20, -99,   // gurukul-ashram [35,-99]
+         131, -50, 146, -35, 116, -35,   // vaishya-griha [131,-35]
+         131,  28, 146,  13, 116,  13,   // agni-vedha [131,13]
+          45, -92,  60, -77,  30, -77,   // darpana-shala [45,-77]
+        -131, -50,-116, -35,-146, -35,   // vidya-ashram [-131,-35]
+          15, 115, -15, 115, 0, 130, // sutra-dhara [0,115]
         ];
         const pairs = [];
         for (let i = 0; i < flat.length; i += 2)

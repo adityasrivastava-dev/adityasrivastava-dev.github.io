@@ -546,11 +546,11 @@ let _mapCanvas = null,
   _mapW = 900,
   _mapH = 900;
 let _mapHoverBuilding = null;
-// World bounds: X -95..95, Z -88..80
-const _WX1 = -95,
-  _WX2 = 95,
-  _WZ1 = -88,
-  _WZ2 = 80;
+// World bounds: expanded 1.6× city layout
+const _WX1 = -155,
+  _WX2 = 155,
+  _WZ1 = -130,
+  _WZ2 = 135;
 function _wm(wx, wz) {
   return [
     ((wx - _WX1) / (_WX2 - _WX1)) * _mapW * 0.88 + _mapW * 0.06,

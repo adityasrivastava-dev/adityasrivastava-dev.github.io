@@ -368,31 +368,31 @@ export default class World {
   _buildGround() {
     const s = this.scene;
 
-    // Large ground — deep saturated terracotta like Bruno's orange earth
+    // Large ground — warm terracotta earth
     const ground = new THREE.Mesh(
-      new THREE.BoxGeometry(1000, 0.4, 1000),
-      new THREE.MeshLambertMaterial({ color: 0xb07848 }), // earthy sandy-brown
+      new THREE.BoxGeometry(1200, 0.4, 1200),
+      new THREE.MeshLambertMaterial({ color: 0xa06840 }),
     );
     ground.position.y = -0.2;
     ground.receiveShadow = true;
     s.add(ground);
 
-    // Water — vivid cyan-teal like Bruno's ocean border
+    // Water — muted teal (vivid 0x22bbdd was too bright under ACES)
     const water = new THREE.Mesh(
-      new THREE.PlaneGeometry(1200, 1200),
-      new THREE.MeshLambertMaterial({ color: 0x22bbdd }), // vivid teal
+      new THREE.PlaneGeometry(1600, 1600),
+      new THREE.MeshLambertMaterial({ color: 0x1e6888 }),
     );
     water.rotation.x = -Math.PI / 2;
     water.position.y = -0.5;
     s.add(water);
 
-    // Water shimmer layer
+    // Water shimmer (MeshBasicMaterial is emissive — kept dim so it doesn't bloom)
     const waterTop = new THREE.Mesh(
-      new THREE.PlaneGeometry(1200, 1200),
+      new THREE.PlaneGeometry(1600, 1600),
       new THREE.MeshBasicMaterial({
-        color: 0x44ddff,
+        color: 0x2288aa,
         transparent: true,
-        opacity: 0.25,
+        opacity: 0.18,
         depthWrite: false,
       }),
     );
@@ -400,37 +400,32 @@ export default class World {
     waterTop.position.y = -0.45;
     s.add(waterTop);
 
-    // Ground tile grid — gives the plaza that Bruno-style paved look
-    // Large 10×10 unit tiles create subtle variation without texture
-    const tileMat = new THREE.MeshLambertMaterial({ color: 0x9e6840 }); // darker earth tone
+    // Ground tile grid — plaza paving, expanded for larger city
+    const tileMat = new THREE.MeshLambertMaterial({ color: 0x906030 });
     const tileSpacing = 10;
-    const tileCount = 40;
-    for (let tx = -tileCount / 2; tx < tileCount / 2; tx++) {
-      for (let tz = -tileCount / 2; tz < tileCount / 2; tz++) {
-        // Only place tiles in the main plaza area, skip far edges
-        if (Math.abs(tx) > 18 || Math.abs(tz) > 16) continue;
-        if ((tx + tz) % 2 !== 0) continue; // checkerboard skip = every other tile
+    for (let tx = -28; tx < 28; tx++) {
+      for (let tz = -26; tz < 26; tz++) {
+        if ((tx + tz) % 2 !== 0) continue;
         const tile = new THREE.Mesh(
           new THREE.BoxGeometry(tileSpacing - 0.15, 0.02, tileSpacing - 0.15),
           tileMat,
         );
         tile.position.set(tx * tileSpacing + 5, 0.01, tz * tileSpacing + 5);
-        tile.receiveShadow = true;
         s.add(tile);
       }
     }
 
-    // Pavement blocks around central island (scaled up) — lighter to contrast
-    const paveMat = new THREE.MeshLambertMaterial({ color: 0xc8a882 });
+    // Paved court zones near major intersections — lighter to contrast with roads
+    const paveMat = new THREE.MeshLambertMaterial({ color: 0xc09070 });
     [
-      [-35, 0, 40, 50],
-      [35, 0, 40, 50],
-      [-35, -45, 40, 40],
-      [35, -45, 40, 40],
-      [70, 20, 35, 55],
-      [-70, 20, 35, 55],
-      [-70, -25, 35, 30],
-      [70, -25, 35, 30],
+      [-55, 0, 60, 60],
+      [55, 0, 60, 60],
+      [-55, -50, 60, 50],
+      [55, -50, 60, 50],
+      [110, 25, 50, 60],
+      [-110, 25, 50, 60],
+      [-110, -35, 50, 40],
+      [110, -35, 50, 40],
     ].forEach(([x, z, w, d]) => {
       const blk = new THREE.Mesh(new THREE.BoxGeometry(w, 0.28, d), paveMat);
       blk.position.set(x, 0.14, z);
@@ -621,23 +616,23 @@ export default class World {
       fCol = new Float32Array(FC * 3);
     const fPhase = new Float32Array(FC); // per-firefly flicker phase offset
     const fireTempleAreas = [
-      [45, -22],
-      [28, 35],
-      [-55, -22],
-      [-40, 35],
-      [0, 55],
-      [-28, -38],
-      [0, -55],
-      [-55, 8],
-      [55, -38],
-      [55, 8],
-      [-22, -62],
-      [22, -62],
-      [82, -22],  // vaishya-griha (BizSuite)
-      [82, 8],    // agni-vedha (TestForge)
-      [28, -48],  // darpana-shala (API Studio)
-      [-82, -22], // vidya-ashram (DevLearner)
-      [0, 72],    // sutra-dhara (Portfolio API)
+      [72, -35],   // surya-dwara
+      [45, 56],    // vishwakarma
+      [-88, -35],  // brahma-kund
+      [-64, 56],   // lakshmi-prasad
+      [0, 88],     // pura-stambha
+      [-45, -61],  // maya-sabha
+      [0, -88],    // jyotish-vedha
+      [-88, 13],   // vayu-rath
+      [88, -61],   // akasha-mandapa
+      [88, 13],    // setu-nagara
+      [-35, -99],  // saraswati-vihar
+      [35, -99],   // gurukul-ashram
+      [131, -35],  // vaishya-griha
+      [131, 13],   // agni-vedha
+      [45, -77],   // darpana-shala
+      [-131, -35], // vidya-ashram
+      [0, 115],    // sutra-dhara
     ];
     for (let i = 0; i < FC; i++) {
       const area = fireTempleAreas[i % fireTempleAreas.length];

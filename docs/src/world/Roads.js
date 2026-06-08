@@ -1,5 +1,6 @@
-// ── ROADS — 2.5x scaled road network with curves, water channels, plazas ─────
-// Building positions from city-data stay exact. Roads CONNECT to them at scale.
+// ── ROADS — expanded city layout, 1.6× building spread, wide boulevards ───────
+// Building positions are scaled ~1.6× from original to fill the world properly.
+// Road palette: dark asphalt + warm sandstone borders, like aged stone city streets.
 
 export default class Roads {
   constructor(scene) {
@@ -14,160 +15,225 @@ export default class Roads {
     this._buildPavementDetail();
   }
 
+  // ── SURFACE — Roads only adds road geometry; World._buildGround() handles terrain
   _buildSurface() {
-    // Water plane (sea border)
-    const s = this.scene;
-    const water = new THREE.Mesh(new THREE.PlaneGeometry(1400,1400),
-      new THREE.MeshLambertMaterial({ color: 0x44aacc }));
-    water.rotation.x = -Math.PI/2; water.position.y = -0.5; s.add(water);
-
-    // Shore panels
-    const shore = new THREE.MeshLambertMaterial({ color: 0x66bbdd, transparent:true, opacity:0.7 });
-    [[-175,0,150,400],[175,0,150,400],[0,-175,400,150],[0,135,400,150]].forEach(([x,z,w,d]) => {
-      const sm = new THREE.Mesh(new THREE.PlaneGeometry(w,d), shore);
-      sm.rotation.x = -Math.PI/2; sm.position.set(x,-0.3,z); s.add(sm);
-    });
+    // Intentionally empty — World._buildGround() provides the base ground + water.
+    // Roads._buildRoadNetwork() lays the road surfaces on top of that.
   }
 
-  _road(x1,z1,x2,z2, w=14) {
+  // ── ROAD PRIMITIVE ─────────────────────────────────────────────────────────
+  // Dark warm asphalt with sandstone kerb and amber centre-line dashes
+  _road(x1, z1, x2, z2, w = 20) {
     const s = this.scene;
-    const dx=x2-x1, dz=z2-z1;
-    const len = Math.sqrt(dx*dx+dz*dz);
-    const ang = Math.atan2(dx,dz);
-    const mx=(x1+x2)/2, mz=(z1+z2)/2;
+    const dx = x2 - x1,
+      dz = z2 - z1;
+    const len = Math.sqrt(dx * dx + dz * dz);
+    const ang = Math.atan2(dx, dz);
+    const mx = (x1 + x2) / 2,
+      mz = (z1 + z2) / 2;
 
-    // Wide sandstone border
-    const sw = new THREE.Mesh(new THREE.BoxGeometry(w+7,0.22,len),
-      new THREE.MeshLambertMaterial({ color: 0xcc7755 }));
-    sw.rotation.y=ang; sw.position.set(mx,0.11,mz); s.add(sw);
+    // Sandstone kerb
+    const kerb = new THREE.Mesh(
+      new THREE.BoxGeometry(w + 6, 0.22, len),
+      new THREE.MeshLambertMaterial({ color: 0x756048 }),
+    );
+    kerb.rotation.y = ang;
+    kerb.position.set(mx, 0.11, mz);
+    s.add(kerb);
 
-    // Road surface
-    const rd = new THREE.Mesh(new THREE.BoxGeometry(w,0.24,len),
-      new THREE.MeshLambertMaterial({ color: 0xaa5533 }));
-    rd.rotation.y=ang; rd.position.set(mx,0.12,mz); s.add(rd);
+    // Asphalt surface — warm dark terracotta / clay road
+    const road = new THREE.Mesh(
+      new THREE.BoxGeometry(w, 0.24, len),
+      new THREE.MeshLambertMaterial({ color: 0x453828 }),
+    );
+    road.rotation.y = ang;
+    road.position.set(mx, 0.12, mz);
+    s.add(road);
 
-    // Center dashes
-    const dashMat = new THREE.MeshLambertMaterial({ color: 0xffe066 });
-    const segs = Math.floor(len/8);
-    for (let seg=0; seg<segs; seg++) {
-      const t = (seg+0.5)/segs;
-      const dl = new THREE.Mesh(new THREE.BoxGeometry(0.3,0.01,3.2), dashMat);
-      dl.rotation.y=ang; dl.position.set(x1+dx*t,0.26,z1+dz*t); s.add(dl);
+    // Amber centre-line dashes
+    const dashMat = new THREE.MeshLambertMaterial({ color: 0xffcc33 });
+    const segs = Math.floor(len / 10);
+    for (let seg = 0; seg < segs; seg++) {
+      const t = (seg + 0.5) / segs;
+      const dl = new THREE.Mesh(
+        new THREE.BoxGeometry(0.35, 0.01, 4),
+        dashMat,
+      );
+      dl.rotation.y = ang;
+      dl.position.set(x1 + dx * t, 0.27, z1 + dz * t);
+      s.add(dl);
     }
   }
 
+  // ── ROAD NETWORK ───────────────────────────────────────────────────────────
   _buildRoadNetwork() {
     const R = this._road.bind(this);
-    const RW = 14;
 
-    // ── SCALED BOULEVARDS (original x 2.5) ────────────────────────────────
-    // Main E-W boulevard z=0
-    R(-225, 0, 225, 0);
-    // Hero zone avenue z=-35 (was -14)
-    R(-225,-35, 225,-35);
-    // South boulevard z=105 (was 42)
-    R(-225,105, 225,105);
-    // Education avenue z=-155 (was -62)
-    R(-112,-155, 112,-155);
+    // ── E-W BOULEVARDS ────────────────────────────────────────────────────────
+    R(-225, 0, 225, 0);           // Main east-west spine
+    R(-225, -35, 225, -35);       // Hero zone avenue (surya, brahma, vaishya, vidya)
+    R(-200, 56, 200, 56);         // Mid boulevard (vishwakarma, lakshmi district)
+    R(-200, -61, 200, -61);       // South-mid boulevard (akasha, maya, darpana)
+    R(-225, -95, 225, -95);       // Upper connector
+    R(-180, -155, 180, -155);     // Education avenue
+    R(-200, 105, 200, 105);       // South boulevard
 
-    // ── N-S ARTERIES ──────────────────────────────────────────────────────
-    R(0,-200, 0,175);           // Central spine
-    R(-112,-35,-112,105);       // West artery
-    R( 112,-35, 112,105);       // East artery
-    R(-145,-35,-145,105);       // Far west
-    R( 145,-35, 145,105);       // Far east
+    // ── N-S ARTERIES ──────────────────────────────────────────────────────────
+    R(0, -200, 0, 175);           // Central spine — passes pura-stambha, jyotish, sutra
+    R(-112, -95, -112, 105);      // West artery (extended to z=-95)
+    R(112, -95, 112, 105);        // East artery (extended to z=-95)
+    R(-145, -95, -145, 105);      // Far west artery (extended)
+    R(145, -95, 145, 105);        // Far east artery (extended)
 
-    // ── DISTRICT CONNECTORS ───────────────────────────────────────────────
-    R(-225,60, 225,60);         // Mid E-W connector
-    R(-225,-95, 225,-95);       // Upper E-W connector
+    // ── APPROACH ROADS — one per temple ───────────────────────────────────────
+    // surya-dwara [72,-35]: ON hero zone E-W → accessible directly
+    // Short N spur so car can approach from central area
+    R(72, 0, 72, -35, 14);
 
-    // ── TEMPLE APPROACH ROADS (curved, leading directly to each temple) ──
-    // Surya Dwara [45,-22] - approach from south road
-    R(45,-35, 45,-22, 10);
-    // Vishwakarma [28,35] - approach from south boulevard
-    R(28,0, 28,35, 10);
-    // Akasha Mandapa [55,-38] - approach from artery
-    R(112,-38, 55,-38, 10);
-    // Setu Nagara [55,8] - from east artery
-    R(112,8, 55,8, 10);
-    // Brahma Kund [-55,-22] - from west artery
-    R(-112,-22, -55,-22, 10);
-    // Lakshmi Prasad [-40,35] - from west
-    R(-112,35, -40,35, 10);
-    // Pura Stambha [0,55] - central access
-    R(0,60, 0,55, 10);
-    // Maya Sabha [-28,-38] - from upper connector
-    R(-28,-95, -28,-38, 10);
-    // Jyotish Vedha [0,-55] - from central spine
-    R(0,-95, 0,-55, 10);
-    // Vayu Rath [-55,8] - from west artery
-    R(-112,8, -55,8, 10);
-    // Saraswati Vihar [-22,-62] - from education avenue
-    R(-22,-155, -22,-62, 10);
-    // Gurukul Ashram [22,-62] - from education avenue
-    R(22,-155, 22,-62, 10);
+    // vishwakarma [45,56]: from main E-W northward
+    R(45, 0, 45, 56, 14);
+
+    // akasha-mandapa [88,-61]: W from east artery at z=-61
+    R(112, -61, 88, -61, 14);
+
+    // setu-nagara [88,13]: W from east artery
+    R(112, 13, 88, 13, 14);
+
+    // brahma-kund [-88,-35]: ON hero zone E-W — accessible directly
+    // Short N spur from main E-W
+    R(-72, 0, -72, -35, 14);
+    R(-88, 0, -88, -35, 14);
+
+    // lakshmi-prasad [-64,56]: E from west artery along z=56
+    R(-112, 56, -64, 56, 14);
+
+    // pura-stambha [0,88]: ON central spine — no spur needed
+    // maya-sabha [-45,-61]: S from hero zone
+    R(-45, -35, -45, -61, 14);
+
+    // jyotish-vedha [0,-88]: ON central spine — no spur needed
+    // vayu-rath [-88,13]: E from west artery
+    R(-112, 13, -88, 13, 14);
+
+    // saraswati-vihar [-35,-99]: N from education avenue
+    R(-35, -155, -35, -99, 14);
+
+    // gurukul-ashram [35,-99]: N from education avenue
+    R(35, -155, 35, -99, 14);
+
+    // vaishya-griha [131,-35]: W spur from far east artery
+    R(145, -35, 131, -35, 14);
+
+    // agni-vedha [131,13]: W spur from far east artery
+    R(145, 13, 131, 13, 14);
+
+    // darpana-shala [45,-77]: S from akasha approach
+    R(45, -61, 45, -77, 14);
+
+    // vidya-ashram [-131,-35]: E spur from far west artery
+    R(-145, -35, -131, -35, 14);
+
+    // sutra-dhara [0,115]: N from south boulevard
+    R(0, 105, 0, 115, 14);
   }
 
+  // ── ROUNDABOUTS ───────────────────────────────────────────────────────────
   _buildRoundabouts() {
     const s = this.scene;
-    const rMat = new THREE.MeshLambertMaterial({ color: 0xbb6644 });
-    const gMat = new THREE.MeshLambertMaterial({ color: 0xc86a44 });
+    const rMat = new THREE.MeshLambertMaterial({ color: 0x5a4a38 });
+    const gMat = new THREE.MeshLambertMaterial({ color: 0x3d4c2e });
 
-    // Central roundabout (scaled 2.5x radius)
-    const r1 = new THREE.Mesh(new THREE.RingGeometry(26,42,24), rMat);
-    r1.rotation.x = -Math.PI/2; r1.position.y = 0.13; s.add(r1);
-    const i1 = new THREE.Mesh(new THREE.CylinderGeometry(26,26,0.32,18), gMat);
-    i1.position.y = 0.16; s.add(i1);
+    const addRoundabout = (x, z, rInner, rOuter, segs = 20) => {
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(rInner, rOuter, segs),
+        rMat,
+      );
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.set(x, 0.13, z);
+      s.add(ring);
+      const fill = new THREE.Mesh(
+        new THREE.CylinderGeometry(rInner, rInner, 0.3, segs),
+        gMat,
+      );
+      fill.position.set(x, 0.15, z);
+      s.add(fill);
+    };
 
-    // Education roundabout
-    const r2 = new THREE.Mesh(new THREE.RingGeometry(17,27,18), rMat);
-    r2.rotation.x = -Math.PI/2; r2.position.set(0,0.13,-95); s.add(r2);
-    const i2 = new THREE.Mesh(new THREE.CylinderGeometry(17,17,0.3,16), gMat);
-    i2.position.set(0,0.15,-95); s.add(i2);
-
-    // Hero zone roundabout
-    const r3 = new THREE.Mesh(new THREE.RingGeometry(12,20,16), rMat);
-    r3.rotation.x = -Math.PI/2; r3.position.set(0,0.13,-35); s.add(r3);
-    const i3 = new THREE.Mesh(new THREE.CylinderGeometry(12,12,0.28,14), gMat);
-    i3.position.set(0,0.15,-35); s.add(i3);
+    addRoundabout(0, 0, 30, 46, 24);    // Central — wider for bigger city
+    addRoundabout(0, -35, 14, 22, 16);   // Hero zone
+    addRoundabout(0, -95, 20, 30, 18);   // Education junction
+    addRoundabout(0, 56, 12, 18, 14);    // Mid boulevard junction
+    addRoundabout(0, -61, 12, 18, 14);   // South-mid junction
   }
 
+  // ── WATER CHANNELS ─────────────────────────────────────────────────────────
   _buildWaterChannels() {
     const s = this.scene;
-    const mat  = new THREE.MeshLambertMaterial({ color: 0x2288bb });
-    const wall = new THREE.MeshLambertMaterial({ color: 0xcc9966 });
+    const mat = new THREE.MeshLambertMaterial({ color: 0x1a5a7a });
+    const wall = new THREE.MeshLambertMaterial({ color: 0x6a5040 });
 
-    // Channels alongside central spine (longer for 2.5x world)
-    for (const side of [-1,1]) {
-      const chan = new THREE.Mesh(new THREE.BoxGeometry(4,0.35,330), mat);
-      chan.position.set(side*21, -0.05, -10); s.add(chan);
-      for (const wo of [-0.6,0.6]) {
-        const w = new THREE.Mesh(new THREE.BoxGeometry(0.6,0.5,330), wall);
-        w.position.set(side*(21+wo*3), 0.25, -10); s.add(w);
+    // Channels alongside central spine (wider world)
+    for (const side of [-1, 1]) {
+      const chan = new THREE.Mesh(
+        new THREE.BoxGeometry(5, 0.35, 350),
+        mat,
+      );
+      chan.position.set(side * 24, -0.05, -10);
+      s.add(chan);
+      for (const wo of [-0.6, 0.6]) {
+        const w = new THREE.Mesh(
+          new THREE.BoxGeometry(0.7, 0.55, 350),
+          wall,
+        );
+        w.position.set(side * (24 + wo * 3.5), 0.27, -10);
+        s.add(w);
       }
     }
 
-    // Decorative kund pools near major temples
-    const poolMat = new THREE.MeshLambertMaterial({ color: 0x3399cc });
+    // Decorative pools near prominent temples
+    const poolMat = new THREE.MeshLambertMaterial({ color: 0x2277aa });
     [
-      [45,-22,6], [-55,-22,6], [55,8,5], [-55,8,5]  // near temples
-    ].forEach(([x,z,r]) => {
-      const pool = new THREE.Mesh(new THREE.CylinderGeometry(r,r,0.3,12), poolMat);
-      pool.position.set(x,0,z-r-8); s.add(pool);
+      [72, -35, 7],
+      [-88, -35, 6],
+      [88, 13, 5],
+      [-88, 13, 5],
+      [0, 88, 6],
+    ].forEach(([x, z, r]) => {
+      const pool = new THREE.Mesh(
+        new THREE.CylinderGeometry(r, r, 0.32, 12),
+        poolMat,
+      );
+      pool.position.set(x, 0, z - r - 10);
+      s.add(pool);
     });
   }
 
+  // ── PAVEMENT DETAILS ───────────────────────────────────────────────────────
   _buildPavementDetail() {
     const s = this.scene;
-    const mat = new THREE.MeshLambertMaterial({ color: 0xddccbb });
+    const crossMat = new THREE.MeshLambertMaterial({ color: 0x9a8870 });
 
-    // Crosswalk stripes at major intersections (scaled positions)
-    [[0,0],[0,55],[75,0],[-75,0],[0,-88]].forEach(([x,z]) => {
-      for (let i=-3; i<=3; i++) {
-        const s1 = new THREE.Mesh(new THREE.BoxGeometry(0.7,0.01,6), mat);
-        s1.position.set(x+i*1.8, 0.28, z+17); s.add(s1);
-        const s2 = new THREE.Mesh(new THREE.BoxGeometry(6,0.01,0.7), mat);
-        s2.position.set(x+17, 0.28, z+i*1.8); s.add(s2);
+    // Crosswalk stripes at key junctions
+    [
+      [0, 0],
+      [0, -35],
+      [0, 56],
+      [0, -61],
+      [0, -95],
+    ].forEach(([x, z]) => {
+      for (let i = -3; i <= 3; i++) {
+        const s1 = new THREE.Mesh(
+          new THREE.BoxGeometry(0.7, 0.01, 7),
+          crossMat,
+        );
+        s1.position.set(x + i * 2.2, 0.28, z + 22);
+        s.add(s1);
+        const s2 = new THREE.Mesh(
+          new THREE.BoxGeometry(7, 0.01, 0.7),
+          crossMat,
+        );
+        s2.position.set(x + 22, 0.28, z + i * 2.2);
+        s.add(s2);
       }
     });
   }

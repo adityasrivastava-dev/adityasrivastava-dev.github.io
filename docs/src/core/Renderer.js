@@ -66,9 +66,10 @@ export default class Renderer {
     // ACESFilmicToneMapping: industry standard for cinematic rendering.
     // Reinhard crushes highlights and muddies midtones.
     // ACES rolls highlights off naturally — why film looks like film.
+    // outputEncoding stays LinearEncoding (default) — sRGBEncoding causes
+    // double gamma with EffectComposer's final ShaderPass blit.
     this.instance.toneMapping = THREE.ACESFilmicToneMapping;
-    this.instance.toneMappingExposure = 1.0;
-    this.instance.outputEncoding = THREE.sRGBEncoding;
+    this.instance.toneMappingExposure = 0.78;
 
     // Warm the renderer (prevents white flash on first real frame)
     this.instance.render(new THREE.Scene(), new THREE.PerspectiveCamera());
@@ -90,14 +91,14 @@ export default class Renderer {
     this._composer.addPass(this._renderPass);
 
     // Pass 2 — selective bloom
-    // threshold 0.82: only genuinely bright emissives bloom (orbs, headlights,
-    // point lights, MeshBasicMaterial props). Ambient stone stays clean.
-    // strength 0.38, radius 0.45: visible glow without washing the scene.
+    // threshold 0.92: only true emissives bloom (orbs, point lights, gold trim).
+    // Sandstone roads peak at ~0.85 luminance under ACES — safely below threshold.
+    // strength 0.10, radius 0.55: subtle halo, never washes the scene.
     this._bloomPass = new UnrealBloomPass(
       new THREE.Vector2(W, H),
-      0.38,  // strength
-      0.45,  // radius
-      0.82,  // luminance threshold
+      0.10,  // strength — was 0.38, caused full-scene whitewash
+      0.55,  // radius
+      0.92,  // luminance threshold
     );
     this._composer.addPass(this._bloomPass);
 

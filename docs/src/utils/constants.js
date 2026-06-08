@@ -33,14 +33,14 @@ export const CameraC = {
 };
 
 export const World = {
-  PROXIMITY_RADIUS: 32,
-  ROAD_WIDTH: 14,
+  PROXIMITY_RADIUS: 36,
+  ROAD_WIDTH: 20,
   WORLD_SCALE: 2.5,
   WORLD_X_MIN: -220,
   WORLD_X_MAX: 220,
   WORLD_Z_MIN: -200,
-  WORLD_Z_MAX: 140,
-  TEMPLE_ENTRY_ZONE: 28,
+  WORLD_Z_MAX: 160,
+  TEMPLE_ENTRY_ZONE: 32,
 };
 
 export const Tick = {
