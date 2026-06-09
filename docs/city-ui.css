@@ -105,7 +105,12 @@ canvas {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: #1a0e06;
+  background: radial-gradient(
+    ellipse 70% 70% at 50% 48%,
+    #2a1505 0%,
+    #160b02 55%,
+    #0a0503 100%
+  );
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -119,70 +124,97 @@ canvas {
 #loader.gone {
   display: none;
 }
+/* Spinning Dharma Chakra above name */
+.ld-chakra {
+  margin-bottom: 20px;
+  animation: chakra-spin 12s linear infinite;
+  transform-origin: center center;
+  filter: drop-shadow(0 0 18px rgba(255, 180, 60, 0.55));
+}
+@keyframes chakra-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+/* Sacred world name — small Sanskrit label */
+.ld-kingdom {
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 10px;
+  color: rgba(200, 150, 60, 0.70);
+  text-align: center;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
 .ld-name {
   font-family: var(--ff);
-  font-size: clamp(52px, 11vw, 100px);
+  font-size: clamp(44px, 10vw, 92px);
   font-weight: 900;
   letter-spacing: 10px;
-  color: #fff;
+  color: #ffecd5;
   line-height: 1;
   text-align: center;
-  text-shadow: 0 0 60px rgba(255, 150, 80, 0.5);
+  text-shadow: 0 0 60px rgba(255, 160, 60, 0.55);
   animation: ldglow 2.2s ease-in-out infinite;
 }
 @keyframes ldglow {
-  0%,
-  100% {
-    text-shadow: 0 0 40px rgba(255, 150, 80, 0.4);
-  }
+  0%, 100% { text-shadow: 0 0 40px rgba(255, 140, 50, 0.40); }
   50% {
     text-shadow:
-      0 0 90px rgba(255, 180, 80, 0.8),
-      0 0 140px rgba(255, 120, 60, 0.3);
+      0 0 80px rgba(255, 180, 70, 0.85),
+      0 0 140px rgba(255, 110, 40, 0.28);
   }
 }
 .ld-sub {
   font-family: var(--fm);
-  font-size: 9px;
-  letter-spacing: 6px;
-  color: rgba(255, 200, 150, 0.35);
-  margin-top: 12px;
-  margin-bottom: 48px;
+  font-size: 8.5px;
+  letter-spacing: 5px;
+  color: rgba(220, 170, 100, 0.38);
+  margin-top: 10px;
+  margin-bottom: 44px;
   text-align: center;
 }
+/* Ornate progress bar — flanked by decorative dots */
 .ld-pw {
-  width: min(320px, 68vw);
-  height: 2px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 2px;
-  overflow: hidden;
+  position: relative;
+  width: min(360px, 72vw);
+  height: 3px;
+  background: rgba(200, 140, 60, 0.12);
+  border-radius: 3px;
+  overflow: visible;
+  box-shadow: 0 0 0 1px rgba(200, 140, 60, 0.18);
 }
+.ld-pw::before,
+.ld-pw::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  background: rgba(200, 140, 60, 0.45);
+  box-shadow: 0 0 8px rgba(255, 160, 60, 0.6);
+}
+.ld-pw::before { left: -10px; }
+.ld-pw::after  { right: -10px; }
 #ld-bar {
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, #ff9944, #ffcc44);
-  box-shadow: 0 0 14px #ff9944;
+  background: linear-gradient(90deg, #cc7722, #ffcc44, #ffaa22);
+  box-shadow: 0 0 18px rgba(255, 160, 50, 0.9), 0 0 6px #ffbb44;
+  border-radius: 3px;
   transition: width 0.35s ease;
 }
 #ld-msg {
   font-family: var(--fm);
   font-size: 8px;
   letter-spacing: 3px;
-  color: rgba(255, 180, 100, 0.45);
-  margin-top: 14px;
+  color: rgba(200, 150, 80, 0.50);
+  margin-top: 16px;
   min-height: 14px;
   text-align: center;
 }
-.ld-mandala {
-  margin-top: 28px;
-  opacity: 0.7;
-  animation: mandala-spin 8s linear infinite;
-  transform-origin: center center;
-}
-@keyframes mandala-spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
+/* Legacy .ld-mandala kept in case it's referenced elsewhere */
+.ld-mandala { display: none; }
 #start-screen {
   position: fixed;
   inset: 0;
@@ -453,29 +485,38 @@ canvas {
          Positioned bottom-right so it never covers the car or the road
          ahead. The player always sees where they're going.
          ════════════════════════════════════════════════════════════════ */
+/* Stone Inscription Panel — sacred tablet aesthetic */
 #prox {
   position: fixed;
-  bottom: 148px; /* above speed ring HUD                  */
-  right: 24px; /* right edge — never blocks center view */
-  left: auto; /* override any inherited left:50%       */
+  bottom: 148px;
+  right: 24px;
+  left: auto;
   z-index: 9000;
-  width: 310px; /* compact — enough for name + 2 badges  */
+  width: 310px;
   transform: translateY(20px) scale(0.95);
-  background: rgba(6, 3, 1, 0.92);
-  border: 1px solid rgba(var(--nc-rgb, 0, 200, 255), 0.28);
-  border-radius: 4px;
+  /* Warm layered sandstone gradient — dark terracotta base */
+  background:
+    linear-gradient(160deg,
+      rgba(38, 22, 8, 0.97) 0%,
+      rgba(28, 14, 4, 0.97) 60%,
+      rgba(18, 8, 2, 0.98) 100%);
+  /* Gold carved border — top edge slightly lighter for depth */
+  border: 1px solid rgba(180, 130, 55, 0.35);
+  border-top-color: rgba(220, 170, 80, 0.50);
+  border-radius: 3px;
   padding: 0;
   opacity: 0;
   transition:
     opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1),
     transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
   pointer-events: none;
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(8px);
   box-shadow:
-    0 0 0 1px rgba(var(--nc-rgb, 0, 200, 255), 0.07),
-    0 12px 40px rgba(0, 0, 0, 0.65),
-    0 0 60px rgba(var(--nc-rgb, 0, 200, 255), 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    0 0 0 1px rgba(180, 130, 55, 0.10),
+    0 12px 40px rgba(0, 0, 0, 0.70),
+    0 0 50px rgba(var(--nc-rgb, 180, 130, 55), 0.07),
+    inset 0 1px 0 rgba(255, 220, 120, 0.07),
+    inset 0 0 20px rgba(180, 100, 30, 0.04);
   overflow: hidden;
 }
 
@@ -503,15 +544,22 @@ canvas {
   }
 }
 
-/* ── COLORED LEFT BAR — draws down from top on show ── */
+/* ── LEFT BAR — carved gold inlay, draws down on show ── */
 .px-bar {
   position: absolute;
   left: 0;
   top: 0;
   width: 3px;
   height: 0;
-  background: rgba(var(--nc-rgb, 0, 200, 255), 1);
-  box-shadow: 0 0 10px rgba(var(--nc-rgb, 0, 200, 255), 0.8);
+  /* Two-tone: temple accent color at top, gold base below */
+  background: linear-gradient(
+    to bottom,
+    rgba(var(--nc-rgb, 200, 160, 60), 1) 0%,
+    rgba(180, 130, 55, 0.85) 100%
+  );
+  box-shadow:
+    0 0 8px rgba(var(--nc-rgb, 200, 160, 60), 0.70),
+    0 0 18px rgba(180, 130, 55, 0.35);
   transition: none;
   border-radius: 2px 0 0 2px;
 }
@@ -595,9 +643,10 @@ canvas {
   font-size: clamp(15px, 2.5vw, 19px);
   font-weight: 800;
   letter-spacing: 1px;
-  color: #fff;
+  /* Warm cream instead of white — stone inscription feel */
+  color: #ffecd5;
   line-height: 1.1;
-  text-shadow: 0 0 14px rgba(var(--nc-rgb, 0, 200, 255), 0.4);
+  text-shadow: 0 0 14px rgba(var(--nc-rgb, 200, 160, 60), 0.45);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -606,7 +655,7 @@ canvas {
   font-family: var(--fm);
   font-size: 7.5px;
   letter-spacing: 2.5px;
-  color: rgba(255, 255, 255, 0.38);
+  color: rgba(200, 160, 100, 0.45);
   margin-top: 3px;
   white-space: nowrap;
   overflow: hidden;

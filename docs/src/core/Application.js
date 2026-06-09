@@ -64,7 +64,7 @@ export default class Application {
     window.CityUI?.init?.(playerMode);
 
     if (typeof window.onCityProgress === "function") {
-      window.onCityProgress(100, "CITY LIVE — CLICK TO START");
+      window.onCityProgress(100, "THE GATES OF DHARMA KSHETRA ARE OPEN");
     }
 
     this._tick_loop();
