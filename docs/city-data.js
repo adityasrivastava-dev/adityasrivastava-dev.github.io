@@ -883,3 +883,73 @@ window.CITY_DATA = {
     },
   ],
 };
+
+// ── TEMPLE VOICE LINES ─────────────────────────────────────────────────────
+// One canonical sentence per temple. Appears on proximity approach.
+// Source: Aditya Srivastava (canonical, approved).
+window.CITY_VOICE_LINES = {
+  'surya-dwara':       "Identity is not a login screen. Identity is trust shared across every system.",
+  'vishwakarma-shala': "The best engineers eventually stop building products and start building tools.",
+  'akasha-mandapa':    "Cloud migration is not moving servers. It is removing assumptions.",
+  'setu-nagara':       "Two incompatible worlds. One practical bridge.",
+  'brahma-kund':       "Every migration begins with understanding what already exists.",
+  'lakshmi-prasad':    "Money moves only when trust moves first.",
+  'pura-stambha':      "This system taught patience before it taught engineering.",
+  'maya-sabha':        "Every shortcut becomes architecture if it survives long enough.",
+  'jyotish-vedha':     "The hardest problems live between systems.",
+  'vayu-rath':         "Movement without visibility is chaos.",
+  'saraswati-vihar':   "Knowledge compounds faster than code.",
+  'gurukul-ashram':    "The engineer you help today becomes tomorrow's architect.",
+  'vaishya-griha':     "Software for hands that never held a phone.",
+  'agni-vedha':        "A test that runs differently every time is not a test.",
+  'darpana-shala':     "Your API, exactly as it is. Not as you hope it is.",
+  'vidya-ashram':      "The learning algorithm matters more than the content.",
+  'sutra-dhara':       "You cannot improve what you cannot observe.",
+};
+
+// ── ORACLE CANONICAL CONTENT ───────────────────────────────────────────────
+window.CITY_ORACLE = {
+  incidents: [
+    {
+      id: 'mysql8', system: 'Brahma Kund · MySQL 5 → 8',
+      title: 'The Migration That Wasn\'t Ready',
+      broke: 'Compatibility assumptions hidden across legacy systems. Queries that worked on MySQL 5 silently returned different results on MySQL 8.',
+      learned: 'If you do not understand your dependencies, migration becomes gambling.',
+    },
+    {
+      id: 'ibmmq', system: 'Setu Nagara · IBM MQ + Java 1.7',
+      title: 'The Version Trap',
+      broke: 'Java 1.7 could not support modern MySQL connectivity. Neither IBM MQ nor MySQL could change. The system was trapped between two incompatible requirements.',
+      learned: 'Good engineering solves constraints. Great engineering works around them.',
+    },
+    {
+      id: 'survey', system: 'Jyotish Vedha · Survey Integration',
+      title: 'The Integration Boundary',
+      broke: 'Shipment mapping inconsistencies across systems. Data that looked correct in isolation created conflicts when merged at the integration point.',
+      learned: 'Integration failures happen between ownership boundaries.',
+    },
+    {
+      id: 'mule', system: 'Akasha Mandapa · 80+ Mule Migrations',
+      title: 'The Hidden Dependency',
+      broke: 'Operational dependency on legacy scheduling infrastructure. Services that appeared independent had shared timing assumptions baked into Mule config.',
+      learned: 'Automation is removing human dependency.',
+    },
+  ],
+  warLessons: [
+    'Every shortcut becomes technical debt eventually.',
+    'Integrations fail more often than applications.',
+    'A migration is a business project disguised as a technical project.',
+    'Most production incidents begin as assumptions.',
+    'Simplicity survives longer than cleverness.',
+  ],
+  quotes: [
+    { text: 'Programs must be written for people to read.', author: 'Harold Abelson' },
+    { text: 'Simplicity is prerequisite for reliability.', author: 'Edsger Dijkstra' },
+    { text: 'First solve the problem. Then write the code.', author: 'John Johnson' },
+  ],
+  personalCorner: {
+    name: 'Where It Started',
+    inscription: 'The most important project was not a system.\nIt was becoming capable of building them.',
+    items: ['First Java notebook', 'Coffee mug', 'Architecture sketches', 'Early SQL notes'],
+  },
+};

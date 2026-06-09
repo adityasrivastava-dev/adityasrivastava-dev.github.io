@@ -36,6 +36,7 @@ export default class World {
     this._buildPrayerFlags();
     this._buildGatewayArches();
     this._buildWorldName();
+    this._buildHiddenAreas();
     this._buildAtmosphere();
     this._buildHeartbeat();
     this._buildClouds();
@@ -2143,7 +2144,7 @@ export default class World {
       archTop.position.set(0, H + 1.5, 0);
       entryG.add(archTop);
       // Sanskrit label: "नगरम् प्रवेश"
-      const CW2 = 512, CH2 = 72;
+      const CW2 = 512, CH2 = 110;
       const can2 = document.createElement('canvas');
       can2.width = CW2; can2.height = CH2;
       const ctx2 = can2.getContext('2d');
@@ -2156,12 +2157,15 @@ export default class World {
       ctx2.font = 'bold 32px serif';
       ctx2.textAlign = 'center';
       ctx2.textBaseline = 'middle';
-      ctx2.fillText('◈  नगरम् प्रवेश  ◈', CW2 / 2, CH2 / 2);
+      ctx2.fillText('◈  नगरम् प्रवेश  ◈', CW2 / 2, 38);
+      ctx2.fillStyle = 'rgba(240,210,160,0.72)';
+      ctx2.font = 'italic 16px serif';
+      ctx2.fillText('Build things that survive after you leave.', CW2 / 2, 80);
       const sign2 = new THREE.Mesh(
-        new THREE.PlaneGeometry(W2 * 2 - 1, 2.0),
+        new THREE.PlaneGeometry(W2 * 2 - 1, 3.0),
         new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(can2), transparent: true }),
       );
-      sign2.position.set(0, H - 0.6, 1.1);
+      sign2.position.set(0, H - 0.2, 1.1);
       entryG.add(sign2);
       this.scene.add(entryG);
     }
@@ -2259,5 +2263,357 @@ export default class World {
     );
     slab.position.set(0, 0.15, nameZ + 1);
     this.scene.add(slab);
+  }
+
+  // ── HIDDEN AREAS — discoverable by exploration ──────────────────────────────
+  // Incident Chamber · Personal Corner · War Stories Wall · Tech Debt Ruin
+  // Orientation Stone. Oracle triggers when player approaches.
+  _buildHiddenAreas() {
+    const s = this.scene;
+    const mkSprite = (text, font, col, W, H) => {
+      const c = document.createElement('canvas'); c.width = W; c.height = H;
+      const x = c.getContext('2d');
+      x.clearRect(0, 0, W, H);
+      x.fillStyle = col; x.font = font; x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.fillText(text, W / 2, H / 2);
+      return new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true });
+    };
+    const darkStone = new THREE.MeshLambertMaterial({ color: 0x2a1f18 });
+    const sandstone = new THREE.MeshLambertMaterial({ color: 0xc8a870 });
+    const goldMat = new THREE.MeshLambertMaterial({ color: 0xffcc44, emissive: 0xffaa00, emissiveIntensity: 0.4 });
+
+    // ── 1. ORIENTATION STONE — just inside the entry gate, right of spine ─────
+    // Gives Type A recruiter the 5 essential facts in under 10 seconds.
+    {
+      const g = new THREE.Group();
+      g.position.set(20, 0, 56);
+      const base = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.35, 1.2), sandstone);
+      base.position.y = 0.17;
+      g.add(base);
+      const stone = new THREE.Mesh(new THREE.BoxGeometry(0.9, 3.8, 0.22), darkStone);
+      stone.position.y = 2.1;
+      g.add(stone);
+      // Canvas inscription
+      const CW = 256, CH = 512;
+      const can = document.createElement('canvas'); can.width = CW; can.height = CH;
+      const ctx = can.getContext('2d');
+      ctx.fillStyle = 'rgba(20,10,5,0.95)'; ctx.fillRect(0, 0, CW, CH);
+      ctx.strokeStyle = '#ffcc4466'; ctx.lineWidth = 2;
+      ctx.strokeRect(4, 4, CW - 8, CH - 8);
+      const lines = [
+        ['ADITYA SRIVASTAVA', '600 13px', '#ffcc44', 128, 52],
+        ['BACKEND ARCHITECT', '600 10px', '#ffcc8877', 128, 82],
+        ['TRILASOFT · 4 YEARS', '400 9px', '#aaa', 128, 106],
+        ['─────────────────', '400 8px', '#44444488', 128, 128],
+        ['API GATEWAY · SSO', '400 9px', '#00c8ff99', 128, 156],
+        ['MICROSERVICES · CLOUD', '400 9px', '#00c8ff99', 128, 178],
+        ['MYSQL MIGRATION', '400 9px', '#00c8ff99', 128, 200],
+        ['─────────────────', '400 8px', '#44444488', 128, 222],
+        ['DRIVE TO ANY', '400 8px', '#ffffff44', 128, 248],
+        ['TEMPLE TO EXPLORE', '400 8px', '#ffffff44', 128, 266],
+      ];
+      lines.forEach(([t, f, c, x, y]) => {
+        ctx.fillStyle = c; ctx.font = f + ' Share Tech Mono,monospace';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(t, x, y);
+      });
+      const signMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.85, 3.5),
+        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(can), transparent: true }),
+      );
+      signMesh.position.set(0, 2.1, 0.13);
+      g.add(signMesh);
+      s.add(g);
+    }
+
+    // ── 2. INCIDENT CHAMBER — sunken dark chamber, accessible via ramp ────────
+    // Requires the player to drive south-west off the main spine near the Chakra.
+    // Oracle trigger fires when player is within 25 units of center.
+    {
+      const CX = -28, CZ = -38;
+      const g = new THREE.Group();
+      g.position.set(CX, -5.5, CZ);
+      // Sunken floor
+      const floor = new THREE.Mesh(new THREE.BoxGeometry(22, 0.3, 20), darkStone);
+      floor.position.y = 0.15;
+      g.add(floor);
+      // Walls (3 sides — open to the north for entry)
+      const wallMat = new THREE.MeshLambertMaterial({ color: 0x1a1008 });
+      [[-10.6, 4, 0, 0.8, 8.5, 20], [10.6, 4, 0, 0.8, 8.5, 20], [0, 4, 10.6, 22, 8.5, 0.8]].forEach(([x, y, z, w, h, d]) => {
+        const wall = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat);
+        wall.position.set(x, y, z);
+        g.add(wall);
+      });
+      // Entry ramp
+      const ramp = new THREE.Mesh(new THREE.BoxGeometry(8, 0.3, 12),
+        new THREE.MeshLambertMaterial({ color: 0x2a2015 }));
+      ramp.rotation.x = Math.PI * 0.04;
+      ramp.position.set(0, -1.8, -14);
+      s.add(ramp);
+      // Title sprite above chamber
+      const titleSp = new THREE.Sprite(mkSprite('◈  INCIDENT CHAMBER  ◈', 'bold 28px serif', '#cc5533dd', 512, 72));
+      titleSp.scale.set(14, 2.2, 1);
+      titleSp.position.set(0, 8, 0);
+      g.add(titleSp);
+      // Incident inscription slabs
+      const incidents = (window.CITY_ORACLE && window.CITY_ORACLE.incidents) ? window.CITY_ORACLE.incidents : [];
+      const slabPositions = [[-7, 0, -7], [7, 0, -7], [-7, 0, 5], [7, 0, 5]];
+      incidents.forEach((inc, i) => {
+        const sp = slabPositions[i]; if (!sp) return;
+        const slab = new THREE.Mesh(new THREE.BoxGeometry(3.2, 5.5, 0.3), darkStone);
+        slab.position.set(sp[0], 3.2, sp[2]);
+        g.add(slab);
+        // Text on slab face
+        const SW = 384, SH = 512;
+        const sc = document.createElement('canvas'); sc.width = SW; sc.height = SH;
+        const sx = sc.getContext('2d');
+        sx.fillStyle = 'rgba(15,8,3,0.95)'; sx.fillRect(0, 0, SW, SH);
+        sx.strokeStyle = '#cc553355'; sx.lineWidth = 2;
+        sx.strokeRect(4, 4, SW - 8, SH - 8);
+        sx.textAlign = 'center'; sx.textBaseline = 'top';
+        sx.fillStyle = '#cc5533'; sx.font = 'bold 20px serif';
+        sx.fillText(inc.title, SW / 2, 24);
+        sx.fillStyle = '#ffcc4488'; sx.font = 'italic 13px serif';
+        this._wrapText(sx, inc.system, SW / 2, 58, SW - 24, 18);
+        sx.fillStyle = '#cc222222'; sx.fillRect(12, 84, SW - 24, 1);
+        sx.fillStyle = '#ddccbb'; sx.font = '12px serif';
+        this._wrapText(sx, 'What broke: ' + inc.broke, 16, 96, SW - 32, 16);
+        sx.fillStyle = '#ffcc4488'; sx.font = 'italic 12px serif';
+        this._wrapText(sx, '"' + inc.learned + '"', 16, 280, SW - 32, 16);
+        slab.children?.length; // no-op
+        const face = new THREE.Mesh(
+          new THREE.PlaneGeometry(3.0, 5.1),
+          new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true }),
+        );
+        face.position.set(sp[0], 3.2, sp[2] + 0.17);
+        g.add(face);
+      });
+      // Amber point light inside chamber
+      const amber = new THREE.PointLight(0xff6622, 1.6, 32);
+      amber.position.set(0, 5, 0);
+      g.add(amber);
+      s.add(g);
+      this._incidentChamberCenter = { x: CX, z: CZ };
+    }
+
+    // ── 3. PERSONAL CORNER — far exploration reward ────────────────────────────
+    // "Where It Started" — first Java notebook, coffee mug, sketches.
+    {
+      const g = new THREE.Group();
+      g.position.set(68, 0, -148);
+      // Stone bench
+      const bench = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.4, 1.2), sandstone);
+      bench.position.set(0, 0.8, 0);
+      g.add(bench);
+      const leg1 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.8, 1.2), darkStone);
+      leg1.position.set(-1.8, 0.4, 0); g.add(leg1);
+      const leg2 = leg1.clone(); leg2.position.set(1.8, 0.4, 0); g.add(leg2);
+      // Standing stone inscription
+      const ist = new THREE.Mesh(new THREE.BoxGeometry(0.25, 4.2, 2.8), darkStone);
+      ist.position.set(-3.5, 2.1, 0);
+      g.add(ist);
+      const IW = 512, IH = 384;
+      const ic = document.createElement('canvas'); ic.width = IW; ic.height = IH;
+      const ix = ic.getContext('2d');
+      ix.fillStyle = 'rgba(15,8,3,0.95)'; ix.fillRect(0, 0, IW, IH);
+      ix.strokeStyle = '#ffcc4444'; ix.lineWidth = 2; ix.strokeRect(4, 4, IW - 8, IH - 8);
+      ix.fillStyle = '#ffcc44'; ix.font = 'bold 28px serif'; ix.textAlign = 'center';
+      ix.textBaseline = 'middle'; ix.fillText('Where It Started', IW / 2, 52);
+      ix.fillStyle = '#ccbbaa88'; ix.font = 'italic 14px serif';
+      ix.fillText('First Java notebook', IW / 2, 110);
+      ix.fillText('Coffee mug', IW / 2, 136);
+      ix.fillText('Architecture sketches', IW / 2, 162);
+      ix.fillText('Early SQL notes', IW / 2, 188);
+      ix.fillStyle = '#ccbbaa44'; ix.font = '400 10px serif';
+      ix.fillRect(40, 210, IW - 80, 1);
+      ix.fillStyle = '#ddccbb'; ix.font = 'italic 13px serif';
+      const pcText = 'The most important project was not a system.\nIt was becoming capable of building them.';
+      pcText.split('\n').forEach((line, i) => ix.fillText(line, IW / 2, 234 + i * 20));
+      const iface = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.6, 3.8),
+        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(ic), transparent: true }),
+      );
+      iface.rotation.y = Math.PI / 2;
+      iface.position.set(-3.37, 2.1, 0);
+      g.add(iface);
+      // Warm lamp above
+      const warm = new THREE.PointLight(0xffaa44, 1.2, 22);
+      warm.position.set(0, 8, 0);
+      g.add(warm);
+      s.add(g);
+    }
+
+    // ── 4. WAR STORIES WALL — near Education District ─────────────────────────
+    // Five canonical lessons inscribed on sandstone slabs.
+    {
+      const g = new THREE.Group();
+      g.position.set(6, 0, -125);
+      const baseWall = new THREE.Mesh(new THREE.BoxGeometry(48, 4, 1), sandstone);
+      baseWall.position.set(0, 2, 0);
+      g.add(baseWall);
+      const lessons = (window.CITY_ORACLE && window.CITY_ORACLE.warLessons)
+        ? window.CITY_ORACLE.warLessons
+        : ['Every shortcut becomes technical debt.', 'Integrations fail more than applications.',
+           'A migration is a business project.', 'Most incidents begin as assumptions.',
+           'Simplicity survives longer than cleverness.'];
+      lessons.forEach((lesson, i) => {
+        const ox = (i - 2) * 9.2;
+        const cap = new THREE.Mesh(new THREE.BoxGeometry(7.8, 0.4, 1.4),
+          new THREE.MeshLambertMaterial({ color: 0xd4a86a }));
+        cap.position.set(ox, 4.2, 0); g.add(cap);
+        const LC = 256, LH = 256;
+        const lc = document.createElement('canvas'); lc.width = LC; lc.height = LH;
+        const lx2 = lc.getContext('2d');
+        lx2.fillStyle = 'rgba(160,120,60,0.95)'; lx2.fillRect(0, 0, LC, LH);
+        lx2.fillStyle = '#1a0e05'; lx2.font = 'bold 26px serif';
+        lx2.textAlign = 'center'; lx2.textBaseline = 'top';
+        lx2.fillText(String(i + 1).padStart(2, '0'), LC / 2, 14);
+        lx2.fillStyle = '#110904'; lx2.font = 'italic 13px serif';
+        lx2.textBaseline = 'middle';
+        this._wrapText(lx2, lesson, 128, 120, LC - 20, 18);
+        const lf = new THREE.Mesh(new THREE.PlaneGeometry(7.4, 3.6),
+          new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(lc), transparent: true }));
+        lf.position.set(ox, 2.0, 0.52);
+        g.add(lf);
+      });
+      // Header sprite
+      const hsp = new THREE.Sprite(mkSprite('◈  WAR STORIES WALL  ◈  LESSONS EARNED IN PRODUCTION', 'bold 22px serif', '#c8a87099', 768, 56));
+      hsp.scale.set(22, 1.8, 1);
+      hsp.position.set(0, 6, 0);
+      g.add(hsp);
+      s.add(g);
+    }
+
+    // ── 5. TECHNICAL DEBT RUIN — south of entry gate, off the main path ───────
+    // Deliberately crumbling. // TODO comments as inscriptions.
+    {
+      const g = new THREE.Group();
+      g.position.set(15, 0, 112);
+      const ruinMat = new THREE.MeshLambertMaterial({ color: 0x3a2a1a });
+      // Crumbling walls
+      [
+        [0, 3, 0, 8, 6.5, 0.8],
+        [-4.6, 2, 0, 0.8, 4, 0.8],
+        [4.8, 1.5, 0, 0.8, 3, 0.8],
+        [0, 2, -4.5, 8, 4, 0.8],
+      ].forEach(([x, y, z, w, h, d]) => {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), ruinMat);
+        m.position.set(x, y, z);
+        g.add(m);
+      });
+      // Scaffold (unfinished)
+      const scafMat = new THREE.MeshLambertMaterial({ color: 0x5a4020 });
+      [[-3, 7, -1.5, 0.2, 2, 0.2], [3, 7, -1.5, 0.2, 2, 0.2], [-3, 8, -1.5, 6.2, 0.2, 0.2]].forEach(([x, y, z, w, h, d]) => {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), scafMat);
+        m.position.set(x, y, z);
+        g.add(m);
+      });
+      // Inscription slab with TODO comments
+      const TW = 512, TH = 320;
+      const tc = document.createElement('canvas'); tc.width = TW; tc.height = TH;
+      const tx = tc.getContext('2d');
+      tx.fillStyle = 'rgba(28,18,8,0.96)'; tx.fillRect(0, 0, TW, TH);
+      tx.strokeStyle = '#66440022'; tx.lineWidth = 2; tx.strokeRect(4, 4, TW - 8, TH - 8);
+      const todos = [
+        '// TODO: refactor',
+        '// legacy, do not touch',
+        '// this works, do not ask why',
+        '// FIXME: has been here since 2022',
+        '// I am so sorry',
+      ];
+      tx.fillStyle = '#cc7744'; tx.font = 'bold 18px monospace';
+      tx.textAlign = 'left'; tx.textBaseline = 'top';
+      todos.forEach((t, i) => { tx.fillStyle = i === 4 ? '#996633' : '#cc7744'; tx.fillText(t, 24, 28 + i * 46); });
+      const tf = new THREE.Mesh(new THREE.PlaneGeometry(5.5, 3.5),
+        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(tc), transparent: true }));
+      tf.position.set(0, 2.4, 0.42);
+      g.add(tf);
+      // Label sprite
+      const rsp = new THREE.Sprite(mkSprite('TECHNICAL DEBT RUIN', 'bold 22px serif', '#cc7744aa', 512, 56));
+      rsp.scale.set(12, 1.6, 1);
+      rsp.position.set(0, 10, 0);
+      g.add(rsp);
+      s.add(g);
+    }
+
+    // ── 6. HTTP 418 TEAPOT SHRINE ──────────────────────────────────────────────
+    // Near the river willow area. No label. Engineers will find it and share it.
+    {
+      const g = new THREE.Group();
+      g.position.set(-42, 0, 8);
+      const pot = new THREE.Mesh(new THREE.SphereGeometry(1.4, 10, 8),
+        new THREE.MeshLambertMaterial({ color: 0xaa4422, emissive: 0x220800, emissiveIntensity: 0.2 }));
+      pot.scale.set(1, 0.85, 1);
+      pot.position.y = 1.4;
+      g.add(pot);
+      // Spout
+      const spout = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.18, 1.2, 6),
+        new THREE.MeshLambertMaterial({ color: 0xaa4422 }));
+      spout.rotation.z = Math.PI * 0.35;
+      spout.position.set(1.3, 1.8, 0);
+      g.add(spout);
+      // Handle
+      const handle = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.1, 6, 10, Math.PI * 1.1),
+        new THREE.MeshLambertMaterial({ color: 0x882211 }));
+      handle.rotation.y = Math.PI / 2;
+      handle.position.set(-1.2, 1.8, 0);
+      g.add(handle);
+      // Lid
+      const lid = new THREE.Mesh(new THREE.SphereGeometry(0.55, 8, 4),
+        new THREE.MeshLambertMaterial({ color: 0xcc5533 }));
+      lid.scale.y = 0.45;
+      lid.position.y = 2.75;
+      g.add(lid);
+      // Small plinth
+      const plt = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 2.0, 0.35, 8), sandstone);
+      plt.position.y = 0.17;
+      g.add(plt);
+      s.add(g);
+    }
+
+    // ── 7. READING STONES — three quotes near Education District ──────────────
+    {
+      const quotes = (window.CITY_ORACLE && window.CITY_ORACLE.quotes) ? window.CITY_ORACLE.quotes : [];
+      quotes.forEach((q, i) => {
+        const g = new THREE.Group();
+        g.position.set(-28 + i * 14, 0, -110);
+        const stone = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3.5, 2.4), darkStone);
+        stone.position.y = 2.0;
+        g.add(stone);
+        const QW = 480, QH = 300;
+        const qc = document.createElement('canvas'); qc.width = QW; qc.height = QH;
+        const qx = qc.getContext('2d');
+        qx.fillStyle = 'rgba(18,10,4,0.95)'; qx.fillRect(0, 0, QW, QH);
+        qx.strokeStyle = '#ffcc4433'; qx.lineWidth = 1; qx.strokeRect(4, 4, QW - 8, QH - 8);
+        qx.fillStyle = '#eeddcc'; qx.font = 'italic 16px serif'; qx.textAlign = 'center';
+        this._wrapText(qx, '“' + q.text + '”', QW / 2, 80, QW - 40, 22);
+        qx.fillStyle = '#ffcc4488'; qx.font = '600 12px monospace';
+        qx.textBaseline = 'middle'; qx.fillText('— ' + q.author, QW / 2, 220);
+        const qf = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.8),
+          new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(qc), transparent: true }));
+        qf.rotation.y = Math.PI / 2;
+        qf.position.set(-0.17, 2.0, 0);
+        g.add(qf);
+        s.add(g);
+      });
+    }
+  }
+
+  // ── TEXT WRAP HELPER ────────────────────────────────────────────────────────
+  _wrapText(ctx, text, cx, cy, maxW, lineH) {
+    const words = text.split(' ');
+    let line = '';
+    let y = cy;
+    for (let i = 0; i < words.length; i++) {
+      const test = line + words[i] + ' ';
+      if (ctx.measureText(test).width > maxW && i > 0) {
+        ctx.fillText(line.trim(), cx, y);
+        line = words[i] + ' ';
+        y += lineH;
+      } else {
+        line = test;
+      }
+    }
+    if (line.trim()) ctx.fillText(line.trim(), cx, y);
   }
 }

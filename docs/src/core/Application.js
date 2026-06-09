@@ -275,6 +275,11 @@ export default class Application {
       now,
     );
 
+    // ── ORACLE AMBIENT TICKS ──────────────────────────────────────────────
+    if (gameStarted && f % 60 === 0) {
+      window.ORC?.tickRiver(1, this.world.car.x, this.world.car.z, this.world.isNight);
+    }
+
     // ── STEP 5: BROADCAST UPDATES TO PLAYER (UI) ──────────────────────────
     if (gameStarted && f % 4 === 0) {
       window.CityUI?.updateHUD?.(this.world.car.speed);
@@ -401,12 +406,11 @@ export default class Application {
         self.world.scene.add(trail);
       },
       checkCompletion() {
-        // Item 40: closing ceremony when all buildings visited
         const total = window.CITY_DATA?.buildings?.length || 17;
         const visited = (window._visitedIds || new Set()).size;
         if (visited >= total && !window._ceremonyCelebrated) {
           window._ceremonyCelebrated = true;
-          // Trigger celebration overlay
+          // Ceremony overlay
           const el = document.createElement('div');
           el.id = 'city-ceremony';
           el.innerHTML = `
@@ -418,7 +422,8 @@ export default class Application {
           document.body.appendChild(el);
           setTimeout(() => el.classList.add('cer-out'), 6000);
           setTimeout(() => el.remove(), 7500);
-          // Trigger night transition + extra confetti bursts
+          // Oracle final speech — the most important moment in the city
+          setTimeout(() => window.ORC?.doFinalSpeech(), 2000);
           if (self.world?.applyWeather) self.world.applyWeather('night', true);
         }
       },

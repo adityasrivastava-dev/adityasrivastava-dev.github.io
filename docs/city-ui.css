@@ -3897,3 +3897,167 @@ a,
   font-size: clamp(7px, 1.2vw, 10px) !important;
   letter-spacing: clamp(4px, 1vw, 10px) !important;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PHASE 4 — ORACLE PANEL + VOICE LINES
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── TEMPLE VOICE LINE — one canonical sentence per building ────────────── */
+.px-voice {
+  padding: 7px 14px 3px;
+  font: 400 11px/1.55 'Barlow', sans-serif;
+  color: rgba(200,195,180,.52);
+  font-style: italic;
+  border-top: 1px solid rgba(255,255,255,.04);
+  min-height: 0;
+}
+.px-voice:empty { display: none; }
+
+/* ── ORACLE PANEL ────────────────────────────────────────────────────────── */
+#oracle-panel {
+  position: fixed;
+  bottom: 106px;
+  left: 14px;
+  width: 292px;
+  background: rgba(5,3,1,.95);
+  border: 1px solid rgba(200,155,55,.26);
+  border-radius: 3px;
+  z-index: 620;
+  pointer-events: all;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity .32s ease, transform .32s ease;
+  box-shadow: 0 8px 40px rgba(0,0,0,.72), 0 0 0 1px rgba(200,155,55,.05),
+              inset 0 1px 0 rgba(255,255,255,.03);
+}
+#oracle-panel.vis {
+  opacity: 1;
+  transform: translateY(0);
+}
+/* On mobile — shift above joystick zone */
+.is-touch #oracle-panel {
+  bottom: 210px;
+  left: 8px;
+  width: 260px;
+}
+
+.orc-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px 7px;
+  border-bottom: 1px solid rgba(200,155,55,.09);
+}
+.orc-name {
+  flex: 1;
+  font: 600 8.5px/1 var(--fm);
+  letter-spacing: .14em;
+  color: rgba(200,155,55,.72);
+  text-transform: uppercase;
+}
+.orc-sessions {
+  font: 400 8px/1 var(--fm);
+  color: rgba(200,155,55,.32);
+  letter-spacing: .06em;
+}
+.orc-x {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 2px;
+  color: rgba(255,255,255,.22);
+  font-size: 15px;
+  line-height: 1;
+  transition: color .18s;
+}
+.orc-x:hover { color: rgba(255,255,255,.58); }
+
+.orc-body {
+  padding: 11px 14px 6px;
+  font: 400 12px/1.68 'Barlow', sans-serif;
+  color: rgba(218,208,192,.9);
+  min-height: 36px;
+}
+.orc-body em {
+  color: #ffcc44;
+  font-style: normal;
+}
+
+.orc-actions {
+  padding: 2px 12px 9px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.orc-btn {
+  background: rgba(200,155,55,.09);
+  border: 1px solid rgba(200,155,55,.28);
+  border-radius: 3px;
+  cursor: pointer;
+  color: rgba(200,155,55,.82);
+  font: 600 8px/1 var(--fm);
+  letter-spacing: .1em;
+  padding: 5px 10px;
+  transition: background .18s;
+}
+.orc-btn:hover { background: rgba(200,155,55,.2); }
+.orc-hint {
+  font: 400 8px/1 var(--fm);
+  color: rgba(200,155,55,.28);
+  letter-spacing: .06em;
+}
+
+/* ── Oracle chat (ASK mode) ──────────────────────────────────────────────── */
+.orc-chat-wrap {
+  border-top: 1px solid rgba(200,155,55,.07);
+}
+.orc-history {
+  max-height: 128px;
+  overflow-y: auto;
+  padding: 8px 12px 2px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(200,155,55,.18) transparent;
+}
+.orc-q {
+  font: 400 10.5px/1.5 'Barlow', sans-serif;
+  color: rgba(180,160,120,.55);
+  margin-bottom: 2px;
+}
+.orc-a {
+  font: 400 11px/1.6 'Barlow', sans-serif;
+  color: rgba(218,208,192,.92);
+  margin-bottom: 8px;
+}
+.orc-thinking {
+  color: rgba(200,155,55,.38);
+}
+.orc-row {
+  display: flex;
+  gap: 6px;
+  padding: 7px 10px 10px;
+}
+.orc-inp {
+  flex: 1;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(200,155,55,.2);
+  border-radius: 3px;
+  color: rgba(218,208,192,.9);
+  caret-color: #ffcc44;
+  font: 400 11px/1 var(--fm);
+  padding: 7px 9px;
+  outline: none;
+  transition: border-color .18s;
+}
+.orc-inp:focus { border-color: rgba(200,155,55,.48); }
+.orc-inp::placeholder { color: rgba(200,155,55,.26); }
+.orc-send {
+  background: rgba(200,155,55,.1);
+  border: 1px solid rgba(200,155,55,.3);
+  border-radius: 3px;
+  color: #ffcc44;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 11px;
+  transition: background .18s;
+}
+.orc-send:hover { background: rgba(200,155,55,.22); }

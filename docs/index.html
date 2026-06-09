@@ -236,6 +236,8 @@
           <div class="px-metrics" id="px-metrics"></div>
         </div>
       </div>
+      <!-- Voice line — one canonical sentence per temple -->
+      <div class="px-voice" id="px-voice"></div>
       <!-- Bottom: CTA -->
       <div class="px-foot">
         <button
@@ -330,6 +332,29 @@
       </div>
     </div>
 
+    <!-- ── ORACLE PANEL — Vaakshakti, the voice of Dharma Kshetra ── -->
+    <div id="oracle-panel" aria-live="polite" role="complementary" aria-label="Oracle of Dharma Kshetra">
+      <div class="orc-header">
+        <span class="orc-name">◈ &nbsp;VAAKSHAKTI</span>
+        <span class="orc-sessions" id="orc-sessions"></span>
+        <button class="orc-x" onclick="window.ORC?.close()" aria-label="Dismiss Oracle">×</button>
+      </div>
+      <div class="orc-body" id="orc-body"></div>
+      <div class="orc-actions">
+        <button class="orc-btn" onclick="window.ORC?.openChat()">ASK ORACLE</button>
+        <span class="orc-hint" id="orc-hint"></span>
+      </div>
+      <div class="orc-chat-wrap" id="orc-chat-wrap" style="display:none">
+        <div class="orc-history" id="orc-history"></div>
+        <div class="orc-row">
+          <input class="orc-inp" id="orc-inp" type="text" maxlength="200"
+            placeholder="Ask the Oracle…" autocomplete="off"
+            onkeydown="if(event.key==='Enter')window.ORC?.sendChat()" />
+          <button class="orc-send" onclick="window.ORC?.sendChat()">→</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ── MOBILE JOYSTICK (left side) + ENTER BUTTON (right side) ── -->
     <div id="joy-zone">
       <div id="joy-outer"><div id="joy-inner"></div></div>
@@ -381,6 +406,32 @@
     </script>
 
     <script type="module" src="./src/main.js"></script>
+
+    <script>
+      // ── window.dharma — console Easter egg for engineers ──────────────────
+      window.dharma = {
+        unlock() {
+          window.ORC?._render(
+            '<em>You found this the way he engineers.</em>' +
+            '<br><br>Hidden architect chamber unlocked.<br><br>' +
+            'Full career timeline: open the JOURNEY button.<br>' +
+            'System dependency graph: visit all 17 temples.<br>' +
+            'Contact stone: complete the journey.<br><br>' +
+            '<strong>asaditya1826@gmail.com</strong><br>' +
+            'linkedin.com/in/aditya-srivastava-43b686226'
+          );
+          console.log('%cDharma Kshetra — Architect\'s Chamber', 'color:#ffcc44;font-size:16px;font-weight:bold');
+          console.log('%cAditya Srivastava · Backend Architect · Trilasoft Solutions', 'color:#aaa');
+          console.log('%casaditya1826@gmail.com', 'color:#00c8ff');
+        },
+        oracle() {
+          console.log('%cVaakshakti — Oracle of Dharma Kshetra', 'color:#ffcc44;font-size:14px;font-weight:bold');
+          console.log('Personality: ancient, precise, occasionally dry, deeply knowledgeable.');
+          console.log('Speaks: 2-4 sentences. References temples by name. Never breaks character.');
+          console.log('Proactive triggers: arrival, Surya Dwara approach, river at night, halfway, completion.');
+        },
+      };
+    </script>
 
     <script>
       // ═════════════════════════════════════════════════════════════════════════════

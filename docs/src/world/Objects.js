@@ -110,6 +110,8 @@ export default class Objects {
     this._buildRoadDecorations();
     this._buildBillboardLabels(); // floating 3D name labels above buildings
     this._buildTorches();
+    this._buildYearMarkers();
+    this._buildLateNightWindows();
   }
 
   // ── HELPERS ────────────────────────────────────────────────────────────────
@@ -2089,6 +2091,73 @@ export default class Objects {
     });
   }
 
+  // ── YEAR MARKERS — floating sprite chips above each building ─────────────────
+  // Printed in warm amber so they read as "historical" not UI chrome.
+  _buildYearMarkers() {
+    (window.CITY_DATA?.buildings || []).forEach((b) => {
+      if (!b.year) return;
+      const h = b.size ? b.size[2] * 1.05 + 4.5 : 14;
+      const CW = 128, CH = 44;
+      const can = document.createElement('canvas'); can.width = CW; can.height = CH;
+      const ctx = can.getContext('2d');
+      // pill background
+      ctx.fillStyle = 'rgba(18,10,3,0.84)';
+      const r = CH / 2;
+      ctx.beginPath();
+      ctx.moveTo(r, 0); ctx.lineTo(CW - r, 0);
+      ctx.arcTo(CW, 0, CW, CH, r); ctx.lineTo(CW, CH - r);
+      ctx.arcTo(CW, CH, CW - r, CH, r); ctx.lineTo(r, CH);
+      ctx.arcTo(0, CH, 0, CH - r, r); ctx.lineTo(0, r);
+      ctx.arcTo(0, 0, r, 0, r); ctx.closePath();
+      ctx.fill();
+      // amber border
+      ctx.strokeStyle = 'rgba(255,196,68,0.45)'; ctx.lineWidth = 1.5;
+      ctx.stroke();
+      // year text
+      ctx.fillStyle = '#ffcc44'; ctx.font = '600 18px "Share Tech Mono",monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(b.year, CW / 2, CH / 2 + 1);
+      const mat = new THREE.SpriteMaterial({
+        map: new THREE.CanvasTexture(can),
+        transparent: true,
+        depthWrite: false,
+      });
+      const sp = new THREE.Sprite(mat);
+      sp.scale.set(3.2, 1.1, 1);
+      sp.position.set(b.pos[0] - 2.2, h, b.pos[1] + 1.5);
+      this.scene.add(sp);
+    });
+  }
+
+  // ── LATE NIGHT WINDOWS — warm amber glow on 3-4 buildings when isNight ───────
+  // Simulates someone working late. Visible on the Hero building and 2 nearest.
+  _buildLateNightWindows() {
+    // Buildings that "stay lit" late: hero + 2 hardcoded by narrative
+    const lateIds = new Set(['pura-stambha', 'surya-dwara', 'brahma-kund', 'setu-nagara']);
+    this._lateWindows = [];
+    (window.CITY_DATA?.buildings || []).forEach((b) => {
+      if (!lateIds.has(b.id)) return;
+      const buildH = b.size ? b.size[2] : 10;
+      // 1-2 window planes per building
+      for (let wi = 0; wi < 2; wi++) {
+        const ox = (wi === 0 ? -1 : 1) * (1.2 + Math.random() * 0.4);
+        const oy = buildH * (0.45 + wi * 0.18);
+        const plane = new THREE.Mesh(
+          new THREE.PlaneGeometry(1.1, 0.75),
+          new THREE.MeshBasicMaterial({
+            color: 0xffaa33,
+            transparent: true,
+            opacity: 0,
+            depthWrite: false,
+          }),
+        );
+        plane.position.set(b.pos[0] + ox, oy, b.pos[1] - (b.size ? b.size[1] * 0.49 : 3.9));
+        this.scene.add(plane);
+        this._lateWindows.push({ mat: plane.material, phase: Math.random() * Math.PI * 2 });
+      }
+    });
+  }
+
   // Night glow rings + apex beacons + roof lamps — called every frame
   updateNightGlow(isNight, now) {
     if (!this._buildingNightGlow || !this._buildingNightGlow.length) return;
@@ -2111,6 +2180,15 @@ export default class Objects {
           const fl = 0.8 + Math.sin(now * 6.2 + phase + li * 1.1) * 0.18;
           roofLamps[li].material.opacity += (tLamp * fl - roofLamps[li].material.opacity) * 0.04;
         }
+      }
+    }
+    // Late-night window flicker
+    if (this._lateWindows) {
+      const target = isNight ? 1 : 0;
+      for (const w of this._lateWindows) {
+        const flicker = isNight ? 0.55 + Math.sin(now * 3.1 + w.phase) * 0.12 : 0;
+        w.mat.opacity += (flicker - w.mat.opacity) * 0.035;
+        w.mat.opacity = Math.max(0, Math.min(target, w.mat.opacity));
       }
     }
   }

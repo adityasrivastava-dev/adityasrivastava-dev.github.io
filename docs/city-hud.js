@@ -42,6 +42,9 @@ function hideStart() {
     document.getElementById("ctrl-hint")?.classList.add("hud-visible");
     document.getElementById("minimap")?.classList.add("hud-visible");
   }, 2000); // after intro starts descending
+  // Oracle — city is now live
+  window.ORC?.onGameStart();
+
   if (typeof CityEngine !== "undefined") {
     CityEngine.initAudio();
     CityEngine.triggerIntro();
@@ -252,6 +255,13 @@ function showNotification(b) {
     metEl.innerHTML = "";
   }
 
+  // ── Voice line ──────────────────────────────────────────────────────────
+  const voiceEl = document.getElementById('px-voice');
+  if (voiceEl) {
+    const vl = window.CITY_VOICE_LINES?.[b.id] || '';
+    voiceEl.textContent = vl;
+  }
+
   // ── ENTER button: color it to match the building ─────────────────────
   const btnEl = document.getElementById("px-btn");
   if (btnEl) {
@@ -266,6 +276,9 @@ function showNotification(b) {
         ? "none"
         : "";
   }
+
+  // ── Oracle proximity trigger ─────────────────────────────────────────
+  window.ORC?.onProximity(b.id);
 
   // ── Spring entrance — restart animation every time ───────────────────
   p.classList.remove("show");
@@ -355,6 +368,9 @@ function openBuilding(b) {
     body.classList.add("stagger-in");
   }, 280);
 
+  // Oracle — tell it how many buildings have been visited
+  window.ORC?.onBuildingOpened(window._visitedIds?.size || 0);
+
   // P4: check if all 17 temples now visited
   setTimeout(() => {
     if (typeof CityEngine !== "undefined" && CityEngine.checkCompletion)
@@ -387,6 +403,8 @@ function closeSP() {
   // P1: collapse world panel when DOM panel closes
   if (typeof CityEngine !== "undefined" && CityEngine.closeWorldPanel)
     CityEngine.closeWorldPanel();
+  // Oracle — show any pending message after panel closes
+  setTimeout(() => window.ORC?._checkPending(), 700);
   setTimeout(() => {
     document.body.classList.remove("panel-open");
     if (typeof CityEngine !== "undefined" && CityEngine.resetCamera)
@@ -528,6 +546,7 @@ function doWeather() {
   if (typeof CityEngine !== "undefined") CityEngine.cycleWeather();
 }
 function onWeatherChange(w) {
+  window.ORC?.onWeather(w);
   document.getElementById("weather-label").textContent = WX_ICONS[w] || "SUN";
   const t = document.getElementById("weather-toast");
   t.textContent = "// " + (WX_NAMES[w] || w.toUpperCase()) + " MODE";
@@ -1124,3 +1143,303 @@ window.toggleFullMap = toggleFullMap;
 window.closeFullMap = closeFullMap;
 window.openFullMap = openFullMap;
 window.onWeatherChange = onWeatherChange;
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ORACLE SYSTEM — Vaakshakti, the voice of Dharma Kshetra
+// Proactive narrative messages, scripted Q&A, optional Claude API integration.
+// Session memory via localStorage. Does not interrupt when panel is open.
+// ══════════════════════════════════════════════════════════════════════════════
+;(function () {
+  'use strict';
+
+  var _LS = {
+    get: function(k, def) { try { var v = localStorage.getItem('dk_'+k); return v != null ? JSON.parse(v) : def; } catch(e) { return def; } },
+    set: function(k, v) { try { localStorage.setItem('dk_'+k, JSON.stringify(v)); } catch(e) {} },
+  };
+
+  var ORC = {
+    _vis: false,
+    _chatOpen: false,
+    _shown: new Set(_LS.get('orc_shown', [])),
+    _apiKey: _LS.get('api_key', ''),
+    _visitCount: (_LS.get('visit_count', 0) + 1),
+    _sessionStart: Date.now(),
+    _riverTimer: 0,
+    _gameReady: false,
+    _pendingMsg: null,
+    _autoHideT: null,
+
+    _panelOpen: function() {
+      return document.getElementById('side-panel') &&
+             document.getElementById('side-panel').classList.contains('open');
+    },
+
+    show: function(id, msg, persist) {
+      if (persist === undefined) persist = false;
+      if (!this._shown.has(id) || persist) {
+        if (!persist) { this._shown.add(id); _LS.set('orc_shown', Array.from(this._shown)); }
+        if (!this._gameReady || this._panelOpen()) {
+          this._pendingMsg = { id: id, msg: msg, persist: persist };
+          return false;
+        }
+        this._render(msg);
+        return true;
+      }
+      return false;
+    },
+
+    _render: function(msg) {
+      var panel = document.getElementById('oracle-panel');
+      var body = document.getElementById('orc-body');
+      if (!panel || !body) return;
+      body.innerHTML = msg;
+      panel.classList.add('vis');
+      this._vis = true;
+      var self = this;
+      if (this._autoHideT) clearTimeout(this._autoHideT);
+      var delay = msg.length > 160 ? 14000 : 9000;
+      this._autoHideT = setTimeout(function() {
+        if (!self._chatOpen) self.close();
+      }, delay);
+    },
+
+    close: function() {
+      var panel = document.getElementById('oracle-panel');
+      if (panel) panel.classList.remove('vis');
+      this._vis = false;
+      this._chatOpen = false;
+      var cw = document.getElementById('orc-chat-wrap');
+      if (cw) cw.style.display = 'none';
+    },
+
+    _checkPending: function() {
+      if (this._pendingMsg && !this._panelOpen()) {
+        var p = this._pendingMsg;
+        this._pendingMsg = null;
+        this.show(p.id, p.msg, p.persist);
+      }
+    },
+
+    onGameStart: function() {
+      this._gameReady = true;
+      _LS.set('visit_count', this._visitCount);
+      var self = this;
+      var sess = document.getElementById('orc-sessions');
+      if (sess && this._visitCount > 1) sess.textContent = 'VISIT ' + this._visitCount;
+      if (this._visitCount > 1) {
+        setTimeout(function() {
+          self.show('return_visit',
+            'You returned. Most do not. I expected you would.' +
+            (self._visitCount > 2 ? ' <em>' + (self._visitCount - 1) + ' visits now.</em>' : '')
+          );
+        }, 4200);
+      } else {
+        setTimeout(function() {
+          self.show('arrival',
+            'A visitor arrives at Dharma Kshetra. The city was built stone by stone over four years. ' +
+            'You may walk it in twenty minutes. <em>Whether you understand it depends entirely on how you choose to walk.</em>'
+          );
+        }, 3800);
+      }
+    },
+
+    onProximity: function(buildingId) {
+      var self = this;
+      var msgs = {
+        'surya-dwara': {
+          id: 'surya_intro',
+          msg: "This one. This is where the architect's hand truly emerged. Look at the height. " +
+               "Notice where it stands relative to everything else. <em>He knew what he was building.</em>",
+          delay: 1400,
+        },
+        'pura-stambha': {
+          id: 'legacy_intro',
+          msg: 'This is where it began. January 2022. Not a clean system. ' +
+               'Not a modern stack. <em>A classroom.</em> Everything built since traces back to lessons learned here.',
+          delay: 1400,
+        },
+        'brahma-kund': {
+          id: 'migration_intro',
+          msg: 'Three migrations over two years. MySQL 5 to 8, 8 to 8.4. <em>Zero data lost.</em> ' +
+               'Shadow validation before every cutover. The city\'s water never ran dry.',
+          delay: 1400,
+        },
+        'setu-nagara': {
+          id: 'bridge_intro',
+          msg: 'Java 1.7 on one side. MySQL 8 on the other. A shell script in between. ' +
+               '<em>Still running in production after three years.</em>',
+          delay: 1400,
+        },
+      };
+      var m = msgs[buildingId];
+      if (m) {
+        setTimeout(function() { self.show(m.id, m.msg); }, m.delay);
+      }
+    },
+
+    onBuildingOpened: function(visitedCount) {
+      var sess = document.getElementById('orc-sessions');
+      if (sess) sess.textContent = visitedCount + ' / 17';
+      var self = this;
+      if (visitedCount === 8) {
+        setTimeout(function() {
+          self.show('halfway',
+            'You have heard half the stories. You may leave now with a partial understanding. ' +
+            'Or you may stay. <em>The people who stay always say they are glad they did.</em>'
+          );
+        }, 2800);
+      }
+    },
+
+    onWeather: function(w) {
+      var self = this;
+      if (w === 'rain') {
+        setTimeout(function() { self.show('rain', 'The city performs the same in all conditions. <em>As designed.</em>'); }, 3200);
+      }
+      if (w === 'night') {
+        var mins = Math.floor((Date.now() - self._sessionStart) / 60000);
+        if (mins > 16) {
+          setTimeout(function() {
+            self.show('late_night',
+              'Still here. At 3am, every system he built was either working or he was fixing it. ' +
+              '<em>The city remembers that.</em>'
+            );
+          }, 3000);
+        }
+      }
+    },
+
+    tickRiver: function(dt, x, z, isNight) {
+      if (!isNight) { this._riverTimer = 0; return; }
+      var nearRiver = Math.abs(x) < 38 && z > -28 && z < 28;
+      if (nearRiver) {
+        this._riverTimer += dt;
+        if (this._riverTimer > 22 && !this._shown.has('river_night')) {
+          this.show('river_night',
+            'He built systems for thousands of users he never met. ' +
+            '<em>The diyas on the river are for them.</em>'
+          );
+        }
+      } else {
+        this._riverTimer = 0;
+      }
+    },
+
+    doFinalSpeech: function() {
+      if (this._autoHideT) clearTimeout(this._autoHideT);
+      this._render(
+        '&ldquo;You have now walked through four years of engineering.' +
+        '<br><br>Not four years of titles. Not four years of frameworks.' +
+        '<br><br>Four years of learning.' +
+        '<br><br>You have seen legacy systems maintained, integrations repaired, migrations executed, ' +
+        'platforms modernized, identities unified, and products designed from nothing.' +
+        '<br><br>None of these systems appeared fully formed. They were built one decision at a time.' +
+        '<br><br>Good software is not built by people chasing complexity.' +
+        '<br><br>It is built by people accepting responsibility.' +
+        '<br><br><em>The city is complete. The journey continues.&rdquo;</em>'
+      );
+    },
+
+    openChat: function() {
+      this._chatOpen = true;
+      var cw = document.getElementById('orc-chat-wrap');
+      var panel = document.getElementById('oracle-panel');
+      if (cw) cw.style.display = '';
+      if (panel) panel.classList.add('vis');
+      if (this._autoHideT) clearTimeout(this._autoHideT);
+      setTimeout(function() {
+        var inp = document.getElementById('orc-inp');
+        if (inp) inp.focus();
+      }, 80);
+    },
+
+    sendChat: function() {
+      var inp = document.getElementById('orc-inp');
+      if (!inp || !inp.value.trim()) return;
+      var q = inp.value.trim();
+      inp.value = '';
+      var hist = document.getElementById('orc-history');
+      if (!hist) return;
+      var item = document.createElement('div');
+      item.innerHTML = '<div class="orc-q">&rsaquo; ' + q + '</div><div class="orc-a orc-thinking">&hellip;</div>';
+      hist.appendChild(item);
+      hist.scrollTop = hist.scrollHeight;
+      var self = this;
+      this._answer(q).then(function(ans) {
+        item.querySelector('.orc-a').innerHTML = ans;
+        item.querySelector('.orc-a').classList.remove('orc-thinking');
+        hist.scrollTop = hist.scrollHeight;
+      });
+    },
+
+    _answer: function(q) {
+      var self = this;
+      var ql = q.toLowerCase();
+
+      // Scripted responses for canonical questions
+      if (/good hire|should.*hire|hire him|will he/.test(ql))
+        return Promise.resolve('If you are looking for someone who has only worked on greenfield systems, perhaps not. If you are looking for someone who has maintained legacy software, solved migrations, repaired integrations, designed architectures, and shipped products &mdash; then the city has already answered your question.');
+      if (/hardest|most difficult|toughest/.test(ql))
+        return Promise.resolve('Surya Dwara. The SSO Platform. Every application depended on it. Security, sessions, authentication, authorization, logout flows, device handling &mdash; all had to work together. There was no room for a partial solution.');
+      if (/believ|philosophy|engineer.*think|approach|principle/.test(ql))
+        return Promise.resolve('He believes the best architecture is the one that explains itself. Tests are documentation, not insurance. Simplicity is the highest form of technical courage. Production is the only truth. <em>Engineering is a practice, not a credential.</em>');
+      if (/are you ai|are you.*real|who are you/.test(ql))
+        return Promise.resolve('I am the accumulated knowledge of every system this city contains. Whether that is artificial is a philosophical question for another time.');
+      if (/contact|email|reach|linkedin/.test(ql))
+        return Promise.resolve('The way to reach the architect is through the city. Visit every temple. Those who complete the journey find the contact stone. Or try <code>window.dharma.unlock()</code> in the browser console.');
+      if (/how long|time.*build|build.*time/.test(ql))
+        return Promise.resolve('The career took four years to build. He joined Trilasoft on January 18, 2022. The systems in this city are still running.');
+      if (/first.*job|start|begin|2022|trilasoft/.test(ql))
+        return Promise.resolve('He joined Trilasoft Solutions on January 18, 2022. His first system was Pura Stambha &mdash; the ancient pillar to the north. <em>That is where patience was learned before engineering.</em>');
+      if (/lesson|learn|mistake|advice/.test(ql))
+        return Promise.resolve('Five lessons, earned in order: Every shortcut becomes technical debt. Integrations fail more than applications. A migration is a business project. Most incidents begin as assumptions. <em>Simplicity survives longer than cleverness.</em>');
+      if (/java|spring|mysql|language|stack|tech/.test(ql))
+        return Promise.resolve('Java through all four years. Spring Boot for modern systems. MySQL for data. AWS for scale. The tools changed. The approach &mdash; schema first, trace before change, shadow before cutover &mdash; did not.');
+      if (/incident|broke|failure|production/.test(ql))
+        return Promise.resolve('There are four incidents recorded in the city. Drive to the Dharma Chakra at the center and circle it to find the Incident Chamber. Each inscription is honest. None are exaggerated.');
+
+      // Try Claude API if key is set
+      if (self._apiKey) {
+        return self._callAPI(q);
+      }
+
+      return Promise.resolve('An interesting question. <em>Set a Claude API key</em> to unlock full Oracle access &mdash; or explore the temples. Many answers are written on the walls.');
+    },
+
+    _callAPI: function(q) {
+      var self = this;
+      var buildings = (window.CITY_DATA ? window.CITY_DATA.buildings : []).map(function(b) {
+        return b.name + ': ' + b.subtitle;
+      }).join(', ');
+      var sys = 'You are Vaakshakti, Oracle of Dharma Kshetra. Ancient, wise, precise, occasionally dry. ' +
+        'You know the story of Aditya Srivastava — Backend Architect at Trilasoft Solutions (Jan 18 2022 – present). ' +
+        'Career: Trainee → Junior Engineer → Backend Architect. ' +
+        'Key systems: ' + buildings + '. ' +
+        'Hardest: SSO Platform (Surya Dwara) — every app depended on it. ' +
+        'Philosophy: build things that survive after you leave. ' +
+        'Respond in 2–4 sentences. Reference specific temples by name. Never break character.';
+      return fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': self._apiKey,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+          'anthropic-dangerous-client-side-api-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 200,
+          system: sys,
+          messages: [{ role: 'user', content: q }],
+        }),
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(d) { return (d.content && d.content[0] && d.content[0].text) ? d.content[0].text : 'The Oracle is silent.'; })
+      .catch(function() { return 'The Oracle is silent on that matter. Try another question.'; });
+    },
+
+    setKey: function(k) { this._apiKey = k; _LS.set('api_key', k); },
+  };
+
+  window.ORC = ORC;
+})();
