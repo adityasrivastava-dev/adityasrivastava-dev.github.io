@@ -236,8 +236,10 @@ export default class Objects {
     // ── IMPROVEMENT 2: Emissive trim on dark cornice material ────────────────
     // Dark cornices absorb a whisper of the building's glow color — like
     // gilded inlay or painted carvings catching interior temple light.
-    // MeshToonMaterial supports emissive; we dim it to ~6% of the glow color.
-    mD.emissive = new THREE.Color(gc).multiplyScalar(0.06);
+    // MeshToonMaterial supports emissive; MeshMatcapMaterial does not.
+    if (mD.isMeshToonMaterial) {
+      mD.emissive = new THREE.Color(gc).multiplyScalar(0.06);
+    }
 
     // ── IMPROVEMENT 2: Gold → matcap with specular hotspot ───────────────────
     // Kalash pots and finials now read as actual brass/gold, not flat yellow.
@@ -1754,6 +1756,7 @@ export default class Objects {
       // LOD: beyond 160u hide leaf mesh (no draw call), stop animation
       if (tr.leaf) tr.leaf.visible = dist < 160;
       if (dist > 150) return;
+      if (!tr.leaf) return;
 
       if (tr.shakeT > 0) {
         const shake = Math.sin(now * 22) * tr.shakeT * 0.35;
