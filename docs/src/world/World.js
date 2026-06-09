@@ -38,6 +38,9 @@ export default class World {
     this._buildWorldName();
     this._buildAtmosphere();
     this._buildHeartbeat();
+    this._buildClouds();
+    this._buildGodRays();
+    this._buildDistrictZones();
   }
 
   // ── MAIN UPDATE — called by Application every render frame ─────────────────
@@ -573,6 +576,169 @@ export default class World {
     s.add(this._moonHalo);
   }
 
+  // ── CLOUDS — billboard sprite clouds drifting slowly westward ────────────────
+  _buildClouds() {
+    // Single shared canvas texture — soft radial-gradient puffs
+    const CW = 256, CH = 128;
+    const can = document.createElement('canvas');
+    can.width = CW; can.height = CH;
+    const ctx = can.getContext('2d');
+    [
+      [CW * 0.50, CH * 0.48, CH * 0.44],
+      [CW * 0.28, CH * 0.58, CH * 0.30],
+      [CW * 0.74, CH * 0.58, CH * 0.32],
+      [CW * 0.16, CH * 0.66, CH * 0.20],
+      [CW * 0.84, CH * 0.66, CH * 0.20],
+    ].forEach(([cx, cy, r]) => {
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      g.addColorStop(0,   'rgba(255,252,250,0.92)');
+      g.addColorStop(0.5, 'rgba(255,252,250,0.50)');
+      g.addColorStop(1,   'rgba(255,252,250,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, CW, CH);
+    });
+    const cloudTex = new THREE.CanvasTexture(can);
+
+    const defs = [
+      { x: -80,  y: 88,  z: -60,  s: 55, v: -0.9 },
+      { x:  55,  y: 95,  z: -85,  s: 68, v: -0.7 },
+      { x: 125,  y: 74,  z:  42,  s: 46, v: -1.1 },
+      { x: -128, y: 82,  z:  28,  s: 58, v: -0.8 },
+      { x:  30,  y: 112, z: 105,  s: 72, v: -0.6 },
+      { x: -62,  y: 78,  z: 118,  s: 50, v: -1.0 },
+      { x:  92,  y: 120, z: -118, s: 82, v: -0.75 },
+      { x: -155, y: 90,  z: -42,  s: 60, v: -0.85 },
+      { x:   0,  y: 100, z: -145, s: 56, v: -0.65 },
+      { x: 162,  y: 85,  z:  78,  s: 52, v: -1.05 },
+      { x: -38,  y: 132, z: -28,  s: 76, v: -0.70 },
+      { x:  78,  y: 72,  z:  62,  s: 44, v: -0.95 },
+    ];
+
+    this._clouds = [];
+    this._cloudOpacity = 0.62;
+
+    defs.forEach(({ x, y, z, s, v }) => {
+      const mat = new THREE.SpriteMaterial({
+        map: cloudTex,
+        transparent: true,
+        opacity: 0.62,
+        depthWrite: false,
+      });
+      const sprite = new THREE.Sprite(mat);
+      sprite.scale.set(s * 2.2, s, 1);
+      sprite.position.set(x, y, z);
+      sprite.userData.driftX = v;       // units per second westward
+      sprite.userData.baseY  = y;
+      sprite.userData.phase  = x * 0.13 + z * 0.07; // deterministic bob phase
+      this.scene.add(sprite);
+      this._clouds.push(sprite);
+    });
+  }
+
+  // ── GOD RAYS — shafts of golden light from sun toward city districts ──────────
+  // Geometry approach: 8 thin transparent planes oriented from sun to ground targets.
+  // Much lighter than a post-process pass; additive blending = zero overdraw cost.
+  _buildGodRays() {
+    const s = this.scene;
+    const sunPos = new THREE.Vector3(200, 165, 95);
+
+    // Visible sun sphere — cream-white, no fog
+    this._sunDisc = new THREE.Mesh(
+      new THREE.SphereGeometry(9, 10, 8),
+      new THREE.MeshBasicMaterial({
+        color: 0xffffcc,
+        transparent: true,
+        opacity: 0.88,
+        fog: false,
+        depthWrite: false,
+      }),
+    );
+    this._sunDisc.position.copy(sunPos);
+    s.add(this._sunDisc);
+
+    // Sun halo ring — additive glow around disc
+    this._sunHaloMat = new THREE.MeshBasicMaterial({
+      color: 0xffee88,
+      transparent: true,
+      opacity: 0.28,
+      fog: false,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+    });
+    const halo = new THREE.Mesh(new THREE.RingGeometry(11, 26, 28), this._sunHaloMat);
+    halo.position.copy(sunPos);
+    halo.lookAt(0, 60, 0);
+    s.add(halo);
+
+    // Ray material — shared across all 8 rays so opacity update is one line
+    this._godRayMat = new THREE.MeshBasicMaterial({
+      color: 0xffffee,
+      transparent: true,
+      opacity: 0.038,
+      fog: false,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+    });
+
+    // 8 ground targets — one per major district / landmark
+    const targets = [
+      new THREE.Vector3(0,   0,   0),    // city center
+      new THREE.Vector3(72,  0, -35),    // Surya Dwara
+      new THREE.Vector3(-88, 0, -35),    // Brahma Kund
+      new THREE.Vector3(45,  0,  56),    // Vishwakarma
+      new THREE.Vector3(-64, 0,  56),    // Lakshmi
+      new THREE.Vector3(88,  0,  13),    // East quarter
+      new THREE.Vector3(-88, 0,  13),    // West quarter
+      new THREE.Vector3(0,   0, -99),    // Education
+    ];
+
+    targets.forEach((gt) => {
+      const dir  = gt.clone().sub(sunPos).normalize();
+      const dist = gt.distanceTo(sunPos);
+      const geo  = new THREE.PlaneGeometry(2.8, dist);
+      const ray  = new THREE.Mesh(geo, this._godRayMat);
+      ray.position.lerpVectors(sunPos, gt, 0.5);
+      // Align plane height (Y) with sun→ground direction
+      const q = new THREE.Quaternion();
+      q.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+      ray.quaternion.copy(q);
+      s.add(ray);
+    });
+  }
+
+  // ── DISTRICT ZONES — coloured ground glow beneath each city district ─────────
+  // Additive circles at y=0.06 show district identity. Stronger at night.
+  _buildDistrictZones() {
+    this._districtZoneMats = [];
+    const zones = [
+      { x:  80,  z: -35,  color: 0x00ccff, r: 38 }, // hero / Surya Dwara
+      { x: -88,  z: -25,  color: 0x9966ff, r: 30 }, // knowledge / Brahma Kund
+      { x:  92,  z:  30,  color: 0xffcc33, r: 35 }, // east / Vishwakarma
+      { x: -88,  z:  35,  color: 0x44cc88, r: 30 }, // west / Lakshmi
+      { x:   0,  z: -115, color: 0xa78bfa, r: 40 }, // education district
+      { x:   0,  z:  100, color: 0xff9950, r: 30 }, // south district
+      { x: 131,  z: -15,  color: 0xff6644, r: 26 }, // frontier / open source
+    ];
+
+    zones.forEach(({ x, z, color, r }) => {
+      const mat = new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        fog: false,
+      });
+      const disc = new THREE.Mesh(new THREE.CircleGeometry(r, 20), mat);
+      disc.rotation.x = -Math.PI / 2;
+      disc.position.set(x, 0.07, z);
+      this.scene.add(disc);
+      this._districtZoneMats.push(mat);
+    });
+  }
+
   // ── GROUND (large flat plane + sandy pavement) ─────────────────────────────
   _buildGround() {
     const s = this.scene;
@@ -855,8 +1021,8 @@ export default class World {
       [-88, 13],   // vayu-rath
       [88, -61],   // akasha-mandapa
       [88, 13],    // setu-nagara
-      [-35, -99],  // saraswati-vihar
-      [35, -99],   // gurukul-ashram
+      [35, -99],   // saraswati-vihar (NE — Ishanya/knowledge, correct Vastu)
+      [-35, -99],  // gurukul-ashram
       [131, -35],  // vaishya-griha
       [131, 13],   // agni-vedha
       [45, -77],   // darpana-shala
@@ -1052,6 +1218,40 @@ export default class World {
           const tI = (this.isNight ? 3.8 : 1.2) * breathe;
           this._chakraBeaconLight.intensity += (tI - this._chakraBeaconLight.intensity) * 0.04;
         }
+      }
+    }
+
+    // ── CLOUDS — drift westward, gentle Y bob, fade at night ─────────────────
+    if (this._clouds) {
+      const _dt = dt || 0.016;
+      const tOp = this.isNight ? 0.06 : 0.62;
+      this._cloudOpacity = (this._cloudOpacity || 0.62) + (tOp - (this._cloudOpacity || 0.62)) * 0.008;
+      for (const cloud of this._clouds) {
+        cloud.position.x += cloud.userData.driftX * _dt;
+        cloud.position.y = cloud.userData.baseY + Math.sin(now * 0.08 + cloud.userData.phase) * 1.5;
+        if (cloud.position.x < -290) cloud.position.x = 290; // wrap east→west
+        cloud.material.opacity = this._cloudOpacity;
+      }
+    }
+
+    // ── GOD RAYS + SUN — brighter at sunset, invisible at night ──────────────
+    if (this._godRayMat) {
+      const isSunset = this._cyclePhase === 'sunset';
+      const tRay  = this.isNight ? 0      : isSunset ? 0.088 : 0.038;
+      const tDisc = this.isNight ? 0      : isSunset ? 0.96  : 0.88;
+      const tHalo = this.isNight ? 0      : isSunset ? 0.58  : 0.28;
+      this._godRayMat.opacity += (tRay  - this._godRayMat.opacity) * 0.008;
+      if (this._sunDisc)
+        this._sunDisc.material.opacity  += (tDisc - this._sunDisc.material.opacity)  * 0.01;
+      if (this._sunHaloMat)
+        this._sunHaloMat.opacity += (tHalo - this._sunHaloMat.opacity) * 0.01;
+    }
+
+    // ── DISTRICT ZONES — subtle day glow, stronger night identity ────────────
+    if (this._districtZoneMats) {
+      const tZone = this.isNight ? 0.055 : 0.012;
+      for (const mat of this._districtZoneMats) {
+        mat.opacity += (tZone - mat.opacity) * 0.012;
       }
     }
   }
