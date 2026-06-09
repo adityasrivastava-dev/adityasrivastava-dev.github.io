@@ -95,8 +95,34 @@ function updateMinimap(cx, cz, angle) {
   const W = 110,
     H = 110;
   mmCtx.clearRect(0, 0, W, H);
-  mmCtx.fillStyle = "rgba(10,5,2,.8)";
+  // Item 50: Yantra background — dark base + concentric geometric mandala
+  mmCtx.fillStyle = "rgba(8,4,1,.92)";
   mmCtx.fillRect(0, 0, W, H);
+  // Outer circle
+  mmCtx.save();
+  mmCtx.strokeStyle = 'rgba(200,160,60,0.18)';
+  mmCtx.lineWidth = 1;
+  mmCtx.beginPath(); mmCtx.arc(W/2, H/2, W/2 - 2, 0, Math.PI*2); mmCtx.stroke();
+  mmCtx.beginPath(); mmCtx.arc(W/2, H/2, W/2 - 6, 0, Math.PI*2); mmCtx.stroke();
+  // 8-pointed star (yantra triangles)
+  mmCtx.strokeStyle = 'rgba(180,140,50,0.15)';
+  for (let j = 0; j < 2; j++) {
+    const r1 = W * 0.32, r2 = W * 0.22, phase = j * Math.PI / 4;
+    mmCtx.beginPath();
+    for (let i = 0; i < 4; i++) {
+      const a = phase + (i / 4) * Math.PI * 2;
+      const bx = W/2 + Math.cos(a) * r1, by = H/2 + Math.sin(a) * r1;
+      const ax = W/2 + Math.cos(a + Math.PI/4) * r2, ay = H/2 + Math.sin(a + Math.PI/4) * r2;
+      const cx2 = W/2 + Math.cos(a - Math.PI/4) * r2, cy2 = H/2 + Math.sin(a - Math.PI/4) * r2;
+      if (i === 0) mmCtx.moveTo(bx, by); else mmCtx.lineTo(bx, by);
+      mmCtx.lineTo(ax, ay); mmCtx.lineTo(cx2, cy2);
+    }
+    mmCtx.closePath(); mmCtx.stroke();
+  }
+  // Inner dot at center (bindu)
+  mmCtx.fillStyle = 'rgba(220,180,60,0.35)';
+  mmCtx.beginPath(); mmCtx.arc(W/2, H/2, 2, 0, Math.PI*2); mmCtx.fill();
+  mmCtx.restore();
   // Map world bounds → minimap canvas (matches full-map projection)
   const MM_X1 = -160, MM_X2 = 160, MM_Z1 = -165, MM_Z2 = 135;
 

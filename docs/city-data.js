@@ -253,7 +253,7 @@ window.CITY_DATA = {
       size: [10, 8],
       height: 36,
       glowColor: "#ffcc44",
-      templeType: "mandapa",
+      templeType: "gopuram",
       icon: "🏺",
       tag: "3 MIGRATIONS · SHADOW VALIDATION · 0 DATA LOST",
       status: "OPERATIONAL",

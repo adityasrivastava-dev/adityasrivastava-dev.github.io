@@ -1486,6 +1486,29 @@ export default class World {
     this._incenseSmoke.userData.smokePerTemple = SMOKE_PER;
     this.scene.add(this._incenseSmoke);
 
+    // Item 28: Dust motes — golden specks drifting in sunbeam zones near temples
+    // 5 main temple approach corridors: near Surya Dwara, Brahma Kund, city center
+    const MOTE_N = 180;
+    const motePos = new Float32Array(MOTE_N * 3);
+    const moteZones = [[72, -35], [0, 0], [-88, -35], [45, 56], [0, -88]];
+    for (let i = 0; i < MOTE_N; i++) {
+      const z = moteZones[i % moteZones.length];
+      motePos[i * 3]     = z[0] + (Math.random() - 0.5) * 22;
+      motePos[i * 3 + 1] = 0.5 + Math.random() * 12;
+      motePos[i * 3 + 2] = z[1] + (Math.random() - 0.5) * 22;
+    }
+    const moteGeo = new THREE.BufferGeometry();
+    moteGeo.setAttribute('position', new THREE.BufferAttribute(motePos, 3));
+    this._dustMotes = new THREE.Points(moteGeo,
+      new THREE.PointsMaterial({
+        color: 0xffeecc, size: 0.18,
+        transparent: true, opacity: 0,
+        depthWrite: false, sizeAttenuation: true,
+        blending: THREE.AdditiveBlending,
+      }),
+    );
+    this.scene.add(this._dustMotes);
+
     // Item 30: Rain particles — vertical streaks, only visible in rain weather
     const RAIN_N = 600;
     const rainPos = new Float32Array(RAIN_N * 3);
@@ -1771,6 +1794,28 @@ export default class World {
     if (this._procDiyas) {
       const tProc = this.isNight ? 0.70 : 0.18;
       this._procDiyas.material.opacity += (tProc - this._procDiyas.material.opacity) * 0.02;
+    }
+
+    // Item 28: Dust motes — drift lazily, visible in day sunbeam zones
+    if (this._dustMotes) {
+      const tMote = this.isNight ? 0 : 0.28;
+      this._dustMotes.material.opacity += (tMote - this._dustMotes.material.opacity) * 0.015;
+      if (this._dustMotes.material.opacity > 0.02) {
+        const _dt3 = dt || 0.016;
+        const mp = this._dustMotes.geometry.attributes.position.array;
+        for (let i = 0, n = mp.length / 3; i < n; i++) {
+          mp[i * 3]     += Math.sin(now * 0.22 + i * 0.71) * 0.004;
+          mp[i * 3 + 1] += 0.04 * _dt3; // very slow rise
+          mp[i * 3 + 2] += Math.cos(now * 0.18 + i * 0.53) * 0.004;
+          if (mp[i * 3 + 1] > 13) {
+            const z = [[72,-35],[0,0],[-88,-35],[45,56],[0,-88]][i % 5];
+            mp[i * 3]     = z[0] + (Math.random() - 0.5) * 22;
+            mp[i * 3 + 1] = 0.5;
+            mp[i * 3 + 2] = z[1] + (Math.random() - 0.5) * 22;
+          }
+        }
+        this._dustMotes.geometry.attributes.position.needsUpdate = true;
+      }
     }
 
     // Item 41: Lightning flash — random flash at night during rain

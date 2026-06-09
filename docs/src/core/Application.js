@@ -360,8 +360,68 @@ export default class Application {
       },
       skipGuide() {},
       closeWorldPanel() {},
-      toggleYatraPath() {},
-      checkCompletion() {},
+      toggleYatraPath() {
+        // Item 49: Recruiter path guide — toggle glowing ground trail to nearest unvisited building
+        if (!window.CITY_DATA?.buildings) return;
+        if (self.world._yatraTrail) {
+          // Hide trail
+          self.world._yatraTrail.visible = !self.world._yatraTrail.visible;
+          return;
+        }
+        // Build trail: 12 disc markers from car toward nearest unvisited
+        const visited = window._visitedIds || new Set();
+        const buildings = window.CITY_DATA.buildings;
+        const car = self.world.car;
+        const unvisited = buildings.filter(b => !visited.has(b.id));
+        if (!unvisited.length) return;
+        const target = unvisited.reduce((best, b) => {
+          const d = Math.hypot(car.x - b.pos[0], car.z - b.pos[1]);
+          return !best || d < Math.hypot(car.x - best.pos[0], car.z - best.pos[1]) ? b : best;
+        }, null);
+        if (!target) return;
+        const STEPS = 12;
+        const trail = new THREE.Group();
+        for (let i = 1; i <= STEPS; i++) {
+          const t = i / (STEPS + 1);
+          const tx = car.x + (target.pos[0] - car.x) * t;
+          const tz = car.z + (target.pos[1] - car.z) * t;
+          const disc = new THREE.Mesh(
+            new THREE.CircleGeometry(1.2 - i * 0.06, 8),
+            new THREE.MeshBasicMaterial({
+              color: 0x00ddff, transparent: true, opacity: 0.6 - i * 0.04,
+              depthWrite: false, side: THREE.DoubleSide,
+              blending: THREE.AdditiveBlending,
+            }),
+          );
+          disc.rotation.x = -Math.PI / 2;
+          disc.position.set(tx, 0.08, tz);
+          trail.add(disc);
+        }
+        self.world._yatraTrail = trail;
+        self.world.scene.add(trail);
+      },
+      checkCompletion() {
+        // Item 40: closing ceremony when all buildings visited
+        const total = window.CITY_DATA?.buildings?.length || 17;
+        const visited = (window._visitedIds || new Set()).size;
+        if (visited >= total && !window._ceremonyCelebrated) {
+          window._ceremonyCelebrated = true;
+          // Trigger celebration overlay
+          const el = document.createElement('div');
+          el.id = 'city-ceremony';
+          el.innerHTML = `
+            <div class="cer-inner">
+              <div class="cer-title">नगर-दर्शन सम्पूर्णम्</div>
+              <div class="cer-sub">ALL ${total} TEMPLES VISITED</div>
+              <div class="cer-desc">यात्रा समाप्त — The journey is complete.</div>
+            </div>`;
+          document.body.appendChild(el);
+          setTimeout(() => el.classList.add('cer-out'), 6000);
+          setTimeout(() => el.remove(), 7500);
+          // Trigger night transition + extra confetti bursts
+          if (self.world?.applyWeather) self.world.applyWeather('night', true);
+        }
+      },
       setAutoDriveTarget(x, z) {},
       _autoDrive(dx, dz) {},
 

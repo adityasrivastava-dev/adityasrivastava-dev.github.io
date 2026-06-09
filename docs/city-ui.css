@@ -1893,6 +1893,32 @@ body.panel-open #prox {
     font-size: 16px;
   }
 }
+/* ── CLOSING CEREMONY — Item 40 ── */
+@keyframes cerIn  { from { opacity:0; transform:scale(0.85); } to { opacity:1; transform:scale(1); } }
+@keyframes cerOut { to   { opacity:0; transform:scale(1.1); } }
+#city-ceremony {
+  position: fixed; inset: 0; z-index: 9880;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse 90% 70% at 50% 50%, rgba(20,8,2,0.92) 0%, rgba(0,0,0,0.78) 100%);
+  pointer-events: none;
+  animation: cerIn 1.4s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+#city-ceremony.cer-out { animation: cerOut 1.2s ease-in forwards; }
+.cer-inner { text-align: center; }
+.cer-title {
+  font-family: serif; font-size: clamp(24px,4.5vw,52px);
+  color: #f0d870; letter-spacing: 0.06em;
+  text-shadow: 0 0 40px rgba(255,200,80,0.7), 0 2px 12px rgba(0,0,0,0.9);
+  margin-bottom: 14px;
+}
+.cer-sub {
+  font-family: 'Courier New',monospace; font-size: clamp(10px,1.8vw,16px);
+  letter-spacing: 0.30em; color: #e8c850; text-transform: uppercase; margin-bottom: 10px;
+}
+.cer-desc {
+  font-family: serif; font-size: clamp(11px,1.5vw,15px); color: #c8a840; opacity: 0.8;
+}
+
 /* ── SANSKRIT TITLE CARD — Item 38 ── */
 @keyframes ctcFadeIn  { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes ctcFadeOut { from { opacity: 1; } to { opacity: 0; pointer-events: none; } }
