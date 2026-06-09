@@ -43,6 +43,8 @@ export default class Audio {
       this._buildEngine();
       this._buildAmbient();
       this._buildMusic();
+      this._buildRiverAmbient();
+      this._buildMarketAmbient();
       if (this._spatialEnabled) this._buildBuildingTones();
     } catch (e) {
       console.warn('Audio init failed:', e);
@@ -195,6 +197,55 @@ export default class Audio {
     setTimeout(playNote, 5000);
   }
 
+  // ── RIVER AMBIENT — flowing water sound near the main river ─────────────────
+  _buildRiverAmbient() {
+    try {
+      const ctx = this.ctx;
+      const bufSize = ctx.sampleRate * 4;
+      const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      // Brown noise: each sample is previous + small random step
+      let last = 0;
+      for (let i = 0; i < bufSize; i++) {
+        last = (last + (Math.random() * 2 - 1) * 0.055) * 0.98;
+        d[i] = last;
+      }
+      const src = ctx.createBufferSource();
+      src.buffer = buf; src.loop = true;
+      // Band-pass at 400Hz gives that rushing-water texture
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass'; bp.frequency.value = 400; bp.Q.value = 0.6;
+      const hp = ctx.createBiquadFilter();
+      hp.type = 'highpass'; hp.frequency.value = 180;
+      const gain = ctx.createGain(); gain.gain.value = 0;
+      src.connect(bp); bp.connect(hp); hp.connect(gain); gain.connect(ctx.destination);
+      src.start();
+      this._riverAmbient = { gain };
+    } catch (e) {}
+  }
+
+  // ── MARKET CHATTER — bustling bazaar noise near prop stall clusters ──────────
+  _buildMarketAmbient() {
+    try {
+      const ctx = this.ctx;
+      const bufSize = ctx.sampleRate * 3;
+      const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) d[i] = Math.random() * 2 - 1;
+      const src = ctx.createBufferSource();
+      src.buffer = buf; src.loop = true;
+      // Low-mid band — gives the muffled human-crowd feel
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass'; bp.frequency.value = 900; bp.Q.value = 1.2;
+      const lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass'; lp.frequency.value = 2200;
+      const gain = ctx.createGain(); gain.gain.value = 0;
+      src.connect(bp); bp.connect(lp); lp.connect(gain); gain.connect(ctx.destination);
+      src.start();
+      this._marketAmbient = { gain };
+    } catch (e) {}
+  }
+
   // ── BUILDING SPATIAL AUDIO ───────────────────────────────────────────────
   _buildBuildingTones() {
     (window.CITY_DATA?.buildings || []).forEach(b => {
@@ -237,6 +288,26 @@ export default class Audio {
       const target = dist < 45 ? s.baseGain * Math.pow(Math.max(0, 1 - dist / 45), 1.6) : 0;
       s.gain.gain.value += (target - s.gain.gain.value) * 0.04;
     });
+
+    // River sound — louder near the main river band (z ≈ -12, x across full width)
+    if (this._riverAmbient) {
+      const riverDist = Math.abs(carZ - (-10));
+      const riverTarget = riverDist < 35 ? 0.055 * Math.pow(Math.max(0, 1 - riverDist / 35), 1.4) : 0;
+      this._riverAmbient.gain.gain.value +=
+        (riverTarget - this._riverAmbient.gain.gain.value) * 0.04;
+    }
+
+    // Market chatter — near bazaar stall cluster centres
+    if (this._marketAmbient) {
+      const bazaarSpots = [[55, -35], [-55, -35], [0, 56], [-88, 13], [88, -61]];
+      let marketTarget = 0;
+      for (const [bx, bz] of bazaarSpots) {
+        const d = Math.hypot(carX - bx, carZ - bz);
+        if (d < 30) marketTarget = Math.max(marketTarget, 0.04 * Math.pow(1 - d / 30, 1.5));
+      }
+      this._marketAmbient.gain.gain.value +=
+        (marketTarget - this._marketAmbient.gain.gain.value) * 0.04;
+    }
   }
 
   // ── ONE-SHOT SOUNDS ───────────────────────────────────────────────────────

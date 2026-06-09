@@ -48,7 +48,7 @@ export default class World {
     this.car.updateVisuals(dt, now);
 
     if (gameStarted) {
-      this.objects.updateWindSway(now);
+      this.objects.updateWindSway(now, this.car.x, this.car.z);
       this.objects.updateBuildingEntities(this.car.x, this.car.z, now, dt);
     }
 
@@ -61,17 +61,60 @@ export default class World {
   // Called by Application tick loop
   _updateAmbients(now, dt, carX, carZ) {
     this.car.updateVisuals(dt, now);
-    // Car spawns dust in its own updateVisuals via world reference
-    this.objects.updateWindSway(now);
+    this.objects.updateWindSway(now, carX, carZ);
     this.objects.updateBuildingEntities(carX, carZ, now, dt);
     this.objects.updateEntryBursts();
     this.objects.updateConfetti(dt);
+    // River shimmer + props (diya flames) — these animate every frame
+    this.river.update(now);
+    this.props.update(now, this.isNight);
     this._updateAtmosphere(now, dt);
     this._updateLighting(now, dt);
     this._updateHeartbeat(now);
-    // Dust trail — car tells world where it is each frame
+    this._autoCycleUpdate(now, dt);
+    // Dust trail
     if (this.car.speed > 0.04) {
       this.spawnDust(carX, carZ, this.car.speed);
+    }
+    // Handbrake drift burst — extra dust cloud when sliding sideways
+    if (this.car._isHandbraking && Math.abs(this.car._latVel) > 0.06) {
+      for (let i = 0; i < 3; i++) {
+        this.spawnDust(
+          carX + (Math.random() - 0.5) * 3.5,
+          carZ + (Math.random() - 0.5) * 3.5,
+          0.65,
+        );
+      }
+    }
+  }
+
+  // ── DAY/NIGHT AUTO-CYCLE ────────────────────────────────────────────────────
+  // Cycles through day → sunset → night → dawn automatically.
+  // Pauses for 90s if the user manually changes weather via the weather button.
+  _autoCycleUpdate(now, dt) {
+    if (!this._cyclePhase) {
+      this._cyclePhase = 'day';
+      this._cycleAccum = 0;
+      this._cycleStarted = true;
+    }
+
+    // Consume manual override flag: stamp now+90 as the pause deadline
+    if (this._cycleManualOverride) {
+      this._cycleManualOverride = false;
+      this._cyclePausedUntil = now + 90;
+      this._cycleAccum = 0;
+    }
+    if (now < (this._cyclePausedUntil || 0)) return;
+
+    this._cycleAccum += (dt || 0.016);
+
+    const durations = { day: 280, sunset: 55, night: 180, dawn: 45 };
+    const next = { day: 'sunset', sunset: 'night', night: 'dawn', dawn: 'day' };
+
+    if (this._cycleAccum >= durations[this._cyclePhase]) {
+      this._cycleAccum = 0;
+      this._cyclePhase = next[this._cyclePhase];
+      this.applyWeather(this._cyclePhase, true);
     }
   }
 
@@ -136,7 +179,13 @@ export default class World {
     s.add(this.originGlow);
   }
 
-  applyWeather(w) {
+  applyWeather(w, fromAutoCycle = false) {
+    // When user manually changes weather, pause auto-cycle for 90s
+    // Use a flag that _autoCycleUpdate picks up to stamp the real `now`
+    if (!fromAutoCycle && this._cycleStarted) {
+      this._cycleManualOverride = true;
+      if (['day', 'sunset', 'night'].includes(w)) this._cyclePhase = w;
+    }
     const cfgs = {
       day: {
         bg: 0xd4956a, // warm peach-terracotta, not deep orange
@@ -723,6 +772,38 @@ export default class World {
     this._fireflies.userData.phase = fPhase;
     this.scene.add(this._fireflies);
 
+    // ── WILLOW LEAF FALL — pale green leaves drifting near river banks ─────────
+    // Clusters at 7 points along main river and tributary where willows grow.
+    // Different from cherry petals: smaller, greener, tight clustering.
+    const LC = 140;
+    const lPos = new Float32Array(LC * 3);
+    const lVel = new Float32Array(LC * 3);
+    const lCol = new Float32Array(LC * 3);
+    const leafClusters = [
+      [-130, -6], [-65, -4], [0, -10], [65, -5], [130, -12],
+      [-22, 50], [-15, 80],
+    ];
+    const leafCols = [[0.53, 0.73, 0.23], [0.60, 0.80, 0.27], [0.87, 0.80, 0.33]];
+    for (let i = 0; i < LC; i++) {
+      const cl = leafClusters[i % leafClusters.length];
+      lPos[i * 3]     = cl[0] + (Math.random() - 0.5) * 18;
+      lPos[i * 3 + 1] = 1 + Math.random() * 9;
+      lPos[i * 3 + 2] = cl[1] + (Math.random() - 0.5) * 12;
+      lVel[i * 3]     = (Math.random() - 0.5) * 0.010;
+      lVel[i * 3 + 1] = -0.004 - Math.random() * 0.006;
+      lVel[i * 3 + 2] = (Math.random() - 0.5) * 0.010;
+      const lc = leafCols[Math.floor(Math.random() * 3)];
+      lCol[i * 3] = lc[0]; lCol[i * 3 + 1] = lc[1]; lCol[i * 3 + 2] = lc[2];
+    }
+    const leafGeo = new THREE.BufferGeometry();
+    leafGeo.setAttribute('position', new THREE.BufferAttribute(lPos, 3));
+    leafGeo.setAttribute('color', new THREE.BufferAttribute(lCol, 3));
+    this._leafParticles = new THREE.Points(leafGeo,
+      new THREE.PointsMaterial({ size: 0.18, vertexColors: true, transparent: true, opacity: 0.65 }));
+    this._leafParticles.userData.vel = lVel;
+    this._leafParticles.userData.clusters = leafClusters;
+    this.scene.add(this._leafParticles);
+
     // ── CAR DUST TRAIL — small sand/dirt particles spawned behind wheels ──────
     // Pre-allocated pool of 200 particles. Active ones have life > 0.
     const DUST_N = 200;
@@ -764,6 +845,25 @@ export default class World {
         }
       }
       this._petals.geometry.attributes.position.needsUpdate = true;
+    }
+
+    // ── WILLOW LEAVES — drift down, respawn from top ─────────────────────────
+    if (this._leafParticles) {
+      const pos = this._leafParticles.geometry.attributes.position.array;
+      const vel = this._leafParticles.userData.vel;
+      const clusters = this._leafParticles.userData.clusters;
+      for (let i = 0, n = pos.length / 3; i < n; i++) {
+        pos[i * 3]     += vel[i * 3]     + Math.sin(now * 0.5 + i * 0.9) * 0.004;
+        pos[i * 3 + 1] += vel[i * 3 + 1];
+        pos[i * 3 + 2] += vel[i * 3 + 2] + Math.cos(now * 0.4 + i * 0.7) * 0.003;
+        if (pos[i * 3 + 1] < 0) {
+          const cl = clusters[i % clusters.length];
+          pos[i * 3]     = cl[0] + (Math.random() - 0.5) * 18;
+          pos[i * 3 + 1] = 8 + Math.random() * 4;
+          pos[i * 3 + 2] = cl[1] + (Math.random() - 0.5) * 12;
+        }
+      }
+      this._leafParticles.geometry.attributes.position.needsUpdate = true;
     }
 
     // ── FIREFLIES — drift + flicker ───────────────────────────────────────────

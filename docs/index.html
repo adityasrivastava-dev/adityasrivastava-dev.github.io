@@ -39,6 +39,20 @@
       </div>
       <div class="ld-pw"><div id="ld-bar"></div></div>
       <div id="ld-msg">AWAKENING THE CITY…</div>
+      <div class="ld-mandala" aria-hidden="true">
+        <svg viewBox="0 0 80 80" width="64" height="64">
+          <g stroke="rgba(255,180,80,0.25)" fill="none" stroke-width="0.8">
+            <circle cx="40" cy="40" r="30"/>
+            <circle cx="40" cy="40" r="20"/>
+            <circle cx="40" cy="40" r="10"/>
+            <line x1="40" y1="10" x2="40" y2="70"/>
+            <line x1="10" y1="40" x2="70" y2="40"/>
+            <line x1="18.8" y1="18.8" x2="61.2" y2="61.2"/>
+            <line x1="61.2" y1="18.8" x2="18.8" y2="61.2"/>
+          </g>
+          <circle cx="40" cy="40" r="2.2" fill="rgba(255,200,80,0.55)"/>
+        </svg>
+      </div>
     </div>
 
     <!-- ── START SCREEN ── -->
@@ -396,8 +410,8 @@
         let active = false,
           startX = 0,
           startY = 0;
-        const DEAD = 14; // deadzone radius (px)
-        const MAX_R = 44; // max joystick radius (px)
+        const DEAD = 18; // deadzone radius (px) — larger for bigger joystick
+        const MAX_R = 58; // max joystick radius (px) — matches new 148px outer / 2 - inner / 2
 
         function pushAxis(ax, ay) {
           window._touchJoy = { ax, ay };
@@ -469,7 +483,7 @@
         // Move speed ring up above joystick so it's not overlapped
         if (IS_TOUCH) {
           const hud = document.getElementById("game-hud");
-          if (hud) hud.style.bottom = "160px";
+          if (hud) hud.style.bottom = "198px";
           // Make ENTER button visible (it's hidden until proximity)
           // mob-enter visibility is managed by showNotification/hideNotification
         }

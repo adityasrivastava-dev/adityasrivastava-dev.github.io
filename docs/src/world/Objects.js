@@ -203,6 +203,9 @@ export default class Objects {
     else if (type === "stupa")
       this._stupa(g, w, d, h, baseH, mL, mM, mD, mG, gc, b);
 
+    // Domain-specific visual identifier per building
+    this._addDomainDecorator(g, b, mG, gc, h, baseH);
+
     // ── IMPROVEMENT 5: Micro-imperfection — hand-built, not extruded ─────────
     // Must run AFTER the building type method populates the group.
     this._imperfectify(g, baseH);
@@ -370,6 +373,121 @@ export default class Objects {
       bodyMat: mM,
       darkMat: mD,
     });
+  }
+
+  // ── DOMAIN DECORATORS — unique silhouette element per building's purpose ────
+  _addDomainDecorator(g, b, mG, gc, h, baseH) {
+    const apex = h + 1.2;
+    const glowMat = new THREE.MeshBasicMaterial({ color: gc, transparent: true, opacity: 0.82 });
+    switch (b.id) {
+      case 'surya-dwara': {
+        // Sun disk — concentric emissive rings around spire (API gateway = radial routing)
+        for (const [r, op] of [[2.2, 0.5], [3.8, 0.3], [5.5, 0.18]]) {
+          const ring = new THREE.Mesh(
+            new THREE.TorusGeometry(r, 0.12, 4, 24),
+            new THREE.MeshBasicMaterial({ color: 0xffcc44, transparent: true, opacity: op }),
+          );
+          ring.rotation.x = Math.PI / 2;
+          ring.position.y = apex;
+          g.add(ring);
+        }
+        break;
+      }
+      case 'vishwakarma-shala': {
+        // Gear wheels (CI/CD = automated build pipeline)
+        for (const [yr, rx] of [[apex, 0], [apex + 2.5, 0.8]]) {
+          const gear = new THREE.Mesh(
+            new THREE.TorusGeometry(1.6, 0.22, 5, 12),
+            mG,
+          );
+          gear.rotation.x = rx;
+          gear.position.y = yr;
+          gear.userData.isGear = true;
+          g.add(gear);
+        }
+        break;
+      }
+      case 'brahma-kund': {
+        // Data cylinders (database = structured storage pillars)
+        for (let i = 0; i < 4; i++) {
+          const ang = (i / 4) * Math.PI * 2;
+          const cyl = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.28, 0.28, 2.5, 7),
+            mG,
+          );
+          cyl.position.set(Math.cos(ang) * 2.2, apex - 1.0, Math.sin(ang) * 2.2);
+          g.add(cyl);
+        }
+        break;
+      }
+      case 'agni-vedha': {
+        // Spike cluster (Kafka = message streams as fire lances)
+        for (let i = 0; i < 7; i++) {
+          const ang = (i / 7) * Math.PI * 2;
+          const spike = new THREE.Mesh(new THREE.ConeGeometry(0.12, 2.2, 5), mG);
+          spike.position.set(Math.cos(ang) * 1.4, apex + 0.8, Math.sin(ang) * 1.4);
+          spike.rotation.z = Math.cos(ang) * 0.45;
+          spike.rotation.x = Math.sin(ang) * 0.45;
+          g.add(spike);
+        }
+        break;
+      }
+      case 'vayu-rath': {
+        // Swirl rings (Redis = circular ring buffer cache)
+        for (const [r, tilt] of [[1.8, 0.3], [2.8, -0.5], [1.2, 1.1]]) {
+          const ring = new THREE.Mesh(new THREE.TorusGeometry(r, 0.1, 4, 20), glowMat);
+          ring.position.y = apex + 0.5;
+          ring.rotation.z = tilt;
+          g.add(ring);
+        }
+        break;
+      }
+      case 'lakshmi-prasad': {
+        // Coin stack discs (finance = stacked gold coins)
+        for (let i = 0; i < 5; i++) {
+          const coin = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.9 - i * 0.06, 0.9 - i * 0.06, 0.18, 12),
+            mG,
+          );
+          coin.position.y = apex + i * 0.22;
+          g.add(coin);
+        }
+        break;
+      }
+      case 'jyotish-vedha': {
+        // Observatory tube + lens rings (observability = watching metrics)
+        const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.42, 3.0, 8), mG);
+        tube.rotation.z = 0.5;
+        tube.position.set(1.2, apex + 0.5, 0);
+        g.add(tube);
+        for (const r of [0.55, 0.75]) {
+          const lens = new THREE.Mesh(new THREE.TorusGeometry(r, 0.1, 4, 14), glowMat);
+          lens.rotation.z = 0.5;
+          lens.position.set(1.2 + Math.cos(0.5) * 1.5 * (r - 0.5) * 4, apex + 0.5 + Math.sin(0.5) * 1.5, 0);
+          g.add(lens);
+        }
+        break;
+      }
+      case 'pura-stambha': {
+        // Glowing core column (monolith = singular towering pillar of power)
+        const col = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.35, 4.0, 8), glowMat);
+        col.position.y = apex;
+        g.add(col);
+        break;
+      }
+      case 'saraswati-vihar': {
+        // Book slabs fanned open (AI/ML = pages of learned knowledge)
+        for (let i = 0; i < 4; i++) {
+          const page = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.12, 1.2), mG);
+          page.position.set(0.3 * i - 0.45, apex + i * 0.18, 0);
+          page.rotation.y = (i - 1.5) * 0.18;
+          g.add(page);
+        }
+        break;
+      }
+      default:
+        break;
+    }
   }
 
   _gopuram(g, w, d, h, baseH, mL, mM, mD, mG, gc, b) {
@@ -704,6 +822,7 @@ export default class Objects {
       if (i === 0) mainLeaf = ball;
     }
 
+    grp.traverse(c => { if (c.isMesh) c.castShadow = true; });
     this.scene.add(grp);
     this.trees.push({
       group: grp, leaf: mainLeaf, shakeT: 0,
@@ -751,12 +870,13 @@ export default class Objects {
       if (i === 0) mainLeaf = ball;
     }
 
+    grp.traverse(c => { if (c.isMesh) c.castShadow = true; });
     this.scene.add(grp);
     this.trees.push({
       group: grp, leaf: mainLeaf, shakeT: 0,
       baseX: x, baseZ: z, r: 1.8,
       windPhase: rng(seed * 13.1) * Math.PI * 2,
-      windAmpX: 0.028 + rng(seed * 6.7) * 0.018, // birches sway more (flexible)
+      windAmpX: 0.028 + rng(seed * 6.7) * 0.018,
       windAmpZ: 0.020 + rng(seed * 8.2) * 0.014,
       windFreq: 0.42 + rng(seed * 11.3) * 0.28,
     });
@@ -795,12 +915,13 @@ export default class Objects {
       if (i === 0) mainLeaf = cone;
     });
 
+    grp.traverse(c => { if (c.isMesh) c.castShadow = true; });
     this.scene.add(grp);
     this.trees.push({
       group: grp, leaf: mainLeaf, shakeT: 0,
       baseX: x, baseZ: z, r: r * 0.9,
       windPhase: rng(seed * 13.1) * Math.PI * 2,
-      windAmpX: 0.012 + rng(seed * 6.7) * 0.008, // pines sway less (stiff)
+      windAmpX: 0.012 + rng(seed * 6.7) * 0.008,
       windAmpZ: 0.009 + rng(seed * 8.2) * 0.006,
       windFreq: 0.22 + rng(seed * 11.3) * 0.15,
     });
@@ -856,12 +977,13 @@ export default class Objects {
       grp.add(frond);
     }
 
+    grp.traverse(c => { if (c.isMesh) c.castShadow = true; });
     this.scene.add(grp);
     this.trees.push({
       group: grp, leaf: canopy, shakeT: 0,
       baseX: x, baseZ: z, r: r * 1.3,
       windPhase: rng(seed * 13.1) * Math.PI * 2,
-      windAmpX: 0.030 + rng(seed * 6.7) * 0.020, // willows sway dramatically
+      windAmpX: 0.030 + rng(seed * 6.7) * 0.020,
       windAmpZ: 0.024 + rng(seed * 8.2) * 0.016,
       windFreq: 0.28 + rng(seed * 11.3) * 0.18,
     });
@@ -1366,29 +1488,28 @@ export default class Objects {
   }
 
   // ── AMBIENT UPDATES ────────────────────────────────────────────────────────
-  updateWindSway(now) {
-    // Bruno's trees lean dramatically in the wind — it reads from across the city.
-    // Amplitude 0.022 is imperceptible. We need 0.08–0.12 to be felt.
-    // We animate BOTH the whole group (gentle lean) and the leaf (faster flutter)
-    // to create the layered motion of real wind through foliage.
+  updateWindSway(now, carX = 0, carZ = 0) {
     this.trees.forEach((tr) => {
+      const dist = Math.hypot(carX - tr.baseX, carZ - tr.baseZ);
+
+      // LOD: beyond 160u hide leaf mesh (no draw call), stop animation
+      if (tr.leaf) tr.leaf.visible = dist < 160;
+      if (dist > 150) return;
+
       if (tr.shakeT > 0) {
-        // Car-proximity shake — rapid high-frequency
         const shake = Math.sin(now * 22) * tr.shakeT * 0.35;
         tr.leaf.rotation.x = shake;
         tr.leaf.rotation.z = shake * 0.7;
         tr.shakeT = Math.max(0, tr.shakeT - 0.022);
       } else {
         const ph = now * tr.windFreq + tr.windPhase;
-
-        // Leaf flutter — fast, small (rustling sound visualized)
         tr.leaf.rotation.x = Math.sin(ph * 1.8) * tr.windAmpX * 3.5;
         tr.leaf.rotation.z = Math.sin(ph * 1.4 + 1) * tr.windAmpZ * 3.5;
-
-        // Whole tree lean — slow, large (trunk bending in breeze)
-        // Phase offset by 0.5 so lean leads the flutter slightly
-        tr.group.rotation.x = Math.sin(ph * 0.55 + 0.5) * 0.06;
-        tr.group.rotation.z = Math.sin(ph * 0.42 + 1.8) * 0.05;
+        // Full trunk sway only within 90u — saves matrix updates for distant trees
+        if (dist < 90) {
+          tr.group.rotation.x = Math.sin(ph * 0.55 + 0.5) * 0.06;
+          tr.group.rotation.z = Math.sin(ph * 0.42 + 1.8) * 0.05;
+        }
       }
     });
   }

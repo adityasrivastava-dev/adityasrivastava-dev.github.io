@@ -61,6 +61,7 @@ export default class Car {
       steerRaw: input.steerAxis,
       handbrake: input.brake && !input.forward,
     };
+    this._isHandbraking = inp.handbrake;
 
     // Run sub-steps for precision (set by tick system)
     const result =
