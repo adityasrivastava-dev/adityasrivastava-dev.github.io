@@ -106,7 +106,7 @@ export default class World {
   // Pauses for 90s if the user manually changes weather via the weather button.
   _autoCycleUpdate(now, dt) {
     if (!this._cyclePhase) {
-      this._cyclePhase = 'day';
+      this._cyclePhase = "day";
       this._cycleAccum = 0;
       this._cycleStarted = true;
     }
@@ -119,10 +119,10 @@ export default class World {
     }
     if (now < (this._cyclePausedUntil || 0)) return;
 
-    this._cycleAccum += (dt || 0.016);
+    this._cycleAccum += dt || 0.016;
 
     const durations = { day: 280, sunset: 55, night: 180, dawn: 45 };
-    const next = { day: 'sunset', sunset: 'night', night: 'dawn', dawn: 'day' };
+    const next = { day: "sunset", sunset: "night", night: "dawn", dawn: "day" };
 
     if (this._cycleAccum >= durations[this._cyclePhase]) {
       this._cycleAccum = 0;
@@ -158,7 +158,7 @@ export default class World {
     s.add(this.fillLight);
 
     // Rim: warm gold, gentle
-    this.rimLight = new THREE.DirectionalLight(0xffcc88, 0.40);
+    this.rimLight = new THREE.DirectionalLight(0xffcc88, 0.4);
     this.rimLight.position.set(-20, 18, 140);
     s.add(this.rimLight);
 
@@ -196,15 +196,15 @@ export default class World {
     // Use a flag that _autoCycleUpdate picks up to stamp the real `now`
     if (!fromAutoCycle && this._cycleStarted) {
       this._cycleManualOverride = true;
-      if (['day', 'sunset', 'night'].includes(w)) this._cyclePhase = w;
+      if (["day", "sunset", "night"].includes(w)) this._cyclePhase = w;
     }
 
     // Item 22: golden flash on day→sunset transition
-    if (w === 'sunset') {
-      const el = document.createElement('div');
-      el.className = 'sunset-flash';
+    if (w === "sunset") {
+      const el = document.createElement("div");
+      el.className = "sunset-flash";
       document.body.appendChild(el);
-      el.addEventListener('animationend', () => el.remove());
+      el.addEventListener("animationend", () => el.remove());
     }
     const cfgs = {
       day: {
@@ -229,7 +229,7 @@ export default class World {
         sun: 0x6688cc,
         sunI: 0.6,
         fill: 0x220844,
-        fillI: 0.40,
+        fillI: 0.4,
         amb: 0x110822,
         ambI: 0.12,
         exp: 1.25,
@@ -273,11 +273,11 @@ export default class World {
         fog: 0xccb09a,
         fogD: 0.022,
         sun: 0xffddbb,
-        sunI: 0.70,
+        sunI: 0.7,
         fill: 0x446688,
-        fillI: 0.40,
+        fillI: 0.4,
         amb: 0x221408,
-        ambI: 0.40,
+        ambI: 0.4,
         exp: 0.9,
         skyLow: 0xccb09a,
         skyMid: 0x9988aa,
@@ -290,7 +290,7 @@ export default class World {
         sun: 0xfff0e0,
         sunI: 1.3,
         fill: 0x7799cc,
-        fillI: 0.40,
+        fillI: 0.4,
         amb: 0x1a1008,
         ambI: 0.25,
         exp: 0.95,
@@ -333,7 +333,7 @@ export default class World {
     this.car.setNightMode(this.isNight);
     if (this.objects) this.objects._isNight = this.isNight;
     // Diya ceremony — sacred wave of light sweeps outward from center at nightfall
-    if (w === 'night' && this.props) this.props.triggerDiyaCeremony();
+    if (w === "night" && this.props) this.props.triggerDiyaCeremony();
     this.events.emit("weatherChange", { weather: w, isNight: this.isNight });
     const grip = {
       day: 1,
@@ -478,8 +478,8 @@ export default class World {
   _buildSky() {
     const mat = new THREE.ShaderMaterial({
       uniforms: {
-        uLow:    { value: new THREE.Color(0xf0a060) }, // warm amber horizon
-        uMid:    { value: new THREE.Color(0x8877cc) }, // rose-violet mid-sky
+        uLow: { value: new THREE.Color(0xf0a060) }, // warm amber horizon
+        uMid: { value: new THREE.Color(0x8877cc) }, // rose-violet mid-sky
         uZenith: { value: new THREE.Color(0x2244aa) }, // deep celestial blue
       },
       vertexShader: `
@@ -524,16 +524,17 @@ export default class World {
       // Bias toward upper sky — phi from 0 (zenith) to ~140° (below horizon)
       const phi = Math.acos(1 - Math.random() * 1.18);
       const r = 680 + Math.random() * 14;
-      sPos[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
+      sPos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
       sPos[i * 3 + 1] = r * Math.cos(phi) - 20;
       sPos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
     }
     const starGeo = new THREE.BufferGeometry();
-    starGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3));
-    this._starField = new THREE.Points(starGeo,
+    starGeo.setAttribute("position", new THREE.BufferAttribute(sPos, 3));
+    this._starField = new THREE.Points(
+      starGeo,
       new THREE.PointsMaterial({
         color: 0xffffff,
-        size: 2.2,          // pixels (sizeAttenuation:false)
+        size: 2.2, // pixels (sizeAttenuation:false)
         transparent: true,
         opacity: 0,
         depthWrite: false,
@@ -550,17 +551,18 @@ export default class World {
     for (let i = 0; i < MW; i++) {
       const t = (i / MW) * Math.PI * 2;
       const bandCtr = Math.PI * 0.38 + Math.sin(t * 2.5) * 0.1;
-      const spread  = (Math.random() - 0.5) * 0.28;
-      const phi   = bandCtr + spread;
+      const spread = (Math.random() - 0.5) * 0.28;
+      const phi = bandCtr + spread;
       const theta = t + (Math.random() - 0.5) * 0.5;
       const r = 686 + Math.random() * 8;
-      mPos[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
+      mPos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
       mPos[i * 3 + 1] = r * Math.cos(phi);
       mPos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
     }
     const mwGeo = new THREE.BufferGeometry();
-    mwGeo.setAttribute('position', new THREE.BufferAttribute(mPos, 3));
-    this._milkyWay = new THREE.Points(mwGeo,
+    mwGeo.setAttribute("position", new THREE.BufferAttribute(mPos, 3));
+    this._milkyWay = new THREE.Points(
+      mwGeo,
       new THREE.PointsMaterial({
         color: 0xaabbff,
         size: 1.4,
@@ -589,7 +591,8 @@ export default class World {
 
     // Moon halo — soft additive ring around moon
     const haloGeo = new THREE.RingGeometry(22, 40, 32);
-    this._moonHalo = new THREE.Mesh(haloGeo,
+    this._moonHalo = new THREE.Mesh(
+      haloGeo,
       new THREE.MeshBasicMaterial({
         color: 0xfff0cc,
         transparent: true,
@@ -608,39 +611,41 @@ export default class World {
   // ── CLOUDS — billboard sprite clouds drifting slowly westward ────────────────
   _buildClouds() {
     // Single shared canvas texture — soft radial-gradient puffs
-    const CW = 256, CH = 128;
-    const can = document.createElement('canvas');
-    can.width = CW; can.height = CH;
-    const ctx = can.getContext('2d');
+    const CW = 256,
+      CH = 128;
+    const can = document.createElement("canvas");
+    can.width = CW;
+    can.height = CH;
+    const ctx = can.getContext("2d");
     [
-      [CW * 0.50, CH * 0.48, CH * 0.44],
-      [CW * 0.28, CH * 0.58, CH * 0.30],
+      [CW * 0.5, CH * 0.48, CH * 0.44],
+      [CW * 0.28, CH * 0.58, CH * 0.3],
       [CW * 0.74, CH * 0.58, CH * 0.32],
-      [CW * 0.16, CH * 0.66, CH * 0.20],
-      [CW * 0.84, CH * 0.66, CH * 0.20],
+      [CW * 0.16, CH * 0.66, CH * 0.2],
+      [CW * 0.84, CH * 0.66, CH * 0.2],
     ].forEach(([cx, cy, r]) => {
       const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-      g.addColorStop(0,   'rgba(255,252,250,0.92)');
-      g.addColorStop(0.5, 'rgba(255,252,250,0.50)');
-      g.addColorStop(1,   'rgba(255,252,250,0)');
+      g.addColorStop(0, "rgba(255,252,250,0.92)");
+      g.addColorStop(0.5, "rgba(255,252,250,0.50)");
+      g.addColorStop(1, "rgba(255,252,250,0)");
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, CW, CH);
     });
     const cloudTex = new THREE.CanvasTexture(can);
 
     const defs = [
-      { x: -80,  y: 88,  z: -60,  s: 55, v: -0.9 },
-      { x:  55,  y: 95,  z: -85,  s: 68, v: -0.7 },
-      { x: 125,  y: 74,  z:  42,  s: 46, v: -1.1 },
-      { x: -128, y: 82,  z:  28,  s: 58, v: -0.8 },
-      { x:  30,  y: 112, z: 105,  s: 72, v: -0.6 },
-      { x: -62,  y: 78,  z: 118,  s: 50, v: -1.0 },
-      { x:  92,  y: 120, z: -118, s: 82, v: -0.75 },
-      { x: -155, y: 90,  z: -42,  s: 60, v: -0.85 },
-      { x:   0,  y: 100, z: -145, s: 56, v: -0.65 },
-      { x: 162,  y: 85,  z:  78,  s: 52, v: -1.05 },
-      { x: -38,  y: 132, z: -28,  s: 76, v: -0.70 },
-      { x:  78,  y: 72,  z:  62,  s: 44, v: -0.95 },
+      { x: -80, y: 88, z: -60, s: 55, v: -0.9 },
+      { x: 55, y: 95, z: -85, s: 68, v: -0.7 },
+      { x: 125, y: 74, z: 42, s: 46, v: -1.1 },
+      { x: -128, y: 82, z: 28, s: 58, v: -0.8 },
+      { x: 30, y: 112, z: 105, s: 72, v: -0.6 },
+      { x: -62, y: 78, z: 118, s: 50, v: -1.0 },
+      { x: 92, y: 120, z: -118, s: 82, v: -0.75 },
+      { x: -155, y: 90, z: -42, s: 60, v: -0.85 },
+      { x: 0, y: 100, z: -145, s: 56, v: -0.65 },
+      { x: 162, y: 85, z: 78, s: 52, v: -1.05 },
+      { x: -38, y: 132, z: -28, s: 76, v: -0.7 },
+      { x: 78, y: 72, z: 62, s: 44, v: -0.95 },
     ];
 
     this._clouds = [];
@@ -656,9 +661,9 @@ export default class World {
       const sprite = new THREE.Sprite(mat);
       sprite.scale.set(s * 2.2, s, 1);
       sprite.position.set(x, y, z);
-      sprite.userData.driftX = v;       // units per second westward
-      sprite.userData.baseY  = y;
-      sprite.userData.phase  = x * 0.13 + z * 0.07; // deterministic bob phase
+      sprite.userData.driftX = v; // units per second westward
+      sprite.userData.baseY = y;
+      sprite.userData.phase = x * 0.13 + z * 0.07; // deterministic bob phase
       this.scene.add(sprite);
       this._clouds.push(sprite);
     });
@@ -696,7 +701,10 @@ export default class World {
       blending: THREE.AdditiveBlending,
       side: THREE.DoubleSide,
     });
-    const halo = new THREE.Mesh(new THREE.RingGeometry(16, 42, 32), this._sunHaloMat);
+    const halo = new THREE.Mesh(
+      new THREE.RingGeometry(16, 42, 32),
+      this._sunHaloMat,
+    );
     halo.position.copy(sunPos);
     halo.lookAt(0, 50, 0);
     s.add(halo);
@@ -705,7 +713,7 @@ export default class World {
     this._godRayMat = new THREE.MeshBasicMaterial({
       color: 0xffcc66,
       transparent: true,
-      opacity: 0.010,
+      opacity: 0.01,
       fog: false,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
@@ -714,21 +722,21 @@ export default class World {
 
     // 8 ground targets — one per major district / landmark
     const targets = [
-      new THREE.Vector3(0,   0,   0),    // city center
-      new THREE.Vector3(72,  0, -35),    // Surya Dwara
-      new THREE.Vector3(-88, 0, -35),    // Brahma Kund
-      new THREE.Vector3(45,  0,  56),    // Vishwakarma
-      new THREE.Vector3(-64, 0,  56),    // Lakshmi
-      new THREE.Vector3(88,  0,  13),    // East quarter
-      new THREE.Vector3(-88, 0,  13),    // West quarter
-      new THREE.Vector3(0,   0, -99),    // Education
+      new THREE.Vector3(0, 0, 0), // city center
+      new THREE.Vector3(72, 0, -35), // Surya Dwara
+      new THREE.Vector3(-88, 0, -35), // Brahma Kund
+      new THREE.Vector3(45, 0, 56), // Vishwakarma
+      new THREE.Vector3(-64, 0, 56), // Lakshmi
+      new THREE.Vector3(88, 0, 13), // East quarter
+      new THREE.Vector3(-88, 0, 13), // West quarter
+      new THREE.Vector3(0, 0, -99), // Education
     ];
 
     targets.forEach((gt) => {
-      const dir  = gt.clone().sub(sunPos).normalize();
+      const dir = gt.clone().sub(sunPos).normalize();
       const dist = gt.distanceTo(sunPos);
-      const geo  = new THREE.PlaneGeometry(2.8, dist);
-      const ray  = new THREE.Mesh(geo, this._godRayMat);
+      const geo = new THREE.PlaneGeometry(2.8, dist);
+      const ray = new THREE.Mesh(geo, this._godRayMat);
       ray.position.lerpVectors(sunPos, gt, 0.5);
       // Align plane height (Y) with sun→ground direction
       const q = new THREE.Quaternion();
@@ -743,13 +751,13 @@ export default class World {
   _buildDistrictZones() {
     this._districtZoneMats = [];
     const zones = [
-      { x:  80,  z: -35,  color: 0x00ccff, r: 38 }, // hero / Surya Dwara
-      { x: -88,  z: -25,  color: 0x9966ff, r: 30 }, // knowledge / Brahma Kund
-      { x:  92,  z:  30,  color: 0xffcc33, r: 35 }, // east / Vishwakarma
-      { x: -88,  z:  35,  color: 0x44cc88, r: 30 }, // west / Lakshmi
-      { x:   0,  z: -115, color: 0xa78bfa, r: 40 }, // education district
-      { x:   0,  z:  100, color: 0xff9950, r: 30 }, // south district
-      { x: 131,  z: -15,  color: 0xff6644, r: 26 }, // frontier / open source
+      { x: 80, z: -35, color: 0x00ccff, r: 38 }, // hero / Surya Dwara
+      { x: -88, z: -25, color: 0x9966ff, r: 30 }, // knowledge / Brahma Kund
+      { x: 92, z: 30, color: 0xffcc33, r: 35 }, // east / Vishwakarma
+      { x: -88, z: 35, color: 0x44cc88, r: 30 }, // west / Lakshmi
+      { x: 0, z: -115, color: 0xa78bfa, r: 40 }, // education district
+      { x: 0, z: 100, color: 0xff9950, r: 30 }, // south district
+      { x: 131, z: -15, color: 0xff6644, r: 26 }, // frontier / open source
     ];
 
     zones.forEach(({ x, z, color, r }) => {
@@ -773,39 +781,53 @@ export default class World {
   // Item 11: organic bird flock at y=62-68, radius 22-38, slow spiral
   _buildBirds() {
     const BIRD_N = 30;
-    const bPos   = new Float32Array(BIRD_N * 3);
+    const bPos = new Float32Array(BIRD_N * 3);
     // Surya Dwara sits at x=72, z=-35 (from Objects.js city-data positioning)
-    const CX = 72, CZ = -35;
+    const CX = 72,
+      CZ = -35;
 
-    const angles     = new Float32Array(BIRD_N);
-    const speeds     = new Float32Array(BIRD_N);
-    const radii      = new Float32Array(BIRD_N);
-    const ys         = new Float32Array(BIRD_N);
-    const bobSpeeds  = new Float32Array(BIRD_N);
-    const bobPhases  = new Float32Array(BIRD_N);
+    const angles = new Float32Array(BIRD_N);
+    const speeds = new Float32Array(BIRD_N);
+    const radii = new Float32Array(BIRD_N);
+    const ys = new Float32Array(BIRD_N);
+    const bobSpeeds = new Float32Array(BIRD_N);
+    const bobPhases = new Float32Array(BIRD_N);
 
     for (let i = 0; i < BIRD_N; i++) {
-      angles[i]    = (i / BIRD_N) * Math.PI * 2 + Math.random() * 0.4;
-      speeds[i]    = 0.18 + Math.random() * 0.12; // rad/s
-      radii[i]     = 22 + Math.random() * 16;      // 22-38 from tower axis
-      ys[i]        = 62 + Math.random() * 6;       // 62-68 above ground
+      angles[i] = (i / BIRD_N) * Math.PI * 2 + Math.random() * 0.4;
+      speeds[i] = 0.18 + Math.random() * 0.12; // rad/s
+      radii[i] = 22 + Math.random() * 16; // 22-38 from tower axis
+      ys[i] = 62 + Math.random() * 6; // 62-68 above ground
       bobSpeeds[i] = 0.8 + Math.random() * 0.6;
       bobPhases[i] = Math.random() * Math.PI * 2;
-      bPos[i * 3]     = CX + Math.cos(angles[i]) * radii[i];
+      bPos[i * 3] = CX + Math.cos(angles[i]) * radii[i];
       bPos[i * 3 + 1] = ys[i];
       bPos[i * 3 + 2] = CZ + Math.sin(angles[i]) * radii[i];
     }
 
     const bGeo = new THREE.BufferGeometry();
-    bGeo.setAttribute('position', new THREE.BufferAttribute(bPos, 3));
-    this._birds = new THREE.Points(bGeo,
+    bGeo.setAttribute("position", new THREE.BufferAttribute(bPos, 3));
+    this._birds = new THREE.Points(
+      bGeo,
       new THREE.PointsMaterial({
-        color: 0x221100, size: 1.1,
-        transparent: true, opacity: 0.82,
+        color: 0x221100,
+        size: 1.1,
+        transparent: true,
+        opacity: 0.82,
         depthWrite: false,
       }),
     );
-    this._birds.userData = { count: BIRD_N, cx: CX, cz: CZ, angles, speeds, radii, ys, bobSpeeds, bobPhases };
+    this._birds.userData = {
+      count: BIRD_N,
+      cx: CX,
+      cz: CZ,
+      angles,
+      speeds,
+      radii,
+      ys,
+      bobSpeeds,
+      bobPhases,
+    };
     this.scene.add(this._birds);
   }
 
@@ -849,14 +871,23 @@ export default class World {
     const plazaMat = new THREE.MeshLambertMaterial({ color: 0x987050 });
     [
       [0, 0, 52, 52],
-      [0, 80, 38, 38],    [0, -80, 38, 38],
-      [80, 0, 38, 38],    [-80, 0, 38, 38],
-      [75, -35, 28, 28],  [-88, -35, 28, 28],
-      [60, 60, 28, 28],   [-60, 60, 28, 28],
-      [0, 160, 30, 30],   [0, -160, 30, 30],
-      [160, 0, 30, 30],   [-160, 0, 30, 30],
+      [0, 80, 38, 38],
+      [0, -80, 38, 38],
+      [80, 0, 38, 38],
+      [-80, 0, 38, 38],
+      [75, -35, 28, 28],
+      [-88, -35, 28, 28],
+      [60, 60, 28, 28],
+      [-60, 60, 28, 28],
+      [0, 160, 30, 30],
+      [0, -160, 30, 30],
+      [160, 0, 30, 30],
+      [-160, 0, 30, 30],
     ].forEach(([px, pz, pw, ph]) => {
-      const slab = new THREE.Mesh(new THREE.BoxGeometry(pw, 0.02, ph), plazaMat);
+      const slab = new THREE.Mesh(
+        new THREE.BoxGeometry(pw, 0.02, ph),
+        plazaMat,
+      );
       slab.position.set(px, 0.01, pz);
       s.add(slab);
     });
@@ -888,32 +919,49 @@ export default class World {
     // Decorative edge strips (darker stone bands)
     const spineEdgeMat = new THREE.MeshLambertMaterial({ color: 0xb8984a });
     for (const ox of [-4.2, 4.2]) {
-      const edge = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.14, 228), spineEdgeMat);
+      const edge = new THREE.Mesh(
+        new THREE.BoxGeometry(0.6, 0.14, 228),
+        spineEdgeMat,
+      );
       edge.position.set(ox, 0.07, -51);
       s.add(edge);
     }
 
     // Item 27: Temple tank near Brahma Kund at (-88,-35) — shallow rectangular pool
     // Steps descend to dark still water. Reflects sky at night.
-    const tankMat  = new THREE.MeshLambertMaterial({ color: 0x1a4a5c });
+    const tankMat = new THREE.MeshLambertMaterial({ color: 0x1a4a5c });
     const tankStep = new THREE.MeshLambertMaterial({ color: 0xc8a860 });
-    const tankW = 22, tankD = 18;
-    const tankX = -88, tankZ = -62; // south of brahma-kund
+    const tankW = 22,
+      tankD = 18;
+    const tankX = -88,
+      tankZ = -62; // south of brahma-kund
     // Outer steps
     for (let step = 0; step < 3; step++) {
-      const sw2 = tankW + (3 - step) * 2, sd2 = tankD + (3 - step) * 2;
-      const sl = new THREE.Mesh(new THREE.BoxGeometry(sw2, 0.35, sd2), tankStep);
+      const sw2 = tankW + (3 - step) * 2,
+        sd2 = tankD + (3 - step) * 2;
+      const sl = new THREE.Mesh(
+        new THREE.BoxGeometry(sw2, 0.35, sd2),
+        tankStep,
+      );
       sl.position.set(tankX, -step * 0.35, tankZ);
       s.add(sl);
     }
     // Water surface
-    const tank = new THREE.Mesh(new THREE.BoxGeometry(tankW, 0.1, tankD), tankMat);
+    const tank = new THREE.Mesh(
+      new THREE.BoxGeometry(tankW, 0.1, tankD),
+      tankMat,
+    );
     tank.position.set(tankX, -1.05, tankZ);
     s.add(tank);
     // Shimmer on water surface
     this._tankShimmer = new THREE.Mesh(
       new THREE.PlaneGeometry(tankW, tankD),
-      new THREE.MeshBasicMaterial({ color: 0x2288aa, transparent: true, opacity: 0.38, depthWrite: false }),
+      new THREE.MeshBasicMaterial({
+        color: 0x2288aa,
+        transparent: true,
+        opacity: 0.38,
+        depthWrite: false,
+      }),
     );
     this._tankShimmer.rotation.x = -Math.PI / 2;
     this._tankShimmer.position.set(tankX, -0.98, tankZ);
@@ -921,12 +969,14 @@ export default class World {
 
     // Item 18: District ground color variation — E=pale gold, W=ochre, S=laterite red
     [
-      { col: 0xd4b880, x:  140, z: -10, w: 110, d: 160 }, // East quarter — pale gold
+      { col: 0xd4b880, x: 140, z: -10, w: 110, d: 160 }, // East quarter — pale gold
       { col: 0xaa7830, x: -140, z: -10, w: 110, d: 160 }, // West quarter — deep ochre
-      { col: 0xa04820, x:    0, z:  80, w: 200, d:  80 }, // South entry — laterite red
+      { col: 0xa04820, x: 0, z: 80, w: 200, d: 80 }, // South entry — laterite red
     ].forEach(({ col, x, z, w, d }) => {
-      const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.03, d),
-        new THREE.MeshLambertMaterial({ color: col }));
+      const m = new THREE.Mesh(
+        new THREE.BoxGeometry(w, 0.03, d),
+        new THREE.MeshLambertMaterial({ color: col }),
+      );
       m.position.set(x, -0.005, z);
       s.add(m);
     });
@@ -954,28 +1004,34 @@ export default class World {
     plat.position.set(-30, 2.5 - 0.2, -115); // -0.2 so top at y=5
     s.add(plat);
     // Soft south-facing ramp to avoid cliff edge at z=-70
-    const ramp = new THREE.Mesh(new THREE.BoxGeometry(200, 0.6, 12), platRampMat);
+    const ramp = new THREE.Mesh(
+      new THREE.BoxGeometry(200, 0.6, 12),
+      platRampMat,
+    );
     ramp.position.set(-30, 2.5, -69);
     ramp.rotation.x = -0.18; // gentle slope
     s.add(ramp);
 
     // ── DISTANT MOUNTAINS — Item 37 ───────────────────────────────────────────
     // Low-poly silhouettes at far horizon (r=420-600) — dark blue-purple haze
-    const mtnMat = new THREE.MeshLambertMaterial({ color: 0x2a2050, fog: true });
+    const mtnMat = new THREE.MeshLambertMaterial({
+      color: 0x2a2050,
+      fog: true,
+    });
     const peaks = [
       // [cx, cz, width, height, segments]
-      [-480, -300, 160, 90,  6],
+      [-480, -300, 160, 90, 6],
       [-300, -480, 140, 110, 5],
-      [ -60, -520, 180, 130, 7],
-      [ 200, -490, 150, 100, 6],
-      [ 450, -320, 160, 80,  5],
-      [ 520,   20, 140, 95,  6],
-      [ 490,  280, 130, 75,  5],
-      [ 200,  500, 170, 120, 7],
-      [ -80,  520, 150, 90,  6],
-      [-300,  470, 160, 105, 6],
-      [-500,  250, 140, 85,  5],
-      [-510,  -60, 150, 100, 6],
+      [-60, -520, 180, 130, 7],
+      [200, -490, 150, 100, 6],
+      [450, -320, 160, 80, 5],
+      [520, 20, 140, 95, 6],
+      [490, 280, 130, 75, 5],
+      [200, 500, 170, 120, 7],
+      [-80, 520, 150, 90, 6],
+      [-300, 470, 160, 105, 6],
+      [-500, 250, 140, 85, 5],
+      [-510, -60, 150, 100, 6],
     ];
     for (const [cx, cz, mw, mh, seg] of peaks) {
       // Cone → stretch and flatten into mountain shape
@@ -983,8 +1039,9 @@ export default class World {
       const posArr = geo.attributes.position.array;
       // Add vertex-level noise for irregular silhouette
       for (let vi = 0; vi < posArr.length; vi += 3) {
-        if (posArr[vi + 1] > 0) { // only top vertices
-          posArr[vi]     += (Math.random() - 0.5) * mw * 0.18;
+        if (posArr[vi + 1] > 0) {
+          // only top vertices
+          posArr[vi] += (Math.random() - 0.5) * mw * 0.18;
           posArr[vi + 1] += (Math.random() - 0.5) * mh * 0.12;
           posArr[vi + 2] += (Math.random() - 0.5) * mw * 0.18;
         }
@@ -1103,11 +1160,17 @@ export default class World {
         new THREE.BoxGeometry(1.0, 0.08, 3.5),
         new THREE.MeshBasicMaterial({
           color: [0xffdd44, 0x44ddff, 0xff4422, 0x44ff88][i % 4],
-          transparent: true, opacity: 0.55,
-          depthWrite: false, blending: THREE.AdditiveBlending,
+          transparent: true,
+          opacity: 0.55,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
         }),
       );
-      seg.position.set(Math.sin(segAngle) * segR, 0.05, Math.cos(segAngle) * segR);
+      seg.position.set(
+        Math.sin(segAngle) * segR,
+        0.05,
+        Math.cos(segAngle) * segR,
+      );
       seg.rotation.y = segAngle;
       this._chakraInnerRing.add(seg);
     }
@@ -1116,15 +1179,19 @@ export default class World {
     // 4-layer flame visible from the road, always lit
     this._sacredFire = [];
     const fireDefs = [
-      { col: 0xcc2200, r: 0.28, h: 0.5  },
-      { col: 0xff6600, r: 0.20, h: 0.65 },
-      { col: 0xffaa00, r: 0.14, h: 0.80 },
+      { col: 0xcc2200, r: 0.28, h: 0.5 },
+      { col: 0xff6600, r: 0.2, h: 0.65 },
+      { col: 0xffaa00, r: 0.14, h: 0.8 },
       { col: 0xffee88, r: 0.08, h: 0.95 },
     ];
     fireDefs.forEach(({ col, r, h: fh }, i) => {
       const fm = new THREE.Mesh(
         new THREE.ConeGeometry(r, fh, 6),
-        new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.90 }),
+        new THREE.MeshBasicMaterial({
+          color: col,
+          transparent: true,
+          opacity: 0.9,
+        }),
       );
       fm.position.y = 1.0 + i * 0.06;
       fm.userData.fireI = i;
@@ -1133,7 +1200,11 @@ export default class World {
       this._sacredFire.push(fm);
     });
     // Fire glow light
-    this._sacredFireLight = new THREE.PointLight(0xff6622, this.isNight ? 5.0 : 2.2, 32);
+    this._sacredFireLight = new THREE.PointLight(
+      0xff6622,
+      this.isNight ? 5.0 : 2.2,
+      32,
+    );
     this._sacredFireLight.position.y = 1.6;
     this._chakraGroup.add(this._sacredFireLight);
 
@@ -1152,16 +1223,26 @@ export default class World {
     this._chakraGroup.add(this._chakraBeacon);
 
     // Beacon light
-    this._chakraBeaconLight = new THREE.PointLight(0xffddaa, this.isNight ? 3.2 : 1.2, 38);
+    this._chakraBeaconLight = new THREE.PointLight(
+      0xffddaa,
+      this.isNight ? 3.2 : 1.2,
+      38,
+    );
     this._chakraBeaconLight.position.y = 4.4;
     this._chakraGroup.add(this._chakraBeaconLight);
 
     // 8 lamp posts around plaza perimeter (static — outside chakra group)
-    const poleMat = new THREE.MeshToonMaterial({ color: 0xaa9977, gradientMap: tg });
+    const poleMat = new THREE.MeshToonMaterial({
+      color: 0xaa9977,
+      gradientMap: tg,
+    });
     for (let i = 0; i < 8; i++) {
       const ang = (i / 8) * Math.PI * 2 + Math.PI / 8;
       const pr = 20;
-      const pole = new THREE.Mesh(new THREE.BoxGeometry(0.28, 5.8, 0.28), poleMat);
+      const pole = new THREE.Mesh(
+        new THREE.BoxGeometry(0.28, 5.8, 0.28),
+        poleMat,
+      );
       pole.position.set(Math.sin(ang) * pr, 2.9, Math.cos(ang) * pr);
       s.add(pole);
       const head = new THREE.Mesh(
@@ -1181,23 +1262,38 @@ export default class World {
     this._stambhaGroup = new THREE.Group();
     s.add(this._stambhaGroup);
 
-    const shaftMat = new THREE.MeshToonMaterial({ color: 0xeedd99, gradientMap: tg });
+    const shaftMat = new THREE.MeshToonMaterial({
+      color: 0xeedd99,
+      gradientMap: tg,
+    });
     // Tapered shaft: 1.5 radius at base to 0.7 at capital over 30 units
-    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 1.5, 30, 8), shaftMat);
+    const shaft = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.7, 1.5, 30, 8),
+      shaftMat,
+    );
     shaft.position.y = 15.65; // 0.65 = plaza surface
     this._stambhaGroup.add(shaft);
 
     // Decorative rings at 1/3 and 2/3 heights
-    const ringMat = new THREE.MeshToonMaterial({ color: 0xffcc44, gradientMap: tg });
+    const ringMat = new THREE.MeshToonMaterial({
+      color: 0xffcc44,
+      gradientMap: tg,
+    });
     for (const ry of [10.65, 20.65]) {
-      const dRing = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.14, 5, 16), ringMat);
+      const dRing = new THREE.Mesh(
+        new THREE.TorusGeometry(0.95, 0.14, 5, 16),
+        ringMat,
+      );
       dRing.rotation.x = Math.PI / 2;
       dRing.position.y = ry;
       this._stambhaGroup.add(dRing);
     }
 
     // Abacus capital
-    const abacus = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 0.8, 0.9, 8), shaftMat);
+    const abacus = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.8, 0.8, 0.9, 8),
+      shaftMat,
+    );
     abacus.position.y = 31.3;
     this._stambhaGroup.add(abacus);
 
@@ -1208,7 +1304,10 @@ export default class World {
     });
     for (let i = 0; i < 4; i++) {
       const ang = (i / 4) * Math.PI * 2;
-      const lion = new THREE.Mesh(new THREE.OctahedronGeometry(0.55, 0), lionMat);
+      const lion = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.55, 0),
+        lionMat,
+      );
       lion.position.set(Math.cos(ang) * 1.2, 32.2, Math.sin(ang) * 1.2);
       this._stambhaGroup.add(lion);
     }
@@ -1249,7 +1348,11 @@ export default class World {
     this._stambhaGroup.add(this._stambhaBeacon);
 
     // Beacon light — golden, reaches far at night
-    this._stambhaLight = new THREE.PointLight(0xffdd88, this.isNight ? 5.0 : 2.0, 60);
+    this._stambhaLight = new THREE.PointLight(
+      0xffdd88,
+      this.isNight ? 5.0 : 2.0,
+      60,
+    );
     this._stambhaLight.position.y = 34.8;
     this._stambhaGroup.add(this._stambhaLight);
 
@@ -1309,40 +1412,40 @@ export default class World {
       fCol = new Float32Array(FC * 3);
     const fPhase = new Float32Array(FC); // per-firefly flicker phase offset
     const fireTempleAreas = [
-      [72, -35],   // surya-dwara
-      [45, 56],    // vishwakarma
-      [-88, -35],  // brahma-kund
-      [-64, 56],   // lakshmi-prasad
-      [0, 88],     // pura-stambha
-      [-45, -61],  // maya-sabha
-      [0, -88],    // jyotish-vedha
-      [-88, 13],   // vayu-rath
-      [88, -61],   // akasha-mandapa
-      [88, 13],    // setu-nagara
-      [35, -99],   // saraswati-vihar (NE — Ishanya/knowledge, correct Vastu)
-      [-35, -99],  // gurukul-ashram
-      [131, -35],  // vaishya-griha
-      [131, 13],   // agni-vedha
-      [45, -77],   // darpana-shala
+      [72, -35], // surya-dwara
+      [45, 56], // vishwakarma
+      [-88, -35], // brahma-kund
+      [-64, 56], // lakshmi-prasad
+      [0, 88], // pura-stambha
+      [-45, -61], // maya-sabha
+      [0, -88], // jyotish-vedha
+      [-88, 13], // vayu-rath
+      [88, -61], // akasha-mandapa
+      [88, 13], // setu-nagara
+      [35, -99], // saraswati-vihar (NE — Ishanya/knowledge, correct Vastu)
+      [-35, -99], // gurukul-ashram
+      [131, -35], // vaishya-griha
+      [131, 13], // agni-vedha
+      [45, -77], // darpana-shala
       [-131, -35], // vidya-ashram
-      [0, 115],    // sutra-dhara
+      [0, 115], // sutra-dhara
     ];
     const RIVER_FF = Math.floor(FC * 0.5); // 50% near river corridor
     for (let i = 0; i < FC; i++) {
       if (i < RIVER_FF) {
         // River corridor: z=-3 to -20, full x span of city
-        fPos[i * 3]     = -200 + Math.random() * 400;
-        fPos[i * 3 + 1] = 0.5 + Math.random() * 3.5;   // low, near water
+        fPos[i * 3] = -200 + Math.random() * 400;
+        fPos[i * 3 + 1] = 0.5 + Math.random() * 3.5; // low, near water
         fPos[i * 3 + 2] = -3 - Math.random() * 17;
       } else {
         const area = fireTempleAreas[(i - RIVER_FF) % fireTempleAreas.length];
-        fPos[i * 3]     = area[0] + (Math.random() - 0.5) * 12;
+        fPos[i * 3] = area[0] + (Math.random() - 0.5) * 12;
         fPos[i * 3 + 1] = 1.5 + Math.random() * 6;
         fPos[i * 3 + 2] = area[1] + (Math.random() - 0.5) * 12;
       }
       fPhase[i] = Math.random() * Math.PI * 2;
       const warm = Math.random() > 0.5;
-      fCol[i * 3]     = warm ? 1   : 0.5;
+      fCol[i * 3] = warm ? 1 : 0.5;
       fCol[i * 3 + 1] = warm ? 0.9 : 0.9;
       fCol[i * 3 + 2] = warm ? 0.3 : 1.0;
     }
@@ -1369,26 +1472,44 @@ export default class World {
     const lVel = new Float32Array(LC * 3);
     const lCol = new Float32Array(LC * 3);
     const leafClusters = [
-      [-130, -6], [-65, -4], [0, -10], [65, -5], [130, -12],
-      [-22, 50], [-15, 80],
+      [-130, -6],
+      [-65, -4],
+      [0, -10],
+      [65, -5],
+      [130, -12],
+      [-22, 50],
+      [-15, 80],
     ];
-    const leafCols = [[0.53, 0.73, 0.23], [0.60, 0.80, 0.27], [0.87, 0.80, 0.33]];
+    const leafCols = [
+      [0.53, 0.73, 0.23],
+      [0.6, 0.8, 0.27],
+      [0.87, 0.8, 0.33],
+    ];
     for (let i = 0; i < LC; i++) {
       const cl = leafClusters[i % leafClusters.length];
-      lPos[i * 3]     = cl[0] + (Math.random() - 0.5) * 18;
+      lPos[i * 3] = cl[0] + (Math.random() - 0.5) * 18;
       lPos[i * 3 + 1] = 1 + Math.random() * 9;
       lPos[i * 3 + 2] = cl[1] + (Math.random() - 0.5) * 12;
-      lVel[i * 3]     = (Math.random() - 0.5) * 0.010;
+      lVel[i * 3] = (Math.random() - 0.5) * 0.01;
       lVel[i * 3 + 1] = -0.004 - Math.random() * 0.006;
-      lVel[i * 3 + 2] = (Math.random() - 0.5) * 0.010;
+      lVel[i * 3 + 2] = (Math.random() - 0.5) * 0.01;
       const lc = leafCols[Math.floor(Math.random() * 3)];
-      lCol[i * 3] = lc[0]; lCol[i * 3 + 1] = lc[1]; lCol[i * 3 + 2] = lc[2];
+      lCol[i * 3] = lc[0];
+      lCol[i * 3 + 1] = lc[1];
+      lCol[i * 3 + 2] = lc[2];
     }
     const leafGeo = new THREE.BufferGeometry();
-    leafGeo.setAttribute('position', new THREE.BufferAttribute(lPos, 3));
-    leafGeo.setAttribute('color', new THREE.BufferAttribute(lCol, 3));
-    this._leafParticles = new THREE.Points(leafGeo,
-      new THREE.PointsMaterial({ size: 0.18, vertexColors: true, transparent: true, opacity: 0.65 }));
+    leafGeo.setAttribute("position", new THREE.BufferAttribute(lPos, 3));
+    leafGeo.setAttribute("color", new THREE.BufferAttribute(lCol, 3));
+    this._leafParticles = new THREE.Points(
+      leafGeo,
+      new THREE.PointsMaterial({
+        size: 0.18,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.65,
+      }),
+    );
     this._leafParticles.userData.vel = lVel;
     this._leafParticles.userData.clusters = leafClusters;
     this.scene.add(this._leafParticles);
@@ -1423,22 +1544,23 @@ export default class World {
     // River path z range: approximately -3 to -20 (main river E-W)
     for (let i = 0; i < DIYA_N; i++) {
       const rx = (Math.random() - 0.5) * 430; // spread across full river width
-      const rz = -4 + Math.random() * -14;    // within river z band
-      diyaPos[i * 3]     = rx;
+      const rz = -4 + Math.random() * -14; // within river z band
+      diyaPos[i * 3] = rx;
       diyaPos[i * 3 + 1] = -0.05;
       diyaPos[i * 3 + 2] = rz;
-      lotusPos[i * 3]     = rx;
-      lotusPos[i * 3 + 1] = -0.10;
+      lotusPos[i * 3] = rx;
+      lotusPos[i * 3 + 1] = -0.1;
       lotusPos[i * 3 + 2] = rz;
       const isPink = Math.random() > 0.4;
-      lotusCols[i * 3]     = 1.0;
+      lotusCols[i * 3] = 1.0;
       lotusCols[i * 3 + 1] = isPink ? 0.5 : 0.95;
       lotusCols[i * 3 + 2] = isPink ? 0.65 : 0.97;
     }
 
     const diyaGeo = new THREE.BufferGeometry();
-    diyaGeo.setAttribute('position', new THREE.BufferAttribute(diyaPos, 3));
-    this._riverDiyas = new THREE.Points(diyaGeo,
+    diyaGeo.setAttribute("position", new THREE.BufferAttribute(diyaPos, 3));
+    this._riverDiyas = new THREE.Points(
+      diyaGeo,
       new THREE.PointsMaterial({
         color: 0xff9922,
         size: 1.4,
@@ -1452,9 +1574,10 @@ export default class World {
     this.scene.add(this._riverDiyas);
 
     const lotusGeo = new THREE.BufferGeometry();
-    lotusGeo.setAttribute('position', new THREE.BufferAttribute(lotusPos, 3));
-    lotusGeo.setAttribute('color', new THREE.BufferAttribute(lotusCols, 3));
-    this._lotusPatches = new THREE.Points(lotusGeo,
+    lotusGeo.setAttribute("position", new THREE.BufferAttribute(lotusPos, 3));
+    lotusGeo.setAttribute("color", new THREE.BufferAttribute(lotusCols, 3));
+    this._lotusPatches = new THREE.Points(
+      lotusGeo,
       new THREE.PointsMaterial({
         size: 2.2,
         vertexColors: true,
@@ -1474,13 +1597,14 @@ export default class World {
     for (let i = 0; i < SMOKE_N; i++) {
       const b = temples[Math.floor(i / SMOKE_PER)];
       const tp = b ? b.pos : [0, 0];
-      sPos[i * 3]     = tp[0] + (Math.random() - 0.5) * 2.5;
+      sPos[i * 3] = tp[0] + (Math.random() - 0.5) * 2.5;
       sPos[i * 3 + 1] = 0.8 + Math.random() * 14; // stagger heights on init
       sPos[i * 3 + 2] = tp[1] + (Math.random() - 0.5) * 2.5;
     }
     const smokeGeo = new THREE.BufferGeometry();
-    smokeGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3));
-    this._incenseSmoke = new THREE.Points(smokeGeo,
+    smokeGeo.setAttribute("position", new THREE.BufferAttribute(sPos, 3));
+    this._incenseSmoke = new THREE.Points(
+      smokeGeo,
       new THREE.PointsMaterial({
         color: 0xddddd0,
         size: 0.52,
@@ -1498,20 +1622,30 @@ export default class World {
     // 5 main temple approach corridors: near Surya Dwara, Brahma Kund, city center
     const MOTE_N = 180;
     const motePos = new Float32Array(MOTE_N * 3);
-    const moteZones = [[72, -35], [0, 0], [-88, -35], [45, 56], [0, -88]];
+    const moteZones = [
+      [72, -35],
+      [0, 0],
+      [-88, -35],
+      [45, 56],
+      [0, -88],
+    ];
     for (let i = 0; i < MOTE_N; i++) {
       const z = moteZones[i % moteZones.length];
-      motePos[i * 3]     = z[0] + (Math.random() - 0.5) * 22;
+      motePos[i * 3] = z[0] + (Math.random() - 0.5) * 22;
       motePos[i * 3 + 1] = 0.5 + Math.random() * 12;
       motePos[i * 3 + 2] = z[1] + (Math.random() - 0.5) * 22;
     }
     const moteGeo = new THREE.BufferGeometry();
-    moteGeo.setAttribute('position', new THREE.BufferAttribute(motePos, 3));
-    this._dustMotes = new THREE.Points(moteGeo,
+    moteGeo.setAttribute("position", new THREE.BufferAttribute(motePos, 3));
+    this._dustMotes = new THREE.Points(
+      moteGeo,
       new THREE.PointsMaterial({
-        color: 0xffeecc, size: 0.18,
-        transparent: true, opacity: 0,
-        depthWrite: false, sizeAttenuation: true,
+        color: 0xffeecc,
+        size: 0.18,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        sizeAttenuation: true,
         blending: THREE.AdditiveBlending,
       }),
     );
@@ -1521,17 +1655,21 @@ export default class World {
     const RAIN_N = 600;
     const rainPos = new Float32Array(RAIN_N * 3);
     for (let i = 0; i < RAIN_N; i++) {
-      rainPos[i * 3]     = (Math.random() - 0.5) * 280;
+      rainPos[i * 3] = (Math.random() - 0.5) * 280;
       rainPos[i * 3 + 1] = Math.random() * 50;
       rainPos[i * 3 + 2] = (Math.random() - 0.5) * 280;
     }
     const rainGeo = new THREE.BufferGeometry();
-    rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
-    this._rainParticles = new THREE.Points(rainGeo,
+    rainGeo.setAttribute("position", new THREE.BufferAttribute(rainPos, 3));
+    this._rainParticles = new THREE.Points(
+      rainGeo,
       new THREE.PointsMaterial({
-        color: 0x88bbdd, size: 0.35,
-        transparent: true, opacity: 0,
-        depthWrite: false, sizeAttenuation: true,
+        color: 0x88bbdd,
+        size: 0.35,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        sizeAttenuation: true,
       }),
     );
     this.scene.add(this._rainParticles);
@@ -1542,20 +1680,27 @@ export default class World {
     const procPos = new Float32Array(PROC_N * 2 * 3); // 2 sides
     for (let i = 0; i < PROC_N; i++) {
       const pz = 60 - i * 4;
-      for (const [si, ox] of [[-1, -2.5], [1, 2.5]]) {
+      for (const [si, ox] of [
+        [-1, -2.5],
+        [1, 2.5],
+      ]) {
         const idx = (i * 2 + (si < 0 ? 0 : 1)) * 3;
-        procPos[idx]     = ox;
+        procPos[idx] = ox;
         procPos[idx + 1] = 0.08;
         procPos[idx + 2] = pz;
       }
     }
     const procGeo = new THREE.BufferGeometry();
-    procGeo.setAttribute('position', new THREE.BufferAttribute(procPos, 3));
-    this._procDiyas = new THREE.Points(procGeo,
+    procGeo.setAttribute("position", new THREE.BufferAttribute(procPos, 3));
+    this._procDiyas = new THREE.Points(
+      procGeo,
       new THREE.PointsMaterial({
-        color: 0xffaa22, size: 1.0,
-        transparent: true, opacity: 0,
-        depthWrite: false, blending: THREE.AdditiveBlending,
+        color: 0xffaa22,
+        size: 1.0,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
         sizeAttenuation: true,
       }),
     );
@@ -1589,12 +1734,13 @@ export default class World {
       const vel = this._leafParticles.userData.vel;
       const clusters = this._leafParticles.userData.clusters;
       for (let i = 0, n = pos.length / 3; i < n; i++) {
-        pos[i * 3]     += vel[i * 3]     + Math.sin(now * 0.5 + i * 0.9) * 0.004;
+        pos[i * 3] += vel[i * 3] + Math.sin(now * 0.5 + i * 0.9) * 0.004;
         pos[i * 3 + 1] += vel[i * 3 + 1];
-        pos[i * 3 + 2] += vel[i * 3 + 2] + Math.cos(now * 0.4 + i * 0.7) * 0.003;
+        pos[i * 3 + 2] +=
+          vel[i * 3 + 2] + Math.cos(now * 0.4 + i * 0.7) * 0.003;
         if (pos[i * 3 + 1] < 0) {
           const cl = clusters[i % clusters.length];
-          pos[i * 3]     = cl[0] + (Math.random() - 0.5) * 18;
+          pos[i * 3] = cl[0] + (Math.random() - 0.5) * 18;
           pos[i * 3 + 1] = 8 + Math.random() * 4;
           pos[i * 3 + 2] = cl[1] + (Math.random() - 0.5) * 12;
         }
@@ -1647,17 +1793,21 @@ export default class World {
     // ── STARS + MOON — fade in at night ──────────────────────────────────────
     if (this._starField) {
       const tStar = this.isNight ? 0.92 : 0;
-      const tMW   = this.isNight ? 0.55 : 0; // boosted Milky Way
-      const tMoon = this.isNight ? 1.0  : 0;
-      this._starField.material.opacity += (tStar - this._starField.material.opacity) * 0.014;
+      const tMW = this.isNight ? 0.55 : 0; // boosted Milky Way
+      const tMoon = this.isNight ? 1.0 : 0;
+      this._starField.material.opacity +=
+        (tStar - this._starField.material.opacity) * 0.014;
       if (this._milkyWay)
-        this._milkyWay.material.opacity += (tMW - this._milkyWay.material.opacity) * 0.014;
+        this._milkyWay.material.opacity +=
+          (tMW - this._milkyWay.material.opacity) * 0.014;
       if (this._moonMesh) {
-        this._moonMesh.material.opacity += (tMoon - this._moonMesh.material.opacity) * 0.014;
+        this._moonMesh.material.opacity +=
+          (tMoon - this._moonMesh.material.opacity) * 0.014;
         if (this._moonHalo) {
           // Boosted halo — visibly dramatic at night
           this._moonHalo.material.opacity =
-            this._moonMesh.material.opacity * (0.38 + Math.sin(now * 0.28) * 0.08);
+            this._moonMesh.material.opacity *
+            (0.38 + Math.sin(now * 0.28) * 0.08);
         }
       }
     }
@@ -1670,14 +1820,16 @@ export default class World {
         this._chakraBeacon.material.opacity = breathe;
         if (this._chakraBeaconLight) {
           const tI = (this.isNight ? 3.8 : 1.2) * breathe;
-          this._chakraBeaconLight.intensity += (tI - this._chakraBeaconLight.intensity) * 0.04;
+          this._chakraBeaconLight.intensity +=
+            (tI - this._chakraBeaconLight.intensity) * 0.04;
         }
       }
     }
 
     // Item 27: Temple tank shimmer
     if (this._tankShimmer) {
-      this._tankShimmer.material.opacity = 0.28 + Math.sin(now * 0.55) * 0.12 + (this.isNight ? 0.18 : 0);
+      this._tankShimmer.material.opacity =
+        0.28 + Math.sin(now * 0.55) * 0.12 + (this.isNight ? 0.18 : 0);
     }
 
     // ── CHAKRA INNER RING — counter-rotates vs main chakra ───────────────────
@@ -1694,7 +1846,8 @@ export default class World {
       this._stambhaBeacon.material.opacity = sb;
       if (this._stambhaLight) {
         const tI = (this.isNight ? 5.5 : 2.0) * sb;
-        this._stambhaLight.intensity += (tI - this._stambhaLight.intensity) * 0.04;
+        this._stambhaLight.intensity +=
+          (tI - this._stambhaLight.intensity) * 0.04;
       }
     }
 
@@ -1709,13 +1862,15 @@ export default class World {
       }
       this._riverDiyas.geometry.attributes.position.needsUpdate = true;
       const tDiya = this.isNight ? 0.88 : 0;
-      this._riverDiyas.material.opacity += (tDiya - this._riverDiyas.material.opacity) * 0.016;
+      this._riverDiyas.material.opacity +=
+        (tDiya - this._riverDiyas.material.opacity) * 0.016;
     }
 
     // ── LOTUS PATCHES — visible in day, hidden at night ───────────────────────
     if (this._lotusPatches) {
       const tLotus = this.isNight ? 0 : 0.72;
-      this._lotusPatches.material.opacity += (tLotus - this._lotusPatches.material.opacity) * 0.018;
+      this._lotusPatches.material.opacity +=
+        (tLotus - this._lotusPatches.material.opacity) * 0.018;
     }
 
     // ── INCENSE SMOKE — rises slowly, drifts, respawns at temple base ─────────
@@ -1726,12 +1881,12 @@ export default class World {
       const spt = this._incenseSmoke.userData.smokePerTemple || 6;
       for (let i = 0, n = pos.length / 3; i < n; i++) {
         pos[i * 3 + 1] += 1.0 * _dt;
-        pos[i * 3]     += Math.sin(now * 0.35 + i * 0.91) * 0.007;
+        pos[i * 3] += Math.sin(now * 0.35 + i * 0.91) * 0.007;
         pos[i * 3 + 2] += Math.cos(now * 0.28 + i * 1.13) * 0.007;
         if (pos[i * 3 + 1] > 20) {
           const b = temples[Math.floor(i / spt)];
           const tp = b ? b.pos : [0, 0];
-          pos[i * 3]     = tp[0] + (Math.random() - 0.5) * 2.5;
+          pos[i * 3] = tp[0] + (Math.random() - 0.5) * 2.5;
           pos[i * 3 + 1] = 0.8;
           pos[i * 3 + 2] = tp[1] + (Math.random() - 0.5) * 2.5;
         }
@@ -1739,17 +1894,22 @@ export default class World {
       this._incenseSmoke.geometry.attributes.position.needsUpdate = true;
       // Smoke slightly more visible at night when fire torches lit
       const tSmoke = this.isNight ? 0.28 : 0.18;
-      this._incenseSmoke.material.opacity += (tSmoke - this._incenseSmoke.material.opacity) * 0.02;
+      this._incenseSmoke.material.opacity +=
+        (tSmoke - this._incenseSmoke.material.opacity) * 0.02;
     }
 
     // ── CLOUDS — drift westward, gentle Y bob, fade at night ─────────────────
     if (this._clouds) {
       const _dt = dt || 0.016;
       const tOp = this.isNight ? 0.06 : 0.62;
-      this._cloudOpacity = (this._cloudOpacity || 0.62) + (tOp - (this._cloudOpacity || 0.62)) * 0.008;
+      this._cloudOpacity =
+        (this._cloudOpacity || 0.62) +
+        (tOp - (this._cloudOpacity || 0.62)) * 0.008;
       for (const cloud of this._clouds) {
         cloud.position.x += cloud.userData.driftX * _dt;
-        cloud.position.y = cloud.userData.baseY + Math.sin(now * 0.08 + cloud.userData.phase) * 1.5;
+        cloud.position.y =
+          cloud.userData.baseY +
+          Math.sin(now * 0.08 + cloud.userData.phase) * 1.5;
         if (cloud.position.x < -290) cloud.position.x = 290; // wrap east→west
         cloud.material.opacity = this._cloudOpacity;
       }
@@ -1757,13 +1917,14 @@ export default class World {
 
     // ── GOD RAYS + SUN — brighter at sunset, invisible at night ──────────────
     if (this._godRayMat) {
-      const isSunset = this._cyclePhase === 'sunset';
-      const tRay  = this.isNight ? 0      : isSunset ? 0.032 : 0.010;
-      const tDisc = this.isNight ? 0      : isSunset ? 0.96  : 0.88;
-      const tHalo = this.isNight ? 0      : isSunset ? 0.30  : 0.12;
-      this._godRayMat.opacity += (tRay  - this._godRayMat.opacity) * 0.008;
+      const isSunset = this._cyclePhase === "sunset";
+      const tRay = this.isNight ? 0 : isSunset ? 0.032 : 0.01;
+      const tDisc = this.isNight ? 0 : isSunset ? 0.96 : 0.88;
+      const tHalo = this.isNight ? 0 : isSunset ? 0.3 : 0.12;
+      this._godRayMat.opacity += (tRay - this._godRayMat.opacity) * 0.008;
       if (this._sunDisc)
-        this._sunDisc.material.opacity  += (tDisc - this._sunDisc.material.opacity)  * 0.01;
+        this._sunDisc.material.opacity +=
+          (tDisc - this._sunDisc.material.opacity) * 0.01;
       if (this._sunHaloMat)
         this._sunHaloMat.opacity += (tHalo - this._sunHaloMat.opacity) * 0.01;
     }
@@ -1780,18 +1941,22 @@ export default class World {
     if (this._sacredFire && this._sacredFire.length) {
       for (const fm of this._sacredFire) {
         const ph = fm.userData.firePhase;
-        const i  = fm.userData.fireI;
+        const i = fm.userData.fireI;
         // Each layer flickers at different frequency — outer slower, inner faster
-        const flicker = 0.72 + Math.sin(now * (3.8 + i * 1.2) + ph) * 0.24
-                             + Math.sin(now * (7.1 + i * 0.9) + ph * 1.7) * 0.08;
+        const flicker =
+          0.72 +
+          Math.sin(now * (3.8 + i * 1.2) + ph) * 0.24 +
+          Math.sin(now * (7.1 + i * 0.9) + ph * 1.7) * 0.08;
         fm.material.opacity = Math.max(0.45, Math.min(0.98, flicker));
         // Scale Y slightly for flame dance
         fm.scale.y = 0.88 + Math.sin(now * 4.2 + ph) * 0.16;
-        fm.scale.x = 0.92 + Math.cos(now * 3.5 + ph) * 0.10;
+        fm.scale.x = 0.92 + Math.cos(now * 3.5 + ph) * 0.1;
       }
       if (this._sacredFireLight) {
-        const fi = (this.isNight ? 6.0 : 2.8) * (0.88 + Math.sin(now * 5.1) * 0.18);
-        this._sacredFireLight.intensity += (fi - this._sacredFireLight.intensity) * 0.12;
+        const fi =
+          (this.isNight ? 6.0 : 2.8) * (0.88 + Math.sin(now * 5.1) * 0.18);
+        this._sacredFireLight.intensity +=
+          (fi - this._sacredFireLight.intensity) * 0.12;
       }
     }
 
@@ -1800,24 +1965,32 @@ export default class World {
 
     // Item 42: Processional diyas — glow at night, breathe gently
     if (this._procDiyas) {
-      const tProc = this.isNight ? 0.70 : 0.18;
-      this._procDiyas.material.opacity += (tProc - this._procDiyas.material.opacity) * 0.02;
+      const tProc = this.isNight ? 0.7 : 0.18;
+      this._procDiyas.material.opacity +=
+        (tProc - this._procDiyas.material.opacity) * 0.02;
     }
 
     // Item 28: Dust motes — drift lazily, visible in day sunbeam zones
     if (this._dustMotes) {
       const tMote = this.isNight ? 0 : 0.28;
-      this._dustMotes.material.opacity += (tMote - this._dustMotes.material.opacity) * 0.015;
+      this._dustMotes.material.opacity +=
+        (tMote - this._dustMotes.material.opacity) * 0.015;
       if (this._dustMotes.material.opacity > 0.02) {
         const _dt3 = dt || 0.016;
         const mp = this._dustMotes.geometry.attributes.position.array;
         for (let i = 0, n = mp.length / 3; i < n; i++) {
-          mp[i * 3]     += Math.sin(now * 0.22 + i * 0.71) * 0.004;
+          mp[i * 3] += Math.sin(now * 0.22 + i * 0.71) * 0.004;
           mp[i * 3 + 1] += 0.04 * _dt3; // very slow rise
           mp[i * 3 + 2] += Math.cos(now * 0.18 + i * 0.53) * 0.004;
           if (mp[i * 3 + 1] > 13) {
-            const z = [[72,-35],[0,0],[-88,-35],[45,56],[0,-88]][i % 5];
-            mp[i * 3]     = z[0] + (Math.random() - 0.5) * 22;
+            const z = [
+              [72, -35],
+              [0, 0],
+              [-88, -35],
+              [45, 56],
+              [0, -88],
+            ][i % 5];
+            mp[i * 3] = z[0] + (Math.random() - 0.5) * 22;
             mp[i * 3 + 1] = 0.5;
             mp[i * 3 + 2] = z[1] + (Math.random() - 0.5) * 22;
           }
@@ -1827,23 +2000,31 @@ export default class World {
     }
 
     // Item 41: Lightning flash — random flash at night during rain
-    if (this._cyclePhase === 'rain' && this.isNight) {
+    if (this._cyclePhase === "rain" && this.isNight) {
       this._lightningTimer = (this._lightningTimer || 0) + (dt || 0.016);
       if (this._lightningTimer > (this._lightningNext || 8)) {
         this._lightningTimer = 0;
         this._lightningNext = 5 + Math.random() * 12;
         // Trigger white flash overlay
-        const lf = document.createElement('div');
-        lf.style.cssText = 'position:fixed;inset:0;z-index:9996;pointer-events:none;background:rgba(200,220,255,0.85);';
+        const lf = document.createElement("div");
+        lf.style.cssText =
+          "position:fixed;inset:0;z-index:9996;pointer-events:none;background:rgba(200,220,255,0.85);";
         document.body.appendChild(lf);
-        setTimeout(() => { lf.style.background = 'rgba(200,220,255,0.45)'; }, 60);
-        setTimeout(() => { lf.style.background = 'rgba(200,220,255,0.0)'; lf.style.transition = 'background 0.3s'; }, 120);
+        setTimeout(() => {
+          lf.style.background = "rgba(200,220,255,0.45)";
+        }, 60);
+        setTimeout(() => {
+          lf.style.background = "rgba(200,220,255,0.0)";
+          lf.style.transition = "background 0.3s";
+        }, 120);
         setTimeout(() => lf.remove(), 450);
         // Sky ambient flash
         if (this.ambLight) {
           const origI = this.ambLight.intensity;
           this.ambLight.intensity = origI * 5.0;
-          setTimeout(() => { if (this.ambLight) this.ambLight.intensity = origI; }, 150);
+          setTimeout(() => {
+            if (this.ambLight) this.ambLight.intensity = origI;
+          }, 150);
         }
       }
     } else {
@@ -1852,17 +2033,19 @@ export default class World {
 
     // Item 30: Rain particles — fall fast, wrap at bottom, only in rain mode
     if (this._rainParticles) {
-      const isRain = this._cyclePhase === 'rain' || this._weatherTarget?._isRain;
+      const isRain =
+        this._cyclePhase === "rain" || this._weatherTarget?._isRain;
       const tRain = isRain ? 0.55 : 0;
-      this._rainParticles.material.opacity += (tRain - this._rainParticles.material.opacity) * 0.04;
+      this._rainParticles.material.opacity +=
+        (tRain - this._rainParticles.material.opacity) * 0.04;
       if (isRain && this._rainParticles.material.opacity > 0.05) {
         const _dt2 = dt || 0.016;
         const rPos = this._rainParticles.geometry.attributes.position.array;
         for (let i = 0, n = rPos.length / 3; i < n; i++) {
           rPos[i * 3 + 1] -= 28 * _dt2; // fast fall
-          rPos[i * 3]     -= 1.5 * _dt2; // wind drift
+          rPos[i * 3] -= 1.5 * _dt2; // wind drift
           if (rPos[i * 3 + 1] < -1) {
-            rPos[i * 3]     = (Math.random() - 0.5) * 280;
+            rPos[i * 3] = (Math.random() - 0.5) * 280;
             rPos[i * 3 + 1] = 48 + Math.random() * 6;
             rPos[i * 3 + 2] = (Math.random() - 0.5) * 280;
           }
@@ -1877,8 +2060,10 @@ export default class World {
     const bdata = this._birds.userData;
     for (let i = 0, n = bdata.count; i < n; i++) {
       const ang = bdata.angles[i] + now * bdata.speeds[i];
-      pos[i * 3]     = bdata.cx + Math.cos(ang) * bdata.radii[i];
-      pos[i * 3 + 1] = bdata.ys[i] + Math.sin(now * bdata.bobSpeeds[i] + bdata.bobPhases[i]) * 1.2;
+      pos[i * 3] = bdata.cx + Math.cos(ang) * bdata.radii[i];
+      pos[i * 3 + 1] =
+        bdata.ys[i] +
+        Math.sin(now * bdata.bobSpeeds[i] + bdata.bobPhases[i]) * 1.2;
       pos[i * 3 + 2] = bdata.cz + Math.sin(ang) * bdata.radii[i];
     }
     this._birds.geometry.attributes.position.needsUpdate = true;
@@ -2128,49 +2313,70 @@ export default class World {
     {
       const entryG = new THREE.Group();
       entryG.position.set(0, 0, 62);
-      const W2 = 18, H = 18;
+      const W2 = 18,
+        H = 18;
       for (const ox of [-W2, W2]) {
-        const pillar = new THREE.Mesh(new THREE.BoxGeometry(2.0, H, 2.0), archMat);
+        const pillar = new THREE.Mesh(
+          new THREE.BoxGeometry(2.0, H, 2.0),
+          archMat,
+        );
         pillar.position.set(ox, H / 2, 0);
         entryG.add(pillar);
         // Tiered capital
         for (let ti = 0; ti < 3; ti++) {
           const capW = 3.2 - ti * 0.6;
-          const cap = new THREE.Mesh(new THREE.BoxGeometry(capW, 1.0, capW), goldMat);
+          const cap = new THREE.Mesh(
+            new THREE.BoxGeometry(capW, 1.0, capW),
+            goldMat,
+          );
           cap.position.set(ox, H + ti * 1.1, 0);
           entryG.add(cap);
         }
-        const pot = new THREE.Mesh(new THREE.SphereGeometry(0.9, 8, 6), goldMat);
+        const pot = new THREE.Mesh(
+          new THREE.SphereGeometry(0.9, 8, 6),
+          goldMat,
+        );
         pot.position.set(ox, H + 3.5, 0);
         entryG.add(pot);
       }
-      const lintel = new THREE.Mesh(new THREE.BoxGeometry(W2 * 2 + 2, 1.6, 2.0), archMat);
+      const lintel = new THREE.Mesh(
+        new THREE.BoxGeometry(W2 * 2 + 2, 1.6, 2.0),
+        archMat,
+      );
       lintel.position.set(0, H, 0);
       entryG.add(lintel);
-      const archTop = new THREE.Mesh(new THREE.BoxGeometry(W2 * 2 + 2, 1.2, 2.0), goldMat);
+      const archTop = new THREE.Mesh(
+        new THREE.BoxGeometry(W2 * 2 + 2, 1.2, 2.0),
+        goldMat,
+      );
       archTop.position.set(0, H + 1.5, 0);
       entryG.add(archTop);
       // Sanskrit label: "नगरम् प्रवेश"
-      const CW2 = 512, CH2 = 110;
-      const can2 = document.createElement('canvas');
-      can2.width = CW2; can2.height = CH2;
-      const ctx2 = can2.getContext('2d');
-      ctx2.fillStyle = 'rgba(10,5,2,0.92)';
+      const CW2 = 512,
+        CH2 = 110;
+      const can2 = document.createElement("canvas");
+      can2.width = CW2;
+      can2.height = CH2;
+      const ctx2 = can2.getContext("2d");
+      ctx2.fillStyle = "rgba(10,5,2,0.92)";
       ctx2.fillRect(0, 0, CW2, CH2);
-      ctx2.strokeStyle = '#ffcc44cc';
+      ctx2.strokeStyle = "#ffcc44cc";
       ctx2.lineWidth = 2;
       ctx2.strokeRect(2, 2, CW2 - 4, CH2 - 4);
-      ctx2.fillStyle = '#f0d870';
-      ctx2.font = 'bold 32px serif';
-      ctx2.textAlign = 'center';
-      ctx2.textBaseline = 'middle';
-      ctx2.fillText('◈  नगरम् प्रवेश  ◈', CW2 / 2, 38);
-      ctx2.fillStyle = 'rgba(240,210,160,0.72)';
-      ctx2.font = 'italic 16px serif';
-      ctx2.fillText('Build things that survive after you leave.', CW2 / 2, 80);
+      ctx2.fillStyle = "#f0d870";
+      ctx2.font = "bold 32px serif";
+      ctx2.textAlign = "center";
+      ctx2.textBaseline = "middle";
+      ctx2.fillText("◈  नगरम् प्रवेश  ◈", CW2 / 2, 38);
+      ctx2.fillStyle = "rgba(240,210,160,0.72)";
+      ctx2.font = "italic 16px serif";
+      ctx2.fillText("Build things that survive after you leave.", CW2 / 2, 80);
       const sign2 = new THREE.Mesh(
         new THREE.PlaneGeometry(W2 * 2 - 1, 3.0),
-        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(can2), transparent: true }),
+        new THREE.MeshBasicMaterial({
+          map: new THREE.CanvasTexture(can2),
+          transparent: true,
+        }),
       );
       sign2.position.set(0, H - 0.2, 1.1);
       entryG.add(sign2);
@@ -2179,25 +2385,35 @@ export default class World {
 
     // Item 39: Processional torana archways — 3 smaller ceremonial gates along x=0 spine
     for (const [pz, label] of [
-      [10,  '◈ HERO DISTRICT'],
-      [-45, '◈ KNOWLEDGE QUARTER'],
-      [-100, '◈ DEEP SANCTUM'],
+      [10, "◈ HERO DISTRICT"],
+      [-45, "◈ KNOWLEDGE QUARTER"],
+      [-100, "◈ DEEP SANCTUM"],
     ]) {
       const pg = new THREE.Group();
       pg.position.set(0, 0, pz);
-      const PH = 9, PW = 10;
+      const PH = 9,
+        PW = 10;
       for (const ox of [-PW, PW]) {
         const pp = new THREE.Mesh(new THREE.BoxGeometry(1.0, PH, 1.0), archMat);
         pp.position.set(ox, PH / 2, 0);
         pg.add(pp);
-        const pcap = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.6, 1.6), goldMat);
+        const pcap = new THREE.Mesh(
+          new THREE.BoxGeometry(1.6, 0.6, 1.6),
+          goldMat,
+        );
         pcap.position.set(ox, PH + 0.3, 0);
         pg.add(pcap);
-        const ppot = new THREE.Mesh(new THREE.SphereGeometry(0.5, 7, 5), goldMat);
+        const ppot = new THREE.Mesh(
+          new THREE.SphereGeometry(0.5, 7, 5),
+          goldMat,
+        );
         ppot.position.set(ox, PH + 0.8, 0);
         pg.add(ppot);
       }
-      const plin = new THREE.Mesh(new THREE.BoxGeometry(PW * 2 + 1, 0.8, 1.0), archMat);
+      const plin = new THREE.Mesh(
+        new THREE.BoxGeometry(PW * 2 + 1, 0.8, 1.0),
+        archMat,
+      );
       plin.position.set(0, PH, 0);
       pg.add(plin);
       this.scene.add(pg);
@@ -2278,55 +2494,83 @@ export default class World {
   _buildHiddenAreas() {
     const s = this.scene;
     const mkSprite = (text, font, col, W, H) => {
-      const c = document.createElement('canvas'); c.width = W; c.height = H;
-      const x = c.getContext('2d');
+      const c = document.createElement("canvas");
+      c.width = W;
+      c.height = H;
+      const x = c.getContext("2d");
       x.clearRect(0, 0, W, H);
-      x.fillStyle = col; x.font = font; x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.fillStyle = col;
+      x.font = font;
+      x.textAlign = "center";
+      x.textBaseline = "middle";
       x.fillText(text, W / 2, H / 2);
-      return new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true });
+      return new THREE.SpriteMaterial({
+        map: new THREE.CanvasTexture(c),
+        transparent: true,
+      });
     };
     const darkStone = new THREE.MeshLambertMaterial({ color: 0x2a1f18 });
     const sandstone = new THREE.MeshLambertMaterial({ color: 0xc8a870 });
-    const goldMat = new THREE.MeshLambertMaterial({ color: 0xffcc44, emissive: 0xffaa00, emissiveIntensity: 0.4 });
+    const goldMat = new THREE.MeshLambertMaterial({
+      color: 0xffcc44,
+      emissive: 0xffaa00,
+      emissiveIntensity: 0.4,
+    });
 
     // ── 1. ORIENTATION STONE — just inside the entry gate, right of spine ─────
     // Gives Type A recruiter the 5 essential facts in under 10 seconds.
     {
       const g = new THREE.Group();
       g.position.set(20, 0, 56);
-      const base = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.35, 1.2), sandstone);
+      const base = new THREE.Mesh(
+        new THREE.BoxGeometry(1.2, 0.35, 1.2),
+        sandstone,
+      );
       base.position.y = 0.17;
       g.add(base);
-      const stone = new THREE.Mesh(new THREE.BoxGeometry(0.9, 3.8, 0.22), darkStone);
+      const stone = new THREE.Mesh(
+        new THREE.BoxGeometry(0.9, 3.8, 0.22),
+        darkStone,
+      );
       stone.position.y = 2.1;
       g.add(stone);
       // Canvas inscription
-      const CW = 256, CH = 512;
-      const can = document.createElement('canvas'); can.width = CW; can.height = CH;
-      const ctx = can.getContext('2d');
-      ctx.fillStyle = 'rgba(20,10,5,0.95)'; ctx.fillRect(0, 0, CW, CH);
-      ctx.strokeStyle = '#ffcc4466'; ctx.lineWidth = 2;
+      const CW = 256,
+        CH = 512;
+      const can = document.createElement("canvas");
+      can.width = CW;
+      can.height = CH;
+      const ctx = can.getContext("2d");
+      ctx.fillStyle = "rgba(20,10,5,0.95)";
+      ctx.fillRect(0, 0, CW, CH);
+      ctx.strokeStyle = "#ffcc4466";
+      ctx.lineWidth = 2;
       ctx.strokeRect(4, 4, CW - 8, CH - 8);
       const lines = [
-        ['ADITYA SRIVASTAVA', '600 13px', '#ffcc44', 128, 52],
-        ['BACKEND ARCHITECT', '600 10px', '#ffcc8877', 128, 82],
-        ['TRILASOFT · 4 YEARS', '400 9px', '#aaa', 128, 106],
-        ['─────────────────', '400 8px', '#44444488', 128, 128],
-        ['API GATEWAY · SSO', '400 9px', '#00c8ff99', 128, 156],
-        ['MICROSERVICES · CLOUD', '400 9px', '#00c8ff99', 128, 178],
-        ['MYSQL MIGRATION', '400 9px', '#00c8ff99', 128, 200],
-        ['─────────────────', '400 8px', '#44444488', 128, 222],
-        ['DRIVE TO ANY', '400 8px', '#ffffff44', 128, 248],
-        ['TEMPLE TO EXPLORE', '400 8px', '#ffffff44', 128, 266],
+        ["ADITYA SRIVASTAVA", "600 13px", "#ffcc44", 128, 52],
+        ["BACKEND ARCHITECT", "600 10px", "#ffcc8877", 128, 82],
+        ["TRILASOFT · 4 YEARS", "400 9px", "#aaa", 128, 106],
+        ["─────────────────", "400 8px", "#44444488", 128, 128],
+        ["API GATEWAY · SSO", "400 9px", "#00c8ff99", 128, 156],
+        ["MICROSERVICES · CLOUD", "400 9px", "#00c8ff99", 128, 178],
+        ["MYSQL MIGRATION", "400 9px", "#00c8ff99", 128, 200],
+        ["─────────────────", "400 8px", "#44444488", 128, 222],
+        ["DRIVE TO ANY", "400 8px", "#ffffff44", 128, 248],
+        ["TEMPLE TO EXPLORE", "400 8px", "#ffffff44", 128, 266],
       ];
       lines.forEach(([t, f, c, x, y]) => {
-        ctx.fillStyle = c; ctx.font = f + ' Share Tech Mono,monospace';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = c;
+        ctx.font = f + " Share Tech Mono,monospace";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
         ctx.fillText(t, x, y);
       });
       const signMesh = new THREE.Mesh(
         new THREE.PlaneGeometry(0.85, 3.5),
-        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(can), transparent: true }),
+        new THREE.MeshBasicMaterial({
+          map: new THREE.CanvasTexture(can),
+          transparent: true,
+        }),
       );
       signMesh.position.set(0, 2.1, 0.13);
       g.add(signMesh);
@@ -2337,60 +2581,104 @@ export default class World {
     // Requires the player to drive south-west off the main spine near the Chakra.
     // Oracle trigger fires when player is within 25 units of center.
     {
-      const CX = -28, CZ = -38;
+      const CX = -28,
+        CZ = -38;
       const g = new THREE.Group();
       g.position.set(CX, -5.5, CZ);
       // Sunken floor
-      const floor = new THREE.Mesh(new THREE.BoxGeometry(22, 0.3, 20), darkStone);
+      const floor = new THREE.Mesh(
+        new THREE.BoxGeometry(22, 0.3, 20),
+        darkStone,
+      );
       floor.position.y = 0.15;
       g.add(floor);
       // Walls (3 sides — open to the north for entry)
       const wallMat = new THREE.MeshLambertMaterial({ color: 0x1a1008 });
-      [[-10.6, 4, 0, 0.8, 8.5, 20], [10.6, 4, 0, 0.8, 8.5, 20], [0, 4, 10.6, 22, 8.5, 0.8]].forEach(([x, y, z, w, h, d]) => {
+      [
+        [-10.6, 4, 0, 0.8, 8.5, 20],
+        [10.6, 4, 0, 0.8, 8.5, 20],
+        [0, 4, 10.6, 22, 8.5, 0.8],
+      ].forEach(([x, y, z, w, h, d]) => {
         const wall = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat);
         wall.position.set(x, y, z);
         g.add(wall);
       });
       // Entry ramp
-      const ramp = new THREE.Mesh(new THREE.BoxGeometry(8, 0.3, 12),
-        new THREE.MeshLambertMaterial({ color: 0x2a2015 }));
+      const ramp = new THREE.Mesh(
+        new THREE.BoxGeometry(8, 0.3, 12),
+        new THREE.MeshLambertMaterial({ color: 0x2a2015 }),
+      );
       ramp.rotation.x = Math.PI * 0.04;
       ramp.position.set(0, -1.8, -14);
       s.add(ramp);
       // Title sprite above chamber
-      const titleSp = new THREE.Sprite(mkSprite('◈  INCIDENT CHAMBER  ◈', 'bold 28px serif', '#cc5533dd', 512, 72));
+      const titleSp = new THREE.Sprite(
+        mkSprite(
+          "◈  INCIDENT CHAMBER  ◈",
+          "bold 28px serif",
+          "#cc5533dd",
+          512,
+          72,
+        ),
+      );
       titleSp.scale.set(14, 2.2, 1);
       titleSp.position.set(0, 8, 0);
       g.add(titleSp);
       // Incident inscription slabs
-      const incidents = (window.CITY_ORACLE && window.CITY_ORACLE.incidents) ? window.CITY_ORACLE.incidents : [];
-      const slabPositions = [[-7, 0, -7], [7, 0, -7], [-7, 0, 5], [7, 0, 5]];
+      const incidents =
+        window.CITY_ORACLE && window.CITY_ORACLE.incidents
+          ? window.CITY_ORACLE.incidents
+          : [];
+      const slabPositions = [
+        [-7, 0, -7],
+        [7, 0, -7],
+        [-7, 0, 5],
+        [7, 0, 5],
+      ];
       incidents.forEach((inc, i) => {
-        const sp = slabPositions[i]; if (!sp) return;
-        const slab = new THREE.Mesh(new THREE.BoxGeometry(3.2, 5.5, 0.3), darkStone);
+        const sp = slabPositions[i];
+        if (!sp) return;
+        const slab = new THREE.Mesh(
+          new THREE.BoxGeometry(3.2, 5.5, 0.3),
+          darkStone,
+        );
         slab.position.set(sp[0], 3.2, sp[2]);
         g.add(slab);
         // Text on slab face
-        const SW = 384, SH = 512;
-        const sc = document.createElement('canvas'); sc.width = SW; sc.height = SH;
-        const sx = sc.getContext('2d');
-        sx.fillStyle = 'rgba(15,8,3,0.95)'; sx.fillRect(0, 0, SW, SH);
-        sx.strokeStyle = '#cc553355'; sx.lineWidth = 2;
+        const SW = 384,
+          SH = 512;
+        const sc = document.createElement("canvas");
+        sc.width = SW;
+        sc.height = SH;
+        const sx = sc.getContext("2d");
+        sx.fillStyle = "rgba(15,8,3,0.95)";
+        sx.fillRect(0, 0, SW, SH);
+        sx.strokeStyle = "#cc553355";
+        sx.lineWidth = 2;
         sx.strokeRect(4, 4, SW - 8, SH - 8);
-        sx.textAlign = 'center'; sx.textBaseline = 'top';
-        sx.fillStyle = '#cc5533'; sx.font = 'bold 20px serif';
+        sx.textAlign = "center";
+        sx.textBaseline = "top";
+        sx.fillStyle = "#cc5533";
+        sx.font = "bold 20px serif";
         sx.fillText(inc.title, SW / 2, 24);
-        sx.fillStyle = '#ffcc4488'; sx.font = 'italic 13px serif';
+        sx.fillStyle = "#ffcc4488";
+        sx.font = "italic 13px serif";
         this._wrapText(sx, inc.system, SW / 2, 58, SW - 24, 18);
-        sx.fillStyle = '#cc222222'; sx.fillRect(12, 84, SW - 24, 1);
-        sx.fillStyle = '#ddccbb'; sx.font = '12px serif';
-        this._wrapText(sx, 'What broke: ' + inc.broke, 16, 96, SW - 32, 16);
-        sx.fillStyle = '#ffcc4488'; sx.font = 'italic 12px serif';
+        sx.fillStyle = "#cc222222";
+        sx.fillRect(12, 84, SW - 24, 1);
+        sx.fillStyle = "#ddccbb";
+        sx.font = "12px serif";
+        this._wrapText(sx, "What broke: " + inc.broke, 16, 96, SW - 32, 16);
+        sx.fillStyle = "#ffcc4488";
+        sx.font = "italic 12px serif";
         this._wrapText(sx, '"' + inc.learned + '"', 16, 280, SW - 32, 16);
         slab.children?.length; // no-op
         const face = new THREE.Mesh(
           new THREE.PlaneGeometry(3.0, 5.1),
-          new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true }),
+          new THREE.MeshBasicMaterial({
+            map: new THREE.CanvasTexture(sc),
+            transparent: true,
+          }),
         );
         face.position.set(sp[0], 3.2, sp[2] + 0.17);
         g.add(face);
@@ -2409,36 +2697,66 @@ export default class World {
       const g = new THREE.Group();
       g.position.set(68, 0, -148);
       // Stone bench
-      const bench = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.4, 1.2), sandstone);
+      const bench = new THREE.Mesh(
+        new THREE.BoxGeometry(4.5, 0.4, 1.2),
+        sandstone,
+      );
       bench.position.set(0, 0.8, 0);
       g.add(bench);
-      const leg1 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.8, 1.2), darkStone);
-      leg1.position.set(-1.8, 0.4, 0); g.add(leg1);
-      const leg2 = leg1.clone(); leg2.position.set(1.8, 0.4, 0); g.add(leg2);
+      const leg1 = new THREE.Mesh(
+        new THREE.BoxGeometry(0.4, 0.8, 1.2),
+        darkStone,
+      );
+      leg1.position.set(-1.8, 0.4, 0);
+      g.add(leg1);
+      const leg2 = leg1.clone();
+      leg2.position.set(1.8, 0.4, 0);
+      g.add(leg2);
       // Standing stone inscription
-      const ist = new THREE.Mesh(new THREE.BoxGeometry(0.25, 4.2, 2.8), darkStone);
+      const ist = new THREE.Mesh(
+        new THREE.BoxGeometry(0.25, 4.2, 2.8),
+        darkStone,
+      );
       ist.position.set(-3.5, 2.1, 0);
       g.add(ist);
-      const IW = 512, IH = 384;
-      const ic = document.createElement('canvas'); ic.width = IW; ic.height = IH;
-      const ix = ic.getContext('2d');
-      ix.fillStyle = 'rgba(15,8,3,0.95)'; ix.fillRect(0, 0, IW, IH);
-      ix.strokeStyle = '#ffcc4444'; ix.lineWidth = 2; ix.strokeRect(4, 4, IW - 8, IH - 8);
-      ix.fillStyle = '#ffcc44'; ix.font = 'bold 28px serif'; ix.textAlign = 'center';
-      ix.textBaseline = 'middle'; ix.fillText('Where It Started', IW / 2, 52);
-      ix.fillStyle = '#ccbbaa88'; ix.font = 'italic 14px serif';
-      ix.fillText('First Java notebook', IW / 2, 110);
-      ix.fillText('Coffee mug', IW / 2, 136);
-      ix.fillText('Architecture sketches', IW / 2, 162);
-      ix.fillText('Early SQL notes', IW / 2, 188);
-      ix.fillStyle = '#ccbbaa44'; ix.font = '400 10px serif';
+      const IW = 512,
+        IH = 384;
+      const ic = document.createElement("canvas");
+      ic.width = IW;
+      ic.height = IH;
+      const ix = ic.getContext("2d");
+      ix.fillStyle = "rgba(15,8,3,0.95)";
+      ix.fillRect(0, 0, IW, IH);
+      ix.strokeStyle = "#ffcc4444";
+      ix.lineWidth = 2;
+      ix.strokeRect(4, 4, IW - 8, IH - 8);
+      ix.fillStyle = "#ffcc44";
+      ix.font = "bold 28px serif";
+      ix.textAlign = "center";
+      ix.textBaseline = "middle";
+      ix.fillText("Where It Started", IW / 2, 52);
+      ix.fillStyle = "#ccbbaa88";
+      ix.font = "italic 14px serif";
+      ix.fillText("First Java notebook", IW / 2, 110);
+      ix.fillText("Coffee mug", IW / 2, 136);
+      ix.fillText("Architecture sketches", IW / 2, 162);
+      ix.fillText("Early SQL notes", IW / 2, 188);
+      ix.fillStyle = "#ccbbaa44";
+      ix.font = "400 10px serif";
       ix.fillRect(40, 210, IW - 80, 1);
-      ix.fillStyle = '#ddccbb'; ix.font = 'italic 13px serif';
-      const pcText = 'The most important project was not a system.\nIt was becoming capable of building them.';
-      pcText.split('\n').forEach((line, i) => ix.fillText(line, IW / 2, 234 + i * 20));
+      ix.fillStyle = "#ddccbb";
+      ix.font = "italic 13px serif";
+      const pcText =
+        "The most important project was not a system.\nIt was becoming capable of building them.";
+      pcText
+        .split("\n")
+        .forEach((line, i) => ix.fillText(line, IW / 2, 234 + i * 20));
       const iface = new THREE.Mesh(
         new THREE.PlaneGeometry(2.6, 3.8),
-        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(ic), transparent: true }),
+        new THREE.MeshBasicMaterial({
+          map: new THREE.CanvasTexture(ic),
+          transparent: true,
+        }),
       );
       iface.rotation.y = Math.PI / 2;
       iface.position.set(-3.37, 2.1, 0);
@@ -2455,36 +2773,67 @@ export default class World {
     {
       const g = new THREE.Group();
       g.position.set(6, 0, -125);
-      const baseWall = new THREE.Mesh(new THREE.BoxGeometry(48, 4, 1), sandstone);
+      const baseWall = new THREE.Mesh(
+        new THREE.BoxGeometry(48, 4, 1),
+        sandstone,
+      );
       baseWall.position.set(0, 2, 0);
       g.add(baseWall);
-      const lessons = (window.CITY_ORACLE && window.CITY_ORACLE.warLessons)
-        ? window.CITY_ORACLE.warLessons
-        : ['Every shortcut becomes technical debt.', 'Integrations fail more than applications.',
-           'A migration is a business project.', 'Most incidents begin as assumptions.',
-           'Simplicity survives longer than cleverness.'];
+      const lessons =
+        window.CITY_ORACLE && window.CITY_ORACLE.warLessons
+          ? window.CITY_ORACLE.warLessons
+          : [
+              "Every shortcut becomes technical debt.",
+              "Integrations fail more than applications.",
+              "A migration is a business project.",
+              "Most incidents begin as assumptions.",
+              "Simplicity survives longer than cleverness.",
+            ];
       lessons.forEach((lesson, i) => {
         const ox = (i - 2) * 9.2;
-        const cap = new THREE.Mesh(new THREE.BoxGeometry(7.8, 0.4, 1.4),
-          new THREE.MeshLambertMaterial({ color: 0xd4a86a }));
-        cap.position.set(ox, 4.2, 0); g.add(cap);
-        const LC = 256, LH = 256;
-        const lc = document.createElement('canvas'); lc.width = LC; lc.height = LH;
-        const lx2 = lc.getContext('2d');
-        lx2.fillStyle = 'rgba(160,120,60,0.95)'; lx2.fillRect(0, 0, LC, LH);
-        lx2.fillStyle = '#1a0e05'; lx2.font = 'bold 26px serif';
-        lx2.textAlign = 'center'; lx2.textBaseline = 'top';
-        lx2.fillText(String(i + 1).padStart(2, '0'), LC / 2, 14);
-        lx2.fillStyle = '#110904'; lx2.font = 'italic 13px serif';
-        lx2.textBaseline = 'middle';
+        const cap = new THREE.Mesh(
+          new THREE.BoxGeometry(7.8, 0.4, 1.4),
+          new THREE.MeshLambertMaterial({ color: 0xd4a86a }),
+        );
+        cap.position.set(ox, 4.2, 0);
+        g.add(cap);
+        const LC = 256,
+          LH = 256;
+        const lc = document.createElement("canvas");
+        lc.width = LC;
+        lc.height = LH;
+        const lx2 = lc.getContext("2d");
+        lx2.fillStyle = "rgba(160,120,60,0.95)";
+        lx2.fillRect(0, 0, LC, LH);
+        lx2.fillStyle = "#1a0e05";
+        lx2.font = "bold 26px serif";
+        lx2.textAlign = "center";
+        lx2.textBaseline = "top";
+        lx2.fillText(String(i + 1).padStart(2, "0"), LC / 2, 14);
+        lx2.fillStyle = "#110904";
+        lx2.font = "italic 13px serif";
+        lx2.textBaseline = "middle";
         this._wrapText(lx2, lesson, 128, 120, LC - 20, 18);
-        const lf = new THREE.Mesh(new THREE.PlaneGeometry(7.4, 3.6),
-          new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(lc), transparent: true }));
+        const lf = new THREE.Mesh(
+          new THREE.PlaneGeometry(7.4, 3.6),
+          new THREE.MeshBasicMaterial({
+            map: new THREE.CanvasTexture(lc),
+            transparent: true,
+          }),
+        );
         lf.position.set(ox, 2.0, 0.52);
         g.add(lf);
       });
       // Header sprite
-      const hsp = new THREE.Sprite(mkSprite('◈  WAR STORIES WALL  ◈  LESSONS EARNED IN PRODUCTION', 'bold 22px serif', '#c8a87099', 768, 56));
+      const hsp = new THREE.Sprite(
+        mkSprite(
+          "◈  WAR STORIES WALL  ◈  LESSONS EARNED IN PRODUCTION",
+          "bold 22px serif",
+          "#c8a87099",
+          768,
+          56,
+        ),
+      );
       hsp.scale.set(22, 1.8, 1);
       hsp.position.set(0, 6, 0);
       g.add(hsp);
@@ -2510,33 +2859,61 @@ export default class World {
       });
       // Scaffold (unfinished)
       const scafMat = new THREE.MeshLambertMaterial({ color: 0x5a4020 });
-      [[-3, 7, -1.5, 0.2, 2, 0.2], [3, 7, -1.5, 0.2, 2, 0.2], [-3, 8, -1.5, 6.2, 0.2, 0.2]].forEach(([x, y, z, w, h, d]) => {
+      [
+        [-3, 7, -1.5, 0.2, 2, 0.2],
+        [3, 7, -1.5, 0.2, 2, 0.2],
+        [-3, 8, -1.5, 6.2, 0.2, 0.2],
+      ].forEach(([x, y, z, w, h, d]) => {
         const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), scafMat);
         m.position.set(x, y, z);
         g.add(m);
       });
       // Inscription slab with TODO comments
-      const TW = 512, TH = 320;
-      const tc = document.createElement('canvas'); tc.width = TW; tc.height = TH;
-      const tx = tc.getContext('2d');
-      tx.fillStyle = 'rgba(28,18,8,0.96)'; tx.fillRect(0, 0, TW, TH);
-      tx.strokeStyle = '#66440022'; tx.lineWidth = 2; tx.strokeRect(4, 4, TW - 8, TH - 8);
+      const TW = 512,
+        TH = 320;
+      const tc = document.createElement("canvas");
+      tc.width = TW;
+      tc.height = TH;
+      const tx = tc.getContext("2d");
+      tx.fillStyle = "rgba(28,18,8,0.96)";
+      tx.fillRect(0, 0, TW, TH);
+      tx.strokeStyle = "#66440022";
+      tx.lineWidth = 2;
+      tx.strokeRect(4, 4, TW - 8, TH - 8);
       const todos = [
-        '// TODO: refactor',
-        '// legacy, do not touch',
-        '// this works, do not ask why',
-        '// FIXME: has been here since 2022',
-        '// I am so sorry',
+        "// TODO: refactor",
+        "// legacy, do not touch",
+        "// this works, do not ask why",
+        "// FIXME: has been here since 2022",
+        "// I am so sorry",
       ];
-      tx.fillStyle = '#cc7744'; tx.font = 'bold 18px monospace';
-      tx.textAlign = 'left'; tx.textBaseline = 'top';
-      todos.forEach((t, i) => { tx.fillStyle = i === 4 ? '#996633' : '#cc7744'; tx.fillText(t, 24, 28 + i * 46); });
-      const tf = new THREE.Mesh(new THREE.PlaneGeometry(5.5, 3.5),
-        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(tc), transparent: true }));
+      tx.fillStyle = "#cc7744";
+      tx.font = "bold 18px monospace";
+      tx.textAlign = "left";
+      tx.textBaseline = "top";
+      todos.forEach((t, i) => {
+        tx.fillStyle = i === 4 ? "#996633" : "#cc7744";
+        tx.fillText(t, 24, 28 + i * 46);
+      });
+      const tf = new THREE.Mesh(
+        new THREE.PlaneGeometry(5.5, 3.5),
+        new THREE.MeshBasicMaterial({
+          map: new THREE.CanvasTexture(tc),
+          transparent: true,
+        }),
+      );
       tf.position.set(0, 2.4, 0.42);
       g.add(tf);
       // Label sprite
-      const rsp = new THREE.Sprite(mkSprite('TECHNICAL DEBT RUIN', 'bold 22px serif', '#cc7744aa', 512, 56));
+      const rsp = new THREE.Sprite(
+        mkSprite(
+          "TECHNICAL DEBT RUIN",
+          "bold 22px serif",
+          "#cc7744aa",
+          512,
+          56,
+        ),
+      );
       rsp.scale.set(12, 1.6, 1);
       rsp.position.set(0, 10, 0);
       g.add(rsp);
@@ -2548,31 +2925,46 @@ export default class World {
     {
       const g = new THREE.Group();
       g.position.set(-42, 0, 8);
-      const pot = new THREE.Mesh(new THREE.SphereGeometry(1.4, 10, 8),
-        new THREE.MeshLambertMaterial({ color: 0xaa4422, emissive: 0x220800, emissiveIntensity: 0.2 }));
+      const pot = new THREE.Mesh(
+        new THREE.SphereGeometry(1.4, 10, 8),
+        new THREE.MeshLambertMaterial({
+          color: 0xaa4422,
+          emissive: 0x220800,
+          emissiveIntensity: 0.2,
+        }),
+      );
       pot.scale.set(1, 0.85, 1);
       pot.position.y = 1.4;
       g.add(pot);
       // Spout
-      const spout = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.18, 1.2, 6),
-        new THREE.MeshLambertMaterial({ color: 0xaa4422 }));
+      const spout = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.25, 0.18, 1.2, 6),
+        new THREE.MeshLambertMaterial({ color: 0xaa4422 }),
+      );
       spout.rotation.z = Math.PI * 0.35;
       spout.position.set(1.3, 1.8, 0);
       g.add(spout);
       // Handle
-      const handle = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.1, 6, 10, Math.PI * 1.1),
-        new THREE.MeshLambertMaterial({ color: 0x882211 }));
+      const handle = new THREE.Mesh(
+        new THREE.TorusGeometry(0.5, 0.1, 6, 10, Math.PI * 1.1),
+        new THREE.MeshLambertMaterial({ color: 0x882211 }),
+      );
       handle.rotation.y = Math.PI / 2;
       handle.position.set(-1.2, 1.8, 0);
       g.add(handle);
       // Lid
-      const lid = new THREE.Mesh(new THREE.SphereGeometry(0.55, 8, 4),
-        new THREE.MeshLambertMaterial({ color: 0xcc5533 }));
+      const lid = new THREE.Mesh(
+        new THREE.SphereGeometry(0.55, 8, 4),
+        new THREE.MeshLambertMaterial({ color: 0xcc5533 }),
+      );
       lid.scale.y = 0.45;
       lid.position.y = 2.75;
       g.add(lid);
       // Small plinth
-      const plt = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 2.0, 0.35, 8), sandstone);
+      const plt = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.8, 2.0, 0.35, 8),
+        sandstone,
+      );
       plt.position.y = 0.17;
       g.add(plt);
       s.add(g);
@@ -2580,24 +2972,45 @@ export default class World {
 
     // ── 7. READING STONES — three quotes near Education District ──────────────
     {
-      const quotes = (window.CITY_ORACLE && window.CITY_ORACLE.quotes) ? window.CITY_ORACLE.quotes : [];
+      const quotes =
+        window.CITY_ORACLE && window.CITY_ORACLE.quotes
+          ? window.CITY_ORACLE.quotes
+          : [];
       quotes.forEach((q, i) => {
         const g = new THREE.Group();
         g.position.set(-28 + i * 14, 0, -110);
-        const stone = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3.5, 2.4), darkStone);
+        const stone = new THREE.Mesh(
+          new THREE.BoxGeometry(0.3, 3.5, 2.4),
+          darkStone,
+        );
         stone.position.y = 2.0;
         g.add(stone);
-        const QW = 480, QH = 300;
-        const qc = document.createElement('canvas'); qc.width = QW; qc.height = QH;
-        const qx = qc.getContext('2d');
-        qx.fillStyle = 'rgba(18,10,4,0.95)'; qx.fillRect(0, 0, QW, QH);
-        qx.strokeStyle = '#ffcc4433'; qx.lineWidth = 1; qx.strokeRect(4, 4, QW - 8, QH - 8);
-        qx.fillStyle = '#eeddcc'; qx.font = 'italic 16px serif'; qx.textAlign = 'center';
-        this._wrapText(qx, '”' + q.text + '”', QW / 2, 80, QW - 40, 22);
-        qx.fillStyle = '#ffcc4488'; qx.font = '600 12px monospace';
-        qx.textBaseline = 'middle'; qx.fillText('— ' + q.author, QW / 2, 220);
-        const qf = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.8),
-          new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(qc), transparent: true }));
+        const QW = 480,
+          QH = 300;
+        const qc = document.createElement("canvas");
+        qc.width = QW;
+        qc.height = QH;
+        const qx = qc.getContext("2d");
+        qx.fillStyle = "rgba(18,10,4,0.95)";
+        qx.fillRect(0, 0, QW, QH);
+        qx.strokeStyle = "#ffcc4433";
+        qx.lineWidth = 1;
+        qx.strokeRect(4, 4, QW - 8, QH - 8);
+        qx.fillStyle = "#eeddcc";
+        qx.font = "italic 16px serif";
+        qx.textAlign = "center";
+        this._wrapText(qx, "”" + q.text + "”", QW / 2, 80, QW - 40, 22);
+        qx.fillStyle = "#ffcc4488";
+        qx.font = "600 12px monospace";
+        qx.textBaseline = "middle";
+        qx.fillText("— " + q.author, QW / 2, 220);
+        const qf = new THREE.Mesh(
+          new THREE.PlaneGeometry(2.2, 2.8),
+          new THREE.MeshBasicMaterial({
+            map: new THREE.CanvasTexture(qc),
+            transparent: true,
+          }),
+        );
         qf.rotation.y = Math.PI / 2;
         qf.position.set(-0.17, 2.0, 0);
         g.add(qf);
@@ -2610,28 +3023,68 @@ export default class World {
     {
       const g = new THREE.Group();
       g.position.set(12, 0, 82);
-      const base = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.3, 1.0), sandstone);
-      base.position.y = 0.15; g.add(base);
-      const st = new THREE.Mesh(new THREE.BoxGeometry(0.22, 4.0, 2.2), darkStone);
-      st.position.y = 2.2; g.add(st);
-      const FW = 448, FH = 384;
-      const fc = document.createElement('canvas'); fc.width = FW; fc.height = FH;
-      const fx = fc.getContext('2d');
-      fx.fillStyle = 'rgba(14,7,2,0.96)'; fx.fillRect(0, 0, FW, FH);
-      fx.strokeStyle = '#ffcc4444'; fx.lineWidth = 1.5; fx.strokeRect(4, 4, FW - 8, FH - 8);
-      fx.fillStyle = '#ffcc44'; fx.font = 'bold 16px monospace'; fx.textAlign = 'center';
-      fx.textBaseline = 'top';
-      fx.fillText('FIRST COMMIT', FW / 2, 22);
-      fx.fillStyle = '#88aa6688'; fx.font = '400 12px monospace';
-      fx.fillText('January 2022', FW / 2, 52);
-      fx.fillStyle = '#ccbbaa44'; fx.fillRect(24, 76, FW - 48, 1);
-      fx.fillStyle = '#aabb99'; fx.font = 'italic 13px serif';
-      this._wrapText(fx, '”Added relocation dashboard service order summary”', FW / 2, 100, FW - 40, 20);
-      fx.fillStyle = '#ccbbaa44'; fx.fillRect(24, 168, FW - 48, 1);
-      fx.fillStyle = '#ffcc4477'; fx.font = 'italic 12px serif';
-      this._wrapText(fx, 'Every architect begins with a small commit.', FW / 2, 194, FW - 40, 18);
-      const ff = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 3.6),
-        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(fc), transparent: true }));
+      const base = new THREE.Mesh(
+        new THREE.BoxGeometry(1.0, 0.3, 1.0),
+        sandstone,
+      );
+      base.position.y = 0.15;
+      g.add(base);
+      const st = new THREE.Mesh(
+        new THREE.BoxGeometry(0.22, 4.0, 2.2),
+        darkStone,
+      );
+      st.position.y = 2.2;
+      g.add(st);
+      const FW = 448,
+        FH = 384;
+      const fc = document.createElement("canvas");
+      fc.width = FW;
+      fc.height = FH;
+      const fx = fc.getContext("2d");
+      fx.fillStyle = "rgba(14,7,2,0.96)";
+      fx.fillRect(0, 0, FW, FH);
+      fx.strokeStyle = "#ffcc4444";
+      fx.lineWidth = 1.5;
+      fx.strokeRect(4, 4, FW - 8, FH - 8);
+      fx.fillStyle = "#ffcc44";
+      fx.font = "bold 16px monospace";
+      fx.textAlign = "center";
+      fx.textBaseline = "top";
+      fx.fillText("FIRST COMMIT", FW / 2, 22);
+      fx.fillStyle = "#88aa6688";
+      fx.font = "400 12px monospace";
+      fx.fillText("January 2022", FW / 2, 52);
+      fx.fillStyle = "#ccbbaa44";
+      fx.fillRect(24, 76, FW - 48, 1);
+      fx.fillStyle = "#aabb99";
+      fx.font = "italic 13px serif";
+      this._wrapText(
+        fx,
+        "”Added relocation dashboard service order summary”",
+        FW / 2,
+        100,
+        FW - 40,
+        20,
+      );
+      fx.fillStyle = "#ccbbaa44";
+      fx.fillRect(24, 168, FW - 48, 1);
+      fx.fillStyle = "#ffcc4477";
+      fx.font = "italic 12px serif";
+      this._wrapText(
+        fx,
+        "Every architect begins with a small commit.",
+        FW / 2,
+        194,
+        FW - 40,
+        18,
+      );
+      const ff = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.0, 3.6),
+        new THREE.MeshBasicMaterial({
+          map: new THREE.CanvasTexture(fc),
+          transparent: true,
+        }),
+      );
       ff.rotation.y = Math.PI / 2;
       ff.position.set(-0.13, 2.2, 0);
       g.add(ff);
@@ -2646,22 +3099,42 @@ export default class World {
       // Fire ring
       const ring = new THREE.Mesh(
         new THREE.RingGeometry(0.6, 1.0, 8),
-        new THREE.MeshBasicMaterial({ color: 0x331100, side: THREE.DoubleSide }),
+        new THREE.MeshBasicMaterial({
+          color: 0x331100,
+          side: THREE.DoubleSide,
+        }),
       );
-      ring.rotation.x = -Math.PI / 2; ring.position.y = 0.05; g.add(ring);
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.05;
+      g.add(ring);
       // Fire sprite (glowing billboard)
-      const FC = 64, FH2 = 80;
-      const fcan = document.createElement('canvas'); fcan.width = FC; fcan.height = FH2;
-      const fctx = fcan.getContext('2d');
-      const fg = fctx.createRadialGradient(FC / 2, FH2 * 0.65, 1, FC / 2, FH2 * 0.65, 28);
-      fg.addColorStop(0, '#ffffffcc');
-      fg.addColorStop(0.15, '#ffdd44bb');
-      fg.addColorStop(0.45, '#ff6600aa');
-      fg.addColorStop(1, '#00000000');
-      fctx.fillStyle = fg; fctx.fillRect(0, 0, FC, FH2);
-      const fireMat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(fcan), transparent: true });
+      const FC = 64,
+        FH2 = 80;
+      const fcan = document.createElement("canvas");
+      fcan.width = FC;
+      fcan.height = FH2;
+      const fctx = fcan.getContext("2d");
+      const fg = fctx.createRadialGradient(
+        FC / 2,
+        FH2 * 0.65,
+        1,
+        FC / 2,
+        FH2 * 0.65,
+        28,
+      );
+      fg.addColorStop(0, "#ffffffcc");
+      fg.addColorStop(0.15, "#ffdd44bb");
+      fg.addColorStop(0.45, "#ff6600aa");
+      fg.addColorStop(1, "#00000000");
+      fctx.fillStyle = fg;
+      fctx.fillRect(0, 0, FC, FH2);
+      const fireMat = new THREE.SpriteMaterial({
+        map: new THREE.CanvasTexture(fcan),
+        transparent: true,
+      });
       const fireSprite = new THREE.Sprite(fireMat);
-      fireSprite.scale.set(1.4, 1.8, 1); fireSprite.position.set(0, 0.9, 0);
+      fireSprite.scale.set(1.4, 1.8, 1);
+      fireSprite.position.set(0, 0.9, 0);
       g.add(fireSprite);
       this._campfire = { mat: fireMat, phase: 0 };
       // Fire light
@@ -2671,12 +3144,23 @@ export default class World {
       this._campfireLight = fireLight;
       // Monk silhouettes (3 seated figures)
       const monkMat = new THREE.MeshLambertMaterial({ color: 0x1a0e08 });
-      [[1.6, 0, 1.2], [-1.5, 0, 1.0], [0.2, 0, -1.5]].forEach(([mx, my, mz], mi) => {
-        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.35, 0.95, 6), monkMat);
+      [
+        [1.6, 0, 1.2],
+        [-1.5, 0, 1.0],
+        [0.2, 0, -1.5],
+      ].forEach(([mx, my, mz], mi) => {
+        const body = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.28, 0.35, 0.95, 6),
+          monkMat,
+        );
         body.position.set(mx, 0.5, mz);
-        const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 5, 4), monkMat);
+        const head = new THREE.Mesh(
+          new THREE.SphereGeometry(0.22, 5, 4),
+          monkMat,
+        );
         head.position.set(mx, 1.18, mz);
-        g.add(body); g.add(head);
+        g.add(body);
+        g.add(head);
       });
       s.add(g);
     }
@@ -2686,24 +3170,44 @@ export default class World {
       const g = new THREE.Group();
       g.position.set(-15, 0, 128);
       // Simple sign post
-      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 3.5, 6),
-        new THREE.MeshLambertMaterial({ color: 0x3a2a1a }));
-      post.position.y = 1.75; g.add(post);
-      const SW = 384, SH = 192;
-      const sc2 = document.createElement('canvas'); sc2.width = SW; sc2.height = SH;
-      const sx2 = sc2.getContext('2d');
-      sx2.fillStyle = 'rgba(18,8,2,0.94)'; sx2.fillRect(0, 0, SW, SH);
-      sx2.strokeStyle = '#cc7744'; sx2.lineWidth = 3; sx2.strokeRect(5, 5, SW - 10, SH - 10);
-      sx2.fillStyle = '#cc5522'; sx2.font = 'bold 64px monospace';
-      sx2.textAlign = 'center'; sx2.textBaseline = 'middle';
-      sx2.fillText('404', SW / 2, SH * 0.42);
-      sx2.fillStyle = '#88664466'; sx2.font = 'italic 14px serif';
-      sx2.fillText('The road leads nowhere.', SW / 2, SH * 0.72);
-      sx2.fillStyle = '#66442233'; sx2.font = '11px serif';
-      sx2.fillText('Some roads are honest about it.', SW / 2, SH * 0.88);
-      const board = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 1.75),
-        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc2), transparent: true, side: THREE.DoubleSide }));
-      board.position.y = 3.6; g.add(board);
+      const post = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.1, 0.1, 3.5, 6),
+        new THREE.MeshLambertMaterial({ color: 0x3a2a1a }),
+      );
+      post.position.y = 1.75;
+      g.add(post);
+      const SW = 384,
+        SH = 192;
+      const sc2 = document.createElement("canvas");
+      sc2.width = SW;
+      sc2.height = SH;
+      const sx2 = sc2.getContext("2d");
+      sx2.fillStyle = "rgba(18,8,2,0.94)";
+      sx2.fillRect(0, 0, SW, SH);
+      sx2.strokeStyle = "#cc7744";
+      sx2.lineWidth = 3;
+      sx2.strokeRect(5, 5, SW - 10, SH - 10);
+      sx2.fillStyle = "#cc5522";
+      sx2.font = "bold 64px monospace";
+      sx2.textAlign = "center";
+      sx2.textBaseline = "middle";
+      sx2.fillText("404", SW / 2, SH * 0.42);
+      sx2.fillStyle = "#88664466";
+      sx2.font = "italic 14px serif";
+      sx2.fillText("The road leads nowhere.", SW / 2, SH * 0.72);
+      sx2.fillStyle = "#66442233";
+      sx2.font = "11px serif";
+      sx2.fillText("Some roads are honest about it.", SW / 2, SH * 0.88);
+      const board = new THREE.Mesh(
+        new THREE.PlaneGeometry(3.5, 1.75),
+        new THREE.MeshBasicMaterial({
+          map: new THREE.CanvasTexture(sc2),
+          transparent: true,
+          side: THREE.DoubleSide,
+        }),
+      );
+      board.position.y = 3.6;
+      g.add(board);
       s.add(g);
     }
 
@@ -2713,60 +3217,153 @@ export default class World {
       const gx2 = new THREE.Group();
       gx2.position.set(-12, 0, -165);
       // Garden floor (stone tiles)
-      const gfloor = new THREE.Mesh(new THREE.BoxGeometry(22, 0.18, 18),
-        new THREE.MeshLambertMaterial({ color: 0xddc9a0 }));
-      gfloor.position.y = 0.09; gx2.add(gfloor);
+      const gfloor = new THREE.Mesh(
+        new THREE.BoxGeometry(22, 0.18, 18),
+        new THREE.MeshLambertMaterial({ color: 0xddc9a0 }),
+      );
+      gfloor.position.y = 0.09;
+      gx2.add(gfloor);
       // Low perimeter wall
-      [[-11.4, 0.45, 0, 0.5, 0.9, 18], [11.4, 0.45, 0, 0.5, 0.9, 18],
-       [0, 0.45, -9.4, 22, 0.9, 0.5], [0, 0.45, 9.4, 10, 0.9, 0.5]].forEach(([x, y, z, w, h, d]) => {
+      [
+        [-11.4, 0.45, 0, 0.5, 0.9, 18],
+        [11.4, 0.45, 0, 0.5, 0.9, 18],
+        [0, 0.45, -9.4, 22, 0.9, 0.5],
+        [0, 0.45, 9.4, 10, 0.9, 0.5],
+      ].forEach(([x, y, z, w, h, d]) => {
         const wm = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), sandstone);
-        wm.position.set(x, y, z); gx2.add(wm);
+        wm.position.set(x, y, z);
+        gx2.add(wm);
       });
       // Garden header sprite
-      const ghSp = new THREE.Sprite(mkSprite(“◈  ARCHITECT'S GARDEN  ◈”, 'bold 28px serif', '#ffcc44cc', 512, 64));
-      ghSp.scale.set(14, 1.8, 1); ghSp.position.set(0, 5.5, 0); gx2.add(ghSp);
+      const ghSp = new THREE.Sprite(
+        mkSprite(
+          "◈  ARCHITECT'S GARDEN  ◈",
+          "bold 28px serif",
+          "#ffcc44cc",
+          512,
+          64,
+        ),
+      );
+      ghSp.scale.set(14, 1.8, 1);
+      ghSp.position.set(0, 5.5, 0);
+      gx2.add(ghSp);
       // Blueprint diagrams on ground
-      const BW = 512, BH = 512;
-      const bc = document.createElement('canvas'); bc.width = BW; bc.height = BH;
-      const bx = bc.getContext('2d');
-      bx.fillStyle = 'rgba(5,18,35,0.92)'; bx.fillRect(0, 0, BW, BH);
-      bx.strokeStyle = '#4488cc55'; bx.lineWidth = 1.5;
-      [[100, 100, 80, 60], [260, 100, 100, 70], [180, 240, 120, 80], [100, 360, 80, 60], [320, 340, 90, 65]].forEach(([rx, ry, rw, rh]) => {
+      const BW = 512,
+        BH = 512;
+      const bc = document.createElement("canvas");
+      bc.width = BW;
+      bc.height = BH;
+      const bx = bc.getContext("2d");
+      bx.fillStyle = "rgba(5,18,35,0.92)";
+      bx.fillRect(0, 0, BW, BH);
+      bx.strokeStyle = "#4488cc55";
+      bx.lineWidth = 1.5;
+      [
+        [100, 100, 80, 60],
+        [260, 100, 100, 70],
+        [180, 240, 120, 80],
+        [100, 360, 80, 60],
+        [320, 340, 90, 65],
+      ].forEach(([rx, ry, rw, rh]) => {
         bx.strokeRect(rx, ry, rw, rh);
-        bx.fillStyle = '#4488cc22'; bx.fillRect(rx, ry, rw, rh);
-        bx.fillStyle = '#4488cc88'; bx.font = '9px monospace'; bx.textAlign = 'center';
-        bx.fillText('SVC', rx + rw / 2, ry + rh / 2 + 4);
+        bx.fillStyle = "#4488cc22";
+        bx.fillRect(rx, ry, rw, rh);
+        bx.fillStyle = "#4488cc88";
+        bx.font = "9px monospace";
+        bx.textAlign = "center";
+        bx.fillText("SVC", rx + rw / 2, ry + rh / 2 + 4);
       });
-      bx.strokeStyle = '#4488cc33';
-      [[140, 160, 260, 135], [260, 140, 295, 285], [180, 320, 180, 280], [295, 375, 140, 395]].forEach(([x1, y1, x2, y2]) => {
-        bx.beginPath(); bx.moveTo(x1, y1); bx.lineTo(x2, y2); bx.stroke();
+      bx.strokeStyle = "#4488cc33";
+      [
+        [140, 160, 260, 135],
+        [260, 140, 295, 285],
+        [180, 320, 180, 280],
+        [295, 375, 140, 395],
+      ].forEach(([x1, y1, x2, y2]) => {
+        bx.beginPath();
+        bx.moveTo(x1, y1);
+        bx.lineTo(x2, y2);
+        bx.stroke();
       });
-      const bpl = new THREE.Mesh(new THREE.PlaneGeometry(16, 16),
-        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(bc), transparent: true, depthWrite: false }));
-      bpl.rotation.x = -Math.PI / 2; bpl.position.set(0, 0.12, 0); gx2.add(bpl);
+      const bpl = new THREE.Mesh(
+        new THREE.PlaneGeometry(16, 16),
+        new THREE.MeshBasicMaterial({
+          map: new THREE.CanvasTexture(bc),
+          transparent: true,
+          depthWrite: false,
+        }),
+      );
+      bpl.rotation.x = -Math.PI / 2;
+      bpl.position.set(0, 0.12, 0);
+      gx2.add(bpl);
       // Contact Stone
       {
-        const cs = new THREE.Mesh(new THREE.BoxGeometry(0.28, 4.5, 2.8), darkStone);
-        cs.position.set(6, 2.5, -3); gx2.add(cs);
-        const CW2 = 512, CH2 = 512;
-        const cc = document.createElement('canvas'); cc.width = CW2; cc.height = CH2;
-        const cx2 = cc.getContext('2d');
-        cx2.fillStyle = 'rgba(12,6,2,0.96)'; cx2.fillRect(0, 0, CW2, CH2);
-        cx2.strokeStyle = '#ffcc4466'; cx2.lineWidth = 2; cx2.strokeRect(4, 4, CW2 - 8, CH2 - 8);
-        cx2.fillStyle = '#ffcc44'; cx2.font = 'bold 22px serif'; cx2.textAlign = 'center';
-        cx2.textBaseline = 'top'; cx2.fillText('CONTACT STONE', CW2 / 2, 24);
-        cx2.fillStyle = '#ccbbaa44'; cx2.fillRect(40, 60, CW2 - 80, 1);
-        cx2.fillStyle = '#aabbdd'; cx2.font = '400 16px monospace';
-        cx2.fillText('developer@redskymobility.com', CW2 / 2, 90);
-        cx2.fillStyle = '#ffcc4466'; cx2.font = 'italic 13px serif';
-        this._wrapText(cx2, 'You found the Architect\'s Garden. Few do.', CW2 / 2, 160, CW2 - 60, 20);
-        this._wrapText(cx2, 'The city is not the portfolio.', CW2 / 2, 230, CW2 - 60, 20);
-        this._wrapText(cx2, 'The city is the evidence.', CW2 / 2, 264, CW2 - 60, 20);
-        const cf = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 4.2),
-          new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cc), transparent: true }));
-        cf.rotation.y = Math.PI / 2; cf.position.set(5.87, 2.5, -3); gx2.add(cf);
+        const cs = new THREE.Mesh(
+          new THREE.BoxGeometry(0.28, 4.5, 2.8),
+          darkStone,
+        );
+        cs.position.set(6, 2.5, -3);
+        gx2.add(cs);
+        const CW2 = 512,
+          CH2 = 512;
+        const cc = document.createElement("canvas");
+        cc.width = CW2;
+        cc.height = CH2;
+        const cx2 = cc.getContext("2d");
+        cx2.fillStyle = "rgba(12,6,2,0.96)";
+        cx2.fillRect(0, 0, CW2, CH2);
+        cx2.strokeStyle = "#ffcc4466";
+        cx2.lineWidth = 2;
+        cx2.strokeRect(4, 4, CW2 - 8, CH2 - 8);
+        cx2.fillStyle = "#ffcc44";
+        cx2.font = "bold 22px serif";
+        cx2.textAlign = "center";
+        cx2.textBaseline = "top";
+        cx2.fillText("CONTACT STONE", CW2 / 2, 24);
+        cx2.fillStyle = "#ccbbaa44";
+        cx2.fillRect(40, 60, CW2 - 80, 1);
+        cx2.fillStyle = "#aabbdd";
+        cx2.font = "400 16px monospace";
+        cx2.fillText("developer@redskymobility.com", CW2 / 2, 90);
+        cx2.fillStyle = "#ffcc4466";
+        cx2.font = "italic 13px serif";
+        this._wrapText(
+          cx2,
+          "You found the Architect's Garden. Few do.",
+          CW2 / 2,
+          160,
+          CW2 - 60,
+          20,
+        );
+        this._wrapText(
+          cx2,
+          "The city is not the portfolio.",
+          CW2 / 2,
+          230,
+          CW2 - 60,
+          20,
+        );
+        this._wrapText(
+          cx2,
+          "The city is the evidence.",
+          CW2 / 2,
+          264,
+          CW2 - 60,
+          20,
+        );
+        const cf = new THREE.Mesh(
+          new THREE.PlaneGeometry(2.6, 4.2),
+          new THREE.MeshBasicMaterial({
+            map: new THREE.CanvasTexture(cc),
+            transparent: true,
+          }),
+        );
+        cf.rotation.y = Math.PI / 2;
+        cf.position.set(5.87, 2.5, -3);
+        gx2.add(cf);
         const cLight = new THREE.PointLight(0xffcc44, 1.0, 14);
-        cLight.position.set(4, 5, -3); gx2.add(cLight);
+        cLight.position.set(4, 5, -3);
+        gx2.add(cLight);
       }
       s.add(gx2);
     }
@@ -2779,21 +3376,42 @@ export default class World {
       const fndMat = new THREE.MeshLambertMaterial({ color: 0x4a3520 });
       // Foundation slab
       const fslab = new THREE.Mesh(new THREE.BoxGeometry(9, 0.6, 9), fndMat);
-      fslab.position.y = 0.3; g.add(fslab);
+      fslab.position.y = 0.3;
+      g.add(fslab);
       // Partial wall stubs
-      [[0, 1.8, -4.4, 9, 3.6, 0.55], [-4.4, 1.2, 0, 0.55, 2.4, 9], [4.4, 0.9, 0, 0.55, 1.8, 9]].forEach(([x, y, z, w, h, d]) => {
+      [
+        [0, 1.8, -4.4, 9, 3.6, 0.55],
+        [-4.4, 1.2, 0, 0.55, 2.4, 9],
+        [4.4, 0.9, 0, 0.55, 1.8, 9],
+      ].forEach(([x, y, z, w, h, d]) => {
         const w2 = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), fndMat);
-        w2.position.set(x, y, z); g.add(w2);
+        w2.position.set(x, y, z);
+        g.add(w2);
       });
       // Scaffolding
       const scafM = new THREE.MeshLambertMaterial({ color: 0x6a5030 });
-      [[-3.5, 5, -3.5, 0.2, 2.5, 0.2], [3.5, 5, -3.5, 0.2, 2.5, 0.2], [-3.5, 6, -3.5, 7.2, 0.2, 0.2]].forEach(([x, y, z, w, h, d]) => {
+      [
+        [-3.5, 5, -3.5, 0.2, 2.5, 0.2],
+        [3.5, 5, -3.5, 0.2, 2.5, 0.2],
+        [-3.5, 6, -3.5, 7.2, 0.2, 0.2],
+      ].forEach(([x, y, z, w, h, d]) => {
         const sc = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), scafM);
-        sc.position.set(x, y, z); g.add(sc);
+        sc.position.set(x, y, z);
+        g.add(sc);
       });
       // Sign
-      const usp = new THREE.Sprite(mkSprite('STILL UNDER CONSTRUCTION', 'bold 20px serif', '#ffcc4488', 512, 52));
-      usp.scale.set(12, 1.4, 1); usp.position.set(0, 9, 0); g.add(usp);
+      const usp = new THREE.Sprite(
+        mkSprite(
+          "STILL UNDER CONSTRUCTION",
+          "bold 20px serif",
+          "#ffcc4488",
+          512,
+          52,
+        ),
+      );
+      usp.scale.set(12, 1.4, 1);
+      usp.position.set(0, 9, 0);
+      g.add(usp);
       s.add(g);
     }
 
@@ -2802,26 +3420,56 @@ export default class World {
     {
       const g = new THREE.Group();
       g.position.set(-20, 0, 120);
-      const stone = new THREE.Mesh(new THREE.BoxGeometry(0.25, 2.5, 3.5),
-        new THREE.MeshLambertMaterial({ color: 0x1e1408 }));
-      stone.position.y = 1.5; g.add(stone);
-      const FDW = 560, FDH = 224;
-      const fdc = document.createElement('canvas'); fdc.width = FDW; fdc.height = FDH;
-      const fdx = fdc.getContext('2d');
-      fdx.fillStyle = 'rgba(12,7,3,0.96)'; fdx.fillRect(0, 0, FDW, FDH);
-      fdx.strokeStyle = '#663322'; fdx.lineWidth = 2; fdx.strokeRect(4, 4, FDW - 8, FDH - 8);
-      fdx.fillStyle = '#aa6644'; fdx.font = 'bold 22px serif'; fdx.textAlign = 'center';
-      fdx.textBaseline = 'top'; fdx.fillText('LESSONS DISTRICT', FDW / 2, 22);
-      fdx.fillStyle = '#88554433'; fdx.fillRect(40, 56, FDW - 80, 1);
-      fdx.fillStyle = '#ccbbaa'; fdx.font = 'italic 14px serif';
-      fdx.textBaseline = 'middle';
-      fdx.fillText('Every engineer has a district they would build', FDW / 2, 92);
-      fdx.fillText('differently today. This is that district.', FDW / 2, 116);
-      fdx.fillStyle = '#aa664466'; fdx.font = '11px monospace';
-      fdx.fillText('Tech Debt Ruin  ·  Incident Chamber  ·  404 Road', FDW / 2, 164);
-      const fdf = new THREE.Mesh(new THREE.PlaneGeometry(3.3, 2.1),
-        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(fdc), transparent: true }));
-      fdf.rotation.y = Math.PI / 2; fdf.position.set(-0.14, 1.5, 0); g.add(fdf);
+      const stone = new THREE.Mesh(
+        new THREE.BoxGeometry(0.25, 2.5, 3.5),
+        new THREE.MeshLambertMaterial({ color: 0x1e1408 }),
+      );
+      stone.position.y = 1.5;
+      g.add(stone);
+      const FDW = 560,
+        FDH = 224;
+      const fdc = document.createElement("canvas");
+      fdc.width = FDW;
+      fdc.height = FDH;
+      const fdx = fdc.getContext("2d");
+      fdx.fillStyle = "rgba(12,7,3,0.96)";
+      fdx.fillRect(0, 0, FDW, FDH);
+      fdx.strokeStyle = "#663322";
+      fdx.lineWidth = 2;
+      fdx.strokeRect(4, 4, FDW - 8, FDH - 8);
+      fdx.fillStyle = "#aa6644";
+      fdx.font = "bold 22px serif";
+      fdx.textAlign = "center";
+      fdx.textBaseline = "top";
+      fdx.fillText("LESSONS DISTRICT", FDW / 2, 22);
+      fdx.fillStyle = "#88554433";
+      fdx.fillRect(40, 56, FDW - 80, 1);
+      fdx.fillStyle = "#ccbbaa";
+      fdx.font = "italic 14px serif";
+      fdx.textBaseline = "middle";
+      fdx.fillText(
+        "Every engineer has a district they would build",
+        FDW / 2,
+        92,
+      );
+      fdx.fillText("differently today. This is that district.", FDW / 2, 116);
+      fdx.fillStyle = "#aa664466";
+      fdx.font = "11px monospace";
+      fdx.fillText(
+        "Tech Debt Ruin  ·  Incident Chamber  ·  404 Road",
+        FDW / 2,
+        164,
+      );
+      const fdf = new THREE.Mesh(
+        new THREE.PlaneGeometry(3.3, 2.1),
+        new THREE.MeshBasicMaterial({
+          map: new THREE.CanvasTexture(fdc),
+          transparent: true,
+        }),
+      );
+      fdf.rotation.y = Math.PI / 2;
+      fdf.position.set(-0.14, 1.5, 0);
+      g.add(fdf);
       s.add(g);
     }
 
@@ -2830,20 +3478,48 @@ export default class World {
     {
       const g = new THREE.Group();
       g.position.set(50, 0, -168);
-      const dslab = new THREE.Mesh(new THREE.BoxGeometry(0.22, 3.0, 2.0), darkStone);
-      dslab.position.y = 1.7; g.add(dslab);
-      const DW = 400, DH = 256;
-      const dc = document.createElement('canvas'); dc.width = DW; dc.height = DH;
-      const dx = dc.getContext('2d');
-      dx.fillStyle = 'rgba(12,7,2,0.95)'; dx.fillRect(0, 0, DW, DH);
-      dx.strokeStyle = '#ffcc4422'; dx.lineWidth = 1; dx.strokeRect(4, 4, DW - 8, DH - 8);
-      dx.fillStyle = '#ddccaa'; dx.font = 'italic 15px serif'; dx.textAlign = 'center';
-      dx.textBaseline = 'middle';
-      this._wrapText(dx, '”For every user who never knew the system was running.”', DW / 2, 90, DW - 40, 22);
-      dx.fillStyle = '#ffcc4433'; dx.font = '600 11px monospace'; dx.fillText('— A.S.', DW / 2, 190);
-      const df = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 2.4),
-        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(dc), transparent: true }));
-      df.rotation.y = Math.PI / 2; df.position.set(-0.13, 1.7, 0); g.add(df);
+      const dslab = new THREE.Mesh(
+        new THREE.BoxGeometry(0.22, 3.0, 2.0),
+        darkStone,
+      );
+      dslab.position.y = 1.7;
+      g.add(dslab);
+      const DW = 400,
+        DH = 256;
+      const dc = document.createElement("canvas");
+      dc.width = DW;
+      dc.height = DH;
+      const dx = dc.getContext("2d");
+      dx.fillStyle = "rgba(12,7,2,0.95)";
+      dx.fillRect(0, 0, DW, DH);
+      dx.strokeStyle = "#ffcc4422";
+      dx.lineWidth = 1;
+      dx.strokeRect(4, 4, DW - 8, DH - 8);
+      dx.fillStyle = "#ddccaa";
+      dx.font = "italic 15px serif";
+      dx.textAlign = "center";
+      dx.textBaseline = "middle";
+      this._wrapText(
+        dx,
+        "”For every user who never knew the system was running.”",
+        DW / 2,
+        90,
+        DW - 40,
+        22,
+      );
+      dx.fillStyle = "#ffcc4433";
+      dx.font = "600 11px monospace";
+      dx.fillText("— A.S.", DW / 2, 190);
+      const df = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.9, 2.4),
+        new THREE.MeshBasicMaterial({
+          map: new THREE.CanvasTexture(dc),
+          transparent: true,
+        }),
+      );
+      df.rotation.y = Math.PI / 2;
+      df.position.set(-0.13, 1.7, 0);
+      g.add(df);
       s.add(g);
     }
   }
@@ -2851,24 +3527,41 @@ export default class World {
   // ── CAREER TIMELINE PATH — subtle golden thread through buildings 2022→2025 ─
   _buildCareerPath() {
     const blds = (window.CITY_DATA?.buildings || [])
-      .filter(b => b.year)
+      .filter((b) => b.year)
       .sort((a, b) => parseInt(a.year) - parseInt(b.year));
     if (blds.length < 2) return;
-    const pts = blds.map(b => new THREE.Vector3(b.pos[0], 0.14, b.pos[1]));
-    const mat = new THREE.LineBasicMaterial({ color: 0xffcc44, transparent: true, opacity: 0.14 });
-    this.scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), mat));
+    const pts = blds.map((b) => new THREE.Vector3(b.pos[0], 0.14, b.pos[1]));
+    const mat = new THREE.LineBasicMaterial({
+      color: 0xffcc44,
+      transparent: true,
+      opacity: 0.14,
+    });
+    this.scene.add(
+      new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), mat),
+    );
     // Year node sprites at first building of each year
-    let lastYear = '';
-    blds.forEach(b => {
+    let lastYear = "";
+    blds.forEach((b) => {
       if (b.year === lastYear) return;
       lastYear = b.year;
-      const can = document.createElement('canvas'); can.width = 96; can.height = 32;
-      const ctx = can.getContext('2d');
-      ctx.fillStyle = '#ffcc4466'; ctx.font = '600 16px monospace';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const can = document.createElement("canvas");
+      can.width = 96;
+      can.height = 32;
+      const ctx = can.getContext("2d");
+      ctx.fillStyle = "#ffcc4466";
+      ctx.font = "600 16px monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
       ctx.fillText(b.year, 48, 16);
-      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(can), transparent: true, depthWrite: false }));
-      sp.scale.set(4.2, 1.4, 1); sp.position.set(b.pos[0], 0.9, b.pos[1] - 7);
+      const sp = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: new THREE.CanvasTexture(can),
+          transparent: true,
+          depthWrite: false,
+        }),
+      );
+      sp.scale.set(4.2, 1.4, 1);
+      sp.position.set(b.pos[0], 0.9, b.pos[1] - 7);
       this.scene.add(sp);
     });
   }
@@ -2880,49 +3573,74 @@ export default class World {
     g.position.set(60, 0, 46);
     const sandstone = new THREE.MeshLambertMaterial({ color: 0xc8a870 });
     const dark = new THREE.MeshLambertMaterial({ color: 0x1a0e08 });
-    const base = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.45, 2.4), sandstone);
-    base.position.y = 0.22; g.add(base);
+    const base = new THREE.Mesh(
+      new THREE.BoxGeometry(2.4, 0.45, 2.4),
+      sandstone,
+    );
+    base.position.y = 0.22;
+    g.add(base);
     const pillar = new THREE.Mesh(new THREE.BoxGeometry(1.05, 9.0, 1.05), dark);
-    pillar.position.y = 4.95; g.add(pillar);
-    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0, 0.72, 1.5, 4),
-      new THREE.MeshLambertMaterial({ color: 0xffcc44, emissive: 0xcc8800, emissiveIntensity: 0.35 }));
-    cap.position.y = 9.85; g.add(cap);
-    const TW = 256, TH = 512;
-    const tc = document.createElement('canvas'); tc.width = TW; tc.height = TH;
-    const tx = tc.getContext('2d');
-    tx.fillStyle = 'rgba(10,5,1,0.95)'; tx.fillRect(0, 0, TW, TH);
-    tx.strokeStyle = '#cc442222'; tx.lineWidth = 1; tx.strokeRect(2, 2, TW - 4, TH - 4);
+    pillar.position.y = 4.95;
+    g.add(pillar);
+    const cap = new THREE.Mesh(
+      new THREE.CylinderGeometry(0, 0.72, 1.5, 4),
+      new THREE.MeshLambertMaterial({
+        color: 0xffcc44,
+        emissive: 0xcc8800,
+        emissiveIntensity: 0.35,
+      }),
+    );
+    cap.position.y = 9.85;
+    g.add(cap);
+    const TW = 256,
+      TH = 512;
+    const tc = document.createElement("canvas");
+    tc.width = TW;
+    tc.height = TH;
+    const tx = tc.getContext("2d");
+    tx.fillStyle = "rgba(10,5,1,0.95)";
+    tx.fillRect(0, 0, TW, TH);
+    tx.strokeStyle = "#cc442222";
+    tx.lineWidth = 1;
+    tx.strokeRect(2, 2, TW - 4, TH - 4);
     const rows = [
-      ['STACK TRACE', '#cc4422', 'bold 13px', 22],
-      ['Exception in', '#aabb99', '10px', 42],
-      ['thread "main"', '#aabb99', '10px', 56],
-      ['NullPointerException', '#ff6644', '9px', 74],
-      ['', '', '', 0],
-      ['  at ServiceOrder', '#88aa88', '9px', 96],
-      ['  .resolve(:142)', '#88aa88', '9px', 110],
-      ['  at Relocation', '#88aa88', '9px', 124],
-      ['  Controller(:88)', '#88aa88', '9px', 138],
-      ['  at Dispatcher', '#88aa88', '9px', 152],
-      ['  Servlet(:1049)', '#88aa88', '9px', 166],
-      ['', '', '', 0],
-      ['Caused by:', '#cc4422', 'bold 9px', 192],
-      ['MQConnectionException', '#ff8844', '9px', 208],
-      ['Channel closed', '#ff8844', '9px', 222],
-      ['', '', '', 0],
-      ['─────────────', '#44333322', '9px', 252],
-      ['Incident: IBM-MQ', '#ffcc4477', 'italic 9px', 272],
-      ['Bridge (2023)', '#ffcc4477', 'italic 9px', 286],
-      ['Resolved: 4 hours', '#88cc8877', '9px', 302],
+      ["STACK TRACE", "#cc4422", "bold 13px", 22],
+      ["Exception in", "#aabb99", "10px", 42],
+      ['thread "main"', "#aabb99", "10px", 56],
+      ["NullPointerException", "#ff6644", "9px", 74],
+      ["", "", "", 0],
+      ["  at ServiceOrder", "#88aa88", "9px", 96],
+      ["  .resolve(:142)", "#88aa88", "9px", 110],
+      ["  at Relocation", "#88aa88", "9px", 124],
+      ["  Controller(:88)", "#88aa88", "9px", 138],
+      ["  at Dispatcher", "#88aa88", "9px", 152],
+      ["  Servlet(:1049)", "#88aa88", "9px", 166],
+      ["", "", "", 0],
+      ["Caused by:", "#cc4422", "bold 9px", 192],
+      ["MQConnectionException", "#ff8844", "9px", 208],
+      ["Channel closed", "#ff8844", "9px", 222],
+      ["", "", "", 0],
+      ["─────────────", "#44333322", "9px", 252],
+      ["Incident: IBM-MQ", "#ffcc4477", "italic 9px", 272],
+      ["Bridge (2023)", "#ffcc4477", "italic 9px", 286],
+      ["Resolved: 4 hours", "#88cc8877", "9px", 302],
     ];
     rows.forEach(([text, color, font, y]) => {
       if (!text) return;
-      tx.fillStyle = color; tx.font = font + ' monospace';
-      tx.textAlign = 'center'; tx.textBaseline = 'top';
+      tx.fillStyle = color;
+      tx.font = font + " monospace";
+      tx.textAlign = "center";
+      tx.textBaseline = "top";
       tx.fillText(text, TW / 2, y);
     });
-    [0, Math.PI].forEach(ang => {
-      const face = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 8.6),
-        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(tc), transparent: true }));
+    [0, Math.PI].forEach((ang) => {
+      const face = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.95, 8.6),
+        new THREE.MeshBasicMaterial({
+          map: new THREE.CanvasTexture(tc),
+          transparent: true,
+        }),
+      );
       face.rotation.y = ang;
       face.position.set(Math.sin(ang) * 0.55, 4.95, Math.cos(ang) * 0.55);
       g.add(face);
@@ -2937,30 +3655,131 @@ export default class World {
       const g2 = new THREE.Group();
       const bM = new THREE.MeshLambertMaterial({ color: col });
       const hM = new THREE.MeshLambertMaterial({ color: hc });
-      const robe = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.45, 1.1, 6), bM);
+      const robe = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.32, 0.45, 1.1, 6),
+        bM,
+      );
       robe.position.y = 0.55;
       const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 6, 5), hM);
       head.position.y = 1.38;
       const hood = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.38, 6), bM);
-      hood.position.y = 1.62; hood.rotation.z = Math.PI;
-      g2.add(robe); g2.add(head); g2.add(hood);
+      hood.position.y = 1.62;
+      hood.rotation.z = Math.PI;
+      g2.add(robe);
+      g2.add(head);
+      g2.add(hood);
       return g2;
     };
     const defs = [
-      { pts: [[14,-9],[9,-14],[-9,-14],[-14,-9],[-14,9],[-9,14],[9,14],[14,9]],   spd: 0.022, col: 0x3a2218, hc: 0xc8a878 },
-      { pts: [[22,-7],[15,-22],[-7,-22],[-22,-7],[-22,7],[-7,22],[15,22],[22,7]], spd: 0.016, col: 0x2a1a10, hc: 0xbb9968 },
-      { pts: [[30,-88],[45,-90],[45,-106],[30,-106]],                             spd: 0.018, col: 0x442a1a, hc: 0xc8a878 },
-      { pts: [[-25,-90],[-42,-88],[-42,-104],[-25,-104]],                        spd: 0.015, col: 0x3a2218, hc: 0xbb9968 },
-      { pts: [[-82,-28],[-96,-30],[-96,-42],[-82,-42]],                          spd: 0.016, col: 0x2a1a10, hc: 0xc8a878 },
-      { pts: [[-10,78],[10,78],[10,94],[-10,94]],                                 spd: 0.020, col: 0x3a2218, hc: 0xbb9968 },
-      { pts: [[-20,-4],[-32,2],[-40,8],[-32,14],[-20,10]],                       spd: 0.011, col: 0x1a2a38, hc: 0xaa8868 },
-      { pts: [[-14,50],[14,50],[14,62],[-14,62]],                                 spd: 0.024, col: 0x442a1a, hc: 0xc8a878 },
+      {
+        pts: [
+          [14, -9],
+          [9, -14],
+          [-9, -14],
+          [-14, -9],
+          [-14, 9],
+          [-9, 14],
+          [9, 14],
+          [14, 9],
+        ],
+        spd: 0.022,
+        col: 0x3a2218,
+        hc: 0xc8a878,
+      },
+      {
+        pts: [
+          [22, -7],
+          [15, -22],
+          [-7, -22],
+          [-22, -7],
+          [-22, 7],
+          [-7, 22],
+          [15, 22],
+          [22, 7],
+        ],
+        spd: 0.016,
+        col: 0x2a1a10,
+        hc: 0xbb9968,
+      },
+      {
+        pts: [
+          [30, -88],
+          [45, -90],
+          [45, -106],
+          [30, -106],
+        ],
+        spd: 0.018,
+        col: 0x442a1a,
+        hc: 0xc8a878,
+      },
+      {
+        pts: [
+          [-25, -90],
+          [-42, -88],
+          [-42, -104],
+          [-25, -104],
+        ],
+        spd: 0.015,
+        col: 0x3a2218,
+        hc: 0xbb9968,
+      },
+      {
+        pts: [
+          [-82, -28],
+          [-96, -30],
+          [-96, -42],
+          [-82, -42],
+        ],
+        spd: 0.016,
+        col: 0x2a1a10,
+        hc: 0xc8a878,
+      },
+      {
+        pts: [
+          [-10, 78],
+          [10, 78],
+          [10, 94],
+          [-10, 94],
+        ],
+        spd: 0.02,
+        col: 0x3a2218,
+        hc: 0xbb9968,
+      },
+      {
+        pts: [
+          [-20, -4],
+          [-32, 2],
+          [-40, 8],
+          [-32, 14],
+          [-20, 10],
+        ],
+        spd: 0.011,
+        col: 0x1a2a38,
+        hc: 0xaa8868,
+      },
+      {
+        pts: [
+          [-14, 50],
+          [14, 50],
+          [14, 62],
+          [-14, 62],
+        ],
+        spd: 0.024,
+        col: 0x442a1a,
+        hc: 0xc8a878,
+      },
     ];
-    this._npcs = defs.map(def => {
+    this._npcs = defs.map((def) => {
       const mesh = mkMonk(def.col, def.hc);
       mesh.position.set(def.pts[0][0], 0, def.pts[0][1]);
       s.add(mesh);
-      return { mesh, pts: def.pts, wi: 0, t: Math.random() * 0.8, spd: def.spd };
+      return {
+        mesh,
+        pts: def.pts,
+        wi: 0,
+        t: Math.random() * 0.8,
+        spd: def.spd,
+      };
     });
   }
 
@@ -2968,12 +3787,18 @@ export default class World {
     if (!this._npcs) return;
     for (const n of this._npcs) {
       n.t += n.spd * dt * 60;
-      if (n.t >= 1) { n.t -= 1; n.wi = (n.wi + 1) % n.pts.length; }
-      const c = n.pts[n.wi], nx = n.pts[(n.wi + 1) % n.pts.length];
-      const dx = nx[0] - c[0], dz = nx[1] - c[1];
+      if (n.t >= 1) {
+        n.t -= 1;
+        n.wi = (n.wi + 1) % n.pts.length;
+      }
+      const c = n.pts[n.wi],
+        nx = n.pts[(n.wi + 1) % n.pts.length];
+      const dx = nx[0] - c[0],
+        dz = nx[1] - c[1];
       n.mesh.position.x = c[0] + dx * n.t;
       n.mesh.position.z = c[1] + dz * n.t;
-      if (Math.abs(dx) + Math.abs(dz) > 0.01) n.mesh.rotation.y = Math.atan2(dx, dz);
+      if (Math.abs(dx) + Math.abs(dz) > 0.01)
+        n.mesh.rotation.y = Math.atan2(dx, dz);
     }
   }
 
@@ -2981,37 +3806,59 @@ export default class World {
   _buildWanderingMonk() {
     const s = this.scene;
     const blds = (window.CITY_DATA?.buildings || [])
-      .filter(b => b.year)
+      .filter((b) => b.year)
       .sort((a, b) => parseInt(a.year) - parseInt(b.year));
     if (!blds.length) return;
     const g = new THREE.Group();
     const wM = new THREE.MeshLambertMaterial({ color: 0xf5e8cc });
     const hM = new THREE.MeshLambertMaterial({ color: 0xe8c898 });
-    const robe = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.46, 1.2, 7), wM);
+    const robe = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.32, 0.46, 1.2, 7),
+      wM,
+    );
     robe.position.y = 0.6;
     const head = new THREE.Mesh(new THREE.SphereGeometry(0.23, 6, 5), hM);
     head.position.y = 1.42;
     const hood = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.4, 7), wM);
-    hood.position.y = 1.65; hood.rotation.z = Math.PI;
-    const staff = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.046, 2.1, 5),
-      new THREE.MeshLambertMaterial({ color: 0x6a4020 }));
-    staff.position.set(0.5, 1.05, 0); staff.rotation.z = -0.1;
-    g.add(robe); g.add(head); g.add(hood); g.add(staff);
+    hood.position.y = 1.65;
+    hood.rotation.z = Math.PI;
+    const staff = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.046, 0.046, 2.1, 5),
+      new THREE.MeshLambertMaterial({ color: 0x6a4020 }),
+    );
+    staff.position.set(0.5, 1.05, 0);
+    staff.rotation.z = -0.1;
+    g.add(robe);
+    g.add(head);
+    g.add(hood);
+    g.add(staff);
     g.position.set(blds[0].pos[0] + 5, 0, blds[0].pos[1] + 5);
     s.add(g);
-    this._wanderingMonk = { mesh: g, blds, wi: 0, t: 0, segTime: 480 / blds.length };
+    this._wanderingMonk = {
+      mesh: g,
+      blds,
+      wi: 0,
+      t: 0,
+      segTime: 480 / blds.length,
+    };
   }
 
   updateWanderingMonk(dt) {
     const wm = this._wanderingMonk;
     if (!wm) return;
     wm.t += dt / wm.segTime;
-    if (wm.t >= 1) { wm.t -= 1; wm.wi = (wm.wi + 1) % wm.blds.length; }
-    const c = wm.blds[wm.wi], nx = wm.blds[(wm.wi + 1) % wm.blds.length];
-    const dx = nx.pos[0] - c.pos[0], dz = nx.pos[1] - c.pos[1];
+    if (wm.t >= 1) {
+      wm.t -= 1;
+      wm.wi = (wm.wi + 1) % wm.blds.length;
+    }
+    const c = wm.blds[wm.wi],
+      nx = wm.blds[(wm.wi + 1) % wm.blds.length];
+    const dx = nx.pos[0] - c.pos[0],
+      dz = nx.pos[1] - c.pos[1];
     wm.mesh.position.x = c.pos[0] + dx * wm.t + 5;
     wm.mesh.position.z = c.pos[1] + dz * wm.t + 5;
-    if (Math.abs(dx) + Math.abs(dz) > 0.1) wm.mesh.rotation.y = Math.atan2(dx, dz);
+    if (Math.abs(dx) + Math.abs(dz) > 0.1)
+      wm.mesh.rotation.y = Math.atan2(dx, dz);
   }
 
   // ── GOLDEN CONNECTION WEB — fires on all-17 completion ─────────────────────
@@ -3021,29 +3868,32 @@ export default class World {
     this._connWebShown = true;
     const buildings = window.CITY_DATA?.buildings || [];
     const posMap = {};
-    buildings.forEach(b => { posMap[b.id] = { x: b.pos[0], z: b.pos[1] }; });
+    buildings.forEach((b) => {
+      posMap[b.id] = { x: b.pos[0], z: b.pos[1] };
+    });
 
     const edges = [
-      ['pura-stambha',       'vayu-rath'],
-      ['pura-stambha',       'jyotish-vedha'],
-      ['pura-stambha',       'setu-nagara'],
-      ['pura-stambha',       'brahma-kund'],
-      ['pura-stambha',       'maya-sabha'],
-      ['jyotish-vedha',      'maya-sabha'],
-      ['brahma-kund',        'setu-nagara'],
-      ['brahma-kund',        'maya-sabha'],
-      ['maya-sabha',         'surya-dwara'],
-      ['maya-sabha',         'vishwakarma-shala'],
-      ['surya-dwara',        'lakshmi-prasad'],
-      ['surya-dwara',        'akasha-mandapa'],
-      ['lakshmi-prasad',     'vishwakarma-shala'],
-      ['vishwakarma-shala',  'akasha-mandapa'],
-      ['vishwakarma-shala',  'maya-sabha'],
+      ["pura-stambha", "vayu-rath"],
+      ["pura-stambha", "jyotish-vedha"],
+      ["pura-stambha", "setu-nagara"],
+      ["pura-stambha", "brahma-kund"],
+      ["pura-stambha", "maya-sabha"],
+      ["jyotish-vedha", "maya-sabha"],
+      ["brahma-kund", "setu-nagara"],
+      ["brahma-kund", "maya-sabha"],
+      ["maya-sabha", "surya-dwara"],
+      ["maya-sabha", "vishwakarma-shala"],
+      ["surya-dwara", "lakshmi-prasad"],
+      ["surya-dwara", "akasha-mandapa"],
+      ["lakshmi-prasad", "vishwakarma-shala"],
+      ["vishwakarma-shala", "akasha-mandapa"],
+      ["vishwakarma-shala", "maya-sabha"],
     ];
 
     const lineMats = [];
     edges.forEach(([a, b]) => {
-      const pa = posMap[a], pb = posMap[b];
+      const pa = posMap[a],
+        pb = posMap[b];
       if (!pa || !pb) return;
       const pts = [
         new THREE.Vector3(pa.x, 9, pa.z),
@@ -3063,10 +3913,15 @@ export default class World {
     let elapsed = 0;
     const tick = () => {
       elapsed += 0.05;
-      const op = elapsed < 3 ? elapsed / 3
-        : elapsed > 27 ? Math.max(0, 1 - (elapsed - 27) / 3)
-        : 1;
-      lineMats.forEach(m => { m.opacity = op * 0.82; });
+      const op =
+        elapsed < 3
+          ? elapsed / 3
+          : elapsed > 27
+            ? Math.max(0, 1 - (elapsed - 27) / 3)
+            : 1;
+      lineMats.forEach((m) => {
+        m.opacity = op * 0.82;
+      });
       if (elapsed < 30) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
@@ -3076,7 +3931,8 @@ export default class World {
   updateHiddenAreas(isNight, now) {
     if (this._campfireLight) {
       const tgt = isNight ? 2.2 + Math.sin(now * 7.3 + 1.2) * 0.6 : 0;
-      this._campfireLight.intensity += (tgt - this._campfireLight.intensity) * 0.06;
+      this._campfireLight.intensity +=
+        (tgt - this._campfireLight.intensity) * 0.06;
     }
     if (this._campfire) {
       const s = isNight ? 0.88 + Math.sin(now * 5.8) * 0.08 : 0;
@@ -3086,14 +3942,14 @@ export default class World {
 
   // ── TEXT WRAP HELPER ────────────────────────────────────────────────────────
   _wrapText(ctx, text, cx, cy, maxW, lineH) {
-    const words = text.split(' ');
-    let line = '';
+    const words = text.split(" ");
+    let line = "";
     let y = cy;
     for (let i = 0; i < words.length; i++) {
-      const test = line + words[i] + ' ';
+      const test = line + words[i] + " ";
       if (ctx.measureText(test).width > maxW && i > 0) {
         ctx.fillText(line.trim(), cx, y);
-        line = words[i] + ' ';
+        line = words[i] + " ";
         y += lineH;
       } else {
         line = test;
