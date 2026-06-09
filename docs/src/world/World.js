@@ -191,9 +191,9 @@ export default class World {
     }
     const cfgs = {
       day: {
-        bg: 0xd4956a,
-        fog: 0xc8845a,
-        fogD: 0.0025,
+        bg: 0xeec48a,
+        fog: 0xe0ac70,
+        fogD: 0.0016,
         sun: 0xfff0cc,
         sunI: 2.4,
         fill: 0x8899ff,
@@ -201,7 +201,7 @@ export default class World {
         amb: 0xfff5ee,
         ambI: 0.18,
         exp: 1.05,
-        skyH: 0xd4956a,
+        skyH: 0xeec48a,
         skyZ: 0x3355a0,
       },
       night: {
@@ -775,20 +775,21 @@ export default class World {
     waterTop.position.y = -0.45;
     s.add(waterTop);
 
-    // Ground tile grid — plaza paving, expanded for larger city
-    const tileMat = new THREE.MeshLambertMaterial({ color: 0x5e3818 });
-    const tileSpacing = 10;
-    for (let tx = -28; tx < 28; tx++) {
-      for (let tz = -26; tz < 26; tz++) {
-        if ((tx + tz) % 2 !== 0) continue;
-        const tile = new THREE.Mesh(
-          new THREE.BoxGeometry(tileSpacing - 0.15, 0.02, tileSpacing - 0.15),
-          tileMat,
-        );
-        tile.position.set(tx * tileSpacing + 5, 0.01, tz * tileSpacing + 5);
-        s.add(tile);
-      }
-    }
+    // Plaza stone slabs — large warm sandstone paving around key areas
+    const plazaMat = new THREE.MeshLambertMaterial({ color: 0x8a5c38 });
+    [
+      [0, 0, 52, 52],
+      [0, 80, 38, 38],    [0, -80, 38, 38],
+      [80, 0, 38, 38],    [-80, 0, 38, 38],
+      [75, -35, 28, 28],  [-88, -35, 28, 28],
+      [60, 60, 28, 28],   [-60, 60, 28, 28],
+      [0, 160, 30, 30],   [0, -160, 30, 30],
+      [160, 0, 30, 30],   [-160, 0, 30, 30],
+    ].forEach(([px, pz, pw, ph]) => {
+      const slab = new THREE.Mesh(new THREE.BoxGeometry(pw, 0.02, ph), plazaMat);
+      slab.position.set(px, 0.01, pz);
+      s.add(slab);
+    });
 
     // Paved court zones near major intersections — lighter to contrast with roads
     const paveMat = new THREE.MeshLambertMaterial({ color: 0x8a5030 });
@@ -1109,7 +1110,7 @@ export default class World {
     this.scene.add(this._dustTrail);
   }
 
-  _updateAtmosphere(now) {
+  _updateAtmosphere(now, dt) {
     // ── PRAYER FLAGS — wave in the wind ──────────────────────────────────────
     this._updatePrayerFlags(now);
 

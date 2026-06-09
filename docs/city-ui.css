@@ -926,8 +926,8 @@ body.panel-open #prox {
   background: linear-gradient(
     90deg,
     transparent,
-    var(--cyan),
-    rgba(0, 221, 255, 0.3),
+    var(--gold),
+    rgba(255, 208, 96, 0.3),
     transparent
   );
 }
@@ -1366,7 +1366,7 @@ body.panel-open #prox {
   padding: 52px 68px;
   position: relative;
   background: rgba(10, 5, 2, 0.9);
-  border: 1px solid rgba(0, 221, 255, 0.2);
+  border: 1px solid rgba(200, 140, 60, 0.2);
   clip-path: polygon(
     20px 0,
     100% 0,
@@ -1386,8 +1386,8 @@ body.panel-open #prox {
 .cc::before {
   top: 0;
   left: 0;
-  border-top: 1px solid var(--cyan);
-  border-left: 1px solid var(--cyan);
+  border-top: 1px solid var(--gold);
+  border-left: 1px solid var(--gold);
 }
 .cc::after {
   bottom: 0;
@@ -1411,7 +1411,7 @@ body.panel-open #prox {
   font-family: var(--fm);
   font-size: 7px;
   letter-spacing: 6px;
-  color: rgba(0, 221, 255, 0.4);
+  color: rgba(200, 160, 60, 0.7);
   margin-bottom: 22px;
 }
 .cn {
@@ -1458,7 +1458,7 @@ body.panel-open #prox {
   font-family: var(--fm);
   font-size: 7px;
   letter-spacing: 3px;
-  color: rgba(0, 221, 255, 0.6);
+  color: rgba(200, 160, 60, 0.8);
   min-width: 62px;
   text-align: right;
 }
@@ -1643,9 +1643,9 @@ body.panel-open #prox {
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  background: rgba(0, 221, 255, 0.15);
-  border: 2px solid rgba(0, 221, 255, 0.5);
-  color: var(--cyan);
+  background: rgba(200, 140, 60, 0.15);
+  border: 2px solid rgba(200, 140, 60, 0.5);
+  color: var(--gold);
   font-family: var(--ff);
   font-size: 12px;
   font-weight: 900;
@@ -3530,8 +3530,8 @@ a,
   width: 24px !important;
   height: 24px !important;
   border-width: 1.5px !important;
-  border-top-color: rgba(0, 221, 255, 0.9) !important;
-  border-left-color: rgba(0, 221, 255, 0.9) !important;
+  border-top-color: rgba(255, 208, 96, 0.9) !important;
+  border-left-color: rgba(255, 208, 96, 0.9) !important;
 }
 .cc::after {
   width: 24px !important;

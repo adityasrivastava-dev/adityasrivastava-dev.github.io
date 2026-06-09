@@ -86,7 +86,7 @@ export default class Objects {
       // gold_rich: brilliant specular hotspot makes kalash pots / finials read as
       // actual metal. The near-white sp param concentrates light into a tight point.
       gold_rich: mk("#fffce0", "#ffcc33", "#5a3800", "rgba(255,255,220,0.99)"),
-      tree: mk("#77cc44", "#336622", "#0a1a04"),
+      tree: mk("#a0b464", "#6b8a40", "#1e3010"),
       car: mk("#ff9977", "#dd2200", "#440000", "rgba(255,230,220,0.95)"),
       carDark: mk("#ee5533", "#991100", "#220000"),
       chrome: mk("#ffffee", "#ccccaa", "#444433"),
