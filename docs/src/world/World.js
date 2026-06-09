@@ -258,6 +258,7 @@ export default class World {
         skyLow: 0x334050,
         skyMid: 0x283040,
         skyZen: 0x1a2030,
+        _isRain: true,
       },
       fog: {
         bg: 0xccb09a,
@@ -870,6 +871,18 @@ export default class World {
       s.add(blk);
     });
 
+    // Item 18: District ground color variation — E=pale gold, W=ochre, S=laterite red
+    [
+      { col: 0xd4b880, x:  140, z: -10, w: 110, d: 160 }, // East quarter — pale gold
+      { col: 0xaa7830, x: -140, z: -10, w: 110, d: 160 }, // West quarter — deep ochre
+      { col: 0xa04820, x:    0, z:  80, w: 200, d:  80 }, // South entry — laterite red
+    ].forEach(({ col, x, z, w, d }) => {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.03, d),
+        new THREE.MeshLambertMaterial({ color: col }));
+      m.position.set(x, -0.005, z);
+      s.add(m);
+    });
+
     // Beach/sand border strips — the transition between orange ground and cyan water
     const sandMat = new THREE.MeshLambertMaterial({ color: 0xaa9966 });
     for (const [x, z, w, d] of [
@@ -882,6 +895,21 @@ export default class World {
       strip.position.set(x, -0.35, z);
       s.add(strip);
     }
+
+    // ── EDUCATION PLATEAU — Item 15 ──────────────────────────────────────────
+    // Knowledge district sits 5 units higher — a sacred hill/hermitage hill
+    // Covers the 3 education buildings: saraswati(35,-99), gurukul(-35,-99), vidya(-131,-35)
+    const platMat = new THREE.MeshLambertMaterial({ color: 0xb8a070 }); // warm pale sandstone
+    const platRampMat = new THREE.MeshLambertMaterial({ color: 0xa09060 });
+    // Main plateau block — rectangular mound centered on the education cluster
+    const plat = new THREE.Mesh(new THREE.BoxGeometry(200, 5.0, 90), platMat);
+    plat.position.set(-30, 2.5 - 0.2, -115); // -0.2 so top at y=5
+    s.add(plat);
+    // Soft south-facing ramp to avoid cliff edge at z=-70
+    const ramp = new THREE.Mesh(new THREE.BoxGeometry(200, 0.6, 12), platRampMat);
+    ramp.position.set(-30, 2.5, -69);
+    ramp.rotation.x = -0.18; // gentle slope
+    s.add(ramp);
 
     // ── DISTANT MOUNTAINS — Item 37 ───────────────────────────────────────────
     // Low-poly silhouettes at far horizon (r=420-600) — dark blue-purple haze
@@ -1015,6 +1043,26 @@ export default class World {
     rim.rotation.x = Math.PI / 2;
     rim.position.y = 1.25;
     this._chakraGroup.add(rim);
+
+    // Item 36: Counter-rotating beacon ring on plaza floor
+    // A second Group at y=0.05 with 8 glowing disc segments — rotates opposite direction
+    this._chakraInnerRing = new THREE.Group();
+    s.add(this._chakraInnerRing);
+    for (let i = 0; i < 8; i++) {
+      const segAngle = (i / 8) * Math.PI * 2;
+      const segR = 8.0;
+      const seg = new THREE.Mesh(
+        new THREE.BoxGeometry(1.0, 0.08, 3.5),
+        new THREE.MeshBasicMaterial({
+          color: [0xffdd44, 0x44ddff, 0xff4422, 0x44ff88][i % 4],
+          transparent: true, opacity: 0.55,
+          depthWrite: false, blending: THREE.AdditiveBlending,
+        }),
+      );
+      seg.position.set(Math.sin(segAngle) * segR, 0.05, Math.cos(segAngle) * segR);
+      seg.rotation.y = segAngle;
+      this._chakraInnerRing.add(seg);
+    }
 
     // ── SACRED FIRE — at the center of the Dharma Chakra plaza ──────────────
     // 4-layer flame visible from the road, always lit
@@ -1398,6 +1446,25 @@ export default class World {
     this._incenseSmoke.userData.smokePerTemple = SMOKE_PER;
     this.scene.add(this._incenseSmoke);
 
+    // Item 30: Rain particles — vertical streaks, only visible in rain weather
+    const RAIN_N = 600;
+    const rainPos = new Float32Array(RAIN_N * 3);
+    for (let i = 0; i < RAIN_N; i++) {
+      rainPos[i * 3]     = (Math.random() - 0.5) * 280;
+      rainPos[i * 3 + 1] = Math.random() * 50;
+      rainPos[i * 3 + 2] = (Math.random() - 0.5) * 280;
+    }
+    const rainGeo = new THREE.BufferGeometry();
+    rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
+    this._rainParticles = new THREE.Points(rainGeo,
+      new THREE.PointsMaterial({
+        color: 0x88bbdd, size: 0.35,
+        transparent: true, opacity: 0,
+        depthWrite: false, sizeAttenuation: true,
+      }),
+    );
+    this.scene.add(this._rainParticles);
+
     // Item 42: Processional diyas — golden points lining the x=0 spine road
     // From city entry (z=62) to deep north (z=-155), spaced 4 units, ±2.5 offset
     const PROC_N = 56; // ~220 units / 4 spacing = 55 pairs × 2 sides
@@ -1537,6 +1604,11 @@ export default class World {
       }
     }
 
+    // ── CHAKRA INNER RING — counter-rotates vs main chakra ───────────────────
+    if (this._chakraInnerRing) {
+      this._chakraInnerRing.rotation.y = -(now * 0.12);
+    }
+
     // ── ASHOKA STAMBHA — top chakra spins, beacon breathes ───────────────────
     if (this._stambhaChakra) {
       this._stambhaChakra.rotation.z = now * 0.18;
@@ -1654,6 +1726,27 @@ export default class World {
     if (this._procDiyas) {
       const tProc = this.isNight ? 0.70 : 0.18;
       this._procDiyas.material.opacity += (tProc - this._procDiyas.material.opacity) * 0.02;
+    }
+
+    // Item 30: Rain particles — fall fast, wrap at bottom, only in rain mode
+    if (this._rainParticles) {
+      const isRain = this._cyclePhase === 'rain' || this._weatherTarget?._isRain;
+      const tRain = isRain ? 0.55 : 0;
+      this._rainParticles.material.opacity += (tRain - this._rainParticles.material.opacity) * 0.04;
+      if (isRain && this._rainParticles.material.opacity > 0.05) {
+        const _dt2 = dt || 0.016;
+        const rPos = this._rainParticles.geometry.attributes.position.array;
+        for (let i = 0, n = rPos.length / 3; i < n; i++) {
+          rPos[i * 3 + 1] -= 28 * _dt2; // fast fall
+          rPos[i * 3]     -= 1.5 * _dt2; // wind drift
+          if (rPos[i * 3 + 1] < -1) {
+            rPos[i * 3]     = (Math.random() - 0.5) * 280;
+            rPos[i * 3 + 1] = 48 + Math.random() * 6;
+            rPos[i * 3 + 2] = (Math.random() - 0.5) * 280;
+          }
+        }
+        this._rainParticles.geometry.attributes.position.needsUpdate = true;
+      }
     }
   }
 
