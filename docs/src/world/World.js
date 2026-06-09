@@ -201,8 +201,9 @@ export default class World {
         amb: 0xfff5ee,
         ambI: 0.18,
         exp: 1.05,
-        skyH: 0xc8b898,
-        skyZ: 0x3355a0,
+        skyLow: 0xf0a060,
+        skyMid: 0x8877cc,
+        skyZen: 0x2244aa,
       },
       night: {
         bg: 0x0a0820,
@@ -215,8 +216,9 @@ export default class World {
         amb: 0x110822,
         ambI: 0.12,
         exp: 1.25,
-        skyH: 0x0a0820,
-        skyZ: 0x030614,
+        skyLow: 0x0a0820,
+        skyMid: 0x050418,
+        skyZen: 0x020210,
       },
       sunset: {
         bg: 0xff6030,
@@ -229,8 +231,9 @@ export default class World {
         amb: 0x440800,
         ambI: 0.16,
         exp: 1.08,
-        skyH: 0xff6030,
-        skyZ: 0x441088,
+        skyLow: 0xff7030,
+        skyMid: 0xcc3366,
+        skyZen: 0x441088,
       },
       rain: {
         bg: 0x334050,
@@ -243,8 +246,9 @@ export default class World {
         amb: 0x100806,
         ambI: 0.22,
         exp: 1.1,
-        skyH: 0x334050,
-        skyZ: 0x1a2030,
+        skyLow: 0x334050,
+        skyMid: 0x283040,
+        skyZen: 0x1a2030,
       },
       fog: {
         bg: 0xccb09a,
@@ -257,8 +261,9 @@ export default class World {
         amb: 0x221408,
         ambI: 0.40,
         exp: 0.9,
-        skyH: 0xccb09a,
-        skyZ: 0x8899aa,
+        skyLow: 0xccb09a,
+        skyMid: 0x9988aa,
+        skyZen: 0x7788aa,
       },
       snow: {
         bg: 0xeedfcc,
@@ -271,8 +276,9 @@ export default class World {
         amb: 0x1a1008,
         ambI: 0.25,
         exp: 0.95,
-        skyH: 0xeedfcc,
-        skyZ: 0x7799cc,
+        skyLow: 0xeedfcc,
+        skyMid: 0x99bbcc,
+        skyZen: 0x7799cc,
       },
     };
 
@@ -372,11 +378,12 @@ export default class World {
         this.bounceLight.intensity += (tgtB - this.bounceLight.intensity) * t;
       }
 
-      // Sky sphere gradient
-      if (this._skyMesh && this._weatherTarget.skyH) {
+      // Sky sphere 3-stop gradient
+      if (this._skyMesh && this._weatherTarget.skyLow) {
         const un = this._skyMesh.material.uniforms;
-        un.uHorizon.value.lerp(new THREE.Color(this._weatherTarget.skyH), t);
-        un.uZenith.value.lerp(new THREE.Color(this._weatherTarget.skyZ), t);
+        un.uLow.value.lerp(new THREE.Color(this._weatherTarget.skyLow), t);
+        un.uMid.value.lerp(new THREE.Color(this._weatherTarget.skyMid), t);
+        un.uZenith.value.lerp(new THREE.Color(this._weatherTarget.skyZen), t);
       }
     }
 
@@ -453,8 +460,9 @@ export default class World {
   _buildSky() {
     const mat = new THREE.ShaderMaterial({
       uniforms: {
-        uHorizon: { value: new THREE.Color(0xd4956a) },
-        uZenith:  { value: new THREE.Color(0x3355a0) },
+        uLow:    { value: new THREE.Color(0xf0a060) }, // warm amber horizon
+        uMid:    { value: new THREE.Color(0x8877cc) }, // rose-violet mid-sky
+        uZenith: { value: new THREE.Color(0x2244aa) }, // deep celestial blue
       },
       vertexShader: `
         varying float vY;
@@ -464,12 +472,15 @@ export default class World {
         }
       `,
       fragmentShader: `
-        uniform vec3 uHorizon;
+        uniform vec3 uLow;
+        uniform vec3 uMid;
         uniform vec3 uZenith;
         varying float vY;
         void main() {
           float t = clamp(vY, 0.0, 1.0);
-          gl_FragColor = vec4(mix(uHorizon, uZenith, pow(t, 0.55)), 1.0);
+          vec3 col = mix(uLow, uMid, smoothstep(0.0, 0.45, t));
+          col = mix(col, uZenith, smoothstep(0.35, 1.0, t));
+          gl_FragColor = vec4(col, 1.0);
         }
       `,
       side: THREE.BackSide,
@@ -956,6 +967,84 @@ export default class World {
       s.add(pl);
     }
 
+    // ── ASHOKA STAMBHA — 32-unit sacred pillar at the city's axis ─────────────
+    // The Dharma Chakra had no vertical presence. This pillar IS the landmark:
+    // visible from every district, the spinning disc at the top is the beacon.
+    this._stambhaGroup = new THREE.Group();
+    s.add(this._stambhaGroup);
+
+    const shaftMat = new THREE.MeshToonMaterial({ color: 0xeedd99, gradientMap: tg });
+    // Tapered shaft: 1.5 radius at base to 0.7 at capital over 30 units
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 1.5, 30, 8), shaftMat);
+    shaft.position.y = 15.65; // 0.65 = plaza surface
+    this._stambhaGroup.add(shaft);
+
+    // Decorative rings at 1/3 and 2/3 heights
+    const ringMat = new THREE.MeshToonMaterial({ color: 0xffcc44, gradientMap: tg });
+    for (const ry of [10.65, 20.65]) {
+      const dRing = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.14, 5, 16), ringMat);
+      dRing.rotation.x = Math.PI / 2;
+      dRing.position.y = ry;
+      this._stambhaGroup.add(dRing);
+    }
+
+    // Abacus capital
+    const abacus = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 0.8, 0.9, 8), shaftMat);
+    abacus.position.y = 31.3;
+    this._stambhaGroup.add(abacus);
+
+    // Four lion gems at capital corners (simplified Ashoka lions)
+    const lionMat = new THREE.MeshMatcapMaterial({
+      color: 0xffdd44,
+      matcap: window._matcaps?.gold_rich || window._matcaps?.gold,
+    });
+    for (let i = 0; i < 4; i++) {
+      const ang = (i / 4) * Math.PI * 2;
+      const lion = new THREE.Mesh(new THREE.OctahedronGeometry(0.55, 0), lionMat);
+      lion.position.set(Math.cos(ang) * 1.2, 32.2, Math.sin(ang) * 1.2);
+      this._stambhaGroup.add(lion);
+    }
+
+    // Spinning Dharma Chakra disc at pillar apex
+    this._stambhaChakra = new THREE.Mesh(
+      new THREE.TorusGeometry(2.0, 0.28, 6, 24),
+      new THREE.MeshToonMaterial({ color: 0xffcc44, gradientMap: tg }),
+    );
+    this._stambhaChakra.rotation.x = Math.PI / 2;
+    this._stambhaChakra.position.y = 33.2;
+    this._stambhaGroup.add(this._stambhaChakra);
+
+    // 8 chakra spokes at apex
+    for (let i = 0; i < 8; i++) {
+      const sa = (i / 8) * Math.PI * 2;
+      const sp = new THREE.Mesh(
+        new THREE.BoxGeometry(0.12, 0.12, 1.85),
+        new THREE.MeshBasicMaterial({ color: 0xffcc44 }),
+      );
+      sp.rotation.y = sa;
+      sp.position.set(0, 33.2, 0);
+      this._stambhaGroup.add(sp);
+    }
+
+    // Beacon at summit — large, bright, visible from city edge
+    this._stambhaBeacon = new THREE.Mesh(
+      new THREE.SphereGeometry(1.0, 10, 8),
+      new THREE.MeshBasicMaterial({
+        color: 0xffeeaa,
+        transparent: true,
+        opacity: 0.92,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      }),
+    );
+    this._stambhaBeacon.position.y = 34.6;
+    this._stambhaGroup.add(this._stambhaBeacon);
+
+    // Beacon light — golden, reaches far at night
+    this._stambhaLight = new THREE.PointLight(0xffdd88, this.isNight ? 5.0 : 2.0, 60);
+    this._stambhaLight.position.y = 34.8;
+    this._stambhaGroup.add(this._stambhaLight);
+
     // Note: _islandRing and _islandRingOuter are not set — the animation blocks
     // in _updateLighting guard with if(this._islandRing) so they skip cleanly.
   }
@@ -1108,6 +1197,86 @@ export default class World {
     );
     this._dustTrail.userData = { life: dLife, vel: dVel, head: 0, DUST_N };
     this.scene.add(this._dustTrail);
+
+    // ── RIVER DIYAS — 70 golden points drifting downstream at night ──────────
+    // Day equivalent: lotus patches (pink/white, same positions, cross-fade)
+    const DIYA_N = 70;
+    const diyaPos = new Float32Array(DIYA_N * 3);
+    const lotusPos = new Float32Array(DIYA_N * 3);
+    const lotusCols = new Float32Array(DIYA_N * 3);
+    // River path z range: approximately -3 to -20 (main river E-W)
+    for (let i = 0; i < DIYA_N; i++) {
+      const rx = (Math.random() - 0.5) * 430; // spread across full river width
+      const rz = -4 + Math.random() * -14;    // within river z band
+      diyaPos[i * 3]     = rx;
+      diyaPos[i * 3 + 1] = -0.05;
+      diyaPos[i * 3 + 2] = rz;
+      lotusPos[i * 3]     = rx;
+      lotusPos[i * 3 + 1] = -0.10;
+      lotusPos[i * 3 + 2] = rz;
+      const isPink = Math.random() > 0.4;
+      lotusCols[i * 3]     = 1.0;
+      lotusCols[i * 3 + 1] = isPink ? 0.5 : 0.95;
+      lotusCols[i * 3 + 2] = isPink ? 0.65 : 0.97;
+    }
+
+    const diyaGeo = new THREE.BufferGeometry();
+    diyaGeo.setAttribute('position', new THREE.BufferAttribute(diyaPos, 3));
+    this._riverDiyas = new THREE.Points(diyaGeo,
+      new THREE.PointsMaterial({
+        color: 0xff9922,
+        size: 1.4,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        sizeAttenuation: true,
+      }),
+    );
+    this.scene.add(this._riverDiyas);
+
+    const lotusGeo = new THREE.BufferGeometry();
+    lotusGeo.setAttribute('position', new THREE.BufferAttribute(lotusPos, 3));
+    lotusGeo.setAttribute('color', new THREE.BufferAttribute(lotusCols, 3));
+    this._lotusPatches = new THREE.Points(lotusGeo,
+      new THREE.PointsMaterial({
+        size: 2.2,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.72,
+        depthWrite: false,
+        sizeAttenuation: true,
+      }),
+    );
+    this.scene.add(this._lotusPatches);
+
+    // ── INCENSE SMOKE — thin gray-white particles rising from each temple ─────
+    const temples = window.CITY_DATA?.buildings || [];
+    const SMOKE_PER = 6;
+    const SMOKE_N = temples.length * SMOKE_PER;
+    const sPos = new Float32Array(SMOKE_N * 3);
+    for (let i = 0; i < SMOKE_N; i++) {
+      const b = temples[Math.floor(i / SMOKE_PER)];
+      const tp = b ? b.pos : [0, 0];
+      sPos[i * 3]     = tp[0] + (Math.random() - 0.5) * 2.5;
+      sPos[i * 3 + 1] = 0.8 + Math.random() * 14; // stagger heights on init
+      sPos[i * 3 + 2] = tp[1] + (Math.random() - 0.5) * 2.5;
+    }
+    const smokeGeo = new THREE.BufferGeometry();
+    smokeGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3));
+    this._incenseSmoke = new THREE.Points(smokeGeo,
+      new THREE.PointsMaterial({
+        color: 0xddddd0,
+        size: 0.52,
+        transparent: true,
+        opacity: 0.22,
+        depthWrite: false,
+        sizeAttenuation: true,
+      }),
+    );
+    this._incenseSmoke.userData.temples = temples;
+    this._incenseSmoke.userData.smokePerTemple = SMOKE_PER;
+    this.scene.add(this._incenseSmoke);
   }
 
   _updateAtmosphere(now, dt) {
@@ -1220,6 +1389,63 @@ export default class World {
           this._chakraBeaconLight.intensity += (tI - this._chakraBeaconLight.intensity) * 0.04;
         }
       }
+    }
+
+    // ── ASHOKA STAMBHA — top chakra spins, beacon breathes ───────────────────
+    if (this._stambhaChakra) {
+      this._stambhaChakra.rotation.z = now * 0.18;
+    }
+    if (this._stambhaBeacon) {
+      const sb = 0.82 + Math.sin(now * 0.88 + 1.2) * 0.16;
+      this._stambhaBeacon.material.opacity = sb;
+      if (this._stambhaLight) {
+        const tI = (this.isNight ? 5.5 : 2.0) * sb;
+        this._stambhaLight.intensity += (tI - this._stambhaLight.intensity) * 0.04;
+      }
+    }
+
+    // ── RIVER DIYAS — drift eastward downstream, visible at night ─────────────
+    if (this._riverDiyas) {
+      const _dt = dt || 0.016;
+      const pos = this._riverDiyas.geometry.attributes.position.array;
+      for (let i = 0, n = pos.length / 3; i < n; i++) {
+        pos[i * 3] += 1.5 * _dt; // drift eastward with current
+        if (pos[i * 3] > 215) pos[i * 3] = -215; // wrap
+        pos[i * 3 + 2] += Math.sin(now * 0.28 + i * 0.83) * 0.006; // shimmer
+      }
+      this._riverDiyas.geometry.attributes.position.needsUpdate = true;
+      const tDiya = this.isNight ? 0.88 : 0;
+      this._riverDiyas.material.opacity += (tDiya - this._riverDiyas.material.opacity) * 0.016;
+    }
+
+    // ── LOTUS PATCHES — visible in day, hidden at night ───────────────────────
+    if (this._lotusPatches) {
+      const tLotus = this.isNight ? 0 : 0.72;
+      this._lotusPatches.material.opacity += (tLotus - this._lotusPatches.material.opacity) * 0.018;
+    }
+
+    // ── INCENSE SMOKE — rises slowly, drifts, respawns at temple base ─────────
+    if (this._incenseSmoke) {
+      const _dt = dt || 0.016;
+      const pos = this._incenseSmoke.geometry.attributes.position.array;
+      const temples = this._incenseSmoke.userData.temples || [];
+      const spt = this._incenseSmoke.userData.smokePerTemple || 6;
+      for (let i = 0, n = pos.length / 3; i < n; i++) {
+        pos[i * 3 + 1] += 1.0 * _dt;
+        pos[i * 3]     += Math.sin(now * 0.35 + i * 0.91) * 0.007;
+        pos[i * 3 + 2] += Math.cos(now * 0.28 + i * 1.13) * 0.007;
+        if (pos[i * 3 + 1] > 20) {
+          const b = temples[Math.floor(i / spt)];
+          const tp = b ? b.pos : [0, 0];
+          pos[i * 3]     = tp[0] + (Math.random() - 0.5) * 2.5;
+          pos[i * 3 + 1] = 0.8;
+          pos[i * 3 + 2] = tp[1] + (Math.random() - 0.5) * 2.5;
+        }
+      }
+      this._incenseSmoke.geometry.attributes.position.needsUpdate = true;
+      // Smoke slightly more visible at night when fire torches lit
+      const tSmoke = this.isNight ? 0.28 : 0.18;
+      this._incenseSmoke.material.opacity += (tSmoke - this._incenseSmoke.material.opacity) * 0.02;
     }
 
     // ── CLOUDS — drift westward, gentle Y bob, fade at night ─────────────────
@@ -1379,6 +1605,17 @@ export default class World {
     string(-55, 14, 5, 55, 5, 18);
     string(-35, 14, 80, 35, 80, 12);
     string(-45, 14, -138, 45, -138, 14);
+
+    // Per-building flag strings radiating from building apex outward
+    // Height capped at 22 so they don't float in empty sky for tall buildings
+    (window.CITY_DATA?.buildings || []).forEach((b) => {
+      const bh = Math.min(b.height, 22) + 1;
+      const bx = b.pos[0];
+      const bz = b.pos[1];
+      const fr = Math.max(b.size[0], b.size[1]) * 0.6;
+      // Cross strings: one E-W, one N-S per building
+      string(bx - fr, bh, bz, bx + fr, bz, 5);
+    });
   }
 
   _updatePrayerFlags(now) {

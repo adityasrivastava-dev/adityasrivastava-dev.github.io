@@ -64,16 +64,42 @@ export default class River {
       [0, -12], [55, -7], [108, -4], [158, -13], [225, -18],
     ];
 
-    // Mud bank (widest layer, below everything)
-    this._ribbon(path, -0.32, 32, new THREE.MeshLambertMaterial({ color: 0x7a5535 }));
-    // Dark water body
-    this._ribbon(path, -0.22, 22, new THREE.MeshLambertMaterial({ color: 0x1a5068 }));
-    // Animated shimmer surface (MeshBasicMaterial = emissive-like, won't bloom at these values)
-    const shim = this._ribbon(path, -0.14, 19,
+    // Mud bank (widest layer, below everything) — widened from 32 to 48
+    this._ribbon(path, -0.32, 48, new THREE.MeshLambertMaterial({ color: 0x7a5535 }));
+    // Dark water body — widened from 22 to 42
+    this._ribbon(path, -0.22, 42, new THREE.MeshLambertMaterial({ color: 0x1a5068 }));
+    // Animated shimmer surface
+    const shim = this._ribbon(path, -0.14, 36,
       new THREE.MeshBasicMaterial({
         color: 0x2988b8, transparent: true, opacity: 0.72, depthWrite: false,
       }));
     this._shimmers.push({ mesh: shim, phase: 0 });
+
+    // ── GHATS — 3 stepped sandstone terraces on south bank ───────────────────
+    // Each ghat descends toward water: step 0 = highest (furthest from water),
+    // step 2 = lowest (at water's edge). South bank of main river is at z≈-22.
+    const ghatMat = new THREE.MeshLambertMaterial({ color: 0xd4b870 }); // warm sandstone
+    const ghatXPositions = [-160, -85, -15, 55, 125, 180];
+    ghatXPositions.forEach(gx => {
+      for (let step = 0; step < 3; step++) {
+        const ghat = new THREE.Mesh(
+          new THREE.BoxGeometry(18, 0.42, 3.8),
+          ghatMat,
+        );
+        // South bank: each step descends toward water
+        ghat.position.set(gx, -0.32 + step * 0.38, -18 - step * 4.2);
+        this.scene.add(ghat);
+      }
+      // Ghat end walls (small vertical slabs at each side)
+      for (const ox of [-9, 9]) {
+        const wall = new THREE.Mesh(
+          new THREE.BoxGeometry(0.5, 1.6, 12),
+          ghatMat,
+        );
+        wall.position.set(gx + ox, -0.1, -24);
+        this.scene.add(wall);
+      }
+    });
   }
 
   _buildTributary() {
@@ -84,9 +110,9 @@ export default class River {
       [-12, 84], [-5, 106], [0, 120],
     ];
 
-    this._ribbon(path, -0.32, 18, new THREE.MeshLambertMaterial({ color: 0x7a5535 }));
-    this._ribbon(path, -0.22, 13, new THREE.MeshLambertMaterial({ color: 0x1a5068 }));
-    const shim = this._ribbon(path, -0.14, 11,
+    this._ribbon(path, -0.32, 22, new THREE.MeshLambertMaterial({ color: 0x7a5535 }));
+    this._ribbon(path, -0.22, 16, new THREE.MeshLambertMaterial({ color: 0x1a5068 }));
+    const shim = this._ribbon(path, -0.14, 13,
       new THREE.MeshBasicMaterial({
         color: 0x2988b8, transparent: true, opacity: 0.72, depthWrite: false,
       }));

@@ -212,9 +212,9 @@ export default class Objects {
     // Must run AFTER the building type method populates the group.
     this._imperfectify(g, baseH);
 
-    // Torana gateway for hero/education
+    // Torana gateway for hero/education — capped at 20 to avoid stilt proportions
     if (b.isHero || b.isEducation) {
-      const torH = h * 0.5,
+      const torH = Math.min(h * 0.5, 20),
         torW = w * 0.7;
       for (const x of [-torW / 2, torW / 2]) {
         const p = new THREE.Mesh(new THREE.BoxGeometry(0.45, torH, 0.45), mM);
