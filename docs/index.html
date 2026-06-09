@@ -96,6 +96,15 @@
       </div>
     </div>
 
+    <!-- ── SANSKRIT TITLE CARD — Item 38, auto-dismisses after 6s ── -->
+    <div id="city-title-card" aria-hidden="true">
+      <div class="ctc-inner">
+        <div class="ctc-deva">नगरम् प्रवेशः</div>
+        <div class="ctc-sub">ADITYA SRIVASTAVA</div>
+        <div class="ctc-role">Backend Architect · Temple City</div>
+      </div>
+    </div>
+
     <!-- ── OVERLAYS ── -->
     <div id="pp-glow"></div>
     <div id="vig"></div>
@@ -349,6 +358,11 @@
             if (gripHud) gripHud.style.display = "none";
           }
         };
+      })();
+      // ── TITLE CARD CLEANUP — remove from DOM after animation ends (6.4s) ─────
+      (function () {
+        const tc = document.getElementById('city-title-card');
+        if (tc) setTimeout(() => tc.classList.add('hidden'), 6600);
       })();
     </script>
 

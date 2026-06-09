@@ -41,6 +41,7 @@ export default class World {
     this._buildClouds();
     this._buildGodRays();
     this._buildDistrictZones();
+    this._buildBirds();
   }
 
   // ── MAIN UPDATE — called by Application every render frame ─────────────────
@@ -188,6 +189,14 @@ export default class World {
     if (!fromAutoCycle && this._cycleStarted) {
       this._cycleManualOverride = true;
       if (['day', 'sunset', 'night'].includes(w)) this._cyclePhase = w;
+    }
+
+    // Item 22: golden flash on day→sunset transition
+    if (w === 'sunset') {
+      const el = document.createElement('div');
+      el.className = 'sunset-flash';
+      document.body.appendChild(el);
+      el.addEventListener('animationend', () => el.remove());
     }
     const cfgs = {
       day: {
@@ -558,7 +567,7 @@ export default class World {
 
     // Moon — large cream sphere, positioned NW at medium height
     this._moonMesh = new THREE.Mesh(
-      new THREE.SphereGeometry(13, 16, 12),
+      new THREE.SphereGeometry(20, 16, 12),
       new THREE.MeshBasicMaterial({
         color: 0xfff8e8,
         transparent: true,
@@ -570,7 +579,7 @@ export default class World {
     s.add(this._moonMesh);
 
     // Moon halo — soft additive ring around moon
-    const haloGeo = new THREE.RingGeometry(15, 26, 32);
+    const haloGeo = new THREE.RingGeometry(22, 40, 32);
     this._moonHalo = new THREE.Mesh(haloGeo,
       new THREE.MeshBasicMaterial({
         color: 0xfff0cc,
@@ -651,15 +660,16 @@ export default class World {
   // Much lighter than a post-process pass; additive blending = zero overdraw cost.
   _buildGodRays() {
     const s = this.scene;
-    const sunPos = new THREE.Vector3(200, 165, 95);
+    // Item 29: sun at golden-hour horizon angle — lower and larger
+    const sunPos = new THREE.Vector3(280, 85, 120);
 
-    // Visible sun sphere — cream-white, no fog
+    // Visible sun sphere — warm golden disc near horizon
     this._sunDisc = new THREE.Mesh(
-      new THREE.SphereGeometry(9, 10, 8),
+      new THREE.SphereGeometry(14, 12, 10),
       new THREE.MeshBasicMaterial({
-        color: 0xffffcc,
+        color: 0xffee88,
         transparent: true,
-        opacity: 0.88,
+        opacity: 0.92,
         fog: false,
         depthWrite: false,
       }),
@@ -667,19 +677,19 @@ export default class World {
     this._sunDisc.position.copy(sunPos);
     s.add(this._sunDisc);
 
-    // Sun halo ring — additive glow around disc
+    // Sun halo ring — large warm corona
     this._sunHaloMat = new THREE.MeshBasicMaterial({
-      color: 0xffcc66,
+      color: 0xff9944,
       transparent: true,
-      opacity: 0.12,
+      opacity: 0.18,
       fog: false,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
       side: THREE.DoubleSide,
     });
-    const halo = new THREE.Mesh(new THREE.RingGeometry(11, 26, 28), this._sunHaloMat);
+    const halo = new THREE.Mesh(new THREE.RingGeometry(16, 42, 32), this._sunHaloMat);
     halo.position.copy(sunPos);
-    halo.lookAt(0, 60, 0);
+    halo.lookAt(0, 50, 0);
     s.add(halo);
 
     // Ray material — shared across all 8 rays so opacity update is one line
@@ -748,6 +758,46 @@ export default class World {
       this.scene.add(disc);
       this._districtZoneMats.push(mat);
     });
+  }
+
+  // ── BIRDS — 30 triangle points circling Surya Dwara summit ──────────────────
+  // Item 11: organic bird flock at y=62-68, radius 22-38, slow spiral
+  _buildBirds() {
+    const BIRD_N = 30;
+    const bPos   = new Float32Array(BIRD_N * 3);
+    // Surya Dwara sits at x=72, z=-35 (from Objects.js city-data positioning)
+    const CX = 72, CZ = -35;
+
+    const angles     = new Float32Array(BIRD_N);
+    const speeds     = new Float32Array(BIRD_N);
+    const radii      = new Float32Array(BIRD_N);
+    const ys         = new Float32Array(BIRD_N);
+    const bobSpeeds  = new Float32Array(BIRD_N);
+    const bobPhases  = new Float32Array(BIRD_N);
+
+    for (let i = 0; i < BIRD_N; i++) {
+      angles[i]    = (i / BIRD_N) * Math.PI * 2 + Math.random() * 0.4;
+      speeds[i]    = 0.18 + Math.random() * 0.12; // rad/s
+      radii[i]     = 22 + Math.random() * 16;      // 22-38 from tower axis
+      ys[i]        = 62 + Math.random() * 6;       // 62-68 above ground
+      bobSpeeds[i] = 0.8 + Math.random() * 0.6;
+      bobPhases[i] = Math.random() * Math.PI * 2;
+      bPos[i * 3]     = CX + Math.cos(angles[i]) * radii[i];
+      bPos[i * 3 + 1] = ys[i];
+      bPos[i * 3 + 2] = CZ + Math.sin(angles[i]) * radii[i];
+    }
+
+    const bGeo = new THREE.BufferGeometry();
+    bGeo.setAttribute('position', new THREE.BufferAttribute(bPos, 3));
+    this._birds = new THREE.Points(bGeo,
+      new THREE.PointsMaterial({
+        color: 0x221100, size: 1.1,
+        transparent: true, opacity: 0.82,
+        depthWrite: false,
+      }),
+    );
+    this._birds.userData = { count: BIRD_N, cx: CX, cz: CZ, angles, speeds, radii, ys, bobSpeeds, bobPhases };
+    this.scene.add(this._birds);
   }
 
   // ── GROUND (large flat plane + sandy pavement) ─────────────────────────────
@@ -831,6 +881,43 @@ export default class World {
       const strip = new THREE.Mesh(new THREE.BoxGeometry(w, 0.1, d), sandMat);
       strip.position.set(x, -0.35, z);
       s.add(strip);
+    }
+
+    // ── DISTANT MOUNTAINS — Item 37 ───────────────────────────────────────────
+    // Low-poly silhouettes at far horizon (r=420-600) — dark blue-purple haze
+    const mtnMat = new THREE.MeshLambertMaterial({ color: 0x2a2050, fog: true });
+    const peaks = [
+      // [cx, cz, width, height, segments]
+      [-480, -300, 160, 90,  6],
+      [-300, -480, 140, 110, 5],
+      [ -60, -520, 180, 130, 7],
+      [ 200, -490, 150, 100, 6],
+      [ 450, -320, 160, 80,  5],
+      [ 520,   20, 140, 95,  6],
+      [ 490,  280, 130, 75,  5],
+      [ 200,  500, 170, 120, 7],
+      [ -80,  520, 150, 90,  6],
+      [-300,  470, 160, 105, 6],
+      [-500,  250, 140, 85,  5],
+      [-510,  -60, 150, 100, 6],
+    ];
+    for (const [cx, cz, mw, mh, seg] of peaks) {
+      // Cone → stretch and flatten into mountain shape
+      const geo = new THREE.ConeGeometry(mw * 0.5, mh, seg);
+      const posArr = geo.attributes.position.array;
+      // Add vertex-level noise for irregular silhouette
+      for (let vi = 0; vi < posArr.length; vi += 3) {
+        if (posArr[vi + 1] > 0) { // only top vertices
+          posArr[vi]     += (Math.random() - 0.5) * mw * 0.18;
+          posArr[vi + 1] += (Math.random() - 0.5) * mh * 0.12;
+          posArr[vi + 2] += (Math.random() - 0.5) * mw * 0.18;
+        }
+      }
+      geo.attributes.position.needsUpdate = true;
+      geo.computeVertexNormals();
+      const mtn = new THREE.Mesh(geo, mtnMat);
+      mtn.position.set(cx, -1, cz);
+      s.add(mtn);
     }
   }
 
@@ -928,6 +1015,31 @@ export default class World {
     rim.rotation.x = Math.PI / 2;
     rim.position.y = 1.25;
     this._chakraGroup.add(rim);
+
+    // ── SACRED FIRE — at the center of the Dharma Chakra plaza ──────────────
+    // 4-layer flame visible from the road, always lit
+    this._sacredFire = [];
+    const fireDefs = [
+      { col: 0xcc2200, r: 0.28, h: 0.5  },
+      { col: 0xff6600, r: 0.20, h: 0.65 },
+      { col: 0xffaa00, r: 0.14, h: 0.80 },
+      { col: 0xffee88, r: 0.08, h: 0.95 },
+    ];
+    fireDefs.forEach(({ col, r, h: fh }, i) => {
+      const fm = new THREE.Mesh(
+        new THREE.ConeGeometry(r, fh, 6),
+        new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.90 }),
+      );
+      fm.position.y = 1.0 + i * 0.06;
+      fm.userData.fireI = i;
+      fm.userData.firePhase = i * 1.57;
+      this._chakraGroup.add(fm);
+      this._sacredFire.push(fm);
+    });
+    // Fire glow light
+    this._sacredFireLight = new THREE.PointLight(0xff6622, this.isNight ? 5.0 : 2.2, 32);
+    this._sacredFireLight.position.y = 1.6;
+    this._chakraGroup.add(this._sacredFireLight);
 
     // Central dharma beacon
     this._chakraBeacon = new THREE.Mesh(
@@ -1119,14 +1231,22 @@ export default class World {
       [-131, -35], // vidya-ashram
       [0, 115],    // sutra-dhara
     ];
+    const RIVER_FF = Math.floor(FC * 0.5); // 50% near river corridor
     for (let i = 0; i < FC; i++) {
-      const area = fireTempleAreas[i % fireTempleAreas.length];
-      fPos[i * 3] = area[0] + (Math.random() - 0.5) * 12;
-      fPos[i * 3 + 1] = 1.5 + Math.random() * 6;
-      fPos[i * 3 + 2] = area[1] + (Math.random() - 0.5) * 12;
+      if (i < RIVER_FF) {
+        // River corridor: z=-3 to -20, full x span of city
+        fPos[i * 3]     = -200 + Math.random() * 400;
+        fPos[i * 3 + 1] = 0.5 + Math.random() * 3.5;   // low, near water
+        fPos[i * 3 + 2] = -3 - Math.random() * 17;
+      } else {
+        const area = fireTempleAreas[(i - RIVER_FF) % fireTempleAreas.length];
+        fPos[i * 3]     = area[0] + (Math.random() - 0.5) * 12;
+        fPos[i * 3 + 1] = 1.5 + Math.random() * 6;
+        fPos[i * 3 + 2] = area[1] + (Math.random() - 0.5) * 12;
+      }
       fPhase[i] = Math.random() * Math.PI * 2;
       const warm = Math.random() > 0.5;
-      fCol[i * 3] = warm ? 1 : 0.5;
+      fCol[i * 3]     = warm ? 1   : 0.5;
       fCol[i * 3 + 1] = warm ? 0.9 : 0.9;
       fCol[i * 3 + 2] = warm ? 0.3 : 1.0;
     }
@@ -1277,6 +1397,31 @@ export default class World {
     this._incenseSmoke.userData.temples = temples;
     this._incenseSmoke.userData.smokePerTemple = SMOKE_PER;
     this.scene.add(this._incenseSmoke);
+
+    // Item 42: Processional diyas — golden points lining the x=0 spine road
+    // From city entry (z=62) to deep north (z=-155), spaced 4 units, ±2.5 offset
+    const PROC_N = 56; // ~220 units / 4 spacing = 55 pairs × 2 sides
+    const procPos = new Float32Array(PROC_N * 2 * 3); // 2 sides
+    for (let i = 0; i < PROC_N; i++) {
+      const pz = 60 - i * 4;
+      for (const [si, ox] of [[-1, -2.5], [1, 2.5]]) {
+        const idx = (i * 2 + (si < 0 ? 0 : 1)) * 3;
+        procPos[idx]     = ox;
+        procPos[idx + 1] = 0.08;
+        procPos[idx + 2] = pz;
+      }
+    }
+    const procGeo = new THREE.BufferGeometry();
+    procGeo.setAttribute('position', new THREE.BufferAttribute(procPos, 3));
+    this._procDiyas = new THREE.Points(procGeo,
+      new THREE.PointsMaterial({
+        color: 0xffaa22, size: 1.0,
+        transparent: true, opacity: 0,
+        depthWrite: false, blending: THREE.AdditiveBlending,
+        sizeAttenuation: true,
+      }),
+    );
+    this.scene.add(this._procDiyas);
   }
 
   _updateAtmosphere(now, dt) {
@@ -1363,8 +1508,8 @@ export default class World {
 
     // ── STARS + MOON — fade in at night ──────────────────────────────────────
     if (this._starField) {
-      const tStar = this.isNight ? 0.88 : 0;
-      const tMW   = this.isNight ? 0.32 : 0;
+      const tStar = this.isNight ? 0.92 : 0;
+      const tMW   = this.isNight ? 0.55 : 0; // boosted Milky Way
       const tMoon = this.isNight ? 1.0  : 0;
       this._starField.material.opacity += (tStar - this._starField.material.opacity) * 0.014;
       if (this._milkyWay)
@@ -1372,8 +1517,9 @@ export default class World {
       if (this._moonMesh) {
         this._moonMesh.material.opacity += (tMoon - this._moonMesh.material.opacity) * 0.014;
         if (this._moonHalo) {
+          // Boosted halo — visibly dramatic at night
           this._moonHalo.material.opacity =
-            this._moonMesh.material.opacity * (0.14 + Math.sin(now * 0.28) * 0.04);
+            this._moonMesh.material.opacity * (0.38 + Math.sin(now * 0.28) * 0.08);
         }
       }
     }
@@ -1481,6 +1627,46 @@ export default class World {
         mat.opacity += (tZone - mat.opacity) * 0.012;
       }
     }
+
+    // ── SACRED FIRE — flicker each cone layer independently ──────────────────
+    if (this._sacredFire && this._sacredFire.length) {
+      for (const fm of this._sacredFire) {
+        const ph = fm.userData.firePhase;
+        const i  = fm.userData.fireI;
+        // Each layer flickers at different frequency — outer slower, inner faster
+        const flicker = 0.72 + Math.sin(now * (3.8 + i * 1.2) + ph) * 0.24
+                             + Math.sin(now * (7.1 + i * 0.9) + ph * 1.7) * 0.08;
+        fm.material.opacity = Math.max(0.45, Math.min(0.98, flicker));
+        // Scale Y slightly for flame dance
+        fm.scale.y = 0.88 + Math.sin(now * 4.2 + ph) * 0.16;
+        fm.scale.x = 0.92 + Math.cos(now * 3.5 + ph) * 0.10;
+      }
+      if (this._sacredFireLight) {
+        const fi = (this.isNight ? 6.0 : 2.8) * (0.88 + Math.sin(now * 5.1) * 0.18);
+        this._sacredFireLight.intensity += (fi - this._sacredFireLight.intensity) * 0.12;
+      }
+    }
+
+    // ── BIRDS — flock circles above Surya Dwara summit ───────────────────────
+    if (this._birds) this._updateBirds(now);
+
+    // Item 42: Processional diyas — glow at night, breathe gently
+    if (this._procDiyas) {
+      const tProc = this.isNight ? 0.70 : 0.18;
+      this._procDiyas.material.opacity += (tProc - this._procDiyas.material.opacity) * 0.02;
+    }
+  }
+
+  _updateBirds(now) {
+    const pos = this._birds.geometry.attributes.position.array;
+    const bdata = this._birds.userData;
+    for (let i = 0, n = bdata.count; i < n; i++) {
+      const ang = bdata.angles[i] + now * bdata.speeds[i];
+      pos[i * 3]     = bdata.cx + Math.cos(ang) * bdata.radii[i];
+      pos[i * 3 + 1] = bdata.ys[i] + Math.sin(now * bdata.bobSpeeds[i] + bdata.bobPhases[i]) * 1.2;
+      pos[i * 3 + 2] = bdata.cz + Math.sin(ang) * bdata.radii[i];
+    }
+    this._birds.geometry.attributes.position.needsUpdate = true;
   }
 
   // Called by Car.updateVisuals() to spawn dust when moving
@@ -1721,6 +1907,57 @@ export default class World {
       g.add(sign);
       this.scene.add(g);
     });
+
+    // Item 23: City entry gate — grand ceremonial torana at z=62 (player faces north)
+    // Larger than district arches: H=18, W=20, with 3-tiered gopuram roof
+    {
+      const entryG = new THREE.Group();
+      entryG.position.set(0, 0, 62);
+      const W2 = 18, H = 18;
+      for (const ox of [-W2, W2]) {
+        const pillar = new THREE.Mesh(new THREE.BoxGeometry(2.0, H, 2.0), archMat);
+        pillar.position.set(ox, H / 2, 0);
+        entryG.add(pillar);
+        // Tiered capital
+        for (let ti = 0; ti < 3; ti++) {
+          const capW = 3.2 - ti * 0.6;
+          const cap = new THREE.Mesh(new THREE.BoxGeometry(capW, 1.0, capW), goldMat);
+          cap.position.set(ox, H + ti * 1.1, 0);
+          entryG.add(cap);
+        }
+        const pot = new THREE.Mesh(new THREE.SphereGeometry(0.9, 8, 6), goldMat);
+        pot.position.set(ox, H + 3.5, 0);
+        entryG.add(pot);
+      }
+      const lintel = new THREE.Mesh(new THREE.BoxGeometry(W2 * 2 + 2, 1.6, 2.0), archMat);
+      lintel.position.set(0, H, 0);
+      entryG.add(lintel);
+      const archTop = new THREE.Mesh(new THREE.BoxGeometry(W2 * 2 + 2, 1.2, 2.0), goldMat);
+      archTop.position.set(0, H + 1.5, 0);
+      entryG.add(archTop);
+      // Sanskrit label: "नगरम् प्रवेश"
+      const CW2 = 512, CH2 = 72;
+      const can2 = document.createElement('canvas');
+      can2.width = CW2; can2.height = CH2;
+      const ctx2 = can2.getContext('2d');
+      ctx2.fillStyle = 'rgba(10,5,2,0.92)';
+      ctx2.fillRect(0, 0, CW2, CH2);
+      ctx2.strokeStyle = '#ffcc44cc';
+      ctx2.lineWidth = 2;
+      ctx2.strokeRect(2, 2, CW2 - 4, CH2 - 4);
+      ctx2.fillStyle = '#f0d870';
+      ctx2.font = 'bold 32px serif';
+      ctx2.textAlign = 'center';
+      ctx2.textBaseline = 'middle';
+      ctx2.fillText('◈  नगरम् प्रवेश  ◈', CW2 / 2, CH2 / 2);
+      const sign2 = new THREE.Mesh(
+        new THREE.PlaneGeometry(W2 * 2 - 1, 2.0),
+        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(can2), transparent: true }),
+      );
+      sign2.position.set(0, H - 0.6, 1.1);
+      entryG.add(sign2);
+      this.scene.add(entryG);
+    }
   }
 
   // ── WORLD NAME ──────────────────────────────────────────────────────────────

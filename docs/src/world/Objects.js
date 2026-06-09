@@ -176,6 +176,17 @@ export default class Objects {
       matcap: mc.gold_rich || mc.gold || mc.warm,
     });
 
+    // Item 25: Sacred mound beneath Surya Dwara — 3-unit earth platform
+    if (b.isHero) {
+      const moundGeo = new THREE.CylinderGeometry(w * 0.9, w * 1.2, 3.0, 12);
+      const moundMesh = new THREE.Mesh(
+        moundGeo,
+        new THREE.MeshToonMaterial({ color: 0x8a6030, gradientMap: tg }),
+      );
+      moundMesh.position.y = -1.5; // half below ground, half above
+      g.add(moundMesh);
+    }
+
     // Foundation steps — IMPROVEMENT 3: lowest step uses dark material (fake AO)
     // The bottom-most step sits in shadow from all steps above it.
     // Using mD instead of mM/mL grounds the building visually.
@@ -361,6 +372,21 @@ export default class Objects {
     nightRing.position.y = 0.2;
     g.add(nightRing);
 
+    // Item 48: Roof lamps — 4 corner oil lamps on parapet
+    const lampGlowMat = new THREE.MeshBasicMaterial({
+      color: 0xff8833, transparent: true, opacity: 0.0, depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    const lampCorners = [[w * 0.45, d * 0.45], [-w * 0.45, d * 0.45],
+                          [w * 0.45, -d * 0.45], [-w * 0.45, -d * 0.45]];
+    const roofLamps = [];
+    for (const [lx, lz] of lampCorners) {
+      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.18, 5, 4), lampGlowMat.clone());
+      lamp.position.set(lx, baseH + 0.22, lz);
+      g.add(lamp);
+      roofLamps.push(lamp);
+    }
+
     // Apex beacon — glowing orb at building top that pulses at night
     const apexBeaconMat = new THREE.MeshBasicMaterial({
       color: gc,
@@ -377,6 +403,7 @@ export default class Objects {
     this._buildingNightGlow.push({
       ringMat: nightRingMat,
       apexMat: apexBeaconMat,
+      roofLamps,
       phase: ((b.pos[0] * 0.31 + b.pos[1] * 0.57) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2),
       isHero: !!b.isHero,
     });
@@ -1246,8 +1273,8 @@ export default class Objects {
     });
 
     // Flickering warm-orange light (hero temples brighter)
-    const baseI = this._isNight ? (isHero ? 4.5 : 3.0) : (isHero ? 1.5 : 0.9);
-    const light = new THREE.PointLight(0xff8833, baseI, isHero ? 18 : 12);
+    const baseI = this._isNight ? (isHero ? 7.0 : 4.5) : (isHero ? 1.5 : 0.9);
+    const light = new THREE.PointLight(0xff8833, baseI, isHero ? 22 : 14);
     light.position.set(0, baseY + 0.2, 0);
     g.add(light);
 
@@ -1766,10 +1793,10 @@ export default class Objects {
         if (c.isLight && c.type === "PointLight" && !c.userData.isLampLight) {
           const baseI = isHero
             ? this._isNight
-              ? 4.5
+              ? 7.0   // Item 35: 2× night boost (was 4.5)
               : 1.8
             : this._isNight
-              ? 2.5
+              ? 4.0   // Item 35: 2× night boost (was 2.5)
               : 1.0;
           // Light also responds to hover zone — dims up from far away
           const hoverBoost = isHover
@@ -1799,7 +1826,7 @@ export default class Objects {
         Math.sin(now * 11.3 + phase) * 0.1 +
         Math.sin(now * 7.7 + phase * 1.4) * 0.07 +
         Math.sin(now * 19.1 + phase * 0.6) * 0.04;
-      const baseI = this._isNight ? (isHero ? 4.5 : 3.0) : (isHero ? 1.5 : 0.9);
+      const baseI = this._isNight ? (isHero ? 7.0 : 4.5) : (isHero ? 1.5 : 0.9);
       light.intensity = baseI * flicker;
       flames.forEach((f) => {
         const ph = now * f.userData.flameSpeed + f.userData.flamePhase;
@@ -1859,10 +1886,10 @@ export default class Objects {
     });
   }
 
-  // Night glow rings + apex beacons — called from World._updateAmbients every frame
+  // Night glow rings + apex beacons + roof lamps — called every frame
   updateNightGlow(isNight, now) {
     if (!this._buildingNightGlow || !this._buildingNightGlow.length) return;
-    for (const { ringMat, apexMat, phase, isHero } of this._buildingNightGlow) {
+    for (const { ringMat, apexMat, roofLamps, phase, isHero } of this._buildingNightGlow) {
       const pulse = Math.sin(now * 0.85 + phase) * 0.12;
       const targetRing = isNight ? (isHero ? 0.72 + pulse : 0.48 + pulse) : 0;
       const targetApex = isNight ? (isHero ? 0.88 + pulse : 0.65 + pulse) : 0;
@@ -1870,6 +1897,14 @@ export default class Objects {
       apexMat.opacity += (targetApex - apexMat.opacity) * 0.025;
       ringMat.opacity = Math.max(0, Math.min(1, ringMat.opacity));
       apexMat.opacity = Math.max(0, Math.min(1, apexMat.opacity));
+      // Item 48: roof lamps — flicker like oil flames
+      if (roofLamps) {
+        const tLamp = isNight ? 0.72 : 0;
+        for (let li = 0; li < roofLamps.length; li++) {
+          const fl = 0.8 + Math.sin(now * 6.2 + phase + li * 1.1) * 0.18;
+          roofLamps[li].material.opacity += (tLamp * fl - roofLamps[li].material.opacity) * 0.04;
+        }
+      }
     }
   }
 }
