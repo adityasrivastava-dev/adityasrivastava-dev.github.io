@@ -15,13 +15,13 @@ export const Car = {
 };
 
 export const CameraC = {
-  FOV_MIN: 28,  // ultra-tight at rest = miniature diorama
+  FOV_MIN: 55,  // natural follow-cam FOV — shows road ahead
   FOV_MAX: 85,  // wide at speed = cinematic rush
-  CAMERA_DISTANCE_MIN: 14,
-  CAMERA_DISTANCE_MAX: 38,
-  CAMERA_HEIGHT_MIN: 10,
-  CAMERA_HEIGHT_MAX: 20,
-  LOOK_AHEAD_MIN: 4,
+  CAMERA_DISTANCE_MIN: 20,
+  CAMERA_DISTANCE_MAX: 40,
+  CAMERA_HEIGHT_MIN: 6,
+  CAMERA_HEIGHT_MAX: 18,
+  LOOK_AHEAD_MIN: 6,
   LOOK_AHEAD_MAX: 18,
   SPRING_K: 14.0, // ζ=0.67 underdamped → natural overshoot on hard turns
   SPRING_D: 5.0,

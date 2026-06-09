@@ -191,9 +191,9 @@ export default class World {
     }
     const cfgs = {
       day: {
-        bg: 0xeec48a,
-        fog: 0xe0ac70,
-        fogD: 0.0016,
+        bg: 0xd4c0a0,
+        fog: 0xc8b090,
+        fogD: 0.0014,
         sun: 0xfff0cc,
         sunI: 2.4,
         fill: 0x8899ff,
@@ -201,7 +201,7 @@ export default class World {
         amb: 0xfff5ee,
         ambI: 0.18,
         exp: 1.05,
-        skyH: 0xeec48a,
+        skyH: 0xd4c0a0,
         skyZ: 0x3355a0,
       },
       night: {
@@ -743,10 +743,10 @@ export default class World {
   _buildGround() {
     const s = this.scene;
 
-    // Large ground — warm terracotta earth
+    // Large ground — dry dusty earth, Varanasi-style
     const ground = new THREE.Mesh(
       new THREE.BoxGeometry(1200, 0.4, 1200),
-      new THREE.MeshLambertMaterial({ color: 0x7a4828 }),
+      new THREE.MeshLambertMaterial({ color: 0xc0a882 }),
     );
     ground.position.y = -0.2;
     ground.receiveShadow = true;
@@ -776,7 +776,7 @@ export default class World {
     s.add(waterTop);
 
     // Plaza stone slabs — large warm sandstone paving around key areas
-    const plazaMat = new THREE.MeshLambertMaterial({ color: 0x8a5c38 });
+    const plazaMat = new THREE.MeshLambertMaterial({ color: 0xa88c68 });
     [
       [0, 0, 52, 52],
       [0, 80, 38, 38],    [0, -80, 38, 38],

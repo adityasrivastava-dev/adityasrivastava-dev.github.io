@@ -35,16 +35,16 @@ export default class Roads {
     // Sandstone kerb
     const kerb = new THREE.Mesh(
       new THREE.BoxGeometry(w + 6, 0.22, len),
-      new THREE.MeshLambertMaterial({ color: 0x7a5535 }),
+      new THREE.MeshLambertMaterial({ color: 0x9a8060 }),
     );
     kerb.rotation.y = ang;
     kerb.position.set(mx, 0.11, mz);
     s.add(kerb);
 
-    // Warm stone road surface
+    // Dark stone road — clearly distinct from dusty ground
     const road = new THREE.Mesh(
       new THREE.BoxGeometry(w, 0.24, len),
-      new THREE.MeshLambertMaterial({ color: 0x3d2510 }),
+      new THREE.MeshLambertMaterial({ color: 0x2e1e10 }),
     );
     road.rotation.y = ang;
     road.position.set(mx, 0.12, mz);
