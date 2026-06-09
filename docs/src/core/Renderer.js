@@ -69,7 +69,7 @@ export default class Renderer {
     // outputEncoding stays LinearEncoding (default) — sRGBEncoding causes
     // double gamma with EffectComposer's final ShaderPass blit.
     this.instance.toneMapping = THREE.ACESFilmicToneMapping;
-    this.instance.toneMappingExposure = 0.78;
+    this.instance.toneMappingExposure = 0.58;
 
     // Warm the renderer (prevents white flash on first real frame)
     this.instance.render(new THREE.Scene(), new THREE.PerspectiveCamera());

@@ -122,13 +122,12 @@ export default class World {
   _buildLighting() {
     const s = this.scene;
 
-    // Hemisphere: warm sky (soft cream) vs cool violet ground shadow.
-    // Intensity 0.9 not 1.8 — was flooding everything orange.
-    this.hemiLight = new THREE.HemisphereLight(0xffeedd, 0x6644aa, 0.9);
+    // Hemisphere: warm sky vs cool violet ground shadow.
+    this.hemiLight = new THREE.HemisphereLight(0xffeedd, 0x6644aa, 0.55);
     s.add(this.hemiLight);
 
-    // Sun: white-gold not orange-amber. Intensity 3.8 not 5.5.
-    this.sunLight = new THREE.DirectionalLight(0xfff0cc, 3.8);
+    // Sun: white-gold directional at 2.4 — was 3.8, scene was blown out.
+    this.sunLight = new THREE.DirectionalLight(0xfff0cc, 2.4);
     this.sunLight.position.set(80, 75, 45);
     this.sunLight.castShadow = true;
     this.sunLight.shadow.mapSize.set(2048, 2048);
@@ -141,22 +140,22 @@ export default class World {
     s.add(this.sunLight);
 
     // Cool blue-purple fill — essential contrast against warm sun
-    this.fillLight = new THREE.DirectionalLight(0x8899ff, 1.0);
+    this.fillLight = new THREE.DirectionalLight(0x8899ff, 0.65);
     this.fillLight.position.set(-90, 55, -40);
     s.add(this.fillLight);
 
     // Rim: warm gold, gentle
-    this.rimLight = new THREE.DirectionalLight(0xffcc88, 0.65);
+    this.rimLight = new THREE.DirectionalLight(0xffcc88, 0.40);
     this.rimLight.position.set(-20, 18, 140);
     s.add(this.rimLight);
 
     // Ground bounce: subtle
-    this.bounceLight = new THREE.DirectionalLight(0xcc8855, 0.2);
+    this.bounceLight = new THREE.DirectionalLight(0xcc8855, 0.12);
     this.bounceLight.position.set(0, -1, 0);
     s.add(this.bounceLight);
 
-    // Ambient: near-white, very low — shadows need depth
-    this.ambLight = new THREE.AmbientLight(0xfff5ee, 0.35);
+    // Ambient: very low — shadows need depth
+    this.ambLight = new THREE.AmbientLight(0xfff5ee, 0.18);
     s.add(this.ambLight);
 
     this.deitySpot = new THREE.SpotLight(
@@ -188,15 +187,15 @@ export default class World {
     }
     const cfgs = {
       day: {
-        bg: 0xd4956a, // warm peach-terracotta, not deep orange
-        fog: 0xc8845a, // hazy warm afternoon
+        bg: 0xd4956a,
+        fog: 0xc8845a,
         fogD: 0.0025,
         sun: 0xfff0cc,
-        sunI: 3.8,
+        sunI: 2.4,
         fill: 0x8899ff,
-        fillI: 1.0,
+        fillI: 0.65,
         amb: 0xfff5ee,
-        ambI: 0.35,
+        ambI: 0.18,
         exp: 1.05,
         skyH: 0xd4956a,
         skyZ: 0x3355a0,
@@ -206,11 +205,11 @@ export default class World {
         fog: 0x0a0820,
         fogD: 0.004,
         sun: 0x6688cc,
-        sunI: 0.8,
+        sunI: 0.6,
         fill: 0x220844,
-        fillI: 0.5,
+        fillI: 0.40,
         amb: 0x110822,
-        ambI: 0.15,
+        ambI: 0.12,
         exp: 1.25,
         skyH: 0x0a0820,
         skyZ: 0x030614,
@@ -220,11 +219,11 @@ export default class World {
         fog: 0xff6030,
         fogD: 0.006,
         sun: 0xff4411,
-        sunI: 2.8,
+        sunI: 1.9,
         fill: 0x5522bb,
-        fillI: 1.1,
+        fillI: 0.75,
         amb: 0x440800,
-        ambI: 0.25,
+        ambI: 0.16,
         exp: 1.08,
         skyH: 0xff6030,
         skyZ: 0x441088,
@@ -234,11 +233,11 @@ export default class World {
         fog: 0x334050,
         fogD: 0.012,
         sun: 0xdd9977,
-        sunI: 0.8,
+        sunI: 0.6,
         fill: 0x2244aa,
-        fillI: 1.1,
+        fillI: 0.75,
         amb: 0x100806,
-        ambI: 0.3,
+        ambI: 0.22,
         exp: 1.1,
         skyH: 0x334050,
         skyZ: 0x1a2030,
@@ -248,11 +247,11 @@ export default class World {
         fog: 0xccb09a,
         fogD: 0.022,
         sun: 0xffddbb,
-        sunI: 0.9,
+        sunI: 0.70,
         fill: 0x446688,
-        fillI: 0.5,
+        fillI: 0.40,
         amb: 0x221408,
-        ambI: 0.6,
+        ambI: 0.40,
         exp: 0.9,
         skyH: 0xccb09a,
         skyZ: 0x8899aa,
@@ -262,11 +261,11 @@ export default class World {
         fog: 0xeedfcc,
         fogD: 0.007,
         sun: 0xfff0e0,
-        sunI: 1.8,
+        sunI: 1.3,
         fill: 0x7799cc,
-        fillI: 0.5,
+        fillI: 0.40,
         amb: 0x1a1008,
-        ambI: 0.4,
+        ambI: 0.25,
         exp: 0.95,
         skyH: 0xeedfcc,
         skyZ: 0x7799cc,
@@ -469,6 +468,7 @@ export default class World {
       `,
       side: THREE.BackSide,
       depthWrite: false,
+      fog: false,
     });
     const sky = new THREE.Mesh(new THREE.SphereGeometry(750, 24, 14), mat);
     sky.renderOrder = -1;
@@ -483,7 +483,7 @@ export default class World {
     // Large ground — warm terracotta earth
     const ground = new THREE.Mesh(
       new THREE.BoxGeometry(1200, 0.4, 1200),
-      new THREE.MeshLambertMaterial({ color: 0xa06840 }),
+      new THREE.MeshLambertMaterial({ color: 0x7a4828 }),
     );
     ground.position.y = -0.2;
     ground.receiveShadow = true;
@@ -513,7 +513,7 @@ export default class World {
     s.add(waterTop);
 
     // Ground tile grid — plaza paving, expanded for larger city
-    const tileMat = new THREE.MeshLambertMaterial({ color: 0x906030 });
+    const tileMat = new THREE.MeshLambertMaterial({ color: 0x5e3818 });
     const tileSpacing = 10;
     for (let tx = -28; tx < 28; tx++) {
       for (let tz = -26; tz < 26; tz++) {
@@ -528,7 +528,7 @@ export default class World {
     }
 
     // Paved court zones near major intersections — lighter to contrast with roads
-    const paveMat = new THREE.MeshLambertMaterial({ color: 0xc09070 });
+    const paveMat = new THREE.MeshLambertMaterial({ color: 0x8a5030 });
     [
       [-55, 0, 60, 60],
       [55, 0, 60, 60],
@@ -546,7 +546,7 @@ export default class World {
     });
 
     // Beach/sand border strips — the transition between orange ground and cyan water
-    const sandMat = new THREE.MeshLambertMaterial({ color: 0xddcc99 });
+    const sandMat = new THREE.MeshLambertMaterial({ color: 0xaa9966 });
     for (const [x, z, w, d] of [
       [0, -220, 600, 18],
       [0, 220, 600, 18],

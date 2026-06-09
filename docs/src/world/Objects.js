@@ -142,18 +142,18 @@ export default class Objects {
     const mc = window._matcaps || {};
 
     const stoneColors = {
-      "#00c8ff": [0xddeeff, 0xaaccee, 0x5588aa],
-      "#7dff4f": [0xeeffcc, 0xbbdd88, 0x667733],
-      "#ffcc44": [0xfff0bb, 0xeebb55, 0xaa7700],
-      "#ff6b00": [0xffddb8, 0xee9944, 0xaa4411],
-      "#c084fc": [0xffeeff, 0xddaaff, 0x9944cc],
-      "#4dd4ff": [0xddf4ff, 0x99ddff, 0x4488bb],
-      "#ff9950": [0xffeedd, 0xeeaa66, 0xaa5522],
-      "#a78bfa": [0xf0e8ff, 0xcc99ff, 0x7744bb],
-      "#34d399": [0xddfff0, 0x88eebb, 0x227755],
+      "#00c8ff": [0x99bbcc, 0x6699bb, 0x2d5575],
+      "#7dff4f": [0xaaccaa, 0x7aaa55, 0x3d5a1e],
+      "#ffcc44": [0xccaa66, 0xbb8833, 0x7a5200],
+      "#ff6b00": [0xbb8860, 0xcc7730, 0x7a3010],
+      "#c084fc": [0xbb88cc, 0xaa66cc, 0x6622aa],
+      "#4dd4ff": [0x99ccdd, 0x55aacc, 0x225577],
+      "#ff9950": [0xcc9966, 0xcc7733, 0x7a3310],
+      "#a78bfa": [0xaa88cc, 0x9966cc, 0x5522aa],
+      "#34d399": [0x88bbaa, 0x44aa88, 0x125538],
     };
     const [sL, sM, sD] = stoneColors[b.glowColor] || [
-      0xffeedd, 0xddbb88, 0x886633,
+      0xcc9966, 0xaa7744, 0x6a4422,
     ];
 
     const mL = new THREE.MeshToonMaterial({ color: sL, gradientMap: tg });
@@ -789,7 +789,7 @@ export default class Objects {
 
   // ── BROAD CANOPY (Bruno-style multi-sphere) — most common ──────────────────
   _treeBroad(x, z, tg) {
-    const greens = [0x2d6622, 0x3a7a2a, 0x4a8833, 0x336644, 0x447733, 0xdd88aa];
+    const greens = [0x2d6622, 0x3a7a2a, 0x4a8833, 0x336644, 0x447733, 0x558833];
     const rng = (s) => Math.sin(s * 127.1 + 43.7) * 0.5 + 0.5;
     const seed = x * 2.1 + z * 3.7;
     const h = 2.8 + rng(seed) * 2.0;
