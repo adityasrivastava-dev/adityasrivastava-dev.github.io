@@ -87,6 +87,7 @@ export default class Objects {
       // actual metal. The near-white sp param concentrates light into a tight point.
       gold_rich: mk("#fffce0", "#ffcc33", "#5a3800", "rgba(255,255,220,0.99)"),
       tree: mk("#a0b464", "#6b8a40", "#1e3010"),
+      brick: mk("#cc7755", "#aa4422", "#441408"), // Item 45: old brick/laterite
       car: mk("#ff9977", "#dd2200", "#440000", "rgba(255,230,220,0.95)"),
       carDark: mk("#ee5533", "#991100", "#220000"),
       carBlue: mk("#88aadd", "#1a3480", "#040810", "rgba(180,200,255,0.88)"),
@@ -190,9 +191,29 @@ export default class Objects {
       0xcc9966, 0xaa7744, 0x6a4422,
     ];
 
-    const mL = new THREE.MeshToonMaterial({ color: sL, gradientMap: tg });
-    const mM = new THREE.MeshToonMaterial({ color: sM, gradientMap: tg });
-    const mD = new THREE.MeshToonMaterial({ color: sD, gradientMap: tg });
+    // Item 14: Career timeline weathering — older buildings get darker/greyer stone
+    // 2022=oldest(most weathered), 2024=newest(freshest). Scale: 0=fresh, 1=weathered
+    const bYear = parseInt(b.year) || 2024;
+    const weathering = Math.max(0, Math.min(1, (2024 - bYear) / 3)); // 0..1 where 1=2021
+    const wDarken = (col) => {
+      const c = new THREE.Color(col);
+      c.r = Math.max(0, c.r - weathering * 0.18);
+      c.g = Math.max(0, c.g - weathering * 0.15);
+      c.b = Math.max(0, c.b - weathering * 0.08);
+      // Slight desaturation / grey shift
+      const avg = (c.r + c.g + c.b) / 3;
+      c.r += (avg - c.r) * weathering * 0.25;
+      c.g += (avg - c.g) * weathering * 0.25;
+      c.b += (avg - c.b) * weathering * 0.25;
+      return c.getHex();
+    };
+    const mL = new THREE.MeshToonMaterial({ color: wDarken(sL), gradientMap: tg });
+    const mM = new THREE.MeshToonMaterial({ color: wDarken(sM), gradientMap: tg });
+    // Item 45: older buildings (<=2022) get brick matcap on dark surfaces
+    const useBrickMatcap = bYear <= 2022 && mc.brick;
+    const mD = useBrickMatcap
+      ? new THREE.MeshMatcapMaterial({ color: wDarken(sD), matcap: mc.brick })
+      : new THREE.MeshToonMaterial({ color: wDarken(sD), gradientMap: tg });
 
     // ── IMPROVEMENT 2: Emissive trim on dark cornice material ────────────────
     // Dark cornices absorb a whisper of the building's glow color — like

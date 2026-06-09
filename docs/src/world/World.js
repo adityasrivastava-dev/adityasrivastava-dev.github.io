@@ -1773,6 +1773,30 @@ export default class World {
       this._procDiyas.material.opacity += (tProc - this._procDiyas.material.opacity) * 0.02;
     }
 
+    // Item 41: Lightning flash — random flash at night during rain
+    if (this._cyclePhase === 'rain' && this.isNight) {
+      this._lightningTimer = (this._lightningTimer || 0) + (dt || 0.016);
+      if (this._lightningTimer > (this._lightningNext || 8)) {
+        this._lightningTimer = 0;
+        this._lightningNext = 5 + Math.random() * 12;
+        // Trigger white flash overlay
+        const lf = document.createElement('div');
+        lf.style.cssText = 'position:fixed;inset:0;z-index:9996;pointer-events:none;background:rgba(200,220,255,0.85);';
+        document.body.appendChild(lf);
+        setTimeout(() => { lf.style.background = 'rgba(200,220,255,0.45)'; }, 60);
+        setTimeout(() => { lf.style.background = 'rgba(200,220,255,0.0)'; lf.style.transition = 'background 0.3s'; }, 120);
+        setTimeout(() => lf.remove(), 450);
+        // Sky ambient flash
+        if (this.ambLight) {
+          const origI = this.ambLight.intensity;
+          this.ambLight.intensity = origI * 5.0;
+          setTimeout(() => { if (this.ambLight) this.ambLight.intensity = origI; }, 150);
+        }
+      }
+    } else {
+      this._lightningTimer = 0;
+    }
+
     // Item 30: Rain particles — fall fast, wrap at bottom, only in rain mode
     if (this._rainParticles) {
       const isRain = this._cyclePhase === 'rain' || this._weatherTarget?._isRain;
@@ -2095,6 +2119,32 @@ export default class World {
       sign2.position.set(0, H - 0.6, 1.1);
       entryG.add(sign2);
       this.scene.add(entryG);
+    }
+
+    // Item 39: Processional torana archways — 3 smaller ceremonial gates along x=0 spine
+    for (const [pz, label] of [
+      [10,  '◈ HERO DISTRICT'],
+      [-45, '◈ KNOWLEDGE QUARTER'],
+      [-100, '◈ DEEP SANCTUM'],
+    ]) {
+      const pg = new THREE.Group();
+      pg.position.set(0, 0, pz);
+      const PH = 9, PW = 10;
+      for (const ox of [-PW, PW]) {
+        const pp = new THREE.Mesh(new THREE.BoxGeometry(1.0, PH, 1.0), archMat);
+        pp.position.set(ox, PH / 2, 0);
+        pg.add(pp);
+        const pcap = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.6, 1.6), goldMat);
+        pcap.position.set(ox, PH + 0.3, 0);
+        pg.add(pcap);
+        const ppot = new THREE.Mesh(new THREE.SphereGeometry(0.5, 7, 5), goldMat);
+        ppot.position.set(ox, PH + 0.8, 0);
+        pg.add(ppot);
+      }
+      const plin = new THREE.Mesh(new THREE.BoxGeometry(PW * 2 + 1, 0.8, 1.0), archMat);
+      plin.position.set(0, PH, 0);
+      pg.add(plin);
+      this.scene.add(pg);
     }
   }
 
