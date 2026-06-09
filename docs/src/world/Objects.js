@@ -106,6 +106,7 @@ export default class Objects {
     this._buildGrass();
     this._buildRoadDecorations();
     this._buildBillboardLabels(); // floating 3D name labels above buildings
+    this._buildTorches();
   }
 
   // ── HELPERS ────────────────────────────────────────────────────────────────
@@ -1035,6 +1036,75 @@ export default class Objects {
     });
   }
 
+  // ── TORCHES — 2 fire torches at each temple entrance ────────────────────────
+  // Animated 4-layer cone flame + flickering PointLight
+  _buildTorches() {
+    this._torches = [];
+    (window.CITY_DATA?.buildings || []).forEach((b) => {
+      const torchSpan = 3.5;
+      const frontZ = b.pos[1] + (b.size ? b.size[1] / 2 : 4) + 1.8;
+      [-torchSpan, torchSpan].forEach((ox) => {
+        this._addTorch(b.pos[0] + ox, frontZ, b.isHero);
+      });
+    });
+  }
+
+  _addTorch(x, z, isHero) {
+    const tg = window._toonGrad;
+    const darkMat = new THREE.MeshToonMaterial({ color: 0x4a2810, gradientMap: tg });
+    const stoneM = new THREE.MeshToonMaterial({ color: 0x8a6040, gradientMap: tg });
+    const g = new THREE.Group();
+    g.position.set(x, 0, z);
+
+    // Pole
+    const pole = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.2, 0.1), darkMat);
+    pole.position.y = 1.1;
+    g.add(pole);
+
+    // Bowl
+    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.12, 0.35, 7), stoneM);
+    bowl.position.y = 2.35;
+    g.add(bowl);
+
+    // 4-layer animated fire (innermost darkest, outermost brightest)
+    const baseY = 2.65;
+    const flames = [];
+    const flameDefs = [
+      { col: 0xcc2200, r: 0.16, h: 0.26 },
+      { col: 0xff6600, r: 0.13, h: 0.32 },
+      { col: 0xffaa00, r: 0.09, h: 0.38 },
+      { col: 0xffee88, r: 0.05, h: 0.42 },
+    ];
+    flameDefs.forEach(({ col, r, h }, i) => {
+      const f = new THREE.Mesh(
+        new THREE.ConeGeometry(r, h, 5),
+        new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.88 }),
+      );
+      f.position.set(0, baseY + i * 0.05, 0);
+      f.userData.flamePhase = i * 1.57 + (x * 2.3 + z * 4.1);
+      f.userData.flameSpeed = 6 + i * 2.5;
+      g.add(f);
+      flames.push(f);
+    });
+
+    // Flickering warm-orange light (hero temples brighter)
+    const baseI = this._isNight ? (isHero ? 4.5 : 3.0) : (isHero ? 1.5 : 0.9);
+    const light = new THREE.PointLight(0xff8833, baseI, isHero ? 18 : 12);
+    light.position.set(0, baseY + 0.2, 0);
+    g.add(light);
+
+    // Small ember glow sphere at bowl
+    const ember = new THREE.Mesh(
+      new THREE.SphereGeometry(0.08, 5, 4),
+      new THREE.MeshBasicMaterial({ color: 0xff4400, transparent: true, opacity: 0.9 }),
+    );
+    ember.position.set(0, 2.52, 0);
+    g.add(ember);
+
+    this.scene.add(g);
+    this._torches.push({ flames, light, phase: Math.sin(x * 3.1 + z * 1.7) * Math.PI, isHero });
+  }
+
   // ── BILLBOARD LABELS — floating 3D name tags above buildings ──────────────
   // Bruno Simon's signature: zone names float in 3D world space beside the car.
   // Each building gets a Sprite with a canvas texture showing its name.
@@ -1557,6 +1627,30 @@ export default class Objects {
             Math.max(0, group._snapScale) * (isHero ? 3.0 : 2.0);
           c.intensity = baseI + hoverBoost + proxBoost + breathI + lightSnap;
         }
+      });
+    });
+    this._updateTorches(now);
+  }
+
+  _updateTorches(now) {
+    if (!this._torches) return;
+    this._torches.forEach((torch) => {
+      const { flames, light, phase, isHero } = torch;
+      // Multi-frequency flicker = natural fire (Perlin-noise approximation)
+      const flicker =
+        0.82 +
+        Math.sin(now * 11.3 + phase) * 0.1 +
+        Math.sin(now * 7.7 + phase * 1.4) * 0.07 +
+        Math.sin(now * 19.1 + phase * 0.6) * 0.04;
+      const baseI = this._isNight ? (isHero ? 4.5 : 3.0) : (isHero ? 1.5 : 0.9);
+      light.intensity = baseI * flicker;
+      flames.forEach((f) => {
+        const ph = now * f.userData.flameSpeed + f.userData.flamePhase;
+        f.position.x = Math.sin(ph * 0.8) * 0.03;
+        f.position.z = Math.cos(ph * 0.6) * 0.03;
+        f.scale.setScalar(0.82 + Math.sin(ph) * 0.2);
+        f.rotation.y = ph * 0.3;
+        f.material.opacity = 0.72 + Math.sin(ph * 1.5) * 0.2;
       });
     });
   }

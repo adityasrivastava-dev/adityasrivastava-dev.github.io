@@ -98,7 +98,45 @@ function updateMinimap(cx, cz, angle) {
   mmCtx.fillStyle = "rgba(10,5,2,.8)";
   mmCtx.fillRect(0, 0, W, H);
   // Map world bounds → minimap canvas (matches full-map projection)
-  const MM_X1 = -95, MM_X2 = 95, MM_Z1 = -88, MM_Z2 = 80;
+  const MM_X1 = -160, MM_X2 = 160, MM_Z1 = -165, MM_Z2 = 135;
+
+  // ── RIVER SYSTEM on minimap ─────────────────────────────────────────────
+  // Main E-W river control points
+  const mainRiverPts = [
+    [-225,-8],[-165,-3],[-110,-9],[-55,-5],[0,-12],[55,-7],[108,-4],[158,-13],[225,-18],
+  ];
+  // N-S tributary
+  const tribPts = [
+    [-35,-10],[-30,12],[-24,38],[-18,60],[-12,84],[-5,106],[0,120],
+  ];
+
+  const toMM = (wx, wz) => [
+    ((wx - MM_X1) / (MM_X2 - MM_X1)) * W,
+    ((wz - MM_Z1) / (MM_Z2 - MM_Z1)) * H,
+  ];
+
+  // Draw each river as a thick blue polyline
+  [[mainRiverPts, 3.5], [tribPts, 2.5]].forEach(([pts, lineW]) => {
+    mmCtx.save();
+    mmCtx.strokeStyle = 'rgba(40,136,184,0.82)';
+    mmCtx.lineWidth = lineW;
+    mmCtx.lineCap = 'round';
+    mmCtx.lineJoin = 'round';
+    mmCtx.beginPath();
+    pts.forEach(([wx, wz], i) => {
+      const [mx, mz] = toMM(wx, wz);
+      if (i === 0) mmCtx.moveTo(mx, mz);
+      else mmCtx.lineTo(mx, mz);
+    });
+    mmCtx.stroke();
+    // Pale shimmer layer
+    mmCtx.strokeStyle = 'rgba(100,200,240,0.3)';
+    mmCtx.lineWidth = lineW * 0.5;
+    mmCtx.stroke();
+    mmCtx.restore();
+  });
+  // ── END RIVER ─────────────────────────────────────────────────────────────
+
   window.CITY_DATA.buildings.forEach((b) => {
     const mx = ((b.pos[0] - MM_X1) / (MM_X2 - MM_X1)) * W,
       mz = ((b.pos[1] - MM_Z1) / (MM_Z2 - MM_Z1)) * H;

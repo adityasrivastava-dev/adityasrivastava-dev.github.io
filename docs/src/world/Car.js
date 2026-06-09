@@ -869,6 +869,29 @@ export default class Car {
     shadow.position.y = 0.02;
     g.add(shadow);
 
+    // ── INDIAN TOUCHES ─────────────────────────────────────────────────────
+    // Marigold garland — orange sphere chain across front grille
+    const marigoldMat = new THREE.MeshBasicMaterial({ color: 0xff8800 });
+    const nMari = 8;
+    for (let i = 0; i < nMari; i++) {
+      const t = (i / (nMari - 1)) - 0.5;
+      const bead = new THREE.Mesh(new THREE.SphereGeometry(0.065, 5, 4), marigoldMat);
+      bead.position.set(t * (BW * 0.7), BY + BH * 0.5, BD / 2 + 0.08);
+      g.add(bead);
+    }
+
+    // Small saffron flag on antenna (right side, over cabin)
+    const flagMat = new THREE.MeshBasicMaterial({ color: 0xff6600, side: THREE.DoubleSide });
+    const antX = CW * 0.38, antZ = CZ + CD * 0.45;
+    const antenna = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.55, 0.04),
+      new THREE.MeshLambertMaterial({ color: 0x4a2810 }));
+    antenna.position.set(antX, RY + 0.38, antZ);
+    g.add(antenna);
+    const flag = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.24, 0.015), flagMat);
+    flag.position.set(antX + 0.2, RY + 0.65, antZ);
+    g.add(flag);
+    // ── END INDIAN TOUCHES ─────────────────────────────────────────────────
+
     g.position.set(this.x, 0, this.z);
     g.rotation.y = this.angle;
     this.scene.add(g);

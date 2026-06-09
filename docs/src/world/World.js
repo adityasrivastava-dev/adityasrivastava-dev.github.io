@@ -4,6 +4,7 @@ import Objects from "./Objects.js";
 import Roads from "./Roads.js";
 import River from "./River.js";
 import Bridges from "./Bridges.js";
+import Props from "./Props.js";
 
 // World is 2.5x the original — same building positions, much more breathing room
 const SCALE = 2.5;
@@ -19,15 +20,18 @@ export default class World {
     this.roads = new Roads(scene);
     this.river = new River(scene);
     this.bridges = new Bridges(scene);
+    this.props = new Props(scene);
   }
 
   buildWorld() {
     this._buildLighting();
+    this._buildSky();
     this._buildGround();
     this.roads.build();
     this.river.build();
     this.objects.buildAll(this.isNight);
     this.bridges.build(); // after objects so _toonGrad is ready
+    this.props.build(this.isNight);
     this._buildCenterpiece();
     this._buildPrayerFlags();
     this._buildGatewayArches();
@@ -49,6 +53,7 @@ export default class World {
     }
 
     this.river.update(now);
+    this.props.update(now, this.isNight);
     this._updateAtmosphere(now, dt);
     this._updateLighting(now, dt);
   }
@@ -144,6 +149,8 @@ export default class World {
         amb: 0xfff5ee,
         ambI: 0.35,
         exp: 1.05,
+        skyH: 0xd4956a,
+        skyZ: 0x3355a0,
       },
       night: {
         bg: 0x0a0820,
@@ -156,6 +163,8 @@ export default class World {
         amb: 0x110822,
         ambI: 0.15,
         exp: 1.25,
+        skyH: 0x0a0820,
+        skyZ: 0x030614,
       },
       sunset: {
         bg: 0xff6030,
@@ -168,6 +177,8 @@ export default class World {
         amb: 0x440800,
         ambI: 0.25,
         exp: 1.08,
+        skyH: 0xff6030,
+        skyZ: 0x441088,
       },
       rain: {
         bg: 0x334050,
@@ -180,6 +191,8 @@ export default class World {
         amb: 0x100806,
         ambI: 0.3,
         exp: 1.1,
+        skyH: 0x334050,
+        skyZ: 0x1a2030,
       },
       fog: {
         bg: 0xccb09a,
@@ -192,6 +205,8 @@ export default class World {
         amb: 0x221408,
         ambI: 0.6,
         exp: 0.9,
+        skyH: 0xccb09a,
+        skyZ: 0x8899aa,
       },
       snow: {
         bg: 0xeedfcc,
@@ -204,6 +219,8 @@ export default class World {
         amb: 0x1a1008,
         ambI: 0.4,
         exp: 0.95,
+        skyH: 0xeedfcc,
+        skyZ: 0x7799cc,
       },
     };
 
@@ -300,6 +317,13 @@ export default class World {
         const tgtB = this.isNight ? 0 : 0.45;
         this.bounceLight.intensity += (tgtB - this.bounceLight.intensity) * t;
       }
+
+      // Sky sphere gradient
+      if (this._skyMesh && this._weatherTarget.skyH) {
+        const un = this._skyMesh.material.uniforms;
+        un.uHorizon.value.lerp(new THREE.Color(this._weatherTarget.skyH), t);
+        un.uZenith.value.lerp(new THREE.Color(this._weatherTarget.skyZ), t);
+      }
     }
 
     // Sun color breathes — subtly alive, not static
@@ -369,6 +393,38 @@ export default class World {
     if (this.originGlow) {
       this.originGlow.intensity = this.isNight ? 4.5 : 2.2;
     }
+  }
+
+  // ── SKY SPHERE — inverted sphere with GLSL gradient (horizon → zenith) ────
+  _buildSky() {
+    const mat = new THREE.ShaderMaterial({
+      uniforms: {
+        uHorizon: { value: new THREE.Color(0xd4956a) },
+        uZenith:  { value: new THREE.Color(0x3355a0) },
+      },
+      vertexShader: `
+        varying float vY;
+        void main() {
+          vY = normalize(position).y;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uHorizon;
+        uniform vec3 uZenith;
+        varying float vY;
+        void main() {
+          float t = clamp(vY, 0.0, 1.0);
+          gl_FragColor = vec4(mix(uHorizon, uZenith, pow(t, 0.55)), 1.0);
+        }
+      `,
+      side: THREE.BackSide,
+      depthWrite: false,
+    });
+    const sky = new THREE.Mesh(new THREE.SphereGeometry(750, 24, 14), mat);
+    sky.renderOrder = -1;
+    this._skyMesh = sky;
+    this.scene.add(sky);
   }
 
   // ── GROUND (large flat plane + sandy pavement) ─────────────────────────────
