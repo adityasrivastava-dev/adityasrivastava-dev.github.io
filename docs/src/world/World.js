@@ -191,8 +191,8 @@ export default class World {
     }
     const cfgs = {
       day: {
-        bg: 0xd4c0a0,
-        fog: 0xc8b090,
+        bg: 0xc8b898,
+        fog: 0xbca888,
         fogD: 0.0014,
         sun: 0xfff0cc,
         sunI: 2.4,
@@ -201,7 +201,7 @@ export default class World {
         amb: 0xfff5ee,
         ambI: 0.18,
         exp: 1.05,
-        skyH: 0xd4c0a0,
+        skyH: 0xc8b898,
         skyZ: 0x3355a0,
       },
       night: {
@@ -658,9 +658,9 @@ export default class World {
 
     // Sun halo ring — additive glow around disc
     this._sunHaloMat = new THREE.MeshBasicMaterial({
-      color: 0xffee88,
+      color: 0xffcc66,
       transparent: true,
-      opacity: 0.28,
+      opacity: 0.12,
       fog: false,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
@@ -673,9 +673,9 @@ export default class World {
 
     // Ray material — shared across all 8 rays so opacity update is one line
     this._godRayMat = new THREE.MeshBasicMaterial({
-      color: 0xffffee,
+      color: 0xffcc66,
       transparent: true,
-      opacity: 0.038,
+      opacity: 0.010,
       fog: false,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
@@ -746,7 +746,7 @@ export default class World {
     // Large ground — dry dusty earth, Varanasi-style
     const ground = new THREE.Mesh(
       new THREE.BoxGeometry(1200, 0.4, 1200),
-      new THREE.MeshLambertMaterial({ color: 0xc0a882 }),
+      new THREE.MeshLambertMaterial({ color: 0xb09070 }),
     );
     ground.position.y = -0.2;
     ground.receiveShadow = true;
@@ -776,7 +776,7 @@ export default class World {
     s.add(waterTop);
 
     // Plaza stone slabs — large warm sandstone paving around key areas
-    const plazaMat = new THREE.MeshLambertMaterial({ color: 0xa88c68 });
+    const plazaMat = new THREE.MeshLambertMaterial({ color: 0x987050 });
     [
       [0, 0, 52, 52],
       [0, 80, 38, 38],    [0, -80, 38, 38],
@@ -791,8 +791,8 @@ export default class World {
       s.add(slab);
     });
 
-    // Paved court zones near major intersections — lighter to contrast with roads
-    const paveMat = new THREE.MeshLambertMaterial({ color: 0x8a5030 });
+    // Paved court zones near major intersections — subtle stone variation
+    const paveMat = new THREE.MeshLambertMaterial({ color: 0x987558 });
     [
       [-55, 0, 60, 60],
       [55, 0, 60, 60],
@@ -1238,9 +1238,9 @@ export default class World {
     // ── GOD RAYS + SUN — brighter at sunset, invisible at night ──────────────
     if (this._godRayMat) {
       const isSunset = this._cyclePhase === 'sunset';
-      const tRay  = this.isNight ? 0      : isSunset ? 0.088 : 0.038;
+      const tRay  = this.isNight ? 0      : isSunset ? 0.032 : 0.010;
       const tDisc = this.isNight ? 0      : isSunset ? 0.96  : 0.88;
-      const tHalo = this.isNight ? 0      : isSunset ? 0.58  : 0.28;
+      const tHalo = this.isNight ? 0      : isSunset ? 0.30  : 0.12;
       this._godRayMat.opacity += (tRay  - this._godRayMat.opacity) * 0.008;
       if (this._sunDisc)
         this._sunDisc.material.opacity  += (tDisc - this._sunDisc.material.opacity)  * 0.01;
