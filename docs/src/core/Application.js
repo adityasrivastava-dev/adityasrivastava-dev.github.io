@@ -278,6 +278,7 @@ export default class Application {
     // ── ORACLE AMBIENT TICKS ──────────────────────────────────────────────
     if (gameStarted && f % 60 === 0) {
       window.ORC?.tickRiver(1, this.world.car.x, this.world.car.z, this.world.isNight);
+      window.ORC?.tickHidden(this.world.car.x, this.world.car.z);
     }
 
     // ── STEP 5: BROADCAST UPDATES TO PLAYER (UI) ──────────────────────────

@@ -74,6 +74,7 @@ export default class World {
     this.river.update(now);
     this.props.update(now, this.isNight);
     this.objects.updateNightGlow(this.isNight, now);
+    this.updateHiddenAreas(this.isNight, now);
     this._updateAtmosphere(now, dt);
     this._updateLighting(now, dt);
     this._updateHeartbeat(now);
@@ -2586,7 +2587,7 @@ export default class World {
         qx.fillStyle = 'rgba(18,10,4,0.95)'; qx.fillRect(0, 0, QW, QH);
         qx.strokeStyle = '#ffcc4433'; qx.lineWidth = 1; qx.strokeRect(4, 4, QW - 8, QH - 8);
         qx.fillStyle = '#eeddcc'; qx.font = 'italic 16px serif'; qx.textAlign = 'center';
-        this._wrapText(qx, '“' + q.text + '”', QW / 2, 80, QW - 40, 22);
+        this._wrapText(qx, '”' + q.text + '”', QW / 2, 80, QW - 40, 22);
         qx.fillStyle = '#ffcc4488'; qx.font = '600 12px monospace';
         qx.textBaseline = 'middle'; qx.fillText('— ' + q.author, QW / 2, 220);
         const qf = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.8),
@@ -2596,6 +2597,318 @@ export default class World {
         g.add(qf);
         s.add(g);
       });
+    }
+
+    // ── 8. FIRST COMMIT STONE — beside Pura Stambha ───────────────────────────
+    // “Every architect begins with a small commit.”
+    {
+      const g = new THREE.Group();
+      g.position.set(12, 0, 82);
+      const base = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.3, 1.0), sandstone);
+      base.position.y = 0.15; g.add(base);
+      const st = new THREE.Mesh(new THREE.BoxGeometry(0.22, 4.0, 2.2), darkStone);
+      st.position.y = 2.2; g.add(st);
+      const FW = 448, FH = 384;
+      const fc = document.createElement('canvas'); fc.width = FW; fc.height = FH;
+      const fx = fc.getContext('2d');
+      fx.fillStyle = 'rgba(14,7,2,0.96)'; fx.fillRect(0, 0, FW, FH);
+      fx.strokeStyle = '#ffcc4444'; fx.lineWidth = 1.5; fx.strokeRect(4, 4, FW - 8, FH - 8);
+      fx.fillStyle = '#ffcc44'; fx.font = 'bold 16px monospace'; fx.textAlign = 'center';
+      fx.textBaseline = 'top';
+      fx.fillText('FIRST COMMIT', FW / 2, 22);
+      fx.fillStyle = '#88aa6688'; fx.font = '400 12px monospace';
+      fx.fillText('January 2022', FW / 2, 52);
+      fx.fillStyle = '#ccbbaa44'; fx.fillRect(24, 76, FW - 48, 1);
+      fx.fillStyle = '#aabb99'; fx.font = 'italic 13px serif';
+      this._wrapText(fx, '”Added relocation dashboard service order summary”', FW / 2, 100, FW - 40, 20);
+      fx.fillStyle = '#ccbbaa44'; fx.fillRect(24, 168, FW - 48, 1);
+      fx.fillStyle = '#ffcc4477'; fx.font = 'italic 12px serif';
+      this._wrapText(fx, 'Every architect begins with a small commit.', FW / 2, 194, FW - 40, 18);
+      const ff = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 3.6),
+        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(fc), transparent: true }));
+      ff.rotation.y = Math.PI / 2;
+      ff.position.set(-0.13, 2.2, 0);
+      g.add(ff);
+      s.add(g);
+    }
+
+    // ── 9. CAMPFIRE SCENE — near Dharma Chakra at night ──────────────────────
+    // 2–3 monk NPCs around a fire. Discoverable rest point.
+    {
+      const g = new THREE.Group();
+      g.position.set(10, 0, -14);
+      // Fire ring
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(0.6, 1.0, 8),
+        new THREE.MeshBasicMaterial({ color: 0x331100, side: THREE.DoubleSide }),
+      );
+      ring.rotation.x = -Math.PI / 2; ring.position.y = 0.05; g.add(ring);
+      // Fire sprite (glowing billboard)
+      const FC = 64, FH2 = 80;
+      const fcan = document.createElement('canvas'); fcan.width = FC; fcan.height = FH2;
+      const fctx = fcan.getContext('2d');
+      const fg = fctx.createRadialGradient(FC / 2, FH2 * 0.65, 1, FC / 2, FH2 * 0.65, 28);
+      fg.addColorStop(0, '#ffffffcc');
+      fg.addColorStop(0.15, '#ffdd44bb');
+      fg.addColorStop(0.45, '#ff6600aa');
+      fg.addColorStop(1, '#00000000');
+      fctx.fillStyle = fg; fctx.fillRect(0, 0, FC, FH2);
+      const fireMat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(fcan), transparent: true });
+      const fireSprite = new THREE.Sprite(fireMat);
+      fireSprite.scale.set(1.4, 1.8, 1); fireSprite.position.set(0, 0.9, 0);
+      g.add(fireSprite);
+      this._campfire = { mat: fireMat, phase: 0 };
+      // Fire light
+      const fireLight = new THREE.PointLight(0xff6622, 0, 18);
+      fireLight.position.set(0, 1.2, 0);
+      g.add(fireLight);
+      this._campfireLight = fireLight;
+      // Monk silhouettes (3 seated figures)
+      const monkMat = new THREE.MeshLambertMaterial({ color: 0x1a0e08 });
+      [[1.6, 0, 1.2], [-1.5, 0, 1.0], [0.2, 0, -1.5]].forEach(([mx, my, mz], mi) => {
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.35, 0.95, 6), monkMat);
+        body.position.set(mx, 0.5, mz);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 5, 4), monkMat);
+        head.position.set(mx, 1.18, mz);
+        g.add(body); g.add(head);
+      });
+      s.add(g);
+    }
+
+    // ── 10. 404 SIGN — road to nowhere, near Pura Stambha SW ─────────────────
+    {
+      const g = new THREE.Group();
+      g.position.set(-15, 0, 128);
+      // Simple sign post
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 3.5, 6),
+        new THREE.MeshLambertMaterial({ color: 0x3a2a1a }));
+      post.position.y = 1.75; g.add(post);
+      const SW = 384, SH = 192;
+      const sc2 = document.createElement('canvas'); sc2.width = SW; sc2.height = SH;
+      const sx2 = sc2.getContext('2d');
+      sx2.fillStyle = 'rgba(18,8,2,0.94)'; sx2.fillRect(0, 0, SW, SH);
+      sx2.strokeStyle = '#cc7744'; sx2.lineWidth = 3; sx2.strokeRect(5, 5, SW - 10, SH - 10);
+      sx2.fillStyle = '#cc5522'; sx2.font = 'bold 64px monospace';
+      sx2.textAlign = 'center'; sx2.textBaseline = 'middle';
+      sx2.fillText('404', SW / 2, SH * 0.42);
+      sx2.fillStyle = '#88664466'; sx2.font = 'italic 14px serif';
+      sx2.fillText('The road leads nowhere.', SW / 2, SH * 0.72);
+      sx2.fillStyle = '#66442233'; sx2.font = '11px serif';
+      sx2.fillText('Some roads are honest about it.', SW / 2, SH * 0.88);
+      const board = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 1.75),
+        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc2), transparent: true, side: THREE.DoubleSide }));
+      board.position.y = 3.6; g.add(board);
+      s.add(g);
+    }
+
+    // ── 11. ARCHITECT'S GARDEN — far north exploration reward ────────────────
+    // Contains: Contact Stone + Unseen System foundation
+    {
+      const gx2 = new THREE.Group();
+      gx2.position.set(-12, 0, -165);
+      // Garden floor (stone tiles)
+      const gfloor = new THREE.Mesh(new THREE.BoxGeometry(22, 0.18, 18),
+        new THREE.MeshLambertMaterial({ color: 0xddc9a0 }));
+      gfloor.position.y = 0.09; gx2.add(gfloor);
+      // Low perimeter wall
+      [[-11.4, 0.45, 0, 0.5, 0.9, 18], [11.4, 0.45, 0, 0.5, 0.9, 18],
+       [0, 0.45, -9.4, 22, 0.9, 0.5], [0, 0.45, 9.4, 10, 0.9, 0.5]].forEach(([x, y, z, w, h, d]) => {
+        const wm = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), sandstone);
+        wm.position.set(x, y, z); gx2.add(wm);
+      });
+      // Garden header sprite
+      const ghSp = new THREE.Sprite(mkSprite(“◈  ARCHITECT'S GARDEN  ◈”, 'bold 28px serif', '#ffcc44cc', 512, 64));
+      ghSp.scale.set(14, 1.8, 1); ghSp.position.set(0, 5.5, 0); gx2.add(ghSp);
+      // Blueprint diagrams on ground
+      const BW = 512, BH = 512;
+      const bc = document.createElement('canvas'); bc.width = BW; bc.height = BH;
+      const bx = bc.getContext('2d');
+      bx.fillStyle = 'rgba(5,18,35,0.92)'; bx.fillRect(0, 0, BW, BH);
+      bx.strokeStyle = '#4488cc55'; bx.lineWidth = 1.5;
+      [[100, 100, 80, 60], [260, 100, 100, 70], [180, 240, 120, 80], [100, 360, 80, 60], [320, 340, 90, 65]].forEach(([rx, ry, rw, rh]) => {
+        bx.strokeRect(rx, ry, rw, rh);
+        bx.fillStyle = '#4488cc22'; bx.fillRect(rx, ry, rw, rh);
+        bx.fillStyle = '#4488cc88'; bx.font = '9px monospace'; bx.textAlign = 'center';
+        bx.fillText('SVC', rx + rw / 2, ry + rh / 2 + 4);
+      });
+      bx.strokeStyle = '#4488cc33';
+      [[140, 160, 260, 135], [260, 140, 295, 285], [180, 320, 180, 280], [295, 375, 140, 395]].forEach(([x1, y1, x2, y2]) => {
+        bx.beginPath(); bx.moveTo(x1, y1); bx.lineTo(x2, y2); bx.stroke();
+      });
+      const bpl = new THREE.Mesh(new THREE.PlaneGeometry(16, 16),
+        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(bc), transparent: true, depthWrite: false }));
+      bpl.rotation.x = -Math.PI / 2; bpl.position.set(0, 0.12, 0); gx2.add(bpl);
+      // Contact Stone
+      {
+        const cs = new THREE.Mesh(new THREE.BoxGeometry(0.28, 4.5, 2.8), darkStone);
+        cs.position.set(6, 2.5, -3); gx2.add(cs);
+        const CW2 = 512, CH2 = 512;
+        const cc = document.createElement('canvas'); cc.width = CW2; cc.height = CH2;
+        const cx2 = cc.getContext('2d');
+        cx2.fillStyle = 'rgba(12,6,2,0.96)'; cx2.fillRect(0, 0, CW2, CH2);
+        cx2.strokeStyle = '#ffcc4466'; cx2.lineWidth = 2; cx2.strokeRect(4, 4, CW2 - 8, CH2 - 8);
+        cx2.fillStyle = '#ffcc44'; cx2.font = 'bold 22px serif'; cx2.textAlign = 'center';
+        cx2.textBaseline = 'top'; cx2.fillText('CONTACT STONE', CW2 / 2, 24);
+        cx2.fillStyle = '#ccbbaa44'; cx2.fillRect(40, 60, CW2 - 80, 1);
+        cx2.fillStyle = '#aabbdd'; cx2.font = '400 16px monospace';
+        cx2.fillText('developer@redskymobility.com', CW2 / 2, 90);
+        cx2.fillStyle = '#ffcc4466'; cx2.font = 'italic 13px serif';
+        this._wrapText(cx2, 'You found the Architect\'s Garden. Few do.', CW2 / 2, 160, CW2 - 60, 20);
+        this._wrapText(cx2, 'The city is not the portfolio.', CW2 / 2, 230, CW2 - 60, 20);
+        this._wrapText(cx2, 'The city is the evidence.', CW2 / 2, 264, CW2 - 60, 20);
+        const cf = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 4.2),
+          new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cc), transparent: true }));
+        cf.rotation.y = Math.PI / 2; cf.position.set(5.87, 2.5, -3); gx2.add(cf);
+        const cLight = new THREE.PointLight(0xffcc44, 1.0, 14);
+        cLight.position.set(4, 5, -3); gx2.add(cLight);
+      }
+      s.add(gx2);
+    }
+
+    // ── 12. UNSEEN SYSTEM — foundation only, near Architect's Garden ─────────
+    // “Still under construction.” Future ambition visible.
+    {
+      const g = new THREE.Group();
+      g.position.set(14, 0, -158);
+      const fndMat = new THREE.MeshLambertMaterial({ color: 0x4a3520 });
+      // Foundation slab
+      const fslab = new THREE.Mesh(new THREE.BoxGeometry(9, 0.6, 9), fndMat);
+      fslab.position.y = 0.3; g.add(fslab);
+      // Partial wall stubs
+      [[0, 1.8, -4.4, 9, 3.6, 0.55], [-4.4, 1.2, 0, 0.55, 2.4, 9], [4.4, 0.9, 0, 0.55, 1.8, 9]].forEach(([x, y, z, w, h, d]) => {
+        const w2 = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), fndMat);
+        w2.position.set(x, y, z); g.add(w2);
+      });
+      // Scaffolding
+      const scafM = new THREE.MeshLambertMaterial({ color: 0x6a5030 });
+      [[-3.5, 5, -3.5, 0.2, 2.5, 0.2], [3.5, 5, -3.5, 0.2, 2.5, 0.2], [-3.5, 6, -3.5, 7.2, 0.2, 0.2]].forEach(([x, y, z, w, h, d]) => {
+        const sc = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), scafM);
+        sc.position.set(x, y, z); g.add(sc);
+      });
+      // Sign
+      const usp = new THREE.Sprite(mkSprite('STILL UNDER CONSTRUCTION', 'bold 20px serif', '#ffcc4488', 512, 52));
+      usp.scale.set(12, 1.4, 1); usp.position.set(0, 9, 0); g.add(usp);
+      s.add(g);
+    }
+
+    // ── 13. FAILURES DISTRICT LABEL — SW corner near Tech Debt Ruin ──────────
+    // Tonally honest zone. Label only — no separate structures needed here.
+    {
+      const g = new THREE.Group();
+      g.position.set(-20, 0, 120);
+      const stone = new THREE.Mesh(new THREE.BoxGeometry(0.25, 2.5, 3.5),
+        new THREE.MeshLambertMaterial({ color: 0x1e1408 }));
+      stone.position.y = 1.5; g.add(stone);
+      const FDW = 560, FDH = 224;
+      const fdc = document.createElement('canvas'); fdc.width = FDW; fdc.height = FDH;
+      const fdx = fdc.getContext('2d');
+      fdx.fillStyle = 'rgba(12,7,3,0.96)'; fdx.fillRect(0, 0, FDW, FDH);
+      fdx.strokeStyle = '#663322'; fdx.lineWidth = 2; fdx.strokeRect(4, 4, FDW - 8, FDH - 8);
+      fdx.fillStyle = '#aa6644'; fdx.font = 'bold 22px serif'; fdx.textAlign = 'center';
+      fdx.textBaseline = 'top'; fdx.fillText('LESSONS DISTRICT', FDW / 2, 22);
+      fdx.fillStyle = '#88554433'; fdx.fillRect(40, 56, FDW - 80, 1);
+      fdx.fillStyle = '#ccbbaa'; fdx.font = 'italic 14px serif';
+      fdx.textBaseline = 'middle';
+      fdx.fillText('Every engineer has a district they would build', FDW / 2, 92);
+      fdx.fillText('differently today. This is that district.', FDW / 2, 116);
+      fdx.fillStyle = '#aa664466'; fdx.font = '11px monospace';
+      fdx.fillText('Tech Debt Ruin  ·  Incident Chamber  ·  404 Road', FDW / 2, 164);
+      const fdf = new THREE.Mesh(new THREE.PlaneGeometry(3.3, 2.1),
+        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(fdc), transparent: true }));
+      fdf.rotation.y = Math.PI / 2; fdf.position.set(-0.14, 1.5, 0); g.add(fdf);
+      s.add(g);
+    }
+
+    // ── 14. DEDICATION STONE — far, solitary ─────────────────────────────────
+    // For every user who never knew the system was running.
+    {
+      const g = new THREE.Group();
+      g.position.set(50, 0, -168);
+      const dslab = new THREE.Mesh(new THREE.BoxGeometry(0.22, 3.0, 2.0), darkStone);
+      dslab.position.y = 1.7; g.add(dslab);
+      const DW = 400, DH = 256;
+      const dc = document.createElement('canvas'); dc.width = DW; dc.height = DH;
+      const dx = dc.getContext('2d');
+      dx.fillStyle = 'rgba(12,7,2,0.95)'; dx.fillRect(0, 0, DW, DH);
+      dx.strokeStyle = '#ffcc4422'; dx.lineWidth = 1; dx.strokeRect(4, 4, DW - 8, DH - 8);
+      dx.fillStyle = '#ddccaa'; dx.font = 'italic 15px serif'; dx.textAlign = 'center';
+      dx.textBaseline = 'middle';
+      this._wrapText(dx, '”For every user who never knew the system was running.”', DW / 2, 90, DW - 40, 22);
+      dx.fillStyle = '#ffcc4433'; dx.font = '600 11px monospace'; dx.fillText('— A.S.', DW / 2, 190);
+      const df = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 2.4),
+        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(dc), transparent: true }));
+      df.rotation.y = Math.PI / 2; df.position.set(-0.13, 1.7, 0); g.add(df);
+      s.add(g);
+    }
+  }
+
+  // ── GOLDEN CONNECTION WEB — fires on all-17 completion ─────────────────────
+  // Draws golden Three.js lines between architecturally connected buildings.
+  showConnectionWeb() {
+    if (this._connWebShown) return;
+    this._connWebShown = true;
+    const buildings = window.CITY_DATA?.buildings || [];
+    const posMap = {};
+    buildings.forEach(b => { posMap[b.id] = { x: b.pos[0], z: b.pos[1] }; });
+
+    const edges = [
+      ['pura-stambha',       'vayu-rath'],
+      ['pura-stambha',       'jyotish-vedha'],
+      ['pura-stambha',       'setu-nagara'],
+      ['pura-stambha',       'brahma-kund'],
+      ['pura-stambha',       'maya-sabha'],
+      ['jyotish-vedha',      'maya-sabha'],
+      ['brahma-kund',        'setu-nagara'],
+      ['brahma-kund',        'maya-sabha'],
+      ['maya-sabha',         'surya-dwara'],
+      ['maya-sabha',         'vishwakarma-shala'],
+      ['surya-dwara',        'lakshmi-prasad'],
+      ['surya-dwara',        'akasha-mandapa'],
+      ['lakshmi-prasad',     'vishwakarma-shala'],
+      ['vishwakarma-shala',  'akasha-mandapa'],
+      ['vishwakarma-shala',  'maya-sabha'],
+    ];
+
+    const lineMats = [];
+    edges.forEach(([a, b]) => {
+      const pa = posMap[a], pb = posMap[b];
+      if (!pa || !pb) return;
+      const pts = [
+        new THREE.Vector3(pa.x, 9, pa.z),
+        new THREE.Vector3(pb.x, 9, pb.z),
+      ];
+      const geo = new THREE.BufferGeometry().setFromPoints(pts);
+      const mat = new THREE.LineBasicMaterial({
+        color: 0xffcc44,
+        transparent: true,
+        opacity: 0,
+      });
+      this.scene.add(new THREE.Line(geo, mat));
+      lineMats.push(mat);
+    });
+
+    // Fade in over 3s, hold 24s, fade out over 3s
+    let elapsed = 0;
+    const tick = () => {
+      elapsed += 0.05;
+      const op = elapsed < 3 ? elapsed / 3
+        : elapsed > 27 ? Math.max(0, 1 - (elapsed - 27) / 3)
+        : 1;
+      lineMats.forEach(m => { m.opacity = op * 0.82; });
+      if (elapsed < 30) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  // ── CAMPFIRE FLICKER — called from World update ──────────────────────────────
+  updateHiddenAreas(isNight, now) {
+    if (this._campfireLight) {
+      const tgt = isNight ? 2.2 + Math.sin(now * 7.3 + 1.2) * 0.6 : 0;
+      this._campfireLight.intensity += (tgt - this._campfireLight.intensity) * 0.06;
+    }
+    if (this._campfire) {
+      const s = isNight ? 0.88 + Math.sin(now * 5.8) * 0.08 : 0;
+      this._campfire.mat.opacity += (s - this._campfire.mat.opacity) * 0.05;
     }
   }
 

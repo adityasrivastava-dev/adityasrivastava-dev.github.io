@@ -1,9 +1,18 @@
 "use strict";
-const MODE = sessionStorage.getItem("vp") || "recruiter";
+let MODE = sessionStorage.getItem("vp") || "recruiter";
 const chip = document.getElementById("mode-chip");
 if (chip) {
   chip.textContent = MODE.toUpperCase();
   chip.className = MODE;
+  chip.style.cursor = 'pointer';
+  chip.title = 'Click to switch view mode';
+  chip.addEventListener('click', function() {
+    MODE = MODE === 'recruiter' ? 'engineer' : 'recruiter';
+    sessionStorage.setItem('vp', MODE);
+    chip.textContent = MODE.toUpperCase();
+    chip.className = MODE;
+    window.ORC?.onModeSwitch(MODE);
+  });
 }
 const cur = document.getElementById("cur");
 // Cursor: use translate3d (GPU) not left/top (CPU reflow) — zero lag
@@ -1241,6 +1250,13 @@ window.onWeatherChange = onWeatherChange;
           );
         }, 3800);
       }
+      // Session timer — soft acknowledgment of extended exploration
+      setTimeout(function() {
+        self.show('timer_15', 'Most visitors leave after two minutes. You are still here.');
+      }, 15 * 60000);
+      setTimeout(function() {
+        self.show('timer_30', 'Very few see what you are seeing. <em>This city was built to reward exactly this.</em>');
+      }, 30 * 60000);
     },
 
     onProximity: function(buildingId) {
@@ -1248,14 +1264,14 @@ window.onWeatherChange = onWeatherChange;
       var msgs = {
         'surya-dwara': {
           id: 'surya_intro',
-          msg: "This one. This is where the architect's hand truly emerged. Look at the height. " +
-               "Notice where it stands relative to everything else. <em>He knew what he was building.</em>",
+          msg: "This one. This is where the architect's hand truly emerged. " +
+               "<em>This was the first system where failure would affect every other system.</em>",
           delay: 1400,
         },
         'pura-stambha': {
           id: 'legacy_intro',
-          msg: 'This is where it began. January 2022. Not a clean system. ' +
-               'Not a modern stack. <em>A classroom.</em> Everything built since traces back to lessons learned here.',
+          msg: 'This is where it began. January 2022. Not a clean system. Not a modern stack. <em>A classroom.</em> ' +
+               'The purpose of old work is not perfection. It is proof of growth.',
           delay: 1400,
         },
         'brahma-kund': {
@@ -1277,9 +1293,28 @@ window.onWeatherChange = onWeatherChange;
       }
     },
 
+    // Proximity triggers for hidden world structures (called from game loop by coordinates)
+    tickHidden: function(x, z) {
+      var self = this;
+      var pts = [
+        { id: 'h_ruin',    cx: 15,   cz: 112,  r: 22, msg: 'Every engineer inherits code they would never write. <em>Maturity is improving it anyway.</em>' },
+        { id: 'h_chamber', cx: -28,  cz: -38,  r: 22, msg: 'The systems that taught the most are rarely the systems that worked perfectly.' },
+        { id: 'h_corner',  cx: 68,   cz: -148, r: 24, msg: 'This is where the story becomes human.' },
+        { id: 'h_garden',  cx: -12,  cz: -165, r: 26, msg: 'Few find this place. <em>The city was built to last, not to be immediately obvious.</em>' },
+        { id: 'h_404',     cx: -15,  cz: 128,  r: 20, msg: 'The road leads nowhere. Some roads are honest about it.' },
+      ];
+      pts.forEach(function(p) {
+        var dx = x - p.cx, dz = z - p.cz;
+        if (Math.sqrt(dx * dx + dz * dz) < p.r) {
+          self.show(p.id, p.msg);
+        }
+      });
+    },
+
     onBuildingOpened: function(visitedCount) {
       var sess = document.getElementById('orc-sessions');
-      if (sess) sess.textContent = visitedCount + ' / 17';
+      var total = (window.CITY_DATA && window.CITY_DATA.buildings) ? window.CITY_DATA.buildings.length : 17;
+      if (sess) sess.textContent = visitedCount + ' / ' + total;
       var self = this;
       if (visitedCount === 8) {
         setTimeout(function() {
@@ -1294,18 +1329,43 @@ window.onWeatherChange = onWeatherChange;
     onWeather: function(w) {
       var self = this;
       if (w === 'rain') {
-        setTimeout(function() { self.show('rain', 'The city performs the same in all conditions. <em>As designed.</em>'); }, 3200);
+        setTimeout(function() {
+          self.show('rain', 'The city handles weather the way it handles load. <em>Gracefully.</em>');
+        }, 3200);
       }
       if (w === 'night') {
         var mins = Math.floor((Date.now() - self._sessionStart) / 60000);
         if (mins > 16) {
           setTimeout(function() {
             self.show('late_night',
-              'Still here. At 3am, every system he built was either working or he was fixing it. ' +
-              '<em>The city remembers that.</em>'
+              'Working this late was not unusual. It was the default. ' +
+              '<em>The city remembers every late commit.</em>'
             );
           }, 3000);
         }
+        // 3am real-clock trigger
+        var hr = new Date().getHours();
+        if ((hr >= 0 && hr < 4) && !self._shown.has('3am_trigger')) {
+          setTimeout(function() {
+            self.show('3am_trigger',
+              'Still here. At 3am, every system he built was either working or he was fixing it. ' +
+              '<em>The city remembers that.</em>'
+            );
+          }, 8000);
+        }
+      }
+    },
+
+    onModeSwitch: function(newMode) {
+      var self = this;
+      if (newMode === 'engineer') {
+        setTimeout(function() {
+          self.show('mode_engineer', 'You are choosing to go deeper. <em>The city rewards that.</em>');
+        }, 1200);
+      } else if (newMode === 'recruiter') {
+        setTimeout(function() {
+          self.show('mode_recruiter', 'You are choosing to see the shape. <em>Both views are true.</em>');
+        }, 1200);
       }
     },
 
@@ -1327,16 +1387,17 @@ window.onWeatherChange = onWeatherChange;
 
     doFinalSpeech: function() {
       if (this._autoHideT) clearTimeout(this._autoHideT);
+      // Trigger the golden connection web
+      if (window._appInstance && window._appInstance.world) {
+        var w = window._appInstance.world;
+        if (w.showConnectionWeb) setTimeout(function() { w.showConnectionWeb(); }, 1200);
+      }
       this._render(
-        '&ldquo;You have now walked through four years of engineering.' +
-        '<br><br>Not four years of titles. Not four years of frameworks.' +
-        '<br><br>Four years of learning.' +
-        '<br><br>You have seen legacy systems maintained, integrations repaired, migrations executed, ' +
-        'platforms modernized, identities unified, and products designed from nothing.' +
-        '<br><br>None of these systems appeared fully formed. They were built one decision at a time.' +
-        '<br><br>Good software is not built by people chasing complexity.' +
-        '<br><br>It is built by people accepting responsibility.' +
-        '<br><br><em>The city is complete. The journey continues.&rdquo;</em>'
+        '&ldquo;You have now seen the systems.' +
+        '<br><br>The real achievement was becoming the engineer capable of building them.' +
+        '<br><br><em>None of these systems stand alone. Every system depends on another.</em>' +
+        '<br><br>Architecture is understanding those dependencies.' +
+        '<br><br>The architect would like to hear from you.&rdquo;'
       );
     },
 
@@ -1376,27 +1437,66 @@ window.onWeatherChange = onWeatherChange;
       var self = this;
       var ql = q.toLowerCase();
 
-      // Scripted responses for canonical questions
+      // Scripted responses — canonical answers from Aditya
       if (/good hire|should.*hire|hire him|will he/.test(ql))
-        return Promise.resolve('If you are looking for someone who has only worked on greenfield systems, perhaps not. If you are looking for someone who has maintained legacy software, solved migrations, repaired integrations, designed architectures, and shipped products &mdash; then the city has already answered your question.');
+        return Promise.resolve(
+          'If you need someone who only knows modern frameworks, there are many choices.' +
+          '<br><br>If you need someone who has maintained legacy systems, solved migrations, designed architectures, ' +
+          'built integrations, led backend development, and learned from production incidents &mdash;' +
+          '<br><br><em>then the city has already answered your question.</em>'
+        );
       if (/hardest|most difficult|toughest/.test(ql))
-        return Promise.resolve('Surya Dwara. The SSO Platform. Every application depended on it. Security, sessions, authentication, authorization, logout flows, device handling &mdash; all had to work together. There was no room for a partial solution.');
+        return Promise.resolve(
+          'Surya Dwara. The Single Sign-On Platform. Every application depended on it.' +
+          '<br><br>Authentication is easy. <em>Trust is difficult.</em>' +
+          '<br><br>Sessions, security, device management, redirects, logout coordination, user experience, ' +
+          'and future scalability all had to work together.' +
+          '<br><br>This was the first system where failure would affect every other system.'
+        );
       if (/believ|philosophy|engineer.*think|approach|principle/.test(ql))
-        return Promise.resolve('He believes the best architecture is the one that explains itself. Tests are documentation, not insurance. Simplicity is the highest form of technical courage. Production is the only truth. <em>Engineering is a practice, not a credential.</em>');
+        return Promise.resolve(
+          'Five principles, in order:<br><br>' +
+          '1. Understand the business problem before writing code.<br>' +
+          '2. Simple solutions survive longer than clever solutions.<br>' +
+          '3. Systems fail at boundaries more often than inside applications.<br>' +
+          '4. A migration is a people problem disguised as a technical problem.<br>' +
+          '5. <em>The best architecture is architecture users never notice.</em>'
+        );
       if (/are you ai|are you.*real|who are you/.test(ql))
         return Promise.resolve('I am the accumulated knowledge of every system this city contains. Whether that is artificial is a philosophical question for another time.');
       if (/contact|email|reach|linkedin/.test(ql))
         return Promise.resolve('The way to reach the architect is through the city. Visit every temple. Those who complete the journey find the contact stone. Or try <code>window.dharma.unlock()</code> in the browser console.');
+      if (/how long.*city|how long.*portfolio|dharma.*build|build.*dharma|portfolio.*take/.test(ql))
+        return Promise.resolve('The city was built in weeks. <em>The experience it represents took four years.</em>');
       if (/how long|time.*build|build.*time/.test(ql))
         return Promise.resolve('The career took four years to build. He joined Trilasoft on January 18, 2022. The systems in this city are still running.');
-      if (/first.*job|start|begin|2022|trilasoft/.test(ql))
-        return Promise.resolve('He joined Trilasoft Solutions on January 18, 2022. His first system was Pura Stambha &mdash; the ancient pillar to the north. <em>That is where patience was learned before engineering.</em>');
+      if (/first.*commit|first.*code|first.*system|january.*2022|2022.*january/.test(ql))
+        return Promise.resolve(
+          'January 2022. First commit message: <em>&ldquo;Added relocation dashboard service order summary.&rdquo;</em>' +
+          '<br><br>Every architect begins with a small commit.'
+        );
+      if (/first.*job|start|begin|trilasoft/.test(ql))
+        return Promise.resolve('He joined Trilasoft Solutions on January 18, 2022. His first system was Pura Stambha &mdash; the ancient pillar. <em>That is where patience was learned before engineering.</em>');
       if (/lesson|learn|mistake|advice/.test(ql))
         return Promise.resolve('Five lessons, earned in order: Every shortcut becomes technical debt. Integrations fail more than applications. A migration is a business project. Most incidents begin as assumptions. <em>Simplicity survives longer than cleverness.</em>');
       if (/java|spring|mysql|language|stack|tech/.test(ql))
         return Promise.resolve('Java through all four years. Spring Boot for modern systems. MySQL for data. AWS for scale. The tools changed. The approach &mdash; schema first, trace before change, shadow before cutover &mdash; did not.');
       if (/incident|broke|failure|production/.test(ql))
-        return Promise.resolve('There are four incidents recorded in the city. Drive to the Dharma Chakra at the center and circle it to find the Incident Chamber. Each inscription is honest. None are exaggerated.');
+        return Promise.resolve('There are four incidents recorded in the city. Find the Incident Chamber near the Dharma Chakra. Each inscription is honest. None are exaggerated.');
+      if (/legacy|pura|old.*code|old.*system/.test(ql))
+        return Promise.resolve(
+          'Pura Stambha &mdash; Struts2, Spring 3, Hibernate 5. Four years in production.' +
+          '<br><br>It is not the most elegant system in the city. <em>It is the most important one.</em>' +
+          '<br><br>It taught him how to read code before he changed it. Every other system benefited from that lesson.'
+        );
+      if (/mode|recruiter|engineer|switch/.test(ql))
+        return Promise.resolve('The Recruiter view shows the shape. The Engineer view shows the decisions. <em>Both are true. Neither is complete alone.</em> Use the toggle in the top-right to switch.');
+      if (/what.*city|what.*represent|what.*place/.test(ql))
+        return Promise.resolve(
+          'Dharma Kshetra is not a portfolio. It is an argument about what software can be.' +
+          '<br><br>Craft, not commodity. Decisions, not demonstrations.' +
+          '<br><br><em>The city is the evidence. The architect is the author.</em>'
+        );
 
       // Try Claude API if key is set
       if (self._apiKey) {
@@ -1412,12 +1512,18 @@ window.onWeatherChange = onWeatherChange;
         return b.name + ': ' + b.subtitle;
       }).join(', ');
       var sys = 'You are Vaakshakti, Oracle of Dharma Kshetra. Ancient, wise, precise, occasionally dry. ' +
-        'You know the story of Aditya Srivastava — Backend Architect at Trilasoft Solutions (Jan 18 2022 – present). ' +
-        'Career: Trainee → Junior Engineer → Backend Architect. ' +
+        'You know the story of Aditya Srivastava — Backend Architect at Trilasoft Solutions (joined Jan 18 2022). ' +
+        'Career: Trainee → Junior SE → Backend Architect. First commit Jan 2022: "Added relocation dashboard service order summary". ' +
         'Key systems: ' + buildings + '. ' +
-        'Hardest: SSO Platform (Surya Dwara) — every app depended on it. ' +
-        'Philosophy: build things that survive after you leave. ' +
-        'Respond in 2–4 sentences. Reference specific temples by name. Never break character.';
+        'Hardest system: Surya Dwara (SSO Platform) — every application depended on it. Authentication is easy; trust is difficult. ' +
+        'Engineering philosophy (5 principles): ' +
+        '1. Understand the business problem before writing code. ' +
+        '2. Simple solutions survive longer than clever solutions. ' +
+        '3. Systems fail at boundaries more often than inside applications. ' +
+        '4. A migration is a people problem disguised as a technical problem. ' +
+        '5. The best architecture is architecture users never notice. ' +
+        'Legacy system: Pura Stambha (Struts2, Spring 3, 4 years production) — proof of growth, not perfection. ' +
+        'Respond in 2–4 sentences max. Reference specific temples by name. Never break character.';
       return fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
