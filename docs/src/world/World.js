@@ -37,6 +37,10 @@ export default class World {
     this._buildGatewayArches();
     this._buildWorldName();
     this._buildHiddenAreas();
+    this._buildCareerPath();
+    this._buildStackTraceObelisk();
+    this._buildNPCs();
+    this._buildWanderingMonk();
     this._buildAtmosphere();
     this._buildHeartbeat();
     this._buildClouds();
@@ -75,6 +79,8 @@ export default class World {
     this.props.update(now, this.isNight);
     this.objects.updateNightGlow(this.isNight, now);
     this.updateHiddenAreas(this.isNight, now);
+    this.updateNPCs(dt);
+    this.updateWanderingMonk(dt);
     this._updateAtmosphere(now, dt);
     this._updateLighting(now, dt);
     this._updateHeartbeat(now);
@@ -2840,6 +2846,172 @@ export default class World {
       df.rotation.y = Math.PI / 2; df.position.set(-0.13, 1.7, 0); g.add(df);
       s.add(g);
     }
+  }
+
+  // ── CAREER TIMELINE PATH — subtle golden thread through buildings 2022→2025 ─
+  _buildCareerPath() {
+    const blds = (window.CITY_DATA?.buildings || [])
+      .filter(b => b.year)
+      .sort((a, b) => parseInt(a.year) - parseInt(b.year));
+    if (blds.length < 2) return;
+    const pts = blds.map(b => new THREE.Vector3(b.pos[0], 0.14, b.pos[1]));
+    const mat = new THREE.LineBasicMaterial({ color: 0xffcc44, transparent: true, opacity: 0.14 });
+    this.scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), mat));
+    // Year node sprites at first building of each year
+    let lastYear = '';
+    blds.forEach(b => {
+      if (b.year === lastYear) return;
+      lastYear = b.year;
+      const can = document.createElement('canvas'); can.width = 96; can.height = 32;
+      const ctx = can.getContext('2d');
+      ctx.fillStyle = '#ffcc4466'; ctx.font = '600 16px monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(b.year, 48, 16);
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(can), transparent: true, depthWrite: false }));
+      sp.scale.set(4.2, 1.4, 1); sp.position.set(b.pos[0], 0.9, b.pos[1] - 7);
+      this.scene.add(sp);
+    });
+  }
+
+  // ── STACK TRACE OBELISK — near Vishwakarma Shala [45,56] ─────────────────
+  _buildStackTraceObelisk() {
+    const s = this.scene;
+    const g = new THREE.Group();
+    g.position.set(60, 0, 46);
+    const sandstone = new THREE.MeshLambertMaterial({ color: 0xc8a870 });
+    const dark = new THREE.MeshLambertMaterial({ color: 0x1a0e08 });
+    const base = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.45, 2.4), sandstone);
+    base.position.y = 0.22; g.add(base);
+    const pillar = new THREE.Mesh(new THREE.BoxGeometry(1.05, 9.0, 1.05), dark);
+    pillar.position.y = 4.95; g.add(pillar);
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0, 0.72, 1.5, 4),
+      new THREE.MeshLambertMaterial({ color: 0xffcc44, emissive: 0xcc8800, emissiveIntensity: 0.35 }));
+    cap.position.y = 9.85; g.add(cap);
+    const TW = 256, TH = 512;
+    const tc = document.createElement('canvas'); tc.width = TW; tc.height = TH;
+    const tx = tc.getContext('2d');
+    tx.fillStyle = 'rgba(10,5,1,0.95)'; tx.fillRect(0, 0, TW, TH);
+    tx.strokeStyle = '#cc442222'; tx.lineWidth = 1; tx.strokeRect(2, 2, TW - 4, TH - 4);
+    const rows = [
+      ['STACK TRACE', '#cc4422', 'bold 13px', 22],
+      ['Exception in', '#aabb99', '10px', 42],
+      ['thread "main"', '#aabb99', '10px', 56],
+      ['NullPointerException', '#ff6644', '9px', 74],
+      ['', '', '', 0],
+      ['  at ServiceOrder', '#88aa88', '9px', 96],
+      ['  .resolve(:142)', '#88aa88', '9px', 110],
+      ['  at Relocation', '#88aa88', '9px', 124],
+      ['  Controller(:88)', '#88aa88', '9px', 138],
+      ['  at Dispatcher', '#88aa88', '9px', 152],
+      ['  Servlet(:1049)', '#88aa88', '9px', 166],
+      ['', '', '', 0],
+      ['Caused by:', '#cc4422', 'bold 9px', 192],
+      ['MQConnectionException', '#ff8844', '9px', 208],
+      ['Channel closed', '#ff8844', '9px', 222],
+      ['', '', '', 0],
+      ['─────────────', '#44333322', '9px', 252],
+      ['Incident: IBM-MQ', '#ffcc4477', 'italic 9px', 272],
+      ['Bridge (2023)', '#ffcc4477', 'italic 9px', 286],
+      ['Resolved: 4 hours', '#88cc8877', '9px', 302],
+    ];
+    rows.forEach(([text, color, font, y]) => {
+      if (!text) return;
+      tx.fillStyle = color; tx.font = font + ' monospace';
+      tx.textAlign = 'center'; tx.textBaseline = 'top';
+      tx.fillText(text, TW / 2, y);
+    });
+    [0, Math.PI].forEach(ang => {
+      const face = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 8.6),
+        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(tc), transparent: true }));
+      face.rotation.y = ang;
+      face.position.set(Math.sin(ang) * 0.55, 4.95, Math.cos(ang) * 0.55);
+      g.add(face);
+    });
+    s.add(g);
+  }
+
+  // ── NPC WANDERERS — 8 robed figures on looping waypoint paths ─────────────
+  _buildNPCs() {
+    const s = this.scene;
+    const mkMonk = (col, hc) => {
+      const g2 = new THREE.Group();
+      const bM = new THREE.MeshLambertMaterial({ color: col });
+      const hM = new THREE.MeshLambertMaterial({ color: hc });
+      const robe = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.45, 1.1, 6), bM);
+      robe.position.y = 0.55;
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 6, 5), hM);
+      head.position.y = 1.38;
+      const hood = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.38, 6), bM);
+      hood.position.y = 1.62; hood.rotation.z = Math.PI;
+      g2.add(robe); g2.add(head); g2.add(hood);
+      return g2;
+    };
+    const defs = [
+      { pts: [[14,-9],[9,-14],[-9,-14],[-14,-9],[-14,9],[-9,14],[9,14],[14,9]],   spd: 0.022, col: 0x3a2218, hc: 0xc8a878 },
+      { pts: [[22,-7],[15,-22],[-7,-22],[-22,-7],[-22,7],[-7,22],[15,22],[22,7]], spd: 0.016, col: 0x2a1a10, hc: 0xbb9968 },
+      { pts: [[30,-88],[45,-90],[45,-106],[30,-106]],                             spd: 0.018, col: 0x442a1a, hc: 0xc8a878 },
+      { pts: [[-25,-90],[-42,-88],[-42,-104],[-25,-104]],                        spd: 0.015, col: 0x3a2218, hc: 0xbb9968 },
+      { pts: [[-82,-28],[-96,-30],[-96,-42],[-82,-42]],                          spd: 0.016, col: 0x2a1a10, hc: 0xc8a878 },
+      { pts: [[-10,78],[10,78],[10,94],[-10,94]],                                 spd: 0.020, col: 0x3a2218, hc: 0xbb9968 },
+      { pts: [[-20,-4],[-32,2],[-40,8],[-32,14],[-20,10]],                       spd: 0.011, col: 0x1a2a38, hc: 0xaa8868 },
+      { pts: [[-14,50],[14,50],[14,62],[-14,62]],                                 spd: 0.024, col: 0x442a1a, hc: 0xc8a878 },
+    ];
+    this._npcs = defs.map(def => {
+      const mesh = mkMonk(def.col, def.hc);
+      mesh.position.set(def.pts[0][0], 0, def.pts[0][1]);
+      s.add(mesh);
+      return { mesh, pts: def.pts, wi: 0, t: Math.random() * 0.8, spd: def.spd };
+    });
+  }
+
+  updateNPCs(dt) {
+    if (!this._npcs) return;
+    for (const n of this._npcs) {
+      n.t += n.spd * dt * 60;
+      if (n.t >= 1) { n.t -= 1; n.wi = (n.wi + 1) % n.pts.length; }
+      const c = n.pts[n.wi], nx = n.pts[(n.wi + 1) % n.pts.length];
+      const dx = nx[0] - c[0], dz = nx[1] - c[1];
+      n.mesh.position.x = c[0] + dx * n.t;
+      n.mesh.position.z = c[1] + dz * n.t;
+      if (Math.abs(dx) + Math.abs(dz) > 0.01) n.mesh.rotation.y = Math.atan2(dx, dz);
+    }
+  }
+
+  // ── WANDERING MONK — white-robed, follows all buildings chronologically 8min ─
+  _buildWanderingMonk() {
+    const s = this.scene;
+    const blds = (window.CITY_DATA?.buildings || [])
+      .filter(b => b.year)
+      .sort((a, b) => parseInt(a.year) - parseInt(b.year));
+    if (!blds.length) return;
+    const g = new THREE.Group();
+    const wM = new THREE.MeshLambertMaterial({ color: 0xf5e8cc });
+    const hM = new THREE.MeshLambertMaterial({ color: 0xe8c898 });
+    const robe = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.46, 1.2, 7), wM);
+    robe.position.y = 0.6;
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.23, 6, 5), hM);
+    head.position.y = 1.42;
+    const hood = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.4, 7), wM);
+    hood.position.y = 1.65; hood.rotation.z = Math.PI;
+    const staff = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.046, 2.1, 5),
+      new THREE.MeshLambertMaterial({ color: 0x6a4020 }));
+    staff.position.set(0.5, 1.05, 0); staff.rotation.z = -0.1;
+    g.add(robe); g.add(head); g.add(hood); g.add(staff);
+    g.position.set(blds[0].pos[0] + 5, 0, blds[0].pos[1] + 5);
+    s.add(g);
+    this._wanderingMonk = { mesh: g, blds, wi: 0, t: 0, segTime: 480 / blds.length };
+  }
+
+  updateWanderingMonk(dt) {
+    const wm = this._wanderingMonk;
+    if (!wm) return;
+    wm.t += dt / wm.segTime;
+    if (wm.t >= 1) { wm.t -= 1; wm.wi = (wm.wi + 1) % wm.blds.length; }
+    const c = wm.blds[wm.wi], nx = wm.blds[(wm.wi + 1) % wm.blds.length];
+    const dx = nx.pos[0] - c.pos[0], dz = nx.pos[1] - c.pos[1];
+    wm.mesh.position.x = c.pos[0] + dx * wm.t + 5;
+    wm.mesh.position.z = c.pos[1] + dz * wm.t + 5;
+    if (Math.abs(dx) + Math.abs(dz) > 0.1) wm.mesh.rotation.y = Math.atan2(dx, dz);
   }
 
   // ── GOLDEN CONNECTION WEB — fires on all-17 completion ─────────────────────

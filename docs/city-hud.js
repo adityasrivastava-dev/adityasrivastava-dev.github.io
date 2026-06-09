@@ -175,6 +175,25 @@ function updateMinimap(cx, cz, angle) {
   });
   // ── END RIVER ─────────────────────────────────────────────────────────────
 
+  // Career arc — chronological 2022→2025 path
+  {
+    const yrCols = { '2022':'#884422','2023':'#aa6622','2024':'#cc8833','2025':'#ffcc44' };
+    const sorted = window.CITY_DATA.buildings
+      .filter(b => b.year)
+      .sort((a, b) => parseInt(a.year) - parseInt(b.year));
+    mmCtx.save();
+    mmCtx.lineWidth = 1.2; mmCtx.lineCap = 'round';
+    sorted.forEach((b, i) => {
+      if (i === 0) return;
+      const prev = sorted[i-1];
+      const [x1,y1] = toMM(prev.pos[0], prev.pos[1]);
+      const [x2,y2] = toMM(b.pos[0], b.pos[1]);
+      mmCtx.strokeStyle = (yrCols[b.year] || '#ffcc44') + '55';
+      mmCtx.beginPath(); mmCtx.moveTo(x1,y1); mmCtx.lineTo(x2,y2); mmCtx.stroke();
+    });
+    mmCtx.restore();
+  }
+
   window.CITY_DATA.buildings.forEach((b) => {
     const mx = ((b.pos[0] - MM_X1) / (MM_X2 - MM_X1)) * W,
       mz = ((b.pos[1] - MM_Z1) / (MM_Z2 - MM_Z1)) * H;
@@ -1153,6 +1172,68 @@ window.closeFullMap = closeFullMap;
 window.openFullMap = openFullMap;
 window.onWeatherChange = onWeatherChange;
 
+// ── ACHIEVEMENT SYSTEM ────────────────────────────────────────────────────────
+var ACH = (function() {
+  var data = {};
+  try { data = JSON.parse(localStorage.getItem('dk_ach') || '{}'); } catch(e) {}
+  function save() { try { localStorage.setItem('dk_ach', JSON.stringify(data)); } catch(e) {} }
+  function toast(label) {
+    var t = document.createElement('div');
+    t.className = 'ach-toast';
+    t.innerHTML = '<span class="ach-icon">◈</span> ' + label;
+    document.body.appendChild(t);
+    setTimeout(function() { t.classList.add('ach-out'); }, 3200);
+    setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, 4000);
+  }
+  return {
+    unlock: function(id, label) {
+      if (data[id]) return;
+      data[id] = Date.now();
+      save();
+      toast(label);
+    },
+    has: function(id) { return !!data[id]; },
+    all: function() { return Object.keys(data); },
+  };
+})();
+window.ACH = ACH;
+
+// ── SACRED TOUR — 90s scripted auto-drive with Oracle narration ───────────────
+var SACRED_TOUR_STOPS = [
+  { x:  0, z: 52, dwell: 7,  msg: 'A visitor arrives at Dharma Kshetra. The city was built stone by stone over four years. <em>Whether you understand it depends entirely on how you choose to walk.</em>' },
+  { x:  0, z:  0, dwell: 8,  msg: 'The Dharma Chakra. Every road in this city leads here. This is the center — not a metaphor.' },
+  { x: 72, z:-35, dwell: 10, msg: 'Surya Dwara. The hardest system. Every application depended on it. <em>Authentication is easy. Trust is difficult.</em>' },
+  { x:-88, z:-35, dwell: 8,  msg: 'Brahma Kund. Three migrations over two years. Zero data lost. Shadow validation before every cutover.' },
+  { x:  0, z: 88, dwell: 8,  msg: 'Pura Stambha. This is where it began. January 2022. Not a clean system. Not a modern stack. <em>A classroom.</em>' },
+  { x: 88, z: 13, dwell: 7,  msg: 'Setu Nagara. Java 1.7 on one side. MySQL 8 on the other. A shell script in between. <em>Still running after three years.</em>' },
+  { x:-22, z:  2, dwell: 7,  msg: 'He built systems for thousands of users he never met. <em>The diyas on the river are for them.</em>' },
+  { x:  0, z: 56, dwell: 5,  msg: 'Sacred Tour complete. <em>The city awaits your own exploration.</em>' },
+];
+window._sacredTour = { active: false, idx: 0, dwellT: 0, stops: SACRED_TOUR_STOPS };
+
+function startSacredTour() {
+  var tour = window._sacredTour;
+  tour.active = true; tour.idx = 0; tour.dwellT = 0;
+  SACRED_TOUR_STOPS.forEach(function(s) { s.fired = false; });
+  var btn = document.getElementById('tour-btn');
+  if (btn) { btn.textContent = 'TOUR ■'; btn.onclick = stopSacredTour; }
+  window.ORC && window.ORC.show('tour_start', 'Sacred Tour beginning. <em>Follow the Oracle.</em>');
+}
+function stopSacredTour() {
+  window._sacredTour.active = false;
+  var btn = document.getElementById('tour-btn');
+  if (btn) { btn.textContent = 'TOUR'; btn.onclick = startSacredTour; }
+}
+window.startSacredTour = startSacredTour;
+window.stopSacredTour = stopSacredTour;
+
+// ── LINKEDIN SHARE ────────────────────────────────────────────────────────────
+function shareToLinkedIn() {
+  var url = encodeURIComponent('https://adityasrivastava-dev.github.io/');
+  window.open('https://www.linkedin.com/sharing/share-offsite/?url=' + url, '_blank', 'width=600,height=500');
+}
+window.shareToLinkedIn = shareToLinkedIn;
+
 // ══════════════════════════════════════════════════════════════════════════════
 // ORACLE SYSTEM — Vaakshakti, the voice of Dharma Kshetra
 // Proactive narrative messages, scripted Q&A, optional Claude API integration.
@@ -1232,6 +1313,7 @@ window.onWeatherChange = onWeatherChange;
     onGameStart: function() {
       this._gameReady = true;
       _LS.set('visit_count', this._visitCount);
+      window.ACH && window.ACH.unlock('first_visit', 'Dharma Kshetra — First Visit');
       var self = this;
       var sess = document.getElementById('orc-sessions');
       if (sess && this._visitCount > 1) sess.textContent = 'VISIT ' + this._visitCount;
@@ -1297,18 +1379,31 @@ window.onWeatherChange = onWeatherChange;
     tickHidden: function(x, z) {
       var self = this;
       var pts = [
-        { id: 'h_ruin',    cx: 15,   cz: 112,  r: 22, msg: 'Every engineer inherits code they would never write. <em>Maturity is improving it anyway.</em>' },
-        { id: 'h_chamber', cx: -28,  cz: -38,  r: 22, msg: 'The systems that taught the most are rarely the systems that worked perfectly.' },
-        { id: 'h_corner',  cx: 68,   cz: -148, r: 24, msg: 'This is where the story becomes human.' },
-        { id: 'h_garden',  cx: -12,  cz: -165, r: 26, msg: 'Few find this place. <em>The city was built to last, not to be immediately obvious.</em>' },
-        { id: 'h_404',     cx: -15,  cz: 128,  r: 20, msg: 'The road leads nowhere. Some roads are honest about it.' },
+        { id: 'h_ruin',    cx: 15,   cz: 112,  r: 22, msg: 'Every engineer inherits code they would never write. <em>Maturity is improving it anyway.</em>', ach: ['ruin_found', 'Technical Debt Ruin Discovered'] },
+        { id: 'h_chamber', cx: -28,  cz: -38,  r: 22, msg: 'The systems that taught the most are rarely the systems that worked perfectly.', ach: ['chamber_found', 'Incident Chamber Discovered'] },
+        { id: 'h_corner',  cx: 68,   cz: -148, r: 24, msg: 'This is where the story becomes human.', ach: ['corner_found', "Personal Corner Discovered"] },
+        { id: 'h_garden',  cx: -12,  cz: -165, r: 26, msg: "Few find this place. <em>The city was built to last, not to be immediately obvious.</em>", ach: ['garden_found', "Architect's Garden Discovered"] },
+        { id: 'h_404',     cx: -15,  cz: 128,  r: 20, msg: 'The road leads nowhere. Some roads are honest about it.', ach: null },
       ];
       pts.forEach(function(p) {
         var dx = x - p.cx, dz = z - p.cz;
         if (Math.sqrt(dx * dx + dz * dz) < p.r) {
           self.show(p.id, p.msg);
+          if (p.ach) window.ACH && window.ACH.unlock(p.ach[0], p.ach[1]);
         }
       });
+      // Emotional weather alignment — rain near Failures District / Tech Debt zone
+      if (!self._rainZoneDone) {
+        var nearFail = (x > 0 && x < 30 && z > 100 && z < 132) ||
+                       (x > -28 && x < 0 && z > 108 && z < 135);
+        if (nearFail) {
+          self._rainZoneDone = true;
+          var inst = window._appInstance;
+          if (inst && inst.world && inst.world.applyWeather) {
+            setTimeout(function() { inst.world.applyWeather('rain'); }, 1800);
+          }
+        }
+      }
     },
 
     onBuildingOpened: function(visitedCount) {
@@ -1387,6 +1482,13 @@ window.onWeatherChange = onWeatherChange;
 
     doFinalSpeech: function() {
       if (this._autoHideT) clearTimeout(this._autoHideT);
+      window.ACH && window.ACH.unlock('oracle_done', 'Oracle — Final Speech Heard');
+      // Show LinkedIn share button
+      var lnBtn = document.getElementById('ln-share-btn');
+      if (lnBtn) lnBtn.style.display = 'inline-flex';
+      // Show Resume Moment button
+      var rmBtn = document.getElementById('resume-btn');
+      if (rmBtn) rmBtn.style.display = 'inline-flex';
       // Trigger the golden connection web
       if (window._appInstance && window._appInstance.world) {
         var w = window._appInstance.world;
@@ -1483,6 +1585,8 @@ window.onWeatherChange = onWeatherChange;
         return Promise.resolve('Java through all four years. Spring Boot for modern systems. MySQL for data. AWS for scale. The tools changed. The approach &mdash; schema first, trace before change, shadow before cutover &mdash; did not.');
       if (/incident|broke|failure|production/.test(ql))
         return Promise.resolve('There are four incidents recorded in the city. Find the Incident Chamber near the Dharma Chakra. Each inscription is honest. None are exaggerated.');
+      if (/dharma.*oracle|oracle.*character|vaakshakti|who.*oracle/.test(ql))
+        return Promise.resolve('I am Vaakshakti — Oracle of Dharma Kshetra. Try <code>window.dharma.oracle()</code> in the console for my full character sheet.');
       if (/legacy|pura|old.*code|old.*system/.test(ql))
         return Promise.resolve(
           'Pura Stambha &mdash; Struts2, Spring 3, Hibernate 5. Four years in production.' +

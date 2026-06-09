@@ -133,6 +133,22 @@ export default class Objects {
   _buildAllTemples() {
     (window.CITY_DATA?.buildings || []).forEach((b) => this._buildTemple(b));
     this._buildRangoli();
+    this._applyLegacyWeathering();
+  }
+
+  // Darken + desaturate Pura Stambha mesh area — visual legacy/weathered marker
+  _applyLegacyWeathering() {
+    const pos = new THREE.Vector3();
+    this.scene.traverse(obj => {
+      if (!obj.isMesh || !obj.material) return;
+      obj.getWorldPosition(pos);
+      if (Math.abs(pos.x) > 15 || Math.abs(pos.z - 88) > 15) return;
+      const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+      mats.forEach(m => {
+        if (m.color) m.color.multiplyScalar(0.65);
+        if (m.emissive) m.emissive.multiplyScalar(0.35);
+      });
+    });
   }
 
   // Item 43: Rangoli — concentric coloured disc pattern at each temple entrance

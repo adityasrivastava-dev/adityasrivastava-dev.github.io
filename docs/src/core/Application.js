@@ -281,6 +281,54 @@ export default class Application {
       window.ORC?.tickHidden(this.world.car.x, this.world.car.z);
     }
 
+    // ── SACRED TOUR AUTO-DRIVE ────────────────────────────────────────────
+    if (gameStarted && window._sacredTour?.active) {
+      const tour = window._sacredTour;
+      const stop = tour.stops[tour.idx];
+      if (stop) {
+        const dx = stop.x - this.world.car.x;
+        const dz = stop.z - this.world.car.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        if (dist > 2.5) {
+          const spd = Math.min(dist * 0.07, 0.55);
+          this.world.car.x += (dx / dist) * spd;
+          this.world.car.z += (dz / dist) * spd;
+          this.world.car.angle = Math.atan2(dx, dz);
+          this.world.car.speed = spd * 9;
+          tour.dwellT = 0;
+        } else {
+          this.world.car.speed = 0;
+          if (!stop.fired) {
+            stop.fired = true;
+            window.ORC?.show('tour_' + tour.idx, stop.msg);
+          }
+          tour.dwellT = (tour.dwellT || 0) + dt;
+          if (tour.dwellT >= stop.dwell) {
+            tour.dwellT = 0;
+            tour.idx++;
+            if (tour.idx >= tour.stops.length) {
+              window._sacredTour.active = false;
+              const btn = document.getElementById('tour-btn');
+              if (btn) { btn.textContent = 'TOUR'; btn.onclick = window.startSacredTour; }
+            }
+          }
+        }
+      }
+    }
+
+    // ── HERO CAMERA TILT — one-time cinematic on first Surya Dwara approach ──
+    if (gameStarted && !this._heroTiltDone) {
+      const dx = this.world.car.x - 72, dz = this.world.car.z - (-35);
+      if (Math.sqrt(dx * dx + dz * dz) < 65) {
+        this._heroTiltDone = true;
+        const sd = window.CITY_DATA?.buildings?.find(b => b.id === 'surya-dwara');
+        if (sd) {
+          this.camera.focusOn(sd, this.world.car.x, this.world.car.z, this.world.car.angle);
+          setTimeout(() => this.camera.returnToFollow(), 2600);
+        }
+      }
+    }
+
     // ── STEP 5: BROADCAST UPDATES TO PLAYER (UI) ──────────────────────────
     if (gameStarted && f % 4 === 0) {
       window.CityUI?.updateHUD?.(this.world.car.speed);

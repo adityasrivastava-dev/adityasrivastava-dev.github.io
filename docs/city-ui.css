@@ -4062,3 +4062,85 @@ a,
   transition: background .18s;
 }
 .orc-send:hover { background: rgba(200,155,55,.22); }
+
+/* ── ACHIEVEMENT TOAST ───────────────────────────────────────── */
+.ach-toast {
+  position: fixed;
+  bottom: 88px;
+  right: 16px;
+  background: rgba(10,6,2,.92);
+  border: 1px solid rgba(255,204,68,.4);
+  color: #ffcc44;
+  font: 600 11px/1 'Share Tech Mono', monospace;
+  padding: 8px 14px 8px 10px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  z-index: 9999;
+  opacity: 1;
+  transition: opacity .5s;
+  letter-spacing: .04em;
+}
+.ach-toast.ach-out { opacity: 0; }
+.ach-icon { font-size: 10px; opacity: .7; }
+
+/* ── RESUME MOMENT OVERLAY ───────────────────────────────────── */
+#resume-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 9000;
+  background: rgba(4,2,0,.97);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+.rm-close {
+  position: absolute; top: 20px; right: 24px;
+  background: none; border: 1px solid rgba(255,204,68,.3);
+  color: #ffcc44; font: 600 11px 'Share Tech Mono',monospace;
+  padding: 6px 12px; cursor: pointer; letter-spacing: .06em;
+}
+.rm-inner {
+  max-width: 560px; width: 100%;
+}
+.rm-title {
+  font: 700 22px/1 'Share Tech Mono',monospace;
+  color: #ffcc44; letter-spacing: .12em;
+  margin-bottom: 6px;
+}
+.rm-sub {
+  font: 400 10px/1 'Share Tech Mono',monospace;
+  color: rgba(255,204,68,.5); letter-spacing: .08em;
+  margin-bottom: 20px;
+}
+.rm-divider {
+  height: 1px; background: rgba(255,204,68,.2); margin-bottom: 24px;
+}
+.rm-body p {
+  font: 400 13px/1.7 'Barlow', sans-serif;
+  color: rgba(220,200,170,.85); margin-bottom: 14px;
+}
+.rm-contact {
+  margin-top: 24px; display: flex; gap: 12px; align-items: center;
+  font: 400 12px 'Share Tech Mono',monospace;
+}
+.rm-contact a { color: #ffcc44; text-decoration: none; }
+.rm-contact span { color: rgba(255,204,68,.3); }
+
+/* ── POST-COMPLETION BUTTONS ─────────────────────────────────── */
+#completion-btns {
+  position: fixed; bottom: 108px; right: 16px;
+  display: flex; flex-direction: column; gap: 6px; z-index: 8000;
+}
+#ln-share-btn, #resume-btn {
+  background: rgba(10,6,2,.88);
+  border: 1px solid rgba(255,204,68,.35);
+  color: #ffcc44; font: 600 10px 'Share Tech Mono',monospace;
+  padding: 7px 13px; cursor: pointer; letter-spacing: .06em;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+#ln-share-btn:hover, #resume-btn:hover {
+  border-color: rgba(255,204,68,.7);
+  background: rgba(255,204,68,.08);
+}

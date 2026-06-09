@@ -8,6 +8,14 @@
       content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0"
     />
     <title>Aditya Srivastava — Backend Architect</title>
+    <meta property="og:title" content="Dharma Kshetra — Aditya Srivastava" />
+    <meta property="og:description" content="Drive a car through 17 backend systems. 4 years of engineering. Backend Architect at Trilasoft." />
+    <meta property="og:url" content="https://adityasrivastava-dev.github.io/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://adityasrivastava-dev.github.io/preview.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Dharma Kshetra — Aditya Srivastava" />
+    <meta name="twitter:description" content="Drive a car through 17 backend systems. 4 years of engineering." />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
@@ -165,6 +173,7 @@
         <span id="weather-label">SUN</span>
       </button>
       <button class="hb" id="mute-btn">SFX</button>
+      <button class="hb" id="tour-btn" onclick="startSacredTour()">TOUR</button>
       <button class="hb" onclick="openJourney()">JOURNEY</button>
       <button class="hb" onclick="toggleFullMap()">MAP</button>
       <button
@@ -355,6 +364,33 @@
       </div>
     </div>
 
+    <!-- ── RESUME MOMENT overlay ── -->
+    <div id="resume-overlay">
+      <button class="rm-close" onclick="document.getElementById('resume-overlay').style.display='none'">× CLOSE</button>
+      <div class="rm-inner">
+        <div class="rm-title">ADITYA SRIVASTAVA</div>
+        <div class="rm-sub">BACKEND ARCHITECT · TRILASOFT SOLUTIONS · 2022–PRESENT</div>
+        <div class="rm-divider"></div>
+        <div class="rm-body">
+          <p>Joined Trilasoft Solutions January 18, 2022 as Trainee. Promoted to Junior Software Engineer, then Backend Architect.</p>
+          <p>Built and maintained 17 production systems over four years: SSO platform, API testing tool, IBM MQ bridge, database migrations (MySQL 5→8→8.4), AWS modernisation, Art Transport System, Operations Platform, and others.</p>
+          <p>Core stack: Java, Spring Boot, MySQL, AWS, Struts2 (legacy). Patterns: schema-first design, shadow validation for migrations, trace-before-change for legacy, API contract testing.</p>
+          <p>Four years. Zero critical data losses. Systems still running in production.</p>
+          <div class="rm-contact">
+            <a href="mailto:developer@redskymobility.com">developer@redskymobility.com</a>
+            <span>·</span>
+            <a href="https://www.linkedin.com/in/aditya-srivastava-43b686226" target="_blank">LinkedIn</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── POST-COMPLETION BUTTONS ── -->
+    <div id="completion-btns">
+      <button id="ln-share-btn" onclick="shareToLinkedIn()" style="display:none">SHARE ON LINKEDIN</button>
+      <button id="resume-btn" onclick="document.getElementById('resume-overlay').style.display='flex'" style="display:none">VIEW AS RESUME</button>
+    </div>
+
     <!-- ── MOBILE JOYSTICK (left side) + ENTER BUTTON (right side) ── -->
     <div id="joy-zone">
       <div id="joy-outer"><div id="joy-inner"></div></div>
@@ -424,11 +460,19 @@
           console.log('%cAditya Srivastava · Backend Architect · Trilasoft Solutions', 'color:#aaa');
           console.log('%casaditya1826@gmail.com', 'color:#00c8ff');
         },
-        oracle() {
-          console.log('%cVaakshakti — Oracle of Dharma Kshetra', 'color:#ffcc44;font-size:14px;font-weight:bold');
-          console.log('Personality: ancient, precise, occasionally dry, deeply knowledgeable.');
-          console.log('Speaks: 2-4 sentences. References temples by name. Never breaks character.');
-          console.log('Proactive triggers: arrival, Surya Dwara approach, river at night, halfway, completion.');
+        oracle: function() {
+          console.log('%cVAAKSHAKTI — Oracle of Dharma Kshetra', 'color:#ffcc44;font-size:16px;font-weight:bold;font-family:serif');
+          console.log('%cCharacter Sheet', 'color:#cc9944;font-size:11px');
+          console.log([
+            '  Name        : Vaakshakti',
+            '  Role        : Oracle, narrative system, Q&A interface',
+            '  Voice       : Ancient, precise, occasionally dry',
+            '  Triggers    : Arrival · River night · Halfway · 3am · Completion · Hidden areas',
+            '  Session mem : localStorage (dk_orc_shown, dk_visit_count)',
+            '  API key     : window.ORC.setKey("sk-ant-...")',
+            '  Commands    : window.ORC.show(id, msg) · window.ORC.doFinalSpeech()',
+            '  Philosophy  : The city is not the portfolio. The city is the evidence.',
+          ].join('\n'));
         },
       };
     </script>
