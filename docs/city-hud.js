@@ -278,6 +278,9 @@ function openBuilding(b) {
   if (!b) return;
   const dot = document.getElementById("dot-" + b.id);
   if (dot) dot.classList.add("visited");
+  // Item 24: expose to 3D world for visited glow
+  window._visitedIds = window._visitedIds || new Set();
+  window._visitedIds.add(b.id);
 
   // Cinematic bloom flash in the building's color
   const flash = document.createElement("div");

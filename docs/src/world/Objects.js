@@ -436,6 +436,7 @@ export default class Objects {
       ringMat: nightRingMat,
       apexMat: apexBeaconMat,
       roofLamps,
+      buildingId: b.id,
       phase: ((b.pos[0] * 0.31 + b.pos[1] * 0.57) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2),
       isHero: !!b.isHero,
     });
@@ -1626,6 +1627,30 @@ export default class Objects {
       this.scene.add(piece);
       this._confettiList.push(piece);
     }
+
+    // Item 20: Lotus petals — 20 pink/white discs mixed in with confetti
+    const petalCols = [0xff88bb, 0xffbbdd, 0xffffff, 0xff66aa, 0xffccee];
+    for (let i = 0; i < 20; i++) {
+      const petal = new THREE.Mesh(
+        new THREE.CircleGeometry(0.3 + Math.random() * 0.22, 5),
+        new THREE.MeshBasicMaterial({
+          color: petalCols[Math.floor(Math.random() * petalCols.length)],
+          side: THREE.DoubleSide, depthWrite: false, transparent: true, opacity: 1.0,
+        }),
+      );
+      petal.position.set(cx + (Math.random() - 0.5) * 4, launchY + Math.random() * 3, cz + (Math.random() - 0.5) * 4);
+      const angle = Math.random() * Math.PI * 2;
+      petal.userData.vx = Math.cos(angle) * (3 + Math.random() * 5);
+      petal.userData.vy = 3 + Math.random() * 6;
+      petal.userData.vz = Math.sin(angle) * (3 + Math.random() * 5);
+      petal.userData.rx = (Math.random() - 0.5) * 3;
+      petal.userData.ry = (Math.random() - 0.5) * 3;
+      petal.userData.rz = (Math.random() - 0.5) * 2;
+      petal.userData.life = 1.0;
+      petal.userData.drag = 0.88 + Math.random() * 0.07;
+      this.scene.add(petal);
+      this._confettiList.push(petal);
+    }
   }
 
   updateConfetti(dt) {
@@ -2046,10 +2071,14 @@ export default class Objects {
   // Night glow rings + apex beacons + roof lamps — called every frame
   updateNightGlow(isNight, now) {
     if (!this._buildingNightGlow || !this._buildingNightGlow.length) return;
-    for (const { ringMat, apexMat, roofLamps, phase, isHero } of this._buildingNightGlow) {
+    const visitedIds = window._visitedIds || new Set();
+    for (const { ringMat, apexMat, roofLamps, phase, isHero, buildingId } of this._buildingNightGlow) {
+      const isVisited = buildingId && visitedIds.has(buildingId);
       const pulse = Math.sin(now * 0.85 + phase) * 0.12;
-      const targetRing = isNight ? (isHero ? 0.72 + pulse : 0.48 + pulse) : 0;
-      const targetApex = isNight ? (isHero ? 0.88 + pulse : 0.65 + pulse) : 0;
+      // Item 24: visited buildings get a permanent day/night glow bonus
+      const visitBonus = isVisited ? 0.28 : 0;
+      const targetRing = isNight ? (isHero ? 0.72 + pulse : 0.48 + pulse) : visitBonus;
+      const targetApex = isNight ? (isHero ? 0.88 + pulse : 0.65 + pulse) : (isVisited ? 0.35 : 0);
       ringMat.opacity += (targetRing - ringMat.opacity) * 0.025;
       apexMat.opacity += (targetApex - apexMat.opacity) * 0.025;
       ringMat.opacity = Math.max(0, Math.min(1, ringMat.opacity));

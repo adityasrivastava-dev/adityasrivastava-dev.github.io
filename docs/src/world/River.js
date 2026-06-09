@@ -11,6 +11,39 @@ export default class River {
   build() {
     this._buildMainRiver();
     this._buildTributary();
+    this._buildBoat();
+  }
+
+  // Item 47: River boat — simple flat-bottomed wooden rowboat drifting eastward
+  _buildBoat() {
+    const tg = window._toonGrad;
+    const hullMat  = new THREE.MeshToonMaterial({ color: 0x8a5a2a, gradientMap: tg });
+    const sailMat  = new THREE.MeshToonMaterial({ color: 0xf0d890, gradientMap: tg });
+    const mast     = new THREE.MeshToonMaterial({ color: 0x6a3a10, gradientMap: tg });
+
+    this._boat = new THREE.Group();
+    // Hull — flat box with slight bow taper
+    const hull = new THREE.Mesh(new THREE.BoxGeometry(7, 0.6, 2.8), hullMat);
+    hull.position.y = -0.25;
+    this._boat.add(hull);
+    // Bow point
+    const bow = new THREE.Mesh(new THREE.ConeGeometry(1.4, 1.8, 4), hullMat);
+    bow.rotation.z = -Math.PI / 2;
+    bow.position.set(4.2, -0.1, 0);
+    this._boat.add(bow);
+    // Mast
+    const mastMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 4, 5), mast);
+    mastMesh.position.set(-0.5, 2.1, 0);
+    this._boat.add(mastMesh);
+    // Sail
+    const sail = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 3.0), sailMat);
+    sail.position.set(0.2, 2.1, 0);
+    sail.rotation.y = Math.PI / 2;
+    this._boat.add(sail);
+
+    this._boat.position.set(-140, -0.1, -10);
+    this._boat.rotation.y = 0.15; // slight angle to current
+    this.scene.add(this._boat);
   }
 
   // Build a flat ribbon mesh along 2D control points [x,z] at a given Y level
@@ -120,9 +153,19 @@ export default class River {
   }
 
   update(now) {
-    // Breathe water surface shimmer — slow sinusoidal opacity shift
+    // Item 17: more dramatic animated shimmer — multi-frequency pulse
     this._shimmers.forEach(({ mesh, phase }) => {
-      mesh.material.opacity = 0.62 + Math.sin(now * 0.62 + phase) * 0.16;
+      const primary   = Math.sin(now * 0.68 + phase) * 0.22;
+      const secondary = Math.sin(now * 1.45 + phase * 1.7) * 0.10;
+      const flicker   = Math.sin(now * 3.1  + phase * 2.3) * 0.05;
+      mesh.material.opacity = Math.max(0.30, Math.min(0.95, 0.62 + primary + secondary + flicker));
     });
+
+    // Item 47: Boat drifts eastward, gentle bob
+    if (this._boat) {
+      this._boat.position.x = -140 + (now * 2.5) % 380; // wrap after 380 units
+      this._boat.position.y = -0.1 + Math.sin(now * 0.55) * 0.12;
+      this._boat.rotation.z = Math.sin(now * 0.38) * 0.04;
+    }
   }
 }

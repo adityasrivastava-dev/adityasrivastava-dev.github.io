@@ -871,6 +871,46 @@ export default class World {
       s.add(blk);
     });
 
+    // Item 21: Processional spine — elevated stone path along x=0 from z=62 to z=-165
+    // White-cream sandstone slab, 8 units wide, slightly raised above ground
+    const spineMat = new THREE.MeshLambertMaterial({ color: 0xe8d8a8 });
+    const spine = new THREE.Mesh(new THREE.BoxGeometry(8, 0.12, 228), spineMat);
+    spine.position.set(0, 0.06, -51); // center of z=62 to z=-165 is z=-51
+    s.add(spine);
+    // Decorative edge strips (darker stone bands)
+    const spineEdgeMat = new THREE.MeshLambertMaterial({ color: 0xb8984a });
+    for (const ox of [-4.2, 4.2]) {
+      const edge = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.14, 228), spineEdgeMat);
+      edge.position.set(ox, 0.07, -51);
+      s.add(edge);
+    }
+
+    // Item 27: Temple tank near Brahma Kund at (-88,-35) — shallow rectangular pool
+    // Steps descend to dark still water. Reflects sky at night.
+    const tankMat  = new THREE.MeshLambertMaterial({ color: 0x1a4a5c });
+    const tankStep = new THREE.MeshLambertMaterial({ color: 0xc8a860 });
+    const tankW = 22, tankD = 18;
+    const tankX = -88, tankZ = -62; // south of brahma-kund
+    // Outer steps
+    for (let step = 0; step < 3; step++) {
+      const sw2 = tankW + (3 - step) * 2, sd2 = tankD + (3 - step) * 2;
+      const sl = new THREE.Mesh(new THREE.BoxGeometry(sw2, 0.35, sd2), tankStep);
+      sl.position.set(tankX, -step * 0.35, tankZ);
+      s.add(sl);
+    }
+    // Water surface
+    const tank = new THREE.Mesh(new THREE.BoxGeometry(tankW, 0.1, tankD), tankMat);
+    tank.position.set(tankX, -1.05, tankZ);
+    s.add(tank);
+    // Shimmer on water surface
+    this._tankShimmer = new THREE.Mesh(
+      new THREE.PlaneGeometry(tankW, tankD),
+      new THREE.MeshBasicMaterial({ color: 0x2288aa, transparent: true, opacity: 0.38, depthWrite: false }),
+    );
+    this._tankShimmer.rotation.x = -Math.PI / 2;
+    this._tankShimmer.position.set(tankX, -0.98, tankZ);
+    s.add(this._tankShimmer);
+
     // Item 18: District ground color variation — E=pale gold, W=ochre, S=laterite red
     [
       { col: 0xd4b880, x:  140, z: -10, w: 110, d: 160 }, // East quarter — pale gold
@@ -1602,6 +1642,11 @@ export default class World {
           this._chakraBeaconLight.intensity += (tI - this._chakraBeaconLight.intensity) * 0.04;
         }
       }
+    }
+
+    // Item 27: Temple tank shimmer
+    if (this._tankShimmer) {
+      this._tankShimmer.material.opacity = 0.28 + Math.sin(now * 0.55) * 0.12 + (this.isNight ? 0.18 : 0);
     }
 
     // ── CHAKRA INNER RING — counter-rotates vs main chakra ───────────────────
