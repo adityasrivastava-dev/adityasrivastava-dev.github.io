@@ -52,8 +52,9 @@ export default class Camera {
     this.state = "INTRO";
     this._introT = 0;
     this._vx = this._vy = this._vz = 0;
-    this.instance.position.set(8, 320, 80);
-    this.instance.lookAt(0, 0, 0);
+    // Start east of Surya Dwara at medium height — cinematic sunrise approach
+    this.instance.position.set(220, 40, -35);
+    this.instance.lookAt(72, 8, -35);
   }
 
   focusOn(building, carX, carZ, carAngle) {
@@ -110,14 +111,14 @@ export default class Camera {
       cam.fov = lerp(50, CC.FOV_MIN, e);
       cam.updateProjectionMatrix();
       cam.position.lerpVectors(
-        new THREE.Vector3(8, 320, 80),
+        new THREE.Vector3(220, 40, -35),
         // Land at the new raised isometric height (18) not old low height (12)
         new THREE.Vector3(car.x - car.sinA * 18, 18, car.z - car.cosA * 18),
         e,
       );
       cam.lookAt(
         new THREE.Vector3().lerpVectors(
-          new THREE.Vector3(0, 0, 0),
+          new THREE.Vector3(72, 8, -35), // look at Surya Dwara on entry
           new THREE.Vector3(car.x + car.sinA * 5, 1.5, car.z + car.cosA * 5),
           e,
         ),

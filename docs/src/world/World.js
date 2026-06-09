@@ -68,6 +68,7 @@ export default class World {
     // River shimmer + props (diya flames) — these animate every frame
     this.river.update(now);
     this.props.update(now, this.isNight);
+    this.objects.updateNightGlow(this.isNight, now);
     this._updateAtmosphere(now, dt);
     this._updateLighting(now, dt);
     this._updateHeartbeat(now);
@@ -304,6 +305,8 @@ export default class World {
     this.isNight = w === "night";
     this.car.setNightMode(this.isNight);
     if (this.objects) this.objects._isNight = this.isNight;
+    // Diya ceremony — sacred wave of light sweeps outward from center at nightfall
+    if (w === 'night' && this.props) this.props.triggerDiyaCeremony();
     this.events.emit("weatherChange", { weather: w, isNight: this.isNight });
     const grip = {
       day: 1,
@@ -474,6 +477,100 @@ export default class World {
     sky.renderOrder = -1;
     this._skyMesh = sky;
     this.scene.add(sky);
+    this._buildStarField();
+  }
+
+  // ── STAR FIELD + MOON — appear on night transition ────────────────────────
+  _buildStarField() {
+    const s = this.scene;
+
+    // 1200 stars — distributed across upper hemisphere inside sky sphere
+    const SC = 1200;
+    const sPos = new Float32Array(SC * 3);
+    for (let i = 0; i < SC; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      // Bias toward upper sky — phi from 0 (zenith) to ~140° (below horizon)
+      const phi = Math.acos(1 - Math.random() * 1.18);
+      const r = 680 + Math.random() * 14;
+      sPos[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
+      sPos[i * 3 + 1] = r * Math.cos(phi) - 20;
+      sPos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+    }
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3));
+    this._starField = new THREE.Points(starGeo,
+      new THREE.PointsMaterial({
+        color: 0xffffff,
+        size: 2.2,          // pixels (sizeAttenuation:false)
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        fog: false,
+        blending: THREE.AdditiveBlending,
+        sizeAttenuation: false,
+      }),
+    );
+    s.add(this._starField);
+
+    // Milky Way band — 600 dim blue-white points in a tilted arc
+    const MW = 600;
+    const mPos = new Float32Array(MW * 3);
+    for (let i = 0; i < MW; i++) {
+      const t = (i / MW) * Math.PI * 2;
+      const bandCtr = Math.PI * 0.38 + Math.sin(t * 2.5) * 0.1;
+      const spread  = (Math.random() - 0.5) * 0.28;
+      const phi   = bandCtr + spread;
+      const theta = t + (Math.random() - 0.5) * 0.5;
+      const r = 686 + Math.random() * 8;
+      mPos[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
+      mPos[i * 3 + 1] = r * Math.cos(phi);
+      mPos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+    }
+    const mwGeo = new THREE.BufferGeometry();
+    mwGeo.setAttribute('position', new THREE.BufferAttribute(mPos, 3));
+    this._milkyWay = new THREE.Points(mwGeo,
+      new THREE.PointsMaterial({
+        color: 0xaabbff,
+        size: 1.4,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        fog: false,
+        blending: THREE.AdditiveBlending,
+        sizeAttenuation: false,
+      }),
+    );
+    s.add(this._milkyWay);
+
+    // Moon — large cream sphere, positioned NW at medium height
+    this._moonMesh = new THREE.Mesh(
+      new THREE.SphereGeometry(13, 16, 12),
+      new THREE.MeshBasicMaterial({
+        color: 0xfff8e8,
+        transparent: true,
+        opacity: 0,
+        fog: false,
+      }),
+    );
+    this._moonMesh.position.set(-260, 115, -190);
+    s.add(this._moonMesh);
+
+    // Moon halo — soft additive ring around moon
+    const haloGeo = new THREE.RingGeometry(15, 26, 32);
+    this._moonHalo = new THREE.Mesh(haloGeo,
+      new THREE.MeshBasicMaterial({
+        color: 0xfff0cc,
+        transparent: true,
+        opacity: 0,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+        fog: false,
+        blending: THREE.AdditiveBlending,
+      }),
+    );
+    this._moonHalo.position.copy(this._moonMesh.position);
+    this._moonHalo.lookAt(0, 40, 0);
+    s.add(this._moonHalo);
   }
 
   // ── GROUND (large flat plane + sandy pavement) ─────────────────────────────
@@ -559,121 +656,141 @@ export default class World {
     }
   }
 
-  // ── CENTERPIECE ────────────────────────────────────────────────────────────
+  // ── DHARMA CHAKRA — sacred 8-spoked wheel at the city's heart ────────────────
+  // The Ashoka Chakra made physical: each spoke colored for its Vastu direction.
+  // Rotates slowly so the city always has one moving, living centerpiece.
   _buildCenterpiece() {
     const s = this.scene;
     const tg = window._toonGrad;
 
-    // Raised island — bigger at 2.5x scale
-    const island = new THREE.Mesh(
-      new THREE.CylinderGeometry(18, 20, 0.55, 18),
-      new THREE.MeshLambertMaterial({ color: 0xb88860 }),
-    );
-    island.position.y = 0.28;
-    s.add(island);
+    // Spoke colors by Vastu direction (N at angle 0, clockwise)
+    const spokeColors = [
+      0xeeddcc, // N  — Kubera, prosperity, cream
+      0x44bb66, // NE — Ishanya, knowledge, emerald
+      0xffcc33, // E  — Surya, beginnings, gold
+      0xcc4422, // SE — Agni, craft/fire, red
+      0xaa7744, // S  — Yama, completion, earth
+      0x886644, // SW — Nirrti, legacy, dark brown
+      0x4488cc, // W  — Varuna, water, blue
+      0x44aaaa, // NW — Vayu, speed, teal
+    ];
 
-    // Inner paved circle
-    const inner = new THREE.Mesh(
-      new THREE.CylinderGeometry(14, 14.5, 0.2, 16),
-      new THREE.MeshLambertMaterial({ color: 0xdd9977 }),
+    // White stone plaza — raised above ground, 22-unit radius
+    const plaza = new THREE.Mesh(
+      new THREE.CylinderGeometry(22, 24, 0.65, 20),
+      new THREE.MeshToonMaterial({ color: 0xddccbb, gradientMap: tg }),
     );
-    inner.position.y = 0.5;
+    plaza.position.y = 0.32;
+    s.add(plaza);
+
+    // Inner sacred circle
+    const inner = new THREE.Mesh(
+      new THREE.CylinderGeometry(16, 16.5, 0.35, 20),
+      new THREE.MeshToonMaterial({ color: 0xeedfcc, gradientMap: tg }),
+    );
+    inner.position.y = 0.82;
     s.add(inner);
 
-    // Glowing ground ring — tracked for animation in _updateLighting
-    const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(14, 0.18, 4, 64),
-      new THREE.MeshBasicMaterial({
-        color: 0xddaaff,
-        transparent: true,
-        opacity: 0.75,
-      }),
-    );
-    ring.rotation.x = Math.PI / 2;
-    ring.position.y = 0.72;
-    this._islandRing = ring;
-    s.add(ring);
+    // Chakra group — this rotates slowly each frame
+    this._chakraGroup = new THREE.Group();
+    s.add(this._chakraGroup);
 
-    // Outer slow ring — counter-rotates, creates depth
-    const ringOuter = new THREE.Mesh(
-      new THREE.TorusGeometry(17.5, 0.08, 4, 64),
-      new THREE.MeshBasicMaterial({
-        color: 0xffcc88,
-        transparent: true,
-        opacity: 0.25,
-      }),
-    );
-    ringOuter.rotation.x = Math.PI / 2;
-    ringOuter.position.y = 0.5;
-    this._islandRingOuter = ringOuter;
-    s.add(ringOuter);
-
-    // Bench
-    const wood = new THREE.MeshToonMaterial({
-      color: 0xcc8844,
-      gradientMap: tg,
-    });
-    for (let i = -1; i <= 1; i++) {
-      const slat = new THREE.Mesh(new THREE.BoxGeometry(5.5, 0.1, 0.85), wood);
-      slat.position.set(0.5, 1.12, i * 1.0);
-      s.add(slat);
+    // Multi-tiered hub at center (octagonal lotus plinth)
+    for (const [r, h, y, col] of [
+      [6.0, 0.65, 1.1, 0xddccbb],
+      [4.5, 0.55, 1.75, 0xeedfcc],
+      [3.0, 0.45, 2.3, 0xf5ead8],
+      [1.8, 0.9, 2.95, 0xfff5e8],
+    ]) {
+      const tier = new THREE.Mesh(
+        new THREE.CylinderGeometry(r * 0.82, r, h, 8),
+        new THREE.MeshToonMaterial({ color: col, gradientMap: tg }),
+      );
+      tier.position.y = y;
+      this._chakraGroup.add(tier);
     }
 
-    // Lamp posts (4 around island)
-    const poleMat = new THREE.MeshToonMaterial({
-      color: 0x776688,
-      gradientMap: tg,
-    });
-    for (const [x, z] of [
-      [-8, 0],
-      [8, 0],
-      [0, -8],
-      [0, 8],
-    ]) {
-      const pole = new THREE.Mesh(new THREE.BoxGeometry(0.2, 6, 0.2), poleMat);
-      pole.position.set(x, 3, z);
+    // 8 spokes
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const col = spokeColors[i];
+      const spokeLen = 11;
+      const spoke = new THREE.Mesh(
+        new THREE.BoxGeometry(0.9, 0.25, spokeLen),
+        new THREE.MeshToonMaterial({ color: col, gradientMap: tg }),
+      );
+      spoke.rotation.y = angle;
+      spoke.position.set(
+        Math.sin(angle) * (spokeLen / 2 + 2.2),
+        1.25,
+        Math.cos(angle) * (spokeLen / 2 + 2.2),
+      );
+      this._chakraGroup.add(spoke);
+
+      // Spoke tip gem — glowing orb in the spoke's Vastu color
+      const gem = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.6, 0),
+        new THREE.MeshBasicMaterial({
+          color: col,
+          transparent: true,
+          opacity: 0.88,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+        }),
+      );
+      gem.position.set(Math.sin(angle) * 13.8, 1.7, Math.cos(angle) * 13.8);
+      this._chakraGroup.add(gem);
+    }
+
+    // Outer rim torus
+    const rim = new THREE.Mesh(
+      new THREE.TorusGeometry(14.8, 0.42, 6, 64),
+      new THREE.MeshToonMaterial({ color: 0xddccaa, gradientMap: tg }),
+    );
+    rim.rotation.x = Math.PI / 2;
+    rim.position.y = 1.25;
+    this._chakraGroup.add(rim);
+
+    // Central dharma beacon
+    this._chakraBeacon = new THREE.Mesh(
+      new THREE.SphereGeometry(1.2, 12, 8),
+      new THREE.MeshBasicMaterial({
+        color: 0xffeeaa,
+        transparent: true,
+        opacity: 0.92,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      }),
+    );
+    this._chakraBeacon.position.y = 4.1;
+    this._chakraGroup.add(this._chakraBeacon);
+
+    // Beacon light
+    this._chakraBeaconLight = new THREE.PointLight(0xffddaa, this.isNight ? 3.2 : 1.2, 38);
+    this._chakraBeaconLight.position.y = 4.4;
+    this._chakraGroup.add(this._chakraBeaconLight);
+
+    // 8 lamp posts around plaza perimeter (static — outside chakra group)
+    const poleMat = new THREE.MeshToonMaterial({ color: 0xaa9977, gradientMap: tg });
+    for (let i = 0; i < 8; i++) {
+      const ang = (i / 8) * Math.PI * 2 + Math.PI / 8;
+      const pr = 20;
+      const pole = new THREE.Mesh(new THREE.BoxGeometry(0.28, 5.8, 0.28), poleMat);
+      pole.position.set(Math.sin(ang) * pr, 2.9, Math.cos(ang) * pr);
       s.add(pole);
       const head = new THREE.Mesh(
-        new THREE.BoxGeometry(0.8, 0.4, 0.8),
-        new THREE.MeshBasicMaterial({ color: 0xffeeaa }),
+        new THREE.SphereGeometry(0.42, 6, 5),
+        new THREE.MeshBasicMaterial({ color: 0xffee99 }),
       );
-      head.position.set(x, 6.2, z);
+      head.position.set(Math.sin(ang) * pr, 6.0, Math.cos(ang) * pr);
       s.add(head);
-      const pl = new THREE.PointLight(0xffeeaa, this.isNight ? 2.5 : 0.4, 18);
-      pl.position.set(x, 6.5, z);
+      const pl = new THREE.PointLight(0xffee99, this.isNight ? 2.0 : 0.35, 16);
+      pl.position.set(Math.sin(ang) * pr, 6.2, Math.cos(ang) * pr);
       s.add(pl);
     }
 
-    // Cherry blossom trees around island
-    const pinks = [0xff88aa, 0xff99bb, 0xffaabb, 0xee7799];
-    for (const [x, z] of [
-      [11, 8],
-      [-11, 8],
-      [11, -8],
-      [-11, -8],
-      [0, 14],
-      [0, -14],
-      [14, 0],
-      [-14, 0],
-    ]) {
-      const h = 2.5 + Math.random();
-      const trunk = new THREE.Mesh(
-        new THREE.BoxGeometry(0.35, h, 0.35),
-        new THREE.MeshToonMaterial({ color: 0x8a5228, gradientMap: tg }),
-      );
-      trunk.position.set(x, h / 2, z);
-      s.add(trunk);
-      const r = 1.8 + Math.random();
-      const leaf = new THREE.Mesh(
-        new THREE.SphereGeometry(r, 7, 5),
-        new THREE.MeshToonMaterial({
-          color: pinks[Math.floor(Math.random() * 4)],
-          gradientMap: tg,
-        }),
-      );
-      leaf.position.set(x, h + r * 0.7, z);
-      s.add(leaf);
-    }
+    // Note: _islandRing and _islandRingOuter are not set — the animation blocks
+    // in _updateLighting guard with if(this._islandRing) so they skip cleanly.
   }
 
   // ── ATMOSPHERE — petals, fireflies, car dust trail ─────────────────────────
@@ -906,6 +1023,36 @@ export default class World {
       }
       this._dustTrail.geometry.attributes.position.needsUpdate = true;
       this._dustTrail.material.opacity = Math.min(0.45, maxOp * 0.45);
+    }
+
+    // ── STARS + MOON — fade in at night ──────────────────────────────────────
+    if (this._starField) {
+      const tStar = this.isNight ? 0.88 : 0;
+      const tMW   = this.isNight ? 0.32 : 0;
+      const tMoon = this.isNight ? 1.0  : 0;
+      this._starField.material.opacity += (tStar - this._starField.material.opacity) * 0.014;
+      if (this._milkyWay)
+        this._milkyWay.material.opacity += (tMW - this._milkyWay.material.opacity) * 0.014;
+      if (this._moonMesh) {
+        this._moonMesh.material.opacity += (tMoon - this._moonMesh.material.opacity) * 0.014;
+        if (this._moonHalo) {
+          this._moonHalo.material.opacity =
+            this._moonMesh.material.opacity * (0.14 + Math.sin(now * 0.28) * 0.04);
+        }
+      }
+    }
+
+    // ── DHARMA CHAKRA — slow rotation + beacon breathing ─────────────────────
+    if (this._chakraGroup) {
+      this._chakraGroup.rotation.y = now * 0.038;
+      if (this._chakraBeacon) {
+        const breathe = 0.78 + Math.sin(now * 1.15) * 0.14;
+        this._chakraBeacon.material.opacity = breathe;
+        if (this._chakraBeaconLight) {
+          const tI = (this.isNight ? 3.8 : 1.2) * breathe;
+          this._chakraBeaconLight.intensity += (tI - this._chakraBeaconLight.intensity) * 0.04;
+        }
+      }
     }
   }
 

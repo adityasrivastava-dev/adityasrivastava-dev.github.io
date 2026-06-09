@@ -5,6 +5,10 @@ export default class Props {
     this.scene = scene;
     this._diyaFlames = [];
     this._diyaLights = [];
+    this._roadDiyaMat = null;
+    this._roadDiyaCeremonyT = -1;
+    this._roadDiyaNight = 0;
+    this._lastNow = 0;
   }
 
   build(isNight) {
@@ -15,10 +19,14 @@ export default class Props {
     this._buildDiyas();
     this._buildStatues();
     this._buildGhats();
+    this._buildRoadDiyas();
   }
 
   update(now, isNight) {
     this._isNight = isNight;
+    const dt = this._lastNow ? Math.min(now - this._lastNow, 0.1) : 0.016;
+    this._lastNow = now;
+
     // Animate diya flame flicker
     this._diyaFlames.forEach((f) => {
       const ph = now * 6.2 + f.userData.diyaPhase;
@@ -30,6 +38,30 @@ export default class Props {
       const base = isNight ? 1.8 : 0.5;
       l.intensity = base * (0.82 + Math.sin(ph) * 0.12 + Math.sin(ph * 2.3) * 0.06);
     });
+
+    // Road diya ceremony — fade in on night, shimmer outward on ceremony trigger
+    if (this._roadDiyaMat) {
+      const targetNight = isNight ? 1.0 : 0.0;
+      this._roadDiyaNight += (targetNight - this._roadDiyaNight) * 0.012;
+      this._roadDiyaMat.uniforms.uNight.value = this._roadDiyaNight;
+
+      if (this._roadDiyaCeremonyT >= 0) {
+        this._roadDiyaCeremonyT += dt * 0.42; // wave completes in ~2.4 seconds
+        this._roadDiyaMat.uniforms.uCeremonyT.value = Math.min(1.0, this._roadDiyaCeremonyT);
+        if (this._roadDiyaCeremonyT >= 1.0) {
+          this._roadDiyaCeremonyT = -1;
+          this._roadDiyaMat.uniforms.uCeremonyT.value = -1.0;
+        }
+      }
+    }
+  }
+
+  // Trigger the outward ceremony wave — called when night begins
+  triggerDiyaCeremony() {
+    if (this._roadDiyaMat) {
+      this._roadDiyaCeremonyT = 0;
+      this._roadDiyaMat.uniforms.uCeremonyT.value = 0;
+    }
   }
 
   // ─── Market Stalls ────────────────────────────────────────────────────────
@@ -530,5 +562,101 @@ export default class Props {
     group.rotation.y = angle;
     this.scene.add(group);
     return group;
+  }
+
+  // Road-edge diya sprites — 800+ tiny flame points along road kerbs.
+  // At night they ripple outward from the city center in a wave ceremony.
+  _buildRoadDiyas() {
+    const edges = [];
+
+    // Main E-W spine (z≈0) — both kerb edges
+    for (let x = -200; x <= 200; x += 7) {
+      edges.push([x, -13]); edges.push([x, 13]);
+    }
+    // Hero avenue (z≈-35) — both kerb edges
+    for (let x = -200; x <= 200; x += 7) {
+      edges.push([x, -48]); edges.push([x, -22]);
+    }
+    // Central N-S spine (x≈0) — both kerb edges
+    for (let z = -200; z <= 175; z += 7) {
+      edges.push([-13, z]); edges.push([13, z]);
+    }
+    // East artery (x≈112) — both edges
+    for (let z = -95; z <= 105; z += 7) {
+      edges.push([101, z]); edges.push([123, z]);
+    }
+    // West artery (x≈-112) — both edges
+    for (let z = -95; z <= 105; z += 7) {
+      edges.push([-101, z]); edges.push([-123, z]);
+    }
+    // Far east (x≈145)
+    for (let z = -95; z <= 105; z += 10) {
+      edges.push([134, z]); edges.push([156, z]);
+    }
+    // Far west (x≈-145)
+    for (let z = -95; z <= 105; z += 10) {
+      edges.push([-134, z]); edges.push([-156, z]);
+    }
+
+    const N = edges.length;
+    const pos  = new Float32Array(N * 3);
+    const dist = new Float32Array(N);
+
+    for (let i = 0; i < N; i++) {
+      const [ex, ez] = edges[i];
+      pos[i * 3]     = ex + (Math.random() - 0.5) * 2;
+      pos[i * 3 + 1] = 0.18;
+      pos[i * 3 + 2] = ez + (Math.random() - 0.5) * 2;
+      dist[i] = Math.sqrt(ex * ex + ez * ez);
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('aDist',    new THREE.BufferAttribute(dist, 1));
+
+    // ShaderMaterial lets us fade each diya based on distance from center
+    // so the ceremony wave sweeps outward — center lights first, edges last.
+    const mat = new THREE.ShaderMaterial({
+      uniforms: {
+        uNight:     { value: 0.0 },
+        uCeremonyT: { value: -1.0 },
+      },
+      vertexShader: `
+        attribute float aDist;
+        uniform float uNight;
+        uniform float uCeremonyT;
+        varying float vOpacity;
+        void main() {
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          gl_PointSize = 3.5;
+          float ceremony = uCeremonyT;
+          if (ceremony >= 0.0) {
+            float waveFront = ceremony * 260.0;
+            float lit = smoothstep(aDist - 20.0, aDist + 6.0, waveFront);
+            vOpacity = lit * uNight;
+          } else {
+            vOpacity = uNight * 0.82;
+          }
+        }
+      `,
+      fragmentShader: `
+        varying float vOpacity;
+        void main() {
+          vec2 uv = gl_PointCoord - vec2(0.5);
+          float d = length(uv);
+          if (d > 0.5) discard;
+          float glow = 1.0 - smoothstep(0.22, 0.5, d);
+          gl_FragColor = vec4(1.0, 0.60, 0.14, glow * vOpacity);
+        }
+      `,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      fog: false,
+    });
+
+    this._roadDiyas = new THREE.Points(geo, mat);
+    this._roadDiyaMat = mat;
+    this.scene.add(this._roadDiyas);
   }
 }

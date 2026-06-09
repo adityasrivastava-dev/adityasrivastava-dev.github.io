@@ -11,6 +11,7 @@ export default class Objects {
     this.buildingBoxes = [];
     this.trees = [];
     this._proximityId = null;
+    this._buildingNightGlow = [];
   }
 
   // ── INIT (must be called before buildAll) ──────────────────────────────────
@@ -344,6 +345,40 @@ export default class Objects {
     glowRing.position.y = 0.1;
     glowRing.userData.isProxRing = true;
     g.add(glowRing);
+
+    // Night glow ring — pulses in at night, invisible in day
+    const nightRingGeo = new THREE.TorusGeometry(Math.max(w, d) * 0.6 + 2.5, 0.18, 4, 28);
+    const nightRingMat = new THREE.MeshBasicMaterial({
+      color: gc,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    const nightRing = new THREE.Mesh(nightRingGeo, nightRingMat);
+    nightRing.rotation.x = Math.PI / 2;
+    nightRing.position.y = 0.2;
+    g.add(nightRing);
+
+    // Apex beacon — glowing orb at building top that pulses at night
+    const apexBeaconMat = new THREE.MeshBasicMaterial({
+      color: gc,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    const apexBeacon = new THREE.Mesh(new THREE.OctahedronGeometry(0.5, 0), apexBeaconMat);
+    apexBeacon.position.y = h + baseH + 0.5;
+    g.add(apexBeacon);
+
+    // Store per-building night glow entry for animation
+    this._buildingNightGlow.push({
+      ringMat: nightRingMat,
+      apexMat: apexBeaconMat,
+      phase: ((b.pos[0] * 0.31 + b.pos[1] * 0.57) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2),
+      isHero: !!b.isHero,
+    });
 
     // Collision box
     this.buildingBoxes.push({
@@ -1821,5 +1856,19 @@ export default class Objects {
       }
       return true;
     });
+  }
+
+  // Night glow rings + apex beacons — called from World._updateAmbients every frame
+  updateNightGlow(isNight, now) {
+    if (!this._buildingNightGlow || !this._buildingNightGlow.length) return;
+    for (const { ringMat, apexMat, phase, isHero } of this._buildingNightGlow) {
+      const pulse = Math.sin(now * 0.85 + phase) * 0.12;
+      const targetRing = isNight ? (isHero ? 0.72 + pulse : 0.48 + pulse) : 0;
+      const targetApex = isNight ? (isHero ? 0.88 + pulse : 0.65 + pulse) : 0;
+      ringMat.opacity += (targetRing - ringMat.opacity) * 0.025;
+      apexMat.opacity += (targetApex - apexMat.opacity) * 0.025;
+      ringMat.opacity = Math.max(0, Math.min(1, ringMat.opacity));
+      apexMat.opacity = Math.max(0, Math.min(1, apexMat.opacity));
+    }
   }
 }
