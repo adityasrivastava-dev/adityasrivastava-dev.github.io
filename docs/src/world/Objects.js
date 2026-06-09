@@ -129,6 +129,38 @@ export default class Objects {
   // ── TEMPLES — exact positions from CITY_DATA ───────────────────────────────
   _buildAllTemples() {
     (window.CITY_DATA?.buildings || []).forEach((b) => this._buildTemple(b));
+    this._buildRangoli();
+  }
+
+  // Item 43: Rangoli — concentric coloured disc pattern at each temple entrance
+  _buildRangoli() {
+    const glowCols = [0xff2244, 0xffcc00, 0x22aaff, 0xff6600, 0x44dd66];
+    (window.CITY_DATA?.buildings || []).forEach((b, bi) => {
+      const frontZ = b.pos[1] + (b.size ? b.size[1] * 0.5 : 4) + 2.5;
+      const cx = b.pos[0], cz = frontZ;
+      const baseCol = parseInt((b.glowColor || '#ffcc44').replace('#', ''), 16);
+      for (const [r, innerR, op] of [[3.5, 2.8, 0.22], [2.5, 2.0, 0.30], [1.4, 0.9, 0.38]]) {
+        const ring = new THREE.Mesh(
+          new THREE.RingGeometry(innerR, r, 16),
+          new THREE.MeshBasicMaterial({
+            color: bi % 2 === 0 ? baseCol : glowCols[bi % glowCols.length],
+            transparent: true, opacity: op,
+            depthWrite: false, side: THREE.DoubleSide,
+          }),
+        );
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.set(cx, 0.04, cz);
+        this.scene.add(ring);
+      }
+      // Center dot
+      const dot = new THREE.Mesh(
+        new THREE.CircleGeometry(0.5, 8),
+        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45, depthWrite: false, side: THREE.DoubleSide }),
+      );
+      dot.rotation.x = -Math.PI / 2;
+      dot.position.set(cx, 0.05, cz);
+      this.scene.add(dot);
+    });
   }
 
   _buildTemple(b) {
@@ -569,6 +601,8 @@ export default class Objects {
       tw = w,
       td = d;
     const tierH = (h - hallH) / tiers;
+    // Item 26: gopuram colour bands for hero building (Surya Dwara) — vibrant stripe per tier
+    const heroBandColors = [0xff4422, 0xffcc00, 0x22cc66, 0x2288ff, 0xff4422, 0xffcc00, 0x22cc66, 0x2288ff];
     for (let t = 0; t < tiers; t++) {
       tw *= 0.88;
       td *= 0.88;
@@ -584,6 +618,16 @@ export default class Objects {
       );
       c.position.y = tierY + tierH;
       g.add(c);
+      // Hero colour band — a thin emissive strip at tier mid-height
+      if (b.isHero) {
+        const bandMat = new THREE.MeshBasicMaterial({
+          color: heroBandColors[t % heroBandColors.length],
+          transparent: true, opacity: 0.72,
+        });
+        const band = new THREE.Mesh(new THREE.BoxGeometry(tw + 0.05, 0.28, td + 0.05), bandMat);
+        band.position.y = tierY + tierH * 0.25;
+        g.add(band);
+      }
       tierY += tierH;
     }
     const vault = new THREE.Mesh(
@@ -848,6 +892,18 @@ export default class Objects {
 
     // Build willow trees near water
     willowPositions.forEach(([x, z]) => this._treeWillow(x, z, tg));
+
+    // Item 46: Palm trees — along south entry road and river banks
+    [
+      [12, 55], [-12, 55], [20, 48], [-20, 48], [8, 62], [-8, 62],
+      [25, -8], [-25, -8], [38, -3], [-38, -3], // river bank palms
+      [155, -8], [-155, -8], [155, 5], [-155, 5], // far east/west
+    ].forEach(([x, z]) => this._treePalm(x, z, tg));
+
+    // Item 46: Banyan trees — near temple plazas, spreading silhouette
+    [
+      [0, -28], [0, 28], [72, -55], [-88, -55], [0, -105],
+    ].forEach(([x, z]) => this._treeBanyan(x, z, tg));
   }
 
   // ── BROAD CANOPY (Bruno-style multi-sphere) — most common ──────────────────
@@ -1049,6 +1105,82 @@ export default class Objects {
       windAmpX: 0.030 + rng(seed * 6.7) * 0.020,
       windAmpZ: 0.024 + rng(seed * 8.2) * 0.016,
       windFreq: 0.28 + rng(seed * 11.3) * 0.18,
+    });
+  }
+
+  // ── PALM — tall thin trunk, fan fronds at top ─────────────────────────────
+  _treePalm(x, z, tg) {
+    const rng = (s) => Math.sin(s * 127.1 + 43.7) * 0.5 + 0.5;
+    const seed = x * 2.1 + z * 3.7;
+    const h = 5.5 + rng(seed) * 3.0;
+    const tMat = new THREE.MeshToonMaterial({ color: 0x8a5c2a, gradientMap: tg });
+    const lMat = new THREE.MeshToonMaterial({ color: 0x3a7a1a, gradientMap: tg });
+    const grp = new THREE.Group();
+    grp.position.set(x, 0, z);
+    grp.rotation.y = rng(seed * 9.1) * Math.PI * 2;
+    // Curved trunk (3 segments with slight lean)
+    for (let i = 0; i < 3; i++) {
+      const seg = new THREE.Mesh(new THREE.CylinderGeometry(0.16 - i * 0.03, 0.20 - i * 0.02, h / 3, 6), tMat);
+      seg.position.y = (i + 0.5) * (h / 3);
+      seg.position.x = i * 0.18 * Math.sin(seed); // gentle lean
+      grp.add(seg);
+    }
+    // Fan fronds — 6 elongated ellipsoids radiating from top
+    for (let i = 0; i < 6; i++) {
+      const ang = (i / 6) * Math.PI * 2;
+      const frond = new THREE.Mesh(new THREE.SphereGeometry(0.6, 5, 4), lMat);
+      frond.scale.set(0.35, 0.15, 1.4);
+      frond.position.set(Math.sin(ang) * 1.5, h + 0.3, Math.cos(ang) * 1.5);
+      frond.rotation.y = ang;
+      frond.rotation.z = -0.45;
+      grp.add(frond);
+    }
+    grp.traverse(c => { if (c.isMesh) c.castShadow = true; });
+    this.scene.add(grp);
+    this.trees.push({
+      group: grp, leaf: null, shakeT: 0,
+      baseX: x, baseZ: z, r: 2.0,
+      windPhase: rng(seed * 13.1) * Math.PI * 2,
+      windAmpX: 0.015, windAmpZ: 0.012, windFreq: 0.55,
+    });
+  }
+
+  // ── BANYAN — wide spreading canopy, aerial roots ───────────────────────────
+  _treeBanyan(x, z, tg) {
+    const rng = (s) => Math.sin(s * 127.1 + 43.7) * 0.5 + 0.5;
+    const seed = x * 2.1 + z * 3.7;
+    const tMat = new THREE.MeshToonMaterial({ color: 0x5a3518, gradientMap: tg });
+    const lMat = new THREE.MeshToonMaterial({ color: 0x2a5a18, gradientMap: tg });
+    const grp = new THREE.Group();
+    grp.position.set(x, 0, z);
+    // Main trunk
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.75, 3.5, 8), tMat);
+    trunk.position.y = 1.75;
+    grp.add(trunk);
+    // Wide spreading canopy — 5 large spheres at different offsets
+    const canopyOffsets = [[0, 4.5, 0], [2.5, 3.8, 1.0], [-2.5, 3.8, 1.0], [1.5, 3.8, -2.0], [-1.5, 3.8, -2.0]];
+    for (const [cx, cy, cz] of canopyOffsets) {
+      const s = 1.8 + rng(seed + cx) * 0.8;
+      const ball = new THREE.Mesh(new THREE.SphereGeometry(s, 7, 5), lMat);
+      ball.position.set(cx, cy, cz);
+      ball.scale.y = 0.65;
+      grp.add(ball);
+    }
+    // Aerial roots (thin cylinders dropping from canopy edge)
+    for (let i = 0; i < 5; i++) {
+      const ra = (i / 5) * Math.PI * 2;
+      const rootDrop = 1.2 + rng(seed + i) * 1.5;
+      const root = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.10, rootDrop, 4), tMat);
+      root.position.set(Math.sin(ra) * 2.2, 3.5 - rootDrop / 2, Math.cos(ra) * 2.2);
+      grp.add(root);
+    }
+    grp.traverse(c => { if (c.isMesh) c.castShadow = true; });
+    this.scene.add(grp);
+    this.trees.push({
+      group: grp, leaf: null, shakeT: 0,
+      baseX: x, baseZ: z, r: 4.5,
+      windPhase: rng(seed * 13.1) * Math.PI * 2,
+      windAmpX: 0.010, windAmpZ: 0.008, windFreq: 0.25,
     });
   }
 
@@ -1630,6 +1762,8 @@ export default class Objects {
       if (justEnteredProx) {
         // You're really close — strong snap up with bigger overshoot
         group._snapVel += isHero ? 0.2 : 0.15;
+        // Item 16: Temple bell ring VFX — 3 expanding torus rings
+        this._spawnBellRings(building.pos[0], building.pos[1], building.height, building.glowColor);
       }
       if (justExitedHover) {
         // You left — small dejected retraction
@@ -1836,6 +1970,29 @@ export default class Objects {
         f.rotation.y = ph * 0.3;
         f.material.opacity = 0.72 + Math.sin(ph * 1.5) * 0.2;
       });
+    });
+  }
+
+  // Item 16: Temple bell ring VFX — 3 concentric rings expand outward at building top
+  _spawnBellRings(bx, bz, bh, glowColor) {
+    const gc = parseInt((glowColor || '#ffcc44').replace('#', ''), 16);
+    [1.0, 1.8, 2.8].forEach((speed, i) => {
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(0.3, 0.7, 16),
+        new THREE.MeshBasicMaterial({
+          color: gc, transparent: true, opacity: 0.72 - i * 0.18,
+          side: THREE.DoubleSide, depthWrite: false,
+          blending: THREE.AdditiveBlending,
+        }),
+      );
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.set(bx, bh * 0.55 + i * 1.2, bz);
+      ring.userData.isBurst = true;
+      ring.userData.speed = speed;
+      ring.userData.life = 1.0;
+      this.scene.add(ring);
+      this._entryBursts = this._entryBursts || [];
+      this._entryBursts.push(ring);
     });
   }
 
