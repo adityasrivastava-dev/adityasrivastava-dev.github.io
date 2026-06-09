@@ -94,12 +94,12 @@ export default class Camera {
 
     // ── STATIC — cinematic orbit before user clicks ────────────────────────
     if (this.state === "STATIC") {
-      cam.fov = 50;
+      cam.fov = 52;
       cam.updateProjectionMatrix();
       const pan = now * 0.04;
-      // Orbit radius 120 to show full 2.5x world without clipping temples
-      cam.position.set(Math.sin(pan) * 120, 60, Math.cos(pan) * 120);
-      cam.lookAt(0, 5, 0);
+      // Orbit Surya Dwara — the gateway building, first thing a visitor should see
+      cam.position.set(72 + Math.sin(pan) * 85, 32, -35 + Math.cos(pan) * 85);
+      cam.lookAt(72, 8, -35);
       return;
     }
 
@@ -113,7 +113,7 @@ export default class Camera {
       cam.position.lerpVectors(
         new THREE.Vector3(220, 40, -35),
         // Land at the new raised isometric height (18) not old low height (12)
-        new THREE.Vector3(car.x - car.sinA * 18, 18, car.z - car.cosA * 18),
+        new THREE.Vector3(car.x - car.sinA * 20, 8, car.z - car.cosA * 20),
         e,
       );
       cam.lookAt(

@@ -1023,6 +1023,11 @@ function _setupMapInteractions() {
 
 // ── GAME HUD UPDATE ─────────────────────────────────────────────────────
 function updateGameHUD(spd, weather) {
+  if (Math.abs(spd) > 0.02 && !window._ctrlHinted) {
+    window._ctrlHinted = true;
+    const ch = document.getElementById("ctrl-hint");
+    if (ch) ch.classList.remove("hud-visible");
+  }
   const arc = document.getElementById("spd-arc");
   const num = document.getElementById("spd-num");
   const gear = document.getElementById("gear-badge");

@@ -344,11 +344,11 @@ export default class Car {
     //  Chrome:   warm silver         #887766
     //  Glass:    dark tinted blue    #223344
     //
-    const mBody = this._mc("car", 0xcc2200); // bright red body
-    const mTop = this._mc("carDark", 0x2a3318); // dark military olive GREEN cab
-    const mChassis = this._mc("dark", 0x1a2010); // dark olive chassis/underbody
+    const mBody = this._mc("carBlue", 0x0a1428); // midnight blue body
+    const mTop = this._mc("dark", 0x060c14); // near-black navy cab
+    const mChassis = this._mc("dark", 0x040810); // near-black chassis
     const mBlack = this._mc("dark", 0x0e0c0a); // near-black details
-    const mRim = this._mc("car", 0xcc2200); // RED rims — matches body
+    const mRim = this._mc("chrome", 0x8899aa); // steel-blue rims
     const mTyre = this._mc("tyre", 0x0e0c0a); // near-black rubber
     const mChrome = this._mc("chrome", 0x887766); // warm silver trim
     const mGlass = new THREE.MeshMatcapMaterial({
@@ -892,6 +892,22 @@ export default class Car {
     flag.position.set(antX + 0.2, RY + 0.65, antZ);
     g.add(flag);
     // ── END INDIAN TOUCHES ─────────────────────────────────────────────────
+
+    // Sacred underside glow — soft amber aura beneath the car
+    const underglow = new THREE.Mesh(
+      new THREE.CircleGeometry(2.0, 20),
+      new THREE.MeshBasicMaterial({
+        color: 0xffaa22,
+        transparent: true,
+        opacity: 0.28,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+      }),
+    );
+    underglow.rotation.x = -Math.PI / 2;
+    underglow.position.y = -0.22;
+    g.add(underglow);
 
     g.position.set(this.x, 0, this.z);
     g.rotation.y = this.angle;

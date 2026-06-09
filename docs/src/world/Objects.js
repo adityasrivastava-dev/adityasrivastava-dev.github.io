@@ -89,6 +89,7 @@ export default class Objects {
       tree: mk("#a0b464", "#6b8a40", "#1e3010"),
       car: mk("#ff9977", "#dd2200", "#440000", "rgba(255,230,220,0.95)"),
       carDark: mk("#ee5533", "#991100", "#220000"),
+      carBlue: mk("#88aadd", "#1a3480", "#040810", "rgba(180,200,255,0.88)"),
       chrome: mk("#ffffee", "#ccccaa", "#444433"),
       glass: mk("#99ccff", "#3366aa", "#001133"),
       tyre: mk("#333222", "#151210", "#050404"),
@@ -143,15 +144,15 @@ export default class Objects {
     const mc = window._matcaps || {};
 
     const stoneColors = {
-      "#00c8ff": [0x99bbcc, 0x6699bb, 0x2d5575],
-      "#7dff4f": [0xaaccaa, 0x7aaa55, 0x3d5a1e],
-      "#ffcc44": [0xccaa66, 0xbb8833, 0x7a5200],
-      "#ff6b00": [0xbb8860, 0xcc7730, 0x7a3010],
-      "#c084fc": [0xbb88cc, 0xaa66cc, 0x6622aa],
-      "#4dd4ff": [0x99ccdd, 0x55aacc, 0x225577],
-      "#ff9950": [0xcc9966, 0xcc7733, 0x7a3310],
-      "#a78bfa": [0xaa88cc, 0x9966cc, 0x5522aa],
-      "#34d399": [0x88bbaa, 0x44aa88, 0x125538],
+      "#00c8ff": [0xe4c888, 0xc8a060, 0x8a6830],  // golden sandstone
+      "#7dff4f": [0xd4b870, 0xb8944c, 0x7a5e28],  // warm ochre
+      "#ffcc44": [0xe8cc80, 0xd0a840, 0x8a6c20],  // rich gold stone
+      "#ff6b00": [0xcc7050, 0xaa4e2e, 0x7a2e10],  // terracotta red
+      "#c084fc": [0xc49880, 0xa87862, 0x7a5248],  // rose sandstone
+      "#4dd4ff": [0xe8d8b0, 0xd0bc88, 0x9a8c60],  // pale ivory stone
+      "#ff9950": [0xcc8858, 0xaa6634, 0x7a4018],  // burnt sienna
+      "#a78bfa": [0xba7060, 0x9a5040, 0x702e20],  // deep crimson laterite
+      "#34d399": [0xb8cc90, 0x98aa70, 0x5a7240],  // sage stone
     };
     const [sL, sM, sD] = stoneColors[b.glowColor] || [
       0xcc9966, 0xaa7744, 0x6a4422,
