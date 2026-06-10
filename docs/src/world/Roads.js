@@ -85,44 +85,68 @@ export default class Roads {
     R(-550, -395, -550, 459);     // Far west artery
     R(550, -395, 550, 459);       // Far east artery
 
-    // ── APPROACH SPURS — one per temple ───────────────────────────────────────
-    // surya-dwara [288,-139]: ON hero zone boulevard — no spur needed
-    // vishwakarma [181,224]: on N boulevard — no spur needed
-    // akasha-mandapa [352,-245]: x spur from east artery
+    // ── APPROACH SPURS — road → building entrance ─────────────────────────────
+    // Buildings are set back ~50 units from road into city blocks.
+    // Each spur: artery-to-road-intersection + road-to-building-entrance.
+
+    // surya-dwara [288,-192]: hero avenue → south into block
+    R(288, -139, 288, -192, 12);
+
+    // vishwakarma [181,172]: north blvd → south into block
+    R(181, 224, 181, 172, 12);
+
+    // akasha-mandapa [352,-298]: east artery → road then south
     R(448, -245, 352, -245, 14);
+    R(352, -245, 352, -298, 12);
 
-    // setu-nagara [352,53]: x spur from east artery
+    // setu-nagara [352,110]: east artery → road then north
     R(448, 53, 352, 53, 14);
+    R(352, 53, 352, 110, 12);
 
-    // brahma-kund [-352,-139]: ON hero zone — no spur needed
-    // lakshmi-prasad [-256,224]: ON N boulevard — no spur needed
+    // brahma-kund [-352,-192]: hero avenue → south into block
+    R(-352, -139, -352, -192, 12);
 
-    // pura-stambha [0,352]: N-S central spine spur
+    // lakshmi-prasad [-256,172]: north blvd → south into block
+    R(-256, 224, -256, 172, 12);
+
+    // pura-stambha [72,352]: central spine north, then east to building
     R(0, 288, 0, 352, 14);
+    R(0, 352, 72, 352, 12);
 
-    // maya-sabha [-181,-245]: ON south-mid — no spur needed
-    // jyotish-vedha [0,-352]: central spine spur
+    // maya-sabha [-181,-298]: south-mid blvd → south into block
+    R(-181, -245, -181, -298, 12);
+
+    // jyotish-vedha [72,-352]: central spine south, then east to building
     R(0, -288, 0, -352, 14);
+    R(0, -352, 72, -352, 12);
 
-    // vayu-rath [-352,53]: x spur from west artery
+    // vayu-rath [-352,110]: west artery → road then north
     R(-448, 53, -352, 53, 14);
+    R(-352, 53, -352, 110, 12);
 
-    // saraswati-vihar [139,-395]: ON education avenue — no spur needed
-    // gurukul-ashram [-139,-395]: ON education avenue — no spur needed
+    // saraswati-vihar [139,-340]: education avenue → north into block
+    R(139, -395, 139, -340, 12);
 
-    // vaishya-griha [523,-139]: x spur from far east artery
+    // gurukul-ashram [-139,-340]: education avenue → north into block
+    R(-139, -395, -139, -340, 12);
+
+    // vaishya-griha [523,-192]: far east artery → road then south
     R(550, -139, 523, -139, 14);
+    R(523, -139, 523, -192, 12);
 
-    // agni-vedha [523,53]: x spur from far east artery
+    // agni-vedha [523,110]: far east artery → road then north
     R(550, 53, 523, 53, 14);
+    R(523, 53, 523, 110, 12);
 
-    // darpana-shala [181,-309]: N-S spur from south-mid boulevard
+    // darpana-shala [181,-309]: south-mid blvd → south into block
     R(181, -245, 181, -309, 14);
 
-    // vidya-ashram [-523,-139]: x spur from far west artery
+    // vidya-ashram [-523,-192]: far west artery → road then south
     R(-550, -139, -523, -139, 14);
+    R(-523, -139, -523, -192, 12);
 
-    // sutra-dhara [0,459]: ON far north — no spur needed
+    // sutra-dhara [0,416]: far north blvd → south to building
+    R(0, 459, 0, 416, 12);
   }
 
   // ── ROUNDABOUTS ───────────────────────────────────────────────────────────
