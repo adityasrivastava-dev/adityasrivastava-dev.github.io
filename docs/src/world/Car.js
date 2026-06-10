@@ -130,8 +130,8 @@ export default class Car {
     }
 
     // World boundary clamp
-    this.x = Math.max(-235, Math.min(235, this.x));
-    this.z = Math.max(-205, Math.min(178, this.z));
+    this.x = Math.max(-565, Math.min(565, this.x));
+    this.z = Math.max(-425, Math.min(485, this.z));
   }
 
   _collides(nx, nz, boxes) {

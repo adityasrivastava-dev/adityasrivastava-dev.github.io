@@ -751,13 +751,14 @@ export default class World {
   _buildDistrictZones() {
     this._districtZoneMats = [];
     const zones = [
-      { x: 120, z: -52, color: 0x00ccff, r: 52 },  // hero / Surya Dwara
-      { x: -132, z: -35, color: 0x9966ff, r: 45 }, // knowledge / Brahma Kund
-      { x: 130, z: 52, color: 0xffcc33, r: 50 },   // east / Vishwakarma+Setu
-      { x: -130, z: 52, color: 0x44cc88, r: 45 },  // west / Lakshmi+Vayu
-      { x: 0, z: -148, color: 0xa78bfa, r: 55 },   // education district
-      { x: 0, z: 152, color: 0xff9950, r: 40 },    // south district (pura+sutra)
-      { x: 196, z: -16, color: 0xff6644, r: 36 },  // frontier / open source east
+      { x: 0,    z: 0,    color: 0xffcc33, r: 130 }, // city centre
+      { x: 288,  z: -139, color: 0x00ccff, r: 140 }, // east hero
+      { x: -352, z: -139, color: 0x9966ff, r: 120 }, // west heritage
+      { x: 352,  z: 53,   color: 0xffcc33, r: 130 }, // craft east
+      { x: -352, z: 53,   color: 0x44cc88, r: 120 }, // gardens west
+      { x: 0,    z: -352, color: 0xa78bfa, r: 145 }, // education
+      { x: 0,    z: 352,  color: 0xff9950, r: 110 }, // north
+      { x: 523,  z: -43,  color: 0xff6644, r: 100 }, // far east
     ];
 
     zones.forEach(({ x, z, color, r }) => {
@@ -2224,22 +2225,22 @@ export default class World {
       gradientMap: window._toonGrad,
     });
 
-    // Positions scaled ×1.5 from original
+    // Positions scaled ×8/3 from original
     [
-      { x: 0, z: -26, ry: 0, label: "◈  HERO DISTRICT", col: 0x00ddff },
-      { x: 0, z: -110, ry: 0, label: "◈  MODERNIZATION ZONE", col: 0xffcc44 },
-      { x: 0, z: -130, ry: 0, label: "◈  EDUCATION DISTRICT", col: 0xa78bfa },
-      { x: 0, z: 110, ry: 0, label: "◈  SOUTH DISTRICT", col: 0xff9950 },
+      { x: 0, z: -69, ry: 0, label: "◈  HERO DISTRICT", col: 0x00ddff },
+      { x: 0, z: -293, ry: 0, label: "◈  MODERNIZATION ZONE", col: 0xffcc44 },
+      { x: 0, z: -347, ry: 0, label: "◈  EDUCATION DISTRICT", col: 0xa78bfa },
+      { x: 0, z: 293, ry: 0, label: "◈  SOUTH DISTRICT", col: 0xff9950 },
       {
-        x: -165,
-        z: 52,
+        x: -440,
+        z: 139,
         ry: Math.PI / 2,
         label: "◈  WEST QUARTER",
         col: 0xffcc44,
       },
       {
-        x: 165,
-        z: 52,
+        x: 440,
+        z: 139,
         ry: Math.PI / 2,
         label: "◈  EAST QUARTER",
         col: 0x00c8ff,
@@ -2310,7 +2311,7 @@ export default class World {
     // Larger than district arches: H=18, W=20, with 3-tiered gopuram roof
     {
       const entryG = new THREE.Group();
-      entryG.position.set(0, 0, 92);
+      entryG.position.set(0, 0, 245);
       const W2 = 18,
         H = 18;
       for (const ox of [-W2, W2]) {
@@ -2388,7 +2389,7 @@ export default class World {
     // Place near player spawn (z=40 in city-data, so z=120 in 2.5x world? No -
     // car spawns at z=40 from city-data, we keep building positions exact.
     // Name goes at z=90 (well behind spawn area)
-    const nameZ = 130;
+    const nameZ = 347;
     const mk = (text, font, color, W, H) => {
       const can = document.createElement("canvas");
       can.width = W;
@@ -2484,7 +2485,7 @@ export default class World {
     // Gives Type A recruiter the 5 essential facts in under 10 seconds.
     {
       const g = new THREE.Group();
-      g.position.set(30, 0, 84);
+      g.position.set(80, 0, 224);
       const base = new THREE.Mesh(
         new THREE.BoxGeometry(1.2, 0.35, 1.2),
         sandstone,
@@ -2544,8 +2545,8 @@ export default class World {
     // Requires the player to drive south-west off the main spine near the Chakra.
     // Oracle trigger fires when player is within 25 units of center.
     {
-      const CX = -28,
-        CZ = -38;
+      const CX = -75,
+        CZ = -101;
       const g = new THREE.Group();
       g.position.set(CX, -5.5, CZ);
       // Sunken floor
@@ -2658,7 +2659,7 @@ export default class World {
     // "Where It Started" — first Java notebook, coffee mug, sketches.
     {
       const g = new THREE.Group();
-      g.position.set(68, 0, -148);
+      g.position.set(181, 0, -395);
       // Stone bench
       const bench = new THREE.Mesh(
         new THREE.BoxGeometry(4.5, 0.4, 1.2),
@@ -2735,7 +2736,7 @@ export default class World {
     // Five canonical lessons inscribed on sandstone slabs.
     {
       const g = new THREE.Group();
-      g.position.set(9, 0, -188);
+      g.position.set(24, 0, -420);
       const baseWall = new THREE.Mesh(
         new THREE.BoxGeometry(48, 4, 1),
         sandstone,
@@ -2807,7 +2808,7 @@ export default class World {
     // Deliberately crumbling. // TODO comments as inscriptions.
     {
       const g = new THREE.Group();
-      g.position.set(22, 0, 168);
+      g.position.set(59, 0, 448);
       const ruinMat = new THREE.MeshLambertMaterial({ color: 0x3a2a1a });
       // Crumbling walls
       [
@@ -2887,7 +2888,7 @@ export default class World {
     // Near the river willow area. No label. Engineers will find it and share it.
     {
       const g = new THREE.Group();
-      g.position.set(-63, 0, 12);
+      g.position.set(-168, 0, 32);
       const pot = new THREE.Mesh(
         new THREE.SphereGeometry(1.4, 10, 8),
         new THREE.MeshLambertMaterial({
@@ -2941,7 +2942,7 @@ export default class World {
           : [];
       quotes.forEach((q, i) => {
         const g = new THREE.Group();
-        g.position.set(-42 + i * 21, 0, -165);
+        g.position.set(-112 + i * 56, 0, -425);
         const stone = new THREE.Mesh(
           new THREE.BoxGeometry(0.3, 3.5, 2.4),
           darkStone,
@@ -2985,7 +2986,7 @@ export default class World {
     // “Every architect begins with a small commit.”
     {
       const g = new THREE.Group();
-      g.position.set(18, 0, 123);
+      g.position.set(48, 0, 328);
       const base = new THREE.Mesh(
         new THREE.BoxGeometry(1.0, 0.3, 1.0),
         sandstone,
@@ -3058,7 +3059,7 @@ export default class World {
     // 2–3 monk NPCs around a fire. Discoverable rest point.
     {
       const g = new THREE.Group();
-      g.position.set(15, 0, -21);
+      g.position.set(40, 0, -56);
       // Fire ring
       const ring = new THREE.Mesh(
         new THREE.RingGeometry(0.6, 1.0, 8),
@@ -3131,7 +3132,7 @@ export default class World {
     // ── 10. 404 SIGN — road to nowhere, near Pura Stambha SW ─────────────────
     {
       const g = new THREE.Group();
-      g.position.set(-22, 0, 172);
+      g.position.set(-59, 0, 459);
       // Simple sign post
       const post = new THREE.Mesh(
         new THREE.CylinderGeometry(0.1, 0.1, 3.5, 6),
@@ -3178,7 +3179,7 @@ export default class World {
     // Contains: Contact Stone + Unseen System foundation
     {
       const gx2 = new THREE.Group();
-      gx2.position.set(-12, 0, -165);
+      gx2.position.set(-32, 0, -420);
       // Garden floor (stone tiles)
       const gfloor = new THREE.Mesh(
         new THREE.BoxGeometry(22, 0.18, 18),
@@ -3335,7 +3336,7 @@ export default class World {
     // “Still under construction.” Future ambition visible.
     {
       const g = new THREE.Group();
-      g.position.set(21, 0, -195);
+      g.position.set(56, 0, -420);
       const fndMat = new THREE.MeshLambertMaterial({ color: 0x4a3520 });
       // Foundation slab
       const fslab = new THREE.Mesh(new THREE.BoxGeometry(9, 0.6, 9), fndMat);
@@ -3382,7 +3383,7 @@ export default class World {
     // Tonally honest zone. Label only — no separate structures needed here.
     {
       const g = new THREE.Group();
-      g.position.set(-30, 0, 175);
+      g.position.set(-80, 0, 467);
       const stone = new THREE.Mesh(
         new THREE.BoxGeometry(0.25, 2.5, 3.5),
         new THREE.MeshLambertMaterial({ color: 0x1e1408 }),
@@ -3533,7 +3534,7 @@ export default class World {
   _buildStackTraceObelisk() {
     const s = this.scene;
     const g = new THREE.Group();
-    g.position.set(90, 0, 69);
+    g.position.set(240, 0, 184);
     const sandstone = new THREE.MeshLambertMaterial({ color: 0xc8a870 });
     const dark = new THREE.MeshLambertMaterial({ color: 0x1a0e08 });
     const base = new THREE.Mesh(

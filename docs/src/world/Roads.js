@@ -1,5 +1,5 @@
-// ── ROADS — expanded city layout, 1.6× building spread, wide boulevards ───────
-// Building positions are scaled ~1.6× from original to fill the world properly.
+// ── ROADS — expanded city layout, 4× building spread, wide boulevards ───────
+// Building positions are scaled 4× from original to fill the world properly.
 // Road palette: dark asphalt + warm sandstone borders, like aged stone city streets.
 
 export default class Roads {
@@ -70,67 +70,59 @@ export default class Roads {
     const R = this._road.bind(this);
 
     // ── E-W BOULEVARDS ────────────────────────────────────────────────────────
-    R(-260, 0, 260, 0);           // Main east-west spine
-    R(-260, -52, 260, -52);       // Hero zone avenue (surya, brahma, vaishya, vidya)
-    R(-220, 84, 220, 84);         // North boulevard (vishwakarma, lakshmi)
-    R(-220, -92, 220, -92);       // South-mid boulevard (akasha, maya, darpana)
-    R(-260, -148, 260, -148);     // Education avenue (saraswati, gurukul)
-    R(-220, 172, 220, 172);       // Far north boulevard (sutra-dhara)
-    R(-220, 20, 220, 20);         // Mid connector (setu-nagara, vayu-rath)
+    R(-600, 0, 600, 0);           // Main east-west spine
+    R(-600, -139, 600, -139);     // Hero zone avenue (surya, brahma, vaishya, vidya)
+    R(-550, 224, 550, 224);       // North boulevard (vishwakarma, lakshmi)
+    R(-550, -245, 550, -245);     // South-mid boulevard (akasha, maya, darpana)
+    R(-550, -395, 550, -395);     // Education avenue (saraswati, gurukul)
+    R(-400, 459, 400, 459);       // Far north boulevard (sutra-dhara)
+    R(-550, 53, 550, 53);         // Mid connector (setu-nagara, vayu-rath)
 
     // ── N-S ARTERIES ──────────────────────────────────────────────────────────
-    R(0, -210, 0, 180);           // Central spine — passes pura-stambha, jyotish, sutra
-    R(-168, -148, -168, 172);     // West artery
-    R(168, -148, 168, 172);       // East artery
-    R(-220, -148, -220, 172);     // Far west artery
-    R(220, -148, 220, 172);       // Far east artery
+    R(0, -430, 0, 480);           // Central spine — passes pura-stambha, jyotish, sutra
+    R(-448, -395, -448, 459);     // West artery
+    R(448, -395, 448, 459);       // East artery
+    R(-550, -395, -550, 459);     // Far west artery
+    R(550, -395, 550, 459);       // Far east artery
 
-    // ── APPROACH ROADS — one per temple ───────────────────────────────────────
-    // surya-dwara [108,-52]: spur from main spine down to hero zone
-    R(108, 0, 108, -52, 14);
+    // ── APPROACH SPURS — one per temple ───────────────────────────────────────
+    // surya-dwara [288,-139]: ON hero zone boulevard — no spur needed
+    // vishwakarma [181,224]: on N boulevard — no spur needed
+    // akasha-mandapa [352,-245]: x spur from east artery
+    R(448, -245, 352, -245, 14);
 
-    // vishwakarma [68,84]: from main E-W north
-    R(68, 0, 68, 84, 14);
+    // setu-nagara [352,53]: x spur from east artery
+    R(448, 53, 352, 53, 14);
 
-    // akasha-mandapa [132,-92]: W from east artery
-    R(168, -92, 132, -92, 14);
+    // brahma-kund [-352,-139]: ON hero zone — no spur needed
+    // lakshmi-prasad [-256,224]: ON N boulevard — no spur needed
 
-    // setu-nagara [132,20]: W from east artery
-    R(168, 20, 132, 20, 14);
+    // pura-stambha [0,352]: N-S central spine spur
+    R(0, 288, 0, 352, 14);
 
-    // brahma-kund [-132,-52]: spurs from main spine
-    R(-108, 0, -108, -52, 14);
-    R(-132, 0, -132, -52, 14);
+    // maya-sabha [-181,-245]: ON south-mid — no spur needed
+    // jyotish-vedha [0,-352]: central spine spur
+    R(0, -288, 0, -352, 14);
 
-    // lakshmi-prasad [-96,84]: E from west artery
-    R(-168, 84, -96, 84, 14);
+    // vayu-rath [-352,53]: x spur from west artery
+    R(-448, 53, -352, 53, 14);
 
-    // pura-stambha [0,132]: ON central spine — no spur needed
+    // saraswati-vihar [139,-395]: ON education avenue — no spur needed
+    // gurukul-ashram [-139,-395]: ON education avenue — no spur needed
 
-    // maya-sabha [-68,-92]: S from hero zone
-    R(-68, -52, -68, -92, 14);
+    // vaishya-griha [523,-139]: x spur from far east artery
+    R(550, -139, 523, -139, 14);
 
-    // jyotish-vedha [0,-132]: ON central spine — no spur needed
+    // agni-vedha [523,53]: x spur from far east artery
+    R(550, 53, 523, 53, 14);
 
-    // vayu-rath [-132,20]: E from west artery
-    R(-168, 20, -132, 20, 14);
+    // darpana-shala [181,-309]: N-S spur from south-mid boulevard
+    R(181, -245, 181, -309, 14);
 
-    // saraswati-vihar [52,-148]: ON education avenue — no spur needed
-    // gurukul-ashram [-52,-148]: ON education avenue — no spur needed
+    // vidya-ashram [-523,-139]: x spur from far west artery
+    R(-550, -139, -523, -139, 14);
 
-    // vaishya-griha [196,-52]: W spur from far east artery
-    R(220, -52, 196, -52, 14);
-
-    // agni-vedha [196,20]: W spur from far east artery
-    R(220, 20, 196, 20, 14);
-
-    // darpana-shala [68,-116]: S from south-mid boulevard
-    R(68, -92, 68, -116, 14);
-
-    // vidya-ashram [-196,-52]: E spur from far west artery
-    R(-220, -52, -196, -52, 14);
-
-    // sutra-dhara [0,172]: ON far north boulevard — no spur needed
+    // sutra-dhara [0,459]: ON far north — no spur needed
   }
 
   // ── ROUNDABOUTS ───────────────────────────────────────────────────────────
@@ -155,11 +147,11 @@ export default class Roads {
       s.add(fill);
     };
 
-    addRoundabout(0, 0, 30, 46, 24);      // Central — landmark roundabout
-    addRoundabout(0, -52, 14, 22, 16);    // Hero zone junction
-    addRoundabout(0, -148, 20, 30, 18);   // Education avenue junction
-    addRoundabout(0, 84, 12, 18, 14);     // North boulevard junction
-    addRoundabout(0, -92, 12, 18, 14);    // South-mid junction
+    addRoundabout(0, 0, 70, 98, 28);       // Central landmark roundabout
+    addRoundabout(0, -139, 35, 55, 16);    // Hero zone junction
+    addRoundabout(0, -395, 50, 75, 18);    // Education avenue junction
+    addRoundabout(0, 224, 30, 45, 14);     // North boulevard junction
+    addRoundabout(0, -245, 30, 45, 14);    // South-mid junction
   }
 
   // ── WATER CHANNELS ─────────────────────────────────────────────────────────
@@ -171,29 +163,29 @@ export default class Roads {
     // Channels alongside central spine — extended for bigger world
     for (const side of [-1, 1]) {
       const chan = new THREE.Mesh(
-        new THREE.BoxGeometry(5, 0.35, 420),
+        new THREE.BoxGeometry(5, 0.35, 1120),
         mat,
       );
-      chan.position.set(side * 24, -0.05, -15);
+      chan.position.set(side * 24, -0.05, -40);
       s.add(chan);
       for (const wo of [-0.6, 0.6]) {
         const w = new THREE.Mesh(
-          new THREE.BoxGeometry(0.7, 0.55, 420),
+          new THREE.BoxGeometry(0.7, 0.55, 1120),
           wall,
         );
-        w.position.set(side * (24 + wo * 3.5), 0.27, -15);
+        w.position.set(side * (24 + wo * 3.5), 0.27, -40);
         s.add(w);
       }
     }
 
-    // Decorative pools near prominent temples (positions ×1.5)
+    // Decorative pools near prominent temples
     const poolMat = new THREE.MeshLambertMaterial({ color: 0x2277aa });
     [
-      [108, -52, 7],
-      [-132, -52, 6],
-      [132, 20, 5],
-      [-132, 20, 5],
-      [0, 132, 6],
+      [288, -139, 7],
+      [-352, -139, 6],
+      [352, 53, 5],
+      [-352, 53, 5],
+      [0, 352, 6],
     ].forEach(([x, z, r]) => {
       const pool = new THREE.Mesh(
         new THREE.CylinderGeometry(r, r, 0.32, 12),
@@ -209,13 +201,13 @@ export default class Roads {
     const s = this.scene;
     const crossMat = new THREE.MeshLambertMaterial({ color: 0x9a8870 });
 
-    // Crosswalk stripes at key junctions (×1.5 positions)
+    // Crosswalk stripes at key junctions
     [
       [0, 0],
-      [0, -52],
-      [0, 84],
-      [0, -92],
-      [0, -148],
+      [0, -139],
+      [0, 224],
+      [0, -245],
+      [0, -395],
     ].forEach(([x, z]) => {
       for (let i = -3; i <= 3; i++) {
         const s1 = new THREE.Mesh(

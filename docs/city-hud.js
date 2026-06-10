@@ -136,16 +136,16 @@ function updateMinimap(cx, cz, angle) {
   mmCtx.beginPath(); mmCtx.arc(W/2, H/2, 2, 0, Math.PI*2); mmCtx.fill();
   mmCtx.restore();
   // Map world bounds → minimap canvas (matches 1.5× scaled city)
-  const MM_X1 = -230, MM_X2 = 230, MM_Z1 = -200, MM_Z2 = 180;
+  const MM_X1 = -570, MM_X2 = 570, MM_Z1 = -430, MM_Z2 = 490;
 
   // ── RIVER SYSTEM on minimap ─────────────────────────────────────────────
   // Main E-W river control points (scaled 1.5×)
   const mainRiverPts = [
-    [-230,-12],[-168,-5],[-110,-14],[-55,-8],[0,-18],[55,-10],[108,-6],[168,-20],[230,-27],
+    [-570,-32],[-448,-13],[-288,-37],[-140,-21],[0,-48],[140,-27],[288,-16],[448,-53],[570,-72],
   ];
-  // N-S tributary (scaled 1.5×)
+  // N-S tributary
   const tribPts = [
-    [-35,-15],[-28,18],[-21,57],[-14,90],[-7,126],[0,155],
+    [-93,-40],[-75,48],[-56,152],[-37,240],[-19,336],[0,413],
   ];
 
   const toMM = (wx, wz) => [
@@ -222,15 +222,15 @@ function updateMinimap(cx, cz, angle) {
   // ── DISTRICT INDICATOR ─────────────────────────────────────────────────
   // Detect nearest district zone and show its name below minimap
   const DISTRICTS = [
-    { x: 0,    z: 0,    r: 55, name: 'CITY CENTRE',       color: '#ffcc44' },
-    { x: 108,  z: -52,  r: 55, name: 'COMMERCE DISTRICT', color: '#ff9950' },
-    { x: -132, z: -52,  r: 50, name: 'HERITAGE QUARTER',  color: '#9966ff' },
-    { x: 68,   z: 84,   r: 48, name: 'CRAFT QUARTER',     color: '#44cc88' },
-    { x: -96,  z: 84,   r: 48, name: 'GARDENS DISTRICT',  color: '#44cc88' },
-    { x: 0,    z: -148, r: 60, name: 'EDUCATION AVE',     color: '#00ccff' },
-    { x: 0,    z: 132,  r: 45, name: 'NORTH QUARTER',     color: '#ff6644' },
-    { x: 196,  z: -20,  r: 42, name: 'EAST WING',         color: '#ff6644' },
-    { x: -196, z: -52,  r: 42, name: 'WEST WING',         color: '#a78bfa' },
+    { x: 0,    z: 0,    r: 130, name: 'CITY CENTRE',       color: '#ffcc44' },
+    { x: 288,  z: -139, r: 140, name: 'COMMERCE DISTRICT', color: '#ff9950' },
+    { x: -352, z: -139, r: 120, name: 'HERITAGE QUARTER',  color: '#9966ff' },
+    { x: 181,  z: 224,  r: 120, name: 'CRAFT QUARTER',     color: '#44cc88' },
+    { x: -256, z: 224,  r: 120, name: 'GARDENS DISTRICT',  color: '#44cc88' },
+    { x: 0,    z: -352, r: 150, name: 'EDUCATION AVE',     color: '#00ccff' },
+    { x: 0,    z: 352,  r: 110, name: 'NORTH QUARTER',     color: '#ff6644' },
+    { x: 523,  z: -43,  r: 110, name: 'EAST WING',         color: '#ff6644' },
+    { x: -523, z: -139, r: 110, name: 'WEST WING',         color: '#a78bfa' },
   ];
   const dlEl = document.getElementById('district-label');
   if (dlEl) {

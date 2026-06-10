@@ -1223,55 +1223,28 @@ export default class Objects {
 
     const positions = [
       // Central roundabout
-      [38, 0],
-      [-38, 0],
-      [0, 38],
-      [0, -38],
-      [28, 28],
-      [-28, 28],
-      [28, -28],
-      [-28, -28],
-      // Along main E-W boulevard z=0
-      [90, 12],
-      [-90, 12],
-      [90, -12],
-      [-90, -12],
-      [168, 12],
-      [-168, 12],
-      [168, -12],
-      [-168, -12],
-      [220, 12],
-      [-220, 12],
-      // Hero zone z=-52
-      [15, -40],
-      [-15, -40],
-      [15, -64],
-      [-15, -64],
-      [60, -40],
-      [-60, -40],
-      // North boulevard z=84
-      [60, 96],
-      [-60, 96],
-      [120, 96],
-      [-120, 96],
-      // South-mid z=-92
-      [60, -80],
-      [-60, -80],
-      [120, -80],
-      [-120, -80],
-      // Education avenue z=-148
-      [30, -136],
-      [-30, -136],
-      [30, -160],
-      [-30, -160],
-      // Mid connector z=20
-      [90, 20],
-      [-90, 20],
-      [168, 32],
-      [-168, 32],
-      // Far north z=172
-      [60, 172],
-      [-60, 172],
+      [90, 0], [-90, 0], [0, 90], [0, -90],
+      [65, 65], [-65, 65], [65, -65], [-65, -65],
+      // Main E-W spine z=0
+      [200, 14], [-200, 14], [200, -14], [-200, -14],
+      [400, 14], [-400, 14], [400, -14], [-400, -14],
+      [550, 14], [-550, 14],
+      // Hero zone z=-139
+      [100, -125], [-100, -125], [100, -153], [-100, -153],
+      [280, -125], [-280, -125],
+      // North boulevard z=224
+      [100, 238], [-100, 238], [200, 238], [-200, 238],
+      // South-mid z=-245
+      [100, -231], [-100, -231], [200, -231], [-200, -231],
+      // Mid connector z=53
+      [200, 67], [-200, 67], [350, 67], [-350, 67],
+      // Education avenue z=-395
+      [60, -381], [-60, -381], [60, -409], [-60, -409],
+      // Far north z=459
+      [60, 459], [-60, 459],
+      // N-S central spine
+      [14, -200], [-14, -200], [14, 200], [-14, 200],
+      [14, -300], [14, 300],
     ];
 
     positions.forEach(([x, z]) => {
@@ -1564,7 +1537,7 @@ export default class Objects {
   // Called every frame from updateBuildingEntities — keep in sync with hover zones
   _updateBillboards(carX, carZ, now) {
     if (!this._billboards) return;
-    const HOVER_DIST = 100;
+    const HOVER_DIST = 150;
     const PROX_DIST = 32;
 
     this._billboards.forEach(({ sprite, building }) => {
@@ -1797,7 +1770,7 @@ export default class Objects {
       // HOVER  (100u): building "notices" car — subtle scale/glow before proximity
       // CLOSE  (45u): existing isClose flag — breathe amplitude increases
       // PROX   (32u): full proximity response — snap, glow spike, energy column
-      const HOVER_DIST = 100;
+      const HOVER_DIST = 150;
       const CLOSE_DIST = 45;
       const PROX_DIST = 32;
       const isHover = dist < HOVER_DIST;
