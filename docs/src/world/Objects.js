@@ -861,6 +861,7 @@ export default class Objects {
 
   // ── TREES — 4 seasonal species + willow placement near river banks ──────────
   _buildTrees() {
+    if (!window._circleColliders) window._circleColliders = [];
     const tg = window._toonGrad;
 
     // ── REGULAR POSITIONS — sparse mix; one cluster per building + boulevard rows
@@ -916,22 +917,32 @@ export default class Objects {
       if (r < 0.25)      this._treeBirch(x, z, tg);
       else if (r < 0.52) this._treePine(x, z, tg);
       else               this._treeBroad(x, z, tg);
+      window._circleColliders.push({ x, z, r: 1.4 });
     });
 
     // Build willow trees near water
-    willowPositions.forEach(([x, z]) => this._treeWillow(x, z, tg));
+    willowPositions.forEach(([x, z]) => {
+      this._treeWillow(x, z, tg);
+      window._circleColliders.push({ x, z, r: 1.6 });
+    });
 
     // Palm trees — entry road and river banks, minimal
     [
       [14, 52], [-14, 52],
       [28, -6], [-28, -6],
       [155, -6], [-155, -6],
-    ].forEach(([x, z]) => this._treePalm(x, z, tg));
+    ].forEach(([x, z]) => {
+      this._treePalm(x, z, tg);
+      window._circleColliders.push({ x, z, r: 1.0 });
+    });
 
     // Banyan trees — only at the two key plazas
     [
       [0, 28], [-88, -55],
-    ].forEach(([x, z]) => this._treeBanyan(x, z, tg));
+    ].forEach(([x, z]) => {
+      this._treeBanyan(x, z, tg);
+      window._circleColliders.push({ x, z, r: 2.2 });
+    });
   }
 
   // ── BROAD CANOPY (Bruno-style multi-sphere) — most common ──────────────────
@@ -1273,6 +1284,8 @@ export default class Objects {
       ]);
       lampLt.userData.isLampLight = true;
       this.scene.add(lampLt);
+      if (!window._circleColliders) window._circleColliders = [];
+      window._circleColliders.push({ x, z, r: 0.7 });
     });
   }
 

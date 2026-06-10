@@ -135,6 +135,7 @@ export default class Car {
   }
 
   _collides(nx, nz, boxes) {
+    // AABB check — buildings
     for (const b of boxes) {
       if (
         nx > b.minX - C.HW &&
@@ -143,6 +144,16 @@ export default class Car {
         nz < b.maxZ + C.HD
       )
         return true;
+    }
+    // Circle check — trees, lamps, poles
+    const CAR_R = 1.4;
+    const cc = window._circleColliders;
+    if (cc) {
+      for (const c of cc) {
+        const dx = nx - c.x, dz = nz - c.z;
+        const minD = c.r + CAR_R;
+        if (dx * dx + dz * dz < minD * minD) return true;
+      }
     }
     return false;
   }
