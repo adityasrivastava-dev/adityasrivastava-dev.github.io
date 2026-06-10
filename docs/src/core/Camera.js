@@ -112,7 +112,7 @@ export default class Camera {
       cam.updateProjectionMatrix();
       cam.position.lerpVectors(
         new THREE.Vector3(160, 90, 80),
-        new THREE.Vector3(car.x - car.sinA * 26, 16, car.z - car.cosA * 26),
+        new THREE.Vector3(car.x - car.sinA * 55, 40, car.z - car.cosA * 55),
         e,
       );
       cam.lookAt(
@@ -169,7 +169,7 @@ export default class Camera {
       cam.lookAt(
         new THREE.Vector3().lerpVectors(
           this._fromLook,
-          new THREE.Vector3(car.x + car.sinA * 4, 1.5, car.z + car.cosA * 4),
+          new THREE.Vector3(car.x + car.sinA * 18, 3.0, car.z + car.cosA * 18),
           e,
         ),
       );
@@ -231,7 +231,7 @@ export default class Camera {
     // FIX: Y clamp at 120 units/sec (was 2.5 — far too tight for 2.5x world)
     this._vy = clamp(this._vy, -120, 120);
     cam.position.y += this._vy * dt;
-    cam.position.y = clamp(cam.position.y, 10.0, 65);
+    cam.position.y = clamp(cam.position.y, 28.0, 100);
 
     // ── FIX 6: MULTI-HARMONIC IDLE DRIFT ─────────────────────────────────────
     // Amplitude raised 0.22 → 0.38 so it's actually perceptible as camera breath.
@@ -299,7 +299,7 @@ export default class Camera {
       * (1 - clamp(Math.abs(latVel) * 3.5, 0, 0.42));
     cam.lookAt(
       car.x + car.sinA * lookAhead,
-      1.2 + speedRatio * 0.6,
+      3.0 + speedRatio * 1.5,
       car.z + car.cosA * lookAhead,
     );
 
