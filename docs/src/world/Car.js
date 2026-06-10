@@ -1,6 +1,7 @@
 // ── CAR — position, velocity, mesh visuals. Physics delegated to Physics.js. ─
 import Physics from "./Physics.js";
 import { Car as C } from "../utils/constants.js";
+import CM from '../systems/CollisionManager.js';
 
 export default class Car {
   constructor(scene, events) {
@@ -134,28 +135,10 @@ export default class Car {
     this.z = Math.max(-425, Math.min(485, this.z));
   }
 
-  _collides(nx, nz, boxes) {
-    // AABB check — buildings
-    for (const b of boxes) {
-      if (
-        nx > b.minX - C.HW &&
-        nx < b.maxX + C.HW &&
-        nz > b.minZ - C.HD &&
-        nz < b.maxZ + C.HD
-      )
-        return true;
-    }
-    // Circle check — trees, lamps, poles
-    const CAR_R = 1.4;
-    const cc = window._circleColliders;
-    if (cc) {
-      for (const c of cc) {
-        const dx = nx - c.x, dz = nz - c.z;
-        const minD = c.r + CAR_R;
-        if (dx * dx + dz * dz < minD * minD) return true;
-      }
-    }
-    return false;
+  _collides(nx, nz, _boxes) {
+    // Unified collision via CollisionManager (spatial grid, AABB-vs-circle + AABB-vs-AABB)
+    // HW/HD expanded by a small margin so the car never clips into geometry
+    return CM.testPoint(nx, nz, C.HW + 0.4, C.HD + 0.4) !== null;
   }
 
   // ── VISUAL UPDATE (called every render frame) ──────────────────────────────

@@ -219,7 +219,7 @@
     <div id="ctrl-hint">
       <span class="ck">W/S</span> DRIVE &nbsp; <span class="ck">A/D</span> STEER
       &nbsp; <span class="ck">E</span> ENTER &nbsp;
-      <span class="ck">T</span> WEATHER &nbsp; <span class="ck">M</span> MAP
+      <span class="ck">T</span> WEATHER &nbsp; <span class="ck">M</span> MAP &nbsp; <span class="ck">B</span> BOUNDS
     </div>
 
     <!-- ── GRIP HUD ── -->
@@ -629,6 +629,13 @@
             break;
           case "KeyM":
             toggleFullMap?.();
+            break;
+          case "KeyB":
+            (async () => {
+              const { CM } = await import('./src/systems/CollisionManager.js');
+              if (CM.debugEnabled) CM.disableDebug();
+              else CM.enableDebug(window._appInstance?.world?.scene);
+            })();
             break;
           case "KeyJ":
             openJourney?.();

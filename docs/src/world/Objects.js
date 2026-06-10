@@ -2,6 +2,8 @@
 // Building positions are NEVER changed — they come directly from CITY_DATA.
 // Trees, lamps, decorations are scaled 2.5x for bigger world feel.
 
+import CM from '../systems/CollisionManager.js';
+
 export default class Objects {
   constructor(scene, events) {
     this.scene = scene;
@@ -100,6 +102,7 @@ export default class Objects {
   }
 
   buildAll(isNight) {
+    CM.registerBuildings();
     this._initToonGrad();
     this._initMatcaps();
     this._isNight = isNight || false;
@@ -861,7 +864,6 @@ export default class Objects {
 
   // ── TREES — 4 seasonal species + willow placement near river banks ──────────
   _buildTrees() {
-    if (!window._circleColliders) window._circleColliders = [];
     const tg = window._toonGrad;
 
     // ── REGULAR POSITIONS — sparse mix; one cluster per building + boulevard rows
@@ -917,13 +919,13 @@ export default class Objects {
       if (r < 0.25)      this._treeBirch(x, z, tg);
       else if (r < 0.52) this._treePine(x, z, tg);
       else               this._treeBroad(x, z, tg);
-      window._circleColliders.push({ x, z, r: 1.4 });
+      CM.register({ type: 'circle', x, z, r: 1.6, id: `tree_${x}_${z}` });
     });
 
     // Build willow trees near water
     willowPositions.forEach(([x, z]) => {
       this._treeWillow(x, z, tg);
-      window._circleColliders.push({ x, z, r: 1.6 });
+      CM.register({ type: 'circle', x, z, r: 1.8, id: `willow_${x}_${z}` });
     });
 
     // Palm trees — entry road and river banks, minimal
@@ -933,7 +935,7 @@ export default class Objects {
       [155, -6], [-155, -6],
     ].forEach(([x, z]) => {
       this._treePalm(x, z, tg);
-      window._circleColliders.push({ x, z, r: 1.0 });
+      CM.register({ type: 'circle', x, z, r: 1.2, id: `palm_${x}_${z}` });
     });
 
     // Banyan trees — only at the two key plazas
@@ -941,7 +943,7 @@ export default class Objects {
       [0, 28], [-88, -55],
     ].forEach(([x, z]) => {
       this._treeBanyan(x, z, tg);
-      window._circleColliders.push({ x, z, r: 2.2 });
+      CM.register({ type: 'circle', x, z, r: 2.5, id: `banyan_${x}_${z}` });
     });
   }
 
@@ -1284,8 +1286,7 @@ export default class Objects {
       ]);
       lampLt.userData.isLampLight = true;
       this.scene.add(lampLt);
-      if (!window._circleColliders) window._circleColliders = [];
-      window._circleColliders.push({ x, z, r: 0.7 });
+      CM.register({ type: 'circle', x, z, r: 0.7, id: `lamp_${x}_${z}` });
     });
   }
 

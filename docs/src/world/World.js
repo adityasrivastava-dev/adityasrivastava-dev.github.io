@@ -5,6 +5,7 @@ import Roads from "./Roads.js";
 import River from "./River.js";
 import Bridges from "./Bridges.js";
 import Props from "./Props.js";
+import CM from '../systems/CollisionManager.js';
 
 // World is 2.5x the original — same building positions, much more breathing room
 const SCALE = 2.5;
@@ -33,6 +34,8 @@ export default class World {
     this.bridges.build(); // after objects so _toonGrad is ready
     this.props.build(this.isNight);
     this._buildCenterpiece();
+    // Register stambha — 32-unit pillar occupies the city axis
+    CM.register({ type: 'circle', x: 0, z: 0, r: 4.0, id: 'stambha' });
     this._buildPrayerFlags();
     this._buildGatewayArches();
     this._buildWorldName();
@@ -2305,6 +2308,15 @@ export default class World {
       sign.position.set(0, H - 3, 0.8);
       g.add(sign);
       this.scene.add(g);
+    });
+
+    // Register arch pillar pairs as circle colliders
+    [
+      { x: 0,    z: -69  }, { x: 0,    z: 293 }, { x: 0,    z: -293 },
+      { x: 0,    z: -347 }, { x: 0,    z: 110  },
+    ].forEach(({ x, z }) => {
+      CM.register({ type: 'circle', x: x - 10, z, r: 1.4, id: `arch_L_${z}` });
+      CM.register({ type: 'circle', x: x + 10, z, r: 1.4, id: `arch_R_${z}` });
     });
 
     // Item 23: City entry gate — grand ceremonial torana at z=245 (player faces north)
