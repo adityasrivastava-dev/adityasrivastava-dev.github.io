@@ -210,7 +210,7 @@ export default class World {
       day: {
         bg: 0xc8b898,
         fog: 0xbca888,
-        fogD: 0.0014,
+        fogD: 0.00035,
         sun: 0xfff0cc,
         sunI: 2.4,
         fill: 0x8899ff,
@@ -225,7 +225,7 @@ export default class World {
       night: {
         bg: 0x0a0820,
         fog: 0x0a0820,
-        fogD: 0.004,
+        fogD: 0.001,
         sun: 0x6688cc,
         sunI: 0.6,
         fill: 0x220844,
@@ -240,7 +240,7 @@ export default class World {
       sunset: {
         bg: 0xff6030,
         fog: 0xff6030,
-        fogD: 0.006,
+        fogD: 0.0015,
         sun: 0xff4411,
         sunI: 1.9,
         fill: 0x5522bb,
@@ -255,7 +255,7 @@ export default class World {
       rain: {
         bg: 0x334050,
         fog: 0x334050,
-        fogD: 0.012,
+        fogD: 0.003,
         sun: 0xdd9977,
         sunI: 0.6,
         fill: 0x2244aa,
@@ -271,7 +271,7 @@ export default class World {
       fog: {
         bg: 0xccb09a,
         fog: 0xccb09a,
-        fogD: 0.022,
+        fogD: 0.006,
         sun: 0xffddbb,
         sunI: 0.7,
         fill: 0x446688,
@@ -286,7 +286,7 @@ export default class World {
       snow: {
         bg: 0xeedfcc,
         fog: 0xeedfcc,
-        fogD: 0.007,
+        fogD: 0.0018,
         sun: 0xfff0e0,
         sunI: 1.3,
         fill: 0x7799cc,
@@ -2249,8 +2249,8 @@ export default class World {
       const g = new THREE.Group();
       g.position.set(x, 0, z);
       g.rotation.y = ry;
-      const W2 = 14,
-        H = 12;
+      const W2 = 10,
+        H = 22;
       for (const ox of [-W2, W2]) {
         const p = new THREE.Mesh(new THREE.BoxGeometry(1.4, H, 1.4), archMat);
         p.position.set(ox, H / 2, 0);
@@ -2302,18 +2302,18 @@ export default class World {
           transparent: true,
         }),
       );
-      sign.position.set(0, H - 0.5, 0.8);
+      sign.position.set(0, H - 3, 0.8);
       g.add(sign);
       this.scene.add(g);
     });
 
-    // Item 23: City entry gate — grand ceremonial torana at z=62 (player faces north)
-    // Larger than district arches: H=18, W=20, with 3-tiered gopuram roof
+    // Item 23: City entry gate — grand ceremonial torana at z=245 (player faces north)
+    // Larger than district arches: H=26, W=14, with 3-tiered gopuram roof
     {
       const entryG = new THREE.Group();
       entryG.position.set(0, 0, 245);
-      const W2 = 18,
-        H = 18;
+      const W2 = 14,
+        H = 26;
       for (const ox of [-W2, W2]) {
         const pillar = new THREE.Mesh(
           new THREE.BoxGeometry(2.0, H, 2.0),

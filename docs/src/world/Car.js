@@ -344,9 +344,9 @@ export default class Car {
     //  Chrome:   warm silver         #887766
     //  Glass:    dark tinted blue    #223344
     //
-    const mBody = this._mc("carBlue", 0x0a1428); // midnight blue body
-    const mTop = this._mc("dark", 0x060c14); // near-black navy cab
-    const mChassis = this._mc("dark", 0x040810); // near-black chassis
+    const mBody = this._mc("carBlue", 0xcc2200); // vivid red body — easy to spot
+    const mTop = this._mc("dark", 0x991500); // dark red cab
+    const mChassis = this._mc("dark", 0x1a1208); // near-black chassis
     const mBlack = this._mc("dark", 0x0e0c0a); // near-black details
     const mRim = this._mc("chrome", 0x8899aa); // steel-blue rims
     const mTyre = this._mc("tyre", 0x0e0c0a); // near-black rubber

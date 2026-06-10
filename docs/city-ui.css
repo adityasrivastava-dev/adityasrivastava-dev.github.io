@@ -413,7 +413,7 @@ canvas {
   z-index: 400;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 7px;
   transition:
     right 0.48s cubic-bezier(0.4, 0, 0.2, 1),
     opacity 0.6s ease;
@@ -424,12 +424,12 @@ canvas {
 }
 .hb {
   font-family: var(--fm);
-  font-size: 8px;
-  letter-spacing: 2px;
-  padding: 6px 12px;
-  border: 1px solid rgba(255, 220, 120, 0.2);
-  background: rgba(8, 5, 2, 0.88);
-  color: rgba(255, 220, 120, 0.65);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  padding: 7px 14px;
+  border: 1px solid rgba(255, 220, 120, 0.4);
+  background: rgba(6, 3, 1, 0.92);
+  color: rgba(255, 225, 130, 0.92);
   backdrop-filter: blur(16px) saturate(180%);
   border-radius: 1px;
   transition: all 0.18s cubic-bezier(0.22, 1, 0.36, 1);
@@ -437,8 +437,8 @@ canvas {
   overflow: hidden;
   clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
   box-shadow:
-    0 1px 0 rgba(255, 220, 120, 0.05) inset,
-    0 2px 8px rgba(0, 0, 0, 0.5);
+    0 1px 0 rgba(255, 220, 120, 0.08) inset,
+    0 2px 10px rgba(0, 0, 0, 0.65);
 }
 .hb::before {
   content: "";
@@ -1598,20 +1598,20 @@ body.panel-open #prox {
 }
 #mode-chip {
   font-family: var(--fm);
-  font-size: 7px;
-  letter-spacing: 3px;
-  padding: 5px 12px;
+  font-size: 10px;
+  letter-spacing: 2px;
+  padding: 7px 14px;
   border: 1px solid;
   clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
-  background: rgba(10, 5, 2, 0.5);
+  background: rgba(6, 3, 1, 0.92);
 }
 #mode-chip.recruiter {
   color: var(--gold);
-  border-color: rgba(255, 204, 68, 0.35);
+  border-color: rgba(255, 204, 68, 0.55);
 }
 #mode-chip.engineer {
   color: var(--cyan);
-  border-color: rgba(0, 221, 255, 0.35);
+  border-color: rgba(0, 221, 255, 0.55);
 }
 #joy-zone {
   position: fixed;
@@ -1856,10 +1856,10 @@ body.panel-open #prox {
   text-shadow: 0 0 10px rgba(255, 200, 80, 0.4);
 }
 #spd-num span {
-  font-size: 6px;
+  font-size: 8px;
   font-family: var(--fm);
-  letter-spacing: 3px;
-  color: rgba(255, 200, 80, 0.5);
+  letter-spacing: 2px;
+  color: rgba(255, 200, 80, 0.75);
   margin-top: 3px;
 }
 /* Gear + weather in a single row */
@@ -1871,10 +1871,10 @@ body.panel-open #prox {
 }
 #gear-badge {
   font-family: var(--fm);
-  font-size: 7px;
-  letter-spacing: 4px;
+  font-size: 9px;
+  letter-spacing: 3px;
   color: var(--gold);
-  opacity: 0.7;
+  opacity: 0.9;
   background: var(--hud-bg);
   border: 1px solid var(--hud-border);
   padding: 3px 8px;
@@ -1883,9 +1883,9 @@ body.panel-open #prox {
 }
 #weather-badge {
   font-family: var(--fm);
-  font-size: 7px;
-  letter-spacing: 3px;
-  color: rgba(255, 255, 255, 0.3);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.65);
   background: var(--hud-bg);
   border: 1px solid var(--hud-border);
   padding: 3px 8px;
@@ -3672,8 +3672,8 @@ a,
          — it's broadcasting your mode, not just labelling it.                   */
 #mode-chip {
   animation: chip-pulse 3s ease-in-out infinite !important;
-  letter-spacing: 4px !important;
-  font-size: 7.5px !important;
+  letter-spacing: 2px !important;
+  font-size: 10px !important;
 }
 #mode-chip.recruiter {
   animation: chip-pulse-gold 3s ease-in-out infinite !important;
