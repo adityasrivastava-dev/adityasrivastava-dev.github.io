@@ -135,17 +135,17 @@ function updateMinimap(cx, cz, angle) {
   mmCtx.fillStyle = 'rgba(220,180,60,0.35)';
   mmCtx.beginPath(); mmCtx.arc(W/2, H/2, 2, 0, Math.PI*2); mmCtx.fill();
   mmCtx.restore();
-  // Map world bounds → minimap canvas (matches full-map projection)
-  const MM_X1 = -160, MM_X2 = 160, MM_Z1 = -165, MM_Z2 = 135;
+  // Map world bounds → minimap canvas (matches 1.5× scaled city)
+  const MM_X1 = -230, MM_X2 = 230, MM_Z1 = -200, MM_Z2 = 180;
 
   // ── RIVER SYSTEM on minimap ─────────────────────────────────────────────
-  // Main E-W river control points
+  // Main E-W river control points (scaled 1.5×)
   const mainRiverPts = [
-    [-225,-8],[-165,-3],[-110,-9],[-55,-5],[0,-12],[55,-7],[108,-4],[158,-13],[225,-18],
+    [-230,-12],[-168,-5],[-110,-14],[-55,-8],[0,-18],[55,-10],[108,-6],[168,-20],[230,-27],
   ];
-  // N-S tributary
+  // N-S tributary (scaled 1.5×)
   const tribPts = [
-    [-35,-10],[-30,12],[-24,38],[-18,60],[-12,84],[-5,106],[0,120],
+    [-35,-15],[-28,18],[-21,57],[-14,90],[-7,126],[0,155],
   ];
 
   const toMM = (wx, wz) => [
@@ -218,6 +218,37 @@ function updateMinimap(cx, cz, angle) {
   mmCtx.closePath();
   mmCtx.fill();
   mmCtx.restore();
+
+  // ── DISTRICT INDICATOR ─────────────────────────────────────────────────
+  // Detect nearest district zone and show its name below minimap
+  const DISTRICTS = [
+    { x: 0,    z: 0,    r: 55, name: 'CITY CENTRE',       color: '#ffcc44' },
+    { x: 108,  z: -52,  r: 55, name: 'COMMERCE DISTRICT', color: '#ff9950' },
+    { x: -132, z: -52,  r: 50, name: 'HERITAGE QUARTER',  color: '#9966ff' },
+    { x: 68,   z: 84,   r: 48, name: 'CRAFT QUARTER',     color: '#44cc88' },
+    { x: -96,  z: 84,   r: 48, name: 'GARDENS DISTRICT',  color: '#44cc88' },
+    { x: 0,    z: -148, r: 60, name: 'EDUCATION AVE',     color: '#00ccff' },
+    { x: 0,    z: 132,  r: 45, name: 'NORTH QUARTER',     color: '#ff6644' },
+    { x: 196,  z: -20,  r: 42, name: 'EAST WING',         color: '#ff6644' },
+    { x: -196, z: -52,  r: 42, name: 'WEST WING',         color: '#a78bfa' },
+  ];
+  const dlEl = document.getElementById('district-label');
+  if (dlEl) {
+    let nearest = null, nearestD2 = Infinity;
+    for (const d of DISTRICTS) {
+      const d2 = (cx - d.x) ** 2 + (cz - d.z) ** 2;
+      if (d2 < d.r * d.r && d2 < nearestD2) { nearest = d; nearestD2 = d2; }
+    }
+    if (nearest) {
+      if (dlEl.textContent !== nearest.name) {
+        dlEl.textContent = nearest.name;
+        dlEl.style.color = nearest.color;
+      }
+      dlEl.classList.add('visible');
+    } else {
+      dlEl.classList.remove('visible');
+    }
+  }
 }
 // updateHUD is exposed via CityUI below — see updateGameHUD for implementation
 function showNotification(b) {

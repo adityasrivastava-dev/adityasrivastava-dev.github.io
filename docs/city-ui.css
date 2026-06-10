@@ -1497,6 +1497,21 @@ body.panel-open #prox {
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 2px;
 }
+#district-label {
+  font-family: var(--fm);
+  font-size: 7px;
+  letter-spacing: 2px;
+  color: rgba(255, 220, 100, 0.75);
+  text-align: center;
+  margin-top: 4px;
+  min-height: 10px;
+  transition: color 0.6s ease, opacity 0.6s ease;
+  opacity: 0;
+  text-transform: uppercase;
+}
+#district-label.visible {
+  opacity: 1;
+}
 #mm-visited {
   display: none;
 }

@@ -129,9 +129,9 @@ export default class Car {
       }
     }
 
-    // World boundary clamp (2.5x world scale)
-    this.x = Math.max(-215, Math.min(215, this.x));
-    this.z = Math.max(-195, Math.min(135, this.z));
+    // World boundary clamp
+    this.x = Math.max(-235, Math.min(235, this.x));
+    this.z = Math.max(-205, Math.min(178, this.z));
   }
 
   _collides(nx, nz, boxes) {

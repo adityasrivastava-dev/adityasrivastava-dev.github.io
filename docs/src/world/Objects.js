@@ -1222,37 +1222,56 @@ export default class Objects {
     const headMat = new THREE.MeshBasicMaterial({ color: 0xffeeaa });
 
     const positions = [
-      // Central island
-      [27, 0],
-      [-27, 0],
-      [0, 27],
-      [0, -27],
-      [20, 20],
-      [-20, 20],
-      [20, -20],
-      [-20, -20],
+      // Central roundabout
+      [38, 0],
+      [-38, 0],
+      [0, 38],
+      [0, -38],
+      [28, 28],
+      [-28, 28],
+      [28, -28],
+      [-28, -28],
       // Along main E-W boulevard z=0
-      [90, 5],
-      [-90, 5],
-      [90, -5],
-      [-90, -5],
-      [150, 5],
-      [-150, 5],
-      [150, -5],
-      [-150, -5],
-      // Hero zone
-      [10, -55],
-      [-10, -55],
-      [10, -38],
-      [-10, -38],
-      // South boulevard
-      [60, 108],
-      [-60, 108],
-      [120, 108],
-      [-120, 108],
-      // Education
-      [20, -158],
-      [-20, -158],
+      [90, 12],
+      [-90, 12],
+      [90, -12],
+      [-90, -12],
+      [168, 12],
+      [-168, 12],
+      [168, -12],
+      [-168, -12],
+      [220, 12],
+      [-220, 12],
+      // Hero zone z=-52
+      [15, -40],
+      [-15, -40],
+      [15, -64],
+      [-15, -64],
+      [60, -40],
+      [-60, -40],
+      // North boulevard z=84
+      [60, 96],
+      [-60, 96],
+      [120, 96],
+      [-120, 96],
+      // South-mid z=-92
+      [60, -80],
+      [-60, -80],
+      [120, -80],
+      [-120, -80],
+      // Education avenue z=-148
+      [30, -136],
+      [-30, -136],
+      [30, -160],
+      [-30, -160],
+      // Mid connector z=20
+      [90, 20],
+      [-90, 20],
+      [168, 32],
+      [-168, 32],
+      // Far north z=172
+      [60, 172],
+      [-60, 172],
     ];
 
     positions.forEach(([x, z]) => {
@@ -1545,7 +1564,7 @@ export default class Objects {
   // Called every frame from updateBuildingEntities — keep in sync with hover zones
   _updateBillboards(carX, carZ, now) {
     if (!this._billboards) return;
-    const HOVER_DIST = 70;
+    const HOVER_DIST = 100;
     const PROX_DIST = 32;
 
     this._billboards.forEach(({ sprite, building }) => {
@@ -1775,10 +1794,10 @@ export default class Objects {
 
       // ── ZONE THRESHOLDS ─────────────────────────────────────────────────────
       // Three distinct zones, each with its own response.
-      // HOVER  (70u): building "notices" car — subtle scale/glow before proximity
+      // HOVER  (100u): building "notices" car — subtle scale/glow before proximity
       // CLOSE  (45u): existing isClose flag — breathe amplitude increases
       // PROX   (32u): full proximity response — snap, glow spike, energy column
-      const HOVER_DIST = 70;
+      const HOVER_DIST = 100;
       const CLOSE_DIST = 45;
       const PROX_DIST = 32;
       const isHover = dist < HOVER_DIST;
