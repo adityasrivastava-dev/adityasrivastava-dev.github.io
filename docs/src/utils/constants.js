@@ -1,9 +1,9 @@
 // ── CONSTANTS — single source of truth for all tuning values ─────────────────
 
 export const Car = {
-  MAX_SPEED: 0.55,
-  ACCELERATION: 0.016,
-  BRAKE_FORCE: 0.028,
+  MAX_SPEED: 0.65,
+  ACCELERATION: 0.022,
+  BRAKE_FORCE: 0.030,
   LONG_FRICTION: 0.012,
   LAT_FRICTION: 0.60,  // looser slides = Bruno-style fun
   STEER_RATE: 0.40,
@@ -15,14 +15,14 @@ export const Car = {
 };
 
 export const CameraC = {
-  FOV_MIN: 55,  // natural follow-cam FOV — shows road ahead
-  FOV_MAX: 85,  // wide at speed = cinematic rush
-  CAMERA_DISTANCE_MIN: 20,
-  CAMERA_DISTANCE_MAX: 40,
-  CAMERA_HEIGHT_MIN: 6,
-  CAMERA_HEIGHT_MAX: 18,
-  LOOK_AHEAD_MIN: 6,
-  LOOK_AHEAD_MAX: 18,
+  FOV_MIN: 52,  // natural follow-cam FOV — shows road ahead
+  FOV_MAX: 80,  // wide at speed = cinematic rush
+  CAMERA_DISTANCE_MIN: 22,
+  CAMERA_DISTANCE_MAX: 48,
+  CAMERA_HEIGHT_MIN: 14,
+  CAMERA_HEIGHT_MAX: 28,
+  LOOK_AHEAD_MIN: 8,
+  LOOK_AHEAD_MAX: 20,
   SPRING_K: 14.0, // ζ=0.67 underdamped → natural overshoot on hard turns
   SPRING_D: 5.0,
   Y_SPRING_K: 6.0,

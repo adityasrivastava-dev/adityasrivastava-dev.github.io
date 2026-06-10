@@ -863,69 +863,55 @@ export default class Objects {
   _buildTrees() {
     const tg = window._toonGrad;
 
-    // ── REGULAR POSITIONS — mix of broad/birch/pine species ──────────────────
+    // ── REGULAR POSITIONS — sparse mix; one cluster per building + boulevard rows
     const regularPositions = [
-      // Around central island
-      [17, 17], [-17, 17], [17, -17], [-17, -17],
-      [27, 0], [-27, 0], [0, 27], [0, -27],
-      [35, 12], [-35, 12], [35, -12], [-35, -12],
+      // Central island — 4 corner trees only
+      [22, 22], [-22, 22], [22, -22], [-22, -22],
 
-      // Main boulevards
-      [50, 12], [-50, 12], [50, -12], [-50, -12],
-      [87, 12], [-87, 12], [87, -12], [-87, -12],
-      [125, 12], [-125, 12], [125, -12], [-125, -12],
-      [165, 12], [-165, 12], [165, -12], [-165, -12],
+      // Boulevard rows — one tree per block, alternating sides
+      [60, 12], [-60, 12], [120, -12], [-120, -12],
+      [165, 12], [-165, 12],
 
-      // South/north of hero zone
-      [50, -47], [-50, -47], [50, -23], [-50, -23],
-      [55, -35], [-55, -35], [110, -45], [-110, -45], [110, -22], [-110, -22],
+      // Hero zone flanks
+      [55, -47], [-55, -47],
 
-      // Education / far south
-      [50, -155], [-50, -155], [100, -155], [-100, -155],
-      [20, -155], [-20, -155], [87, -155], [-87, -155],
+      // Education avenue flanks
+      [55, -155], [-55, -155], [100, -155], [-100, -155],
 
-      // Far north (south boulevard area)
-      [50, 155], [-50, 155], [100, 155], [-100, 155],
+      // Far north
+      [60, 130], [-60, 130],
 
-      // Temple surrounds
-      [72, -50],  [87, -35],  [57, -35],
-      [45,  71],  [60,  56],  [30,  56],
-      [88, -76],  [103,-61],  [73, -61],
-      [88,  28],  [103, 13],  [73,  13],
-     [-88, -50],  [-73,-35], [-103,-35],
-     [-64,  71],  [-49, 56],  [-79, 56],
-      [0,  103],  [15,  88],  [-15, 88],
-     [-45, -76],  [-30,-61],  [-60,-61],
-      [0, -103],  [15, -88],  [-15,-88],
-     [-88,  28],  [-73, 13], [-103, 13],
-     [-35,-114],  [-20,-99],  [-50,-99],
-      [35,-114],  [50, -99],  [20, -99],
-      [131,-50],  [146,-35],  [116,-35],
-      [131, 28],  [146, 13],  [116, 13],
-      [45, -92],  [60, -77],  [30, -77],
-     [-131,-50], [-116,-35], [-146,-35],
-      [15,  115],  [-15,115],  [0, 130],
+      // One tree per temple — positioned to the side, not blocking approach
+      [72, -52],
+      [45, 68],
+      [88, -75],
+      [90, 26],
+      [-88, -52],
+      [-65, 68],
+      [0, 100],
+      [-45, -74],
+      [0, -102],
+      [-90, 26],
+      [-35, -112],
+      [35, -112],
+      [133, -50],
+      [133, 26],
+      [45, -90],
+      [-133, -50],
+      [15, 118],
     ];
 
-    // ── WILLOW POSITIONS — along river banks and tributary ────────────────────
-    // Main river north bank (z ≈ +2 to +6)
-    // Main river south bank (z ≈ -16 to -24)
-    // Tributary banks (x ≈ -25 to -40)
+    // ── WILLOW POSITIONS — river banks only, spaced out ────────────────────
     const willowPositions = [
-      // North bank of main river
-      [-175, 4], [-140, 5], [-100, 3], [-65, 2], [-30, 0],
-      [0, -4], [40, -1], [85, 3], [135, -2], [178, -3],
-      // South bank of main river
-      [-170, -20], [-125, -16], [-75, -20], [-38, -17],
-      [12, -22], [58, -16], [108, -14], [160, -22],
-      // Near tributary (west side)
-      [-40, 10], [-36, 28], [-30, 50], [-22, 72], [-14, 90],
+      [-160, 4], [-100, 3], [-40, 0],
+      [40, -1], [110, 3], [175, -3],
+      [-140, -20], [-60, -18], [60, -16], [155, -22],
+      [-38, 28], [-20, 70],
     ];
 
     // Build regular trees with species mix
     regularPositions.forEach(([x, z]) => {
       if (x == null || z == null) return;
-      // Deterministic species selection from position
       const r = Math.sin(x * 2.31 + z * 4.73) * 0.5 + 0.5;
       if (r < 0.25)      this._treeBirch(x, z, tg);
       else if (r < 0.52) this._treePine(x, z, tg);
@@ -935,16 +921,16 @@ export default class Objects {
     // Build willow trees near water
     willowPositions.forEach(([x, z]) => this._treeWillow(x, z, tg));
 
-    // Item 46: Palm trees — along south entry road and river banks
+    // Palm trees — entry road and river banks, minimal
     [
-      [12, 55], [-12, 55], [20, 48], [-20, 48], [8, 62], [-8, 62],
-      [25, -8], [-25, -8], [38, -3], [-38, -3], // river bank palms
-      [155, -8], [-155, -8], [155, 5], [-155, 5], // far east/west
+      [14, 52], [-14, 52],
+      [28, -6], [-28, -6],
+      [155, -6], [-155, -6],
     ].forEach(([x, z]) => this._treePalm(x, z, tg));
 
-    // Item 46: Banyan trees — near temple plazas, spreading silhouette
+    // Banyan trees — only at the two key plazas
     [
-      [0, -28], [0, 28], [72, -55], [-88, -55], [0, -105],
+      [0, 28], [-88, -55],
     ].forEach(([x, z]) => this._treeBanyan(x, z, tg));
   }
 

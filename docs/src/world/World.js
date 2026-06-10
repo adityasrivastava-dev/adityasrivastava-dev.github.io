@@ -810,11 +810,12 @@ export default class World {
     this._birds = new THREE.Points(
       bGeo,
       new THREE.PointsMaterial({
-        color: 0x221100,
-        size: 1.1,
+        color: 0x2a2018,
+        size: 0.45,
         transparent: true,
-        opacity: 0.82,
+        opacity: 0.55,
         depthWrite: false,
+        sizeAttenuation: true,
       }),
     );
     this._birds.userData = {
@@ -1362,8 +1363,8 @@ export default class World {
 
   // ── ATMOSPHERE — petals, fireflies, car dust trail ─────────────────────────
   _buildAtmosphere() {
-    // ── BLOSSOM PETALS (existing, unchanged) ─────────────────────────────────
-    const cnt = 500;
+    // ── BLOSSOM PETALS — reduced count for cleaner sky ───────────────────────
+    const cnt = 100;
     const pos = new Float32Array(cnt * 3),
       col = new Float32Array(cnt * 3),
       vel = new Float32Array(cnt * 3);
@@ -1404,10 +1405,8 @@ export default class World {
     this._petals.userData.vel = vel;
     this.scene.add(this._petals);
 
-    // ── FIREFLIES — tiny bright motes clustered near temples at night ─────────
-    // They drift slowly with sine noise, creating the "living world" feel.
-    // Gold-cyan colour range, flicker via opacity in update.
-    const FC = 120;
+    // ── FIREFLIES — sparse motes near water and temples at night ─────────────
+    const FC = 40;
     const fPos = new Float32Array(FC * 3),
       fCol = new Float32Array(FC * 3);
     const fPhase = new Float32Array(FC); // per-firefly flicker phase offset
@@ -1467,7 +1466,7 @@ export default class World {
     // ── WILLOW LEAF FALL — pale green leaves drifting near river banks ─────────
     // Clusters at 7 points along main river and tributary where willows grow.
     // Different from cherry petals: smaller, greener, tight clustering.
-    const LC = 140;
+    const LC = 60;
     const lPos = new Float32Array(LC * 3);
     const lVel = new Float32Array(LC * 3);
     const lCol = new Float32Array(LC * 3);
@@ -1589,9 +1588,9 @@ export default class World {
     );
     this.scene.add(this._lotusPatches);
 
-    // ── INCENSE SMOKE — thin gray-white particles rising from each temple ─────
-    const temples = window.CITY_DATA?.buildings || [];
-    const SMOKE_PER = 6;
+    // ── INCENSE SMOKE — only hero temples, minimal particles ─────────────────
+    const temples = (window.CITY_DATA?.buildings || []).filter(b => b.isHero || b.height >= 30);
+    const SMOKE_PER = 2;
     const SMOKE_N = temples.length * SMOKE_PER;
     const sPos = new Float32Array(SMOKE_N * 3);
     for (let i = 0; i < SMOKE_N; i++) {
@@ -2192,14 +2191,13 @@ export default class World {
     string(-35, 14, 80, 35, 80, 12);
     string(-45, 14, -138, 45, -138, 14);
 
-    // Per-building flag strings radiating from building apex outward
-    // Height capped at 22 so they don't float in empty sky for tall buildings
-    (window.CITY_DATA?.buildings || []).forEach((b) => {
+    // Hero buildings only — Surya Dwara and Brahma Kund get flag strings
+    const heroes = (window.CITY_DATA?.buildings || []).filter(b => b.isHero);
+    heroes.forEach((b) => {
       const bh = Math.min(b.height, 22) + 1;
       const bx = b.pos[0];
       const bz = b.pos[1];
-      const fr = Math.max(b.size[0], b.size[1]) * 0.6;
-      // Cross strings: one E-W, one N-S per building
+      const fr = Math.max(b.size[0], b.size[1]) * 0.55;
       string(bx - fr, bh, bz, bx + fr, bz, 5);
     });
   }
@@ -2383,41 +2381,6 @@ export default class World {
       this.scene.add(entryG);
     }
 
-    // Item 39: Processional torana archways — 3 smaller ceremonial gates along x=0 spine
-    for (const [pz, label] of [
-      [10, "◈ HERO DISTRICT"],
-      [-45, "◈ KNOWLEDGE QUARTER"],
-      [-100, "◈ DEEP SANCTUM"],
-    ]) {
-      const pg = new THREE.Group();
-      pg.position.set(0, 0, pz);
-      const PH = 9,
-        PW = 10;
-      for (const ox of [-PW, PW]) {
-        const pp = new THREE.Mesh(new THREE.BoxGeometry(1.0, PH, 1.0), archMat);
-        pp.position.set(ox, PH / 2, 0);
-        pg.add(pp);
-        const pcap = new THREE.Mesh(
-          new THREE.BoxGeometry(1.6, 0.6, 1.6),
-          goldMat,
-        );
-        pcap.position.set(ox, PH + 0.3, 0);
-        pg.add(pcap);
-        const ppot = new THREE.Mesh(
-          new THREE.SphereGeometry(0.5, 7, 5),
-          goldMat,
-        );
-        ppot.position.set(ox, PH + 0.8, 0);
-        pg.add(ppot);
-      }
-      const plin = new THREE.Mesh(
-        new THREE.BoxGeometry(PW * 2 + 1, 0.8, 1.0),
-        archMat,
-      );
-      plin.position.set(0, PH, 0);
-      pg.add(plin);
-      this.scene.add(pg);
-    }
   }
 
   // ── WORLD NAME ──────────────────────────────────────────────────────────────

@@ -52,9 +52,9 @@ export default class Camera {
     this.state = "INTRO";
     this._introT = 0;
     this._vx = this._vy = this._vz = 0;
-    // Start east of Surya Dwara — pan up to show its full 58-unit height
-    this.instance.position.set(220, 55, -35);
-    this.instance.lookAt(72, 30, -35);
+    // Start wide above — pan down to show the full city before following car
+    this.instance.position.set(160, 90, 80);
+    this.instance.lookAt(0, 0, 0);
   }
 
   focusOn(building, carX, carZ, carAngle) {
@@ -98,8 +98,8 @@ export default class Camera {
       cam.updateProjectionMatrix();
       const pan = now * 0.04;
       // Orbit Surya Dwara — hero building, now 58 units tall, look at mid-tower
-      cam.position.set(72 + Math.sin(pan) * 90, 38, -35 + Math.cos(pan) * 90);
-      cam.lookAt(72, 28, -35);
+      cam.position.set(72 + Math.sin(pan) * 110, 55, -35 + Math.cos(pan) * 110);
+      cam.lookAt(72, 22, -35);
       return;
     }
 
@@ -111,14 +111,14 @@ export default class Camera {
       cam.fov = lerp(50, CC.FOV_MIN, e);
       cam.updateProjectionMatrix();
       cam.position.lerpVectors(
-        new THREE.Vector3(220, 55, -35),
-        new THREE.Vector3(car.x - car.sinA * 20, 8, car.z - car.cosA * 20),
+        new THREE.Vector3(160, 90, 80),
+        new THREE.Vector3(car.x - car.sinA * 26, 16, car.z - car.cosA * 26),
         e,
       );
       cam.lookAt(
         new THREE.Vector3().lerpVectors(
-          new THREE.Vector3(72, 30, -35), // look at Surya Dwara mid-tower on entry
-          new THREE.Vector3(car.x + car.sinA * 5, 1.5, car.z + car.cosA * 5),
+          new THREE.Vector3(0, 0, 0), // look at city centre on entry
+          new THREE.Vector3(car.x + car.sinA * 8, 1.5, car.z + car.cosA * 8),
           e,
         ),
       );
@@ -231,7 +231,7 @@ export default class Camera {
     // FIX: Y clamp at 120 units/sec (was 2.5 — far too tight for 2.5x world)
     this._vy = clamp(this._vy, -120, 120);
     cam.position.y += this._vy * dt;
-    cam.position.y = clamp(cam.position.y, 8.0, 50);
+    cam.position.y = clamp(cam.position.y, 10.0, 65);
 
     // ── FIX 6: MULTI-HARMONIC IDLE DRIFT ─────────────────────────────────────
     // Amplitude raised 0.22 → 0.38 so it's actually perceptible as camera breath.
