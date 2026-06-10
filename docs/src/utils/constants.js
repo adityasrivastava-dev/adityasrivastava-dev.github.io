@@ -1,13 +1,13 @@
 // ── CONSTANTS — single source of truth for all tuning values ─────────────────
 
 export const Car = {
-  MAX_SPEED: 0.32,
-  ACCELERATION: 0.013,
-  BRAKE_FORCE: 0.022,
-  LONG_FRICTION: 0.022,
+  MAX_SPEED: 0.62,
+  ACCELERATION: 0.020,
+  BRAKE_FORCE: 0.028,
+  LONG_FRICTION: 0.016,
   LAT_FRICTION: 0.60,  // looser slides = Bruno-style fun
-  STEER_RATE: 0.28,
-  STEER_RELEASE: 0.18,
+  STEER_RATE: 0.32,
+  STEER_RELEASE: 0.20,
   MAX_STEER_ANGLE: 0.11, // wider arc — easier to drift around buildings
   REV_MAX_RATIO: 0.4,
   HW: 0.85,

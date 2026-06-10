@@ -1141,9 +1141,9 @@ function updateGameHUD(spd, weather) {
   const wb = document.getElementById("weather-badge");
   const vig = document.getElementById("speed-vignette");
   if (!arc || !num) return;
-  // Speed: map raw 0-0.32 to display 0-80 km/h
-  const kmh = Math.round(Math.abs(spd) * 250);
-  const pct = Math.min(1, Math.abs(spd) / 0.32);
+  // Speed: map raw 0-0.62 to display 0-100 km/h
+  const kmh = Math.round(Math.abs(spd) * 161);
+  const pct = Math.min(1, Math.abs(spd) / 0.62);
   // SVG arc: dashoffset 151 = empty, 0 = full (new r=32)
   arc.style.strokeDashoffset = 151 - pct * 151;
   // Color: green → gold → orange-red
