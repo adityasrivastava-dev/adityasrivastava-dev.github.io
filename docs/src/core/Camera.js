@@ -67,12 +67,12 @@ export default class Camera {
     const ang = Math.atan2(building.pos[0] - carX, building.pos[1] - carZ);
     this._toPos.set(
       building.pos[0] - Math.sin(ang) * CC.FOCUS_DIST,
-      12 + (building.height || 12) * 0.22,
+      Math.max(18, (building.height || 12) * 0.75),
       building.pos[1] - Math.cos(ang) * CC.FOCUS_DIST,
     );
     this._toLook.set(
       building.pos[0],
-      (building.height || 12) * 0.7,
+      (building.height || 12) * 0.45,
       building.pos[1],
     );
     this._transT = 0;

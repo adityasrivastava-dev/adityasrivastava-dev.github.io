@@ -28,7 +28,7 @@ export const CameraC = {
   Y_SPRING_K: 6.0,
   Y_SPRING_D: 4.0,
   TILT_FACTOR: -0.35,
-  FOCUS_DIST: 18,
+  FOCUS_DIST: 55,
   TRANS_DUR: 1.4,
 };
 
