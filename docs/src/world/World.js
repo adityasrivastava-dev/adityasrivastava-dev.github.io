@@ -872,22 +872,18 @@ export default class World {
     waterTop.position.y = -0.45;
     s.add(waterTop);
 
-    // Plaza stone slabs — large warm sandstone paving around key areas
+    // Plaza stone slabs — warm sandstone paving around city center (4× positions)
     const plazaMat = new THREE.MeshLambertMaterial({ color: 0x987050 });
     [
-      [0, 0, 52, 52],
-      [0, 80, 38, 38],
-      [0, -80, 38, 38],
-      [80, 0, 38, 38],
-      [-80, 0, 38, 38],
-      [75, -35, 28, 28],
-      [-88, -35, 28, 28],
-      [60, 60, 28, 28],
-      [-60, 60, 28, 28],
-      [0, 160, 30, 30],
-      [0, -160, 30, 30],
-      [160, 0, 30, 30],
-      [-160, 0, 30, 30],
+      [0,    0,   80, 80],   // central stambha plaza
+      [0,  320,   55, 55],   // north approach
+      [0, -320,   55, 55],   // south approach
+      [320,  0,   55, 55],   // east approach
+      [-320, 0,   55, 55],   // west approach
+      [288, -139, 45, 45],   // surya-dwara forecourt
+      [-352,-139, 45, 45],   // brahma-kund forecourt
+      [0,   352,  40, 40],   // pura-stambha approach
+      [0,  -352,  40, 40],   // jyotish-vedha approach
     ].forEach(([px, pz, pw, ph]) => {
       const slab = new THREE.Mesh(
         new THREE.BoxGeometry(pw, 0.02, ph),
@@ -897,17 +893,15 @@ export default class World {
       s.add(slab);
     });
 
-    // Paved court zones near major intersections — subtle stone variation
+    // Paved court zones — scaled to 4× world, near main road intersections
     const paveMat = new THREE.MeshLambertMaterial({ color: 0x987558 });
     [
-      [-55, 0, 60, 60],
-      [55, 0, 60, 60],
-      [-55, -50, 60, 50],
-      [55, -50, 60, 50],
-      [110, 25, 50, 60],
-      [-110, 25, 50, 60],
-      [-110, -35, 50, 40],
-      [110, -35, 50, 40],
+      [-224, 0, 80, 80],
+      [224, 0, 80, 80],
+      [-224, -70, 80, 60],
+      [224, -70, 80, 60],
+      [350, 26, 60, 80],
+      [-350, 26, 60, 80],
     ].forEach(([x, z, w, d]) => {
       const blk = new THREE.Mesh(new THREE.BoxGeometry(w, 0.28, d), paveMat);
       blk.position.set(x, 0.14, z);
@@ -915,31 +909,33 @@ export default class World {
       s.add(blk);
     });
 
-    // Item 21: Processional spine — elevated stone path along x=0 from z=62 to z=-165
-    // White-cream sandstone slab, 8 units wide, slightly raised above ground
+    // Item 21: Processional spine — elevated stone path along x=0, scaled to 4× world
+    // Runs from entry (z=245) south to jyotish (z=-352)
     const spineMat = new THREE.MeshLambertMaterial({ color: 0xe8d8a8 });
-    const spine = new THREE.Mesh(new THREE.BoxGeometry(8, 0.12, 228), spineMat);
-    spine.position.set(0, 0.06, -51); // center of z=62 to z=-165 is z=-51
+    const spineLen = 600;
+    const spineCZ = (245 + -352) / 2; // -54
+    const spine = new THREE.Mesh(new THREE.BoxGeometry(10, 0.12, spineLen), spineMat);
+    spine.position.set(0, 0.06, spineCZ);
     s.add(spine);
     // Decorative edge strips (darker stone bands)
     const spineEdgeMat = new THREE.MeshLambertMaterial({ color: 0xb8984a });
-    for (const ox of [-4.2, 4.2]) {
+    for (const ox of [-5.3, 5.3]) {
       const edge = new THREE.Mesh(
-        new THREE.BoxGeometry(0.6, 0.14, 228),
+        new THREE.BoxGeometry(0.7, 0.14, spineLen),
         spineEdgeMat,
       );
-      edge.position.set(ox, 0.07, -51);
+      edge.position.set(ox, 0.07, spineCZ);
       s.add(edge);
     }
 
-    // Item 27: Temple tank near Brahma Kund at (-88,-35) — shallow rectangular pool
+    // Item 27: Temple tank near Brahma Kund at (-352,-192) — shallow rectangular pool
     // Steps descend to dark still water. Reflects sky at night.
     const tankMat = new THREE.MeshLambertMaterial({ color: 0x1a4a5c });
     const tankStep = new THREE.MeshLambertMaterial({ color: 0xc8a860 });
     const tankW = 22,
       tankD = 18;
-    const tankX = -88,
-      tankZ = -62; // south of brahma-kund
+    const tankX = -352,
+      tankZ = -216; // south of brahma-kund at z=-192
     // Outer steps
     for (let step = 0; step < 3; step++) {
       const sw2 = tankW + (3 - step) * 2,
@@ -972,27 +968,13 @@ export default class World {
     this._tankShimmer.position.set(tankX, -0.98, tankZ);
     s.add(this._tankShimmer);
 
-    // Item 18: District ground color variation — E=pale gold, W=ochre, S=laterite red
-    [
-      { col: 0xd4b880, x: 140, z: -10, w: 110, d: 160 }, // East quarter — pale gold
-      { col: 0xaa7830, x: -140, z: -10, w: 110, d: 160 }, // West quarter — deep ochre
-      { col: 0xa04820, x: 0, z: 80, w: 200, d: 80 }, // South entry — laterite red
-    ].forEach(({ col, x, z, w, d }) => {
-      const m = new THREE.Mesh(
-        new THREE.BoxGeometry(w, 0.03, d),
-        new THREE.MeshLambertMaterial({ color: col }),
-      );
-      m.position.set(x, -0.005, z);
-      s.add(m);
-    });
-
-    // Beach/sand border strips — the transition between orange ground and cyan water
+    // Beach/sand border strips — at world edges where land meets water (4× scale)
     const sandMat = new THREE.MeshLambertMaterial({ color: 0xaa9966 });
     for (const [x, z, w, d] of [
-      [0, -220, 600, 18],
-      [0, 220, 600, 18],
-      [-220, 0, 18, 440],
-      [220, 0, 18, 440],
+      [0, -440, 1200, 28],   // south edge
+      [0,  460, 1200, 28],   // north edge
+      [-575, 0,  28, 980],   // west edge
+      [ 575, 0,  28, 980],   // east edge
     ]) {
       const strip = new THREE.Mesh(new THREE.BoxGeometry(w, 0.1, d), sandMat);
       strip.position.set(x, -0.35, z);
@@ -1000,21 +982,21 @@ export default class World {
     }
 
     // ── EDUCATION PLATEAU — Item 15 ──────────────────────────────────────────
-    // Knowledge district sits 5 units higher — a sacred hill/hermitage hill
-    // Covers the 3 education buildings: saraswati(35,-99), gurukul(-35,-99), vidya(-131,-35)
+    // Knowledge district sits 5 units higher — sacred hermitage hill
+    // Covers saraswati [139,-340], gurukul [-139,-340], vidya [-523,-192]
     const platMat = new THREE.MeshLambertMaterial({ color: 0xb8a070 }); // warm pale sandstone
     const platRampMat = new THREE.MeshLambertMaterial({ color: 0xa09060 });
-    // Main plateau block — rectangular mound centered on the education cluster
-    const plat = new THREE.Mesh(new THREE.BoxGeometry(200, 5.0, 90), platMat);
-    plat.position.set(-30, 2.5 - 0.2, -115); // -0.2 so top at y=5
+    // Main plateau centered between saraswati and gurukul at z=-340
+    const plat = new THREE.Mesh(new THREE.BoxGeometry(360, 5.0, 120), platMat);
+    plat.position.set(0, 2.5 - 0.2, -365);
     s.add(plat);
-    // Soft south-facing ramp to avoid cliff edge at z=-70
+    // South-facing ramp from z=-300 into plateau
     const ramp = new THREE.Mesh(
-      new THREE.BoxGeometry(200, 0.6, 12),
+      new THREE.BoxGeometry(360, 0.6, 18),
       platRampMat,
     );
-    ramp.position.set(-30, 2.5, -69);
-    ramp.rotation.x = -0.18; // gentle slope
+    ramp.position.set(0, 2.5, -304);
+    ramp.rotation.x = -0.18;
     s.add(ramp);
 
     // ── DISTANT MOUNTAINS — Item 37 ───────────────────────────────────────────

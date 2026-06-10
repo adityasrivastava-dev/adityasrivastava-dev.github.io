@@ -1293,50 +1293,30 @@ export default class Objects {
   // ── GRASS PATCHES ──────────────────────────────────────────────────────────
   _buildGrass() {
     const colors = [0x3a7733, 0x4a8833, 0x336622, 0xccdd44, 0x99cc33];
-    // Grass along world edges (scaled)
+    // Grass clusters in city blocks between roads (4× world positions)
+    // Blocks between: x∈[0,448], z∈[-139,0] etc. — placed in block centers
     const positions = [
-      [-212, 0],
-      [-212, 50],
-      [-212, -50],
-      [-212, 100],
-      [-212, -100],
-      [212, 0],
-      [212, 50],
-      [212, -50],
-      [212, 100],
-      [212, -100],
-      [0, -200],
-      [50, -200],
-      [-50, -200],
-      [100, -200],
-      [-100, -200],
-      [0, 155],
-      [50, 155],
-      [-50, 155],
-      [100, 155],
-      [-100, 155],
-      // Between roads
-      [55, -70],
-      [-55, -70],
-      [130, -70],
-      [-130, -70],
-      [55, 20],
-      [-55, 20],
-      [55, -10],
-      [-55, -10],
-      [125, 20],
-      [-125, 20],
-      [125, -10],
-      [-125, -10],
+      // N-E city block (z:0→-139, x:0→448)
+      [224, -70], [180, -100], [280, -40],
+      // N-W city block (z:0→-139, x:-448→0)
+      [-224, -70], [-180, -100], [-280, -40],
+      // Mid-E block (z:53→224, x:0→448)
+      [224, 138], [180, 165], [290, 110],
+      // Mid-W block (z:53→224, x:-448→0)
+      [-224, 138], [-180, 165], [-290, 110],
+      // Far north (z:224→459, x:±200)
+      [160, 340], [-160, 340], [0, 310],
+      // South-mid block (z:-245→-395)
+      [224, -320], [-224, -320], [0, -320],
     ];
 
     positions.forEach(([x, z]) => {
-      const count = 6 + Math.floor(Math.random() * 5);
+      const count = 5 + Math.floor(Math.random() * 4);
       for (let i = 0; i < count; i++) {
-        const gx = x + (Math.random() - 0.5) * 8,
-          gz = z + (Math.random() - 0.5) * 8;
-        const w = 0.15 + Math.random() * 0.18,
-          h = 0.5 + Math.random() * 0.7;
+        const gx = x + (Math.random() - 0.5) * 30,
+          gz = z + (Math.random() - 0.5) * 30;
+        const w = 0.4 + Math.random() * 0.5,
+          h = 1.2 + Math.random() * 1.5;
         const blade = new THREE.Mesh(
           new THREE.BoxGeometry(w, h, w * 0.5),
           new THREE.MeshLambertMaterial({
@@ -1356,19 +1336,14 @@ export default class Objects {
       color: 0xbbaa99,
       gradientMap: window._toonGrad,
     });
-    // Small stones along the sides of main roads
+    // Small stones along road edges (4× world positions)
     const stoneSpots = [
-      [25, 0],
-      [25, -35],
-      [-25, 0],
-      [-25, -35],
-      [25, 60],
-      [-25, 60],
-      [50, -95],
-      [-50, -95],
-      [0, -130],
-      [50, -130],
-      [-50, -130],
+      [100, 0], [-100, 0],
+      [100, -70], [-100, -70],
+      [100, 26], [-100, 26],
+      [224, -100], [-224, -100],
+      [0, -200], [200, -200], [-200, -200],
+      [224, 80], [-224, 80],
     ];
     stoneSpots.forEach(([x, z]) => {
       for (let i = 0; i < 3; i++) {
